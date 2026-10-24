@@ -156,7 +156,7 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
   <header class="card topbar">
     <div class="brand">
       <div class="logo" aria-hidden="true">🏬</div>
-      <div><div class="brand-t">매출 현황</div><div class="sub" id="status">불러오는 중…</div></div>
+      <div><div class="brand-t">매출 현황</div><div class="sub" id="status">🔒 로그인 전</div></div>
     </div>
     <div class="userbox hide" id="userbox"><span class="chip" id="userChip"></span><button class="btn ghost sm" id="logoutBtn">로그아웃</button></div>
   </header>
@@ -292,8 +292,8 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
         </ul>
         <h3>처음 한 번: 과거 데이터 올리기</h3>
         <ol>
-          <li>목표·설정 탭에서 월 목표를 입력합니다. (예: 2026-10 → 350000000, 11월 370000000, 12월 350000000)</li>
-          <li>업로드 탭에서 <b>과거데이터_1-9월.csv</b>를 선택 › 전체 순매출이 <b>2,724,117,720원</b>인지 확인 › 등록</li>
+          <li>목표·설정 탭에서 월 목표를 입력합니다.</li>
+          <li>업로드 탭에서 과거 데이터 CSV를 선택 › 미리보기의 전체 순매출이 원본 파일 합계와 같은지 확인 › 등록</li>
           <li>이어서 10월 POS 판매 내역 엑셀을 올립니다.</li>
         </ol>
         <p class="muted">과거 데이터 파일은 이 페이지(공개 저장소)에 넣지 않았습니다. 매출·거래처 정보가 인터넷에 공개되지 않도록 반드시 로그인 후 업로드로만 넣어 주세요.</p>
@@ -340,7 +340,7 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
   </section>
 
   <!-- 하단: 글씨 / 디자인 / 관리자 버튼 -->
-  <footer class="card prefs" id="prefsBar">
+  <footer class="card prefs hide" id="prefsBar">
     <div class="pref-groups">
       <div class="pref-group"><span class="pref-l">글씨</span>
         <button class="seg" data-font="neat">또박또박</button>
@@ -841,6 +841,8 @@ const VIEWS = ['loading', 'login', 'pending', 'home', 'admin'];
 function show(v) {
   S.view = v;
   VIEWS.forEach(x => $('v-' + x).classList.toggle('hide', x !== v));
+  // 로그인·승인 전에는 로그인 카드 말고 아무것도 보이지 않게
+  $('prefsBar').classList.toggle('hide', !(v === 'home' || v === 'admin'));
   $('adminBtn').classList.toggle('hide', !(v === 'home' && S.role === 'admin'));
   window.scrollTo(0, 0);
   if (v === 'admin') bumpIdle();
@@ -886,7 +888,7 @@ onAuthStateChanged(auth, user => {
   S.user = user; S.role = null; invalidate();
   if (!user) {
     $('userbox').classList.add('hide');
-    setStatus('로그인이 필요합니다');
+    setStatus('🔒 로그인 전');
     show('login');
     return;
   }
