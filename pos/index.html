@@ -159,6 +159,20 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .help li { margin: 4px 0; }
 .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .8em; background: var(--chip); color: var(--chip-ink); }
 .tag.admin { background: var(--ok-bg); color: var(--ok-ink); }
+.site-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 4px 6px; font-size: .82em; color: var(--ink2); }
+.site-foot .links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-left: auto; }
+.site-foot .lk { background: none; border: 0; padding: 4px 0; color: var(--ink2); cursor: pointer; font: inherit; }
+.site-foot .lk:hover { color: var(--ink); text-decoration: underline; }
+.site-foot .lk.strong { font-weight: 700; }
+.faint { font-size: 11px; color: var(--ink3); opacity: .55; letter-spacing: .2px; user-select: none; }
+dialog.doc { border: 0; border-radius: var(--radius); padding: 0; width: min(720px, calc(100% - 32px)); max-height: calc(100vh - 64px); background: var(--surface); color: var(--ink); box-shadow: 0 20px 60px rgba(0, 0, 0, .25); }
+dialog.doc::backdrop { background: rgba(10, 15, 25, .45); }
+dialog.doc .dh { position: sticky; top: 0; background: var(--surface); display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+dialog.doc .dh h2 { margin: 0; }
+dialog.doc .db { padding: 6px 20px 20px; font-size: .92em; }
+dialog.doc h3 { margin: 18px 0 6px; font-size: 1em; }
+dialog.doc p, dialog.doc li { color: var(--ink2); margin: 4px 0; }
+dialog.doc ul { padding-left: 20px; margin: 4px 0; }
 @media (max-width: 560px) { .page-title { font-size: 22px; } .card { padding: 14px; } }
 @media print { .prefs, .toolbar, .tabsbar, .topbar .userbox { display: none !important; } }
 </style>
@@ -366,7 +380,71 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
     </div>
     <button class="btn admin-btn hide" id="adminBtn">🔒 관리자 모드</button>
   </footer>
+
+  <!-- 맨 아래: 접속 수(로그인한 사람에게만, 흐리게) / 약관 / 링크 복사 -->
+  <div class="site-foot">
+    <span class="faint" id="visitCount" title="승인된 계정의 하루 첫 접속 수"></span>
+    <nav class="links">
+      <button class="lk" data-open="dlgTerms">이용약관</button>
+      <button class="lk strong" data-open="dlgPrivacy">개인정보처리방침</button>
+      <button class="btn ghost sm" id="copyLink">🔗 링크 복사</button>
+    </nav>
+  </div>
 </div>
+
+<dialog class="doc" id="dlgTerms" aria-labelledby="termsT">
+  <div class="dh"><h2 id="termsT">이용약관</h2><button class="btn ghost sm" data-close>닫기</button></div>
+  <div class="db">
+    <p>시행일: 2026년 10월 24일</p>
+    <h3>제1조 목적</h3>
+    <p>이 약관은 에이스 하드웨어 일산점 내부용 "매출 현황" 웹페이지(acetool.site/pos, 이하 "서비스")의 이용 조건을 정합니다.</p>
+    <h3>제2조 이용 대상</h3>
+    <p>서비스는 매장 관리자가 승인한 구글 계정으로 로그인한 사람만 이용할 수 있습니다. 권한은 "보기"와 "관리자" 두 가지이며, 관리자는 필요할 때 권한을 바꾸거나 삭제할 수 있습니다.</p>
+    <h3>제3조 이용자의 의무</h3>
+    <ul>
+      <li>서비스에서 본 매출·목표·거래처·담당자·마진 정보는 업무 목적으로만 사용하며, 외부(매장 밖 사람, 메신저 단체방, SNS 등)에 공유하지 않습니다.</li>
+      <li>화면 캡처, 내려받은 CSV·엑셀 파일도 같은 기준으로 다루고, 공용 PC에서는 사용 후 파일을 지우고 로그아웃합니다.</li>
+      <li>계정을 다른 사람과 함께 쓰거나, 권한 없는 정보에 접근하려고 시도하지 않습니다.</li>
+    </ul>
+    <h3>제4조 정보의 정확성</h3>
+    <p>예상 마감금액, 달성률 등은 올라온 POS 자료와 문자 내용을 바탕으로 계산한 참고 값이며, 실제 정산·회계 기준 금액과 다를 수 있습니다. 중요한 결정은 원본 자료로 다시 확인해 주세요.</p>
+    <h3>제5조 서비스의 변경·중단</h3>
+    <p>운영상 필요하거나 보안 문제가 생기면 사전 안내 없이 기능을 바꾸거나 이용을 중단·제한할 수 있습니다.</p>
+    <h3>제6조 권한 회수</h3>
+    <p>퇴사, 부서 이동, 이 약관 위반 등의 경우 관리자는 즉시 권한을 삭제할 수 있습니다.</p>
+  </div>
+</dialog>
+
+<dialog class="doc" id="dlgPrivacy" aria-labelledby="privT">
+  <div class="dh"><h2 id="privT">개인정보처리방침</h2><button class="btn ghost sm" data-close>닫기</button></div>
+  <div class="db">
+    <p>시행일: 2026년 10월 24일</p>
+    <h3>1. 처리하는 개인정보와 목적</h3>
+    <ul>
+      <li><b>로그인한 이용자</b> · 구글 계정 이메일, 이름(표시 이름), 구글이 부여한 사용자 ID(UID) — 본인 확인과 권한(보기/관리자) 관리, 승인 요청 처리에만 씁니다.</li>
+      <li><b>업무 자료</b> · 관리자가 올린 판매 내역에 들어 있는 외판 담당자 이름, 거래처명(개인 고객 이름이 포함될 수 있음), 매출·마진 금액 — 매장 매출 관리 목적으로만 쓰며 관리자만 볼 수 있습니다.</li>
+      <li><b>등록 이력</b> · 자료를 올린 관리자 이메일과 시각 — 검산과 사고 추적용입니다.</li>
+      <li><b>접속 수</b> · 날짜별 접속 횟수 합계만 저장하며, 누가 접속했는지는 기록하지 않습니다.</li>
+    </ul>
+    <h3>2. 보관 위치와 접근 통제</h3>
+    <ul>
+      <li>정보는 Google LLC가 제공하는 Firebase(Cloud Firestore, Firebase Authentication)에 저장됩니다.</li>
+      <li>보안 규칙으로 승인된 계정만 읽을 수 있고, 거래처·담당자·마진 등 상세 자료와 권한 목록은 관리자만 읽을 수 있습니다.</li>
+      <li>이 기기의 브라우저에는 화면 설정(글씨·디자인)과 오늘 접속을 이미 셌는지 여부만 저장되며, 매출 자료는 저장되지 않습니다.</li>
+    </ul>
+    <h3>3. 보유 기간과 파기</h3>
+    <ul>
+      <li>권한 정보는 권한이 삭제될 때(퇴사 등) 함께 지웁니다. 거절된 승인 요청은 바로 지웁니다.</li>
+      <li>업무 자료는 매장 운영에 필요한 기간 동안 보관하며, 필요가 없어지면 관리자가 삭제합니다.</li>
+    </ul>
+    <h3>4. 제3자 제공</h3>
+    <p>개인정보를 다른 사람이나 회사에 제공하거나 판매하지 않습니다. 저장·로그인 처리를 위해 Google Firebase를 이용합니다.</p>
+    <h3>5. 이용자의 권리</h3>
+    <p>본인 정보의 확인, 수정, 삭제(권한 해지)를 매장 관리자에게 요청할 수 있으며, 지체 없이 처리합니다.</p>
+    <h3>6. 문의</h3>
+    <p>개인정보 관련 문의는 에이스 하드웨어 일산점 매장 관리자에게 해 주세요.</p>
+  </div>
+</dialog>
 <div id="tip"></div>
 <div id="toast" role="status"></div>
 
@@ -388,7 +466,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
   getFirestore, doc, getDoc, getDocFromServer, getDocs, setDoc, deleteDoc, addDoc, collection,
-  runTransaction, writeBatch, serverTimestamp, query, orderBy, limit
+  runTransaction, writeBatch, serverTimestamp, query, orderBy, limit, increment
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 // 이 값들은 공개되어도 괜찮은 식별자입니다. 데이터 보호는 Firestore 보안 규칙과 로그인으로 합니다.
@@ -406,7 +484,8 @@ const db = getFirestore(app); // 오프라인 캐시는 켜지 않음(공용 PC�
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: 'select_account' });
 
-const C = { daily: 'pos_daily', detail: 'pos_detail', targets: 'pos_targets', sms: 'pos_sms', config: 'pos_config', logs: 'pos_logs', roles: 'pos_roles', requests: 'pos_requests' };
+const C = { daily: 'pos_daily', detail: 'pos_detail', targets: 'pos_targets', sms: 'pos_sms', config: 'pos_config', logs: 'pos_logs', roles: 'pos_roles', requests: 'pos_requests', stats: 'pos_stats' };
+const SITE_URL = 'https://acetool.site/pos/';
 const XLSX_URL = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
 const XLSX_SRI = 'sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT';
 const TZ = 'Asia/Seoul';
@@ -881,6 +960,7 @@ async function routeUser(user) {
     S.role = role;
     show('home');
     loadHome(S.ym);
+    countVisit(user);
     return;
   }
   S.role = null;
@@ -896,8 +976,43 @@ async function routeUser(user) {
     $('pendMsg').textContent = '요청을 보내지 못했습니다. 첫 관리자라면 사용 안내대로 Firebase 콘솔에서 이 UID를 관리자로 등록해 주세요. (' + errMsg(e) + ')';
   }
 }
+/* 접속 수: 승인된 계정이 이 브라우저에서 하루 처음 열 때 1번만 셈 (누가 접속했는지는 저장하지 않음) */
+async function countVisit(user) {
+  const t = todayInt(), mark = t + ':' + user.uid, dayRef = doc(db, C.stats, 'd' + t), totRef = doc(db, C.stats, 'total');
+  let seen = '';
+  try { seen = localStorage.getItem('pos.visit') || ''; } catch (e) { }
+  try {
+    if (seen !== mark) {
+      const b = writeBatch(db);
+      b.set(totRef, { n: increment(1) }, { merge: true });
+      b.set(dayRef, { n: increment(1) }, { merge: true });
+      await b.commit();
+      try { localStorage.setItem('pos.visit', mark); } catch (e) { }
+    }
+    const [a, d] = await Promise.all([getDoc(totRef), getDoc(dayRef)]);
+    if (S.user && S.user.uid === user.uid) $('visitCount').textContent = '오늘 ' + (d.exists() ? d.data().n : 0) + ' · 누적 ' + (a.exists() ? a.data().n : 0);
+  } catch (e) { /* 접속 수는 부가 기능이라 실패해도 조용히 넘어감 */ }
+}
+
+/* 이용약관 · 개인정보처리방침 · 링크 복사 */
+document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => $(b.dataset.open).showModal()));
+document.querySelectorAll('dialog.doc').forEach(d => {
+  d.querySelector('[data-close]').addEventListener('click', () => d.close());
+  d.addEventListener('click', e => { if (e.target === d) d.close(); });
+});
+$('copyLink').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(SITE_URL); }
+  catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = SITE_URL; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e2) { } ta.remove();
+  }
+  toast('링크를 복사했습니다 · ' + SITE_URL);
+});
+
 onAuthStateChanged(auth, user => {
   S.user = user; S.role = null; invalidate();
+  $('visitCount').textContent = '';
   if (!user) {
     $('userbox').classList.add('hide');
     setStatus('🔒 로그인 전');
