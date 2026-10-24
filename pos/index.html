@@ -453,6 +453,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
             <option value="sms">문자 · 마감 / 멤버쉽 / 시간별</option>
             <option value="ar">채권 · 채권연령 관리</option>
           </select></label>
+          <button class="btn primary" id="quickSms" type="button">📋 복사한 문자 바로 넣기</button>
         </div>
         <p class="muted" id="upDesc"></p>
         <div id="upFileBox">
@@ -2374,6 +2375,28 @@ function setUp(reset) {
 }
 $('upKind').addEventListener('change', () => setUp(true));
 $('upClear').addEventListener('click', () => { $('upText').value = ''; $('preview').innerHTML = ''; });
+// 📋 복사한 문자 바로 넣기: 클립보드를 읽어 문자로 바꾸고 바로 "내용 확인"까지
+const looksSms = t => /ACE홈센터\s*-|<\s*멤버[쉽십]\s*현황/.test(String(t || ''));
+function toSms(text) {
+  if ($('upKind').value !== 'sms') { $('upKind').value = 'sms'; setUp(true); }
+  $('upText').value = text;
+  handleSms(text);
+  setTimeout(() => $('preview').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+}
+$('quickSms').addEventListener('click', async () => {
+  let text = '';
+  try { text = await navigator.clipboard.readText(); } catch (e) { text = ''; }
+  if (!text.trim()) {
+    if ($('upKind').value !== 'sms') { $('upKind').value = 'sms'; setUp(true); }
+    $('upText').focus();
+    toast('클립보드를 읽지 못했어요. 아래 칸을 길게 눌러 붙여넣기 해 주세요');
+    return;
+  }
+  if (!looksSms(text)) { toast('복사한 내용이 매출·멤버쉽 문자가 아니에요. 문자를 복사했는지 확인해 주세요'); return; }
+  toSms(text);
+});
+// 붙여넣기 칸에 문자를 붙여넣으면 자동으로 "문자"로 바꾸고 바로 확인
+$('upText').addEventListener('paste', () => setTimeout(() => { const t = $('upText').value; if (looksSms(t)) toSms(t); }, 0));
 $('upCheck').addEventListener('click', () => {
   const text = $('upText').value;
   if (!text.trim()) { $('preview').innerHTML = '<div class="banner warn">붙여넣은 내용이 없습니다.</div>'; return; }
