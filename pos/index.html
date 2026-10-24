@@ -1664,7 +1664,12 @@ function renderHome(d) {
   let h = '', k = '';
   const fb = d.forecast && d.forecast['기본'];
   k += kpi('누적 매출', won(d.cum.total), '내판 ' + eok(d.cum.n) + ' · 외판 ' + eok(d.cum.o), true);
-  k += kpi('월 목표', d.target ? won(d.target) : '미설정', d.targetN || d.targetO ? '내판 ' + (d.targetN ? eok(d.targetN) : '-') + ' · 외판 ' + (d.targetO ? eok(d.targetO) : '-') : '');
+  {
+    const gap = d.target ? d.target - d.cum.total : 0;
+    const gapTxt = !d.target ? '' : gap > 0 ? '부족 ' + eok(gap) : '초과 달성 +' + eok(-gap);
+    const nt = d.targetN || d.targetO ? '내판 목표 ' + (d.targetN ? eok(d.targetN) : '-') + ' · 외판 목표 ' + (d.targetO ? eok(d.targetO) : '-') : '';
+    k += kpi('월 목표', d.target ? won(d.target) : '미설정', [gapTxt, nt].filter(Boolean).join(' · '));
+  }
   if (d.target) {
     const gp = (d.achieve - d.elapsed) * 100, diff = d.cum.total - d.expectedCum;
     k += kpi('달성률', pct(d.achieve), '시간 경과율 ' + pct(d.elapsed), true);
