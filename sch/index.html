@@ -184,6 +184,11 @@ dialog.doc .db { padding: 12px 18px 18px; }
 .fab-bar { position: fixed; right: 20px; bottom: 20px; z-index: 40; display: flex; gap: 8px; }
 .fab { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 10px 16px; font-size: .9em; font-weight: 600; text-decoration: none; box-shadow: 0 6px 18px rgba(16, 24, 40, .14); }
 .fab:hover { border-color: var(--s1); }
+.fab.admin-btn { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); padding: 12px 20px; font-size: 1em; font-weight: 700; cursor: pointer; }
+.head-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.mode-tag { font-weight: 700; font-size: .9em; padding: 6px 13px; border-radius: 999px; background: #e7f6ec; color: #166534; }
+body.admin-page .mode-tag { background: var(--chip); color: var(--chip-ink); }
+body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .35); }
 
 @media (max-width: 960px) { .main { grid-template-columns: 1fr; } .side { position: static; } }
 @media (max-width: 600px) {
@@ -239,7 +244,7 @@ dialog.doc .db { padding: 12px 18px 18px; }
   <section id="v-main" class="hide">
     <div class="sticky-head" id="head">
       <div class="head-row">
-        <h1 id="title">근무 계획</h1>
+        <div class="head-left"><button class="btn primary hide" id="backBtn">← 근무표로</button><h1 id="title">근무 계획</h1></div>
         <div class="toolbar">
           <select id="ySel" aria-label="연도"></select>
           <select id="mSel" aria-label="월"></select>
@@ -250,10 +255,7 @@ dialog.doc .db { padding: 12px 18px 18px; }
         </div>
       </div>
       <div class="row2">
-        <div class="chips" id="modeChips">
-          <button data-mode="employee" class="on emp">🟢 휴무 신청</button>
-          <button data-mode="manager">🔵 근무 배정 (관리자)</button>
-        </div>
+        <span class="mode-tag" id="modeTag">🟢 휴무 신청</span>
         <span class="me-chip" id="meChip"></span>
       </div>
     </div>
@@ -315,7 +317,7 @@ dialog.doc .db { padding: 12px 18px 18px; }
   <div class="db"><div style="overflow-x:auto"><table><thead><tr><th class="l">시각</th><th class="l">변경한 사람</th><th class="l">대상</th><th>근무일</th><th class="l">내용</th></tr></thead><tbody id="logBody"></tbody></table></div></div>
 </dialog>
 
-<div class="fab-bar"><a class="fab" href="../pos/">📊 매출 현황</a></div>
+<div class="fab-bar"><a class="fab" href="../pos/">📊 매출 현황</a><button class="fab admin-btn hide" id="adminFab">🔒 관리자 모드</button></div>
 <div id="toast" role="status"></div>
 
 <script>
@@ -393,7 +395,7 @@ const variableHolidays = {
 };
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 
-const S = { user: null, role: null, admin: false, mode: 'employee', view: 'cal', roster: DEFAULT_ROSTER.map(m => ({ ...m })), rosterExists: false, rosterLoaded: false,
+const S = { user: null, role: null, admin: false, mode: 'employee', page: 'home', view: 'cal', roster: DEFAULT_ROSTER.map(m => ({ ...m })), rosterExists: false, rosterLoaded: false,
   sched: {}, quotas: {}, hols: {}, myId: '', unsub: [], lastTs: 0, firstMeta: true };
 const clientId = 'c_' + Math.random().toString(36).slice(2);
 const $ = id => document.getElementById(id);
@@ -457,12 +459,17 @@ window.addEventListener('resize', measure);
 function renderAll() {
   if (!$('ySel').value) return;
   const { y, m } = ym();
-  $('title').textContent = y + '년 ' + m + '월 근무 계획';
-  document.querySelectorAll('#modeChips button').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
+  const adminPage = S.page === 'admin';
+  $('title').textContent = (adminPage ? '관리자 · ' : '') + y + '년 ' + m + '월 ' + (adminPage ? '근무 배정' : '근무 계획');
+  $('modeTag').textContent = adminPage ? '🔵 근무 배정 (관리자)' : '🟢 휴무 신청';
   const mine = me();
-  $('meChip').innerHTML = S.admin ? (S.mode === 'manager' ? '관리자 · 근무 배정 중 (조출 → 마감 → 육아휴직 → 교육)' : '관리자 · 모든 직원 휴무를 바꿀 수 있어요')
+  $('meChip').innerHTML = adminPage ? '칸을 누르면 조출 → 마감 → 육아휴직 → 교육 순서로 바뀌어요'
+    : S.admin ? '관리자 · 모든 직원 휴무를 바꿀 수 있어요'
     : mine ? '내 이름: <b>' + esc(mine.name) + '</b> · 내 칸을 누르면 휴무가 바뀌어요' : '⚠️ 로그인 계정이 아직 직원 이름에 연결되지 않았어요. 관리자에게 요청해 주세요. (보기만 가능)';
-  $('adminBar').classList.toggle('hide', !S.admin);
+  $('adminBar').classList.toggle('hide', !(S.admin && adminPage));
+  $('backBtn').classList.toggle('hide', !adminPage);
+  $('adminFab').classList.toggle('hide', !S.admin || adminPage);
+  document.body.classList.toggle('admin-page', adminPage);
   $('quotaSel').disabled = !S.admin;
   $('quotaHint').textContent = S.admin ? '직접 고를 수 있어요 (8~15일)' : '관리자만 바꿀 수 있습니다';
   renderCalendar(y, m); renderSummary(y, m); renderXl(y, m); renderWarn(y, m);
@@ -817,7 +824,7 @@ async function route(user) {
   startLive();
 }
 onAuthStateChanged(auth, user => {
-  S.user = user; stopLive();
+  S.user = user; stopLive(); S.page = 'home'; S.mode = 'employee';
   if (!user) { $('userbox').classList.add('hide'); $('status').textContent = '🔒 로그인 전'; show('login'); return; }
   $('userChip').textContent = user.email || '';
   $('userbox').classList.remove('hide');
@@ -866,10 +873,27 @@ $('viewBtn').addEventListener('click', () => {
   $('viewBtn').textContent = S.view === 'cal' ? '엑셀 양식으로 보기' : '달력으로 돌아가기';
   renderAll();
 });
-document.querySelectorAll('#modeChips button').forEach(b => b.addEventListener('click', () => {
-  if (b.dataset.mode === 'manager' && !S.admin) { toast('근무 배정은 관리자만 할 수 있어요'); return; }
-  S.mode = b.dataset.mode; renderAll();
-}));
+// 관리자 모드 = 별도 화면 (근무 배정 + 관리 도구). 들어갈 때 서버에서 권한을 다시 확인하고, 20분 쓰지 않으면 근무표로 돌아감
+let idleT = null;
+function setPage(p) {
+  S.page = p; S.mode = p === 'admin' ? 'manager' : 'employee';
+  window.scrollTo(0, 0); renderAll();
+  if (p === 'admin') bumpIdle();
+}
+function bumpIdle() {
+  if (S.page !== 'admin') return;
+  clearTimeout(idleT);
+  idleT = setTimeout(() => { if (S.page === 'admin') { setPage('home'); toast('20분 동안 사용이 없어 관리자 모드를 닫았습니다'); } }, 20 * 60 * 1000);
+}
+['click', 'keydown', 'touchstart', 'scroll'].forEach(ev => document.addEventListener(ev, bumpIdle, { passive: true }));
+$('adminFab').addEventListener('click', async () => {
+  try {
+    const r = await getDoc(doc(db, C.roles, S.user.uid));
+    if (!r.exists() || r.data().role !== 'admin') { S.admin = false; renderAll(); toast('관리자 권한이 없습니다'); return; }
+  } catch (e) { toast(errMsg(e)); return; }
+  setPage('admin');
+});
+$('backBtn').addEventListener('click', () => setPage('home'));
 $('quotaSel').addEventListener('change', async () => {
   const { y, m } = ym(), k = ymKey(y, m), v = Number($('quotaSel').value);
   if (!S.admin) { renderAll(); return; }
