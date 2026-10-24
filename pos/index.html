@@ -253,9 +253,12 @@ svg text.wk { fill: var(--ink); font-weight: 700; }
 .brief-h h2 { margin: 0; }
 .brief-tot { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 10px 0 6px; }
 .brief-tot b { font-size: 22px; }
-.brief-l { list-style: none; padding: 0; margin: 0; }
-.brief-l li { display: flex; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); font-size: .94em; }
-.brief-l li:first-child { border-top: 0; }
+.brief-l { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; }
+.brief-l li { display: flex; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); font-size: .84em; line-height: 1.45; }
+.brief-l li:nth-child(-n+2) { border-top: 0; }
+.brief-tot b { font-size: 20px; }
+.tag.free { background: var(--ok-bg); color: var(--ok-ink); font-size: .62em; font-weight: 700; vertical-align: 2px; }
+@media (max-width: 760px) { .brief-l { grid-template-columns: 1fr; } .brief-l li:nth-child(2) { border-top: 1px solid var(--line); } }
 .brief-l .ic { width: 18px; flex: none; text-align: center; color: var(--ink3); }
 .brief-l li.up .ic { color: var(--ok-ink); }
 .brief-l li.down .ic { color: var(--bad-ink); }
@@ -1620,8 +1623,10 @@ function buildSecNav(bodyId, navId) {
   secBody = $(bodyId); secNav = $(navId);
   const secs = [...secBody.querySelectorAll('[data-sec]')];
   secNav.innerHTML = secs.map((s, i) => '<button data-i="' + i + '">' + esc(s.dataset.sec) + '</button>').join('');
+  // 칸이 나중에 다시 그려져도(예: 관리자용 브리핑) 누를 때마다 현재 칸을 찾음
   secNav.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
-    secs[Number(b.dataset.i)].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const el = secBody.querySelectorAll('[data-sec]')[Number(b.dataset.i)];
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }));
   measureHead(); spy();
 }
@@ -1839,7 +1844,8 @@ function renderHome(d) {
     const gv = yy => ((S.consSum[yy] || {})[m] || {})[key] || 0, n = gv(y), ly = gv(y - 1);
     k += kpi((cc.scope === 'bath' ? '욕실 시공' : '시공') + ' (' + m + '월)', n + '건 / ' + cc.T + '건', '달성 ' + pct(n / cc.T, 0) + ' · 작년 같은 달 ' + ly + '건');
   }
-  h += calCard(d); // 달력은 맨 위 첫 칩
+  h += calCard(d); // 달력은 맨 위 첫 칩, 그다음 AI 브리핑
+  if (d.last) h += briefHtml(briefBase(d, d.last), null, null, null, 'homeBrief');
   h += '<div class="kpis" data-sec="요약">' + k + '</div>';
   h += goalCard(d);
   const cw = chartW('homeBody'); S.chartW = cw;
@@ -1868,7 +1874,6 @@ function renderHome(d) {
   h += '<div class="card work" data-sec="근무표"><div><h2>📅 근무표</h2><p class="muted" style="margin:0">매장 근무표 관리 웹앱으로 이동합니다. 새 창으로 열려요.</p></div>' +
     (wu ? '<a class="btn primary" href="' + esc(wu) + '" target="_blank" rel="noopener noreferrer">근무표 열기 ↗</a>'
       : '<span class="btn ghost" aria-disabled="true">주소 준비 중' + (S.role === 'admin' ? ' · 목표·설정에서 입력' : '') + '</span>') + '</div>';
-  if (d.last) h += briefHtml(briefBase(d, d.last), null, null, null, 'homeBrief'); // 브리핑은 뒤쪽 순서
   if (S.role === 'admin') h += '<div id="hDetail" data-sec="상세 분석"><div class="card muted">상세 분석 불러오는 중…</div></div><div id="hCons" data-sec="시공 분석"><div class="card muted">시공 분석 불러오는 중…</div></div><div id="hAr" data-sec="채권"><div class="card muted">채권 불러오는 중…</div></div>';
   $('homeBody').innerHTML = h;
   buildSecNav('homeBody', 'homeNav');
@@ -2092,7 +2097,7 @@ const BRIEF_ICON = { up: '▲', down: '▼', warn: '⚠️', info: '•' };
 function briefHtml(b, extra, title, controls, id) {
   if (!b) return '';
   const all = b.pts.concat(extra || []);
-  return '<div class="card brief"' + (id ? ' id="' + id + '"' : '') + ' data-sec="브리핑"><div class="brief-h"><h2>' + (title || '📋 ' + mdLabel(b.date) + '(' + DOWK[dowOf(b.date)] + ') 브리핑') + '</h2>' + (controls || '') + '</div>' +
+  return '<div class="card brief"' + (id ? ' id="' + id + '"' : '') + ' data-sec="AI 브리핑"><div class="brief-h"><h2>' + (title || '✨ ' + mdLabel(b.date) + '(' + DOWK[dowOf(b.date)] + ') AI 브리핑 <span class="tag free">무료</span>') + '</h2>' + (controls || '') + '</div>' +
     '<div class="brief-tot"><b>' + won(b.tot) + '</b><span class="muted">내판 ' + eok(b.n) + ' · 외판 ' + eok(b.o) + '</span></div>' +
     '<ul class="brief-l">' + all.map(p => '<li class="' + p.t + '"><span class="ic">' + BRIEF_ICON[p.t] + '</span><span>' + p.s + '</span></li>').join('') + '</ul></div>';
 }
