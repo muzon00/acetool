@@ -78,8 +78,12 @@ h1, h2, h3, .btn, .kpi .v, .brand-t, .pill, .page-title { font-family: var(--fon
 .hide { display: none !important; }
 .card { background: var(--surface); border: var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-bottom: 14px; }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 18px; }
-.brand { display: flex; align-items: center; gap: 14px; }
-.logo { width: 52px; height: 52px; border: 1px dashed var(--line); border-radius: 14px; display: grid; place-items: center; font-size: 26px; background: var(--surface2); }
+.brand { display: flex; align-items: center; gap: 12px; background: none; border: 0; padding: 4px 8px 4px 4px; margin: -4px; border-radius: 14px; cursor: pointer; text-align: left; color: var(--ink); font: inherit; min-width: 0; }
+.brand:hover { background: var(--surface2); }
+.brand:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+.brand-txt { display: flex; flex-direction: column; min-width: 0; }
+.brand-txt .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.logo { width: 44px; height: 44px; border-radius: 12px; flex: none; display: block; box-shadow: 0 1px 2px rgba(16, 24, 40, .12); }
 .brand-t { font-size: 20px; font-weight: 700; }
 .sub, .muted { color: var(--ink2); font-size: .87em; }
 .userbox { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -157,8 +161,7 @@ svg text.wk { fill: var(--ink); font-weight: 700; }
 .hb-v { text-align: right; font-variant-numeric: tabular-nums; }
 /* 고정 머리(상단바 + 제목/월 선택 + 섹션 칩) */
 .topbar { position: sticky; top: 0; z-index: 30; padding: 8px 14px; margin-bottom: 8px; box-shadow: 0 -16px 0 var(--bg), var(--shadow); }
-.topbar .logo { width: 40px; height: 40px; border-radius: 12px; }
-.topbar .logo img { width: 30px; height: 30px; }
+.topbar .logo { width: 40px; height: 40px; border-radius: 11px; }
 .topbar .brand { gap: 10px; }
 .topbar .brand-t { font-size: 17px; }
 .sticky-head { position: sticky; top: var(--top-h, 64px); z-index: 25; background: var(--bg); padding: 4px 0 8px; margin-bottom: 6px; }
@@ -247,10 +250,10 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
 <body>
 <div class="wrap">
   <header class="card topbar">
-    <div class="brand">
-      <div class="logo" aria-hidden="true"><img src="icon.svg" alt="" width="40" height="40"></div>
-      <div><div class="brand-t">매출 현황</div><div class="sub" id="status">🔒 로그인 전</div></div>
-    </div>
+    <button class="brand" id="brandBtn" type="button" title="홈 화면으로">
+      <img class="logo" src="icon.svg" alt="" width="40" height="40">
+      <span class="brand-txt"><span class="brand-t">매출 현황</span><span class="sub" id="status">🔒 로그인 전</span></span>
+    </button>
     <div class="userbox hide" id="userbox"><span class="chip" id="userChip"></span><button class="btn ghost sm" id="logoutBtn">로그아웃</button></div>
   </header>
 
@@ -1481,10 +1484,18 @@ async function loadHome(ym, force) {
   try {
     const d = await summaryFor(ym, force);
     try { await loadConsSum(force); } catch (e) { S.consSum = null; }
-    fillMonthSel($('homeMonth'), d); renderHome(d);
+    fillMonthSel($('homeMonth'), d); renderHome(d); toFirstChip();
   }
   catch (e) { setStatus('오류: ' + errMsg(e)); $('homeBody').innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; }
 }
+// 새로 들어오거나 새로고침·월 변경 때는 전에 보던 위치가 아니라 맨 위(첫 칩)부터
+try { history.scrollRestoration = 'manual'; } catch (e) { }
+function toFirstChip() { window.scrollTo(0, 0); if (secNav) secNav.scrollLeft = 0; spy(); }
+// 왼쪽 위 로고·제목: 누르면 홈 화면 맨 위로
+$('brandBtn').addEventListener('click', () => {
+  if (S.role !== 'admin' && S.role !== 'viewer') { window.scrollTo(0, 0); return; }
+  if (S.view !== 'home') { show('home'); loadHome(S.ym); } else toFirstChip();
+});
 $('homeMonth').addEventListener('change', function () { loadHome(Number(this.value)); });
 $('homeRefresh').addEventListener('click', () => loadHome(S.ym, true));
 $('homePrint').addEventListener('click', () => window.print());
