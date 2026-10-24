@@ -241,7 +241,7 @@ svg text.wk { fill: var(--ink); font-weight: 700; }
 .legend i.ev-k.store { background: color-mix(in srgb, #77C4A3 60%, var(--surface)); }
 .legend i.ev-k.mine { background: var(--chip-ink); opacity: .5; }
 .ev-panel { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
-.evp-form { display: grid; grid-template-columns: 150px 110px 110px 110px minmax(160px, 1fr) auto auto; gap: 8px; align-items: center; }
+.evp-form { display: grid; grid-template-columns: 150px 120px minmax(160px, 1fr) auto auto; gap: 8px; align-items: center; }
 .evp-form.editing { background: var(--chip); padding: 8px; border-radius: var(--radius-sm); }
 .evp-form input, .evp-form select { padding: 8px 10px; min-width: 0; }
 .evp-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; }
@@ -1773,31 +1773,28 @@ function renderEvPanel() {
   let h = '<div class="evp-form' + (ed ? ' editing' : '') + '">' +
     '<input type="date" id="evpD" value="' + dLabel(date) + '" aria-label="날짜">' +
     '<select id="evpK" aria-label="종류"' + (ed ? ' disabled' : '') + '>' + opt('mine', '내 일정', kindSel === 'mine') + opt('store', '매장 일정' + (admin ? '' : ' (관리자)'), kindSel === 'store', !admin) + '</select>' +
-    '<select id="evpC" aria-label="분류">' + EV_CATS.map(c => opt(c, c, (ed ? ed.cat || '일반' : '일반') === c)).join('') + '</select>' +
-    '<input type="time" id="evpTm" value="' + esc(ed ? ed.tm || '' : '') + '" aria-label="시간(선택)">' +
-    '<input type="text" id="evpT" maxlength="40" placeholder="일정 내용 (예: 본사 회의)" value="' + esc(ed ? ed.t : '') + '">' +
+    '<input type="text" id="evpT" maxlength="40" placeholder="예) 15시 아이 태권도" value="' + esc(ed ? (ed.tm ? ed.tm + ' ' : '') + ed.t : '') + '">' +
     '<button class="btn primary" id="evpSave">' + (ed ? '수정 저장' : '등록') + '</button>' + (ed ? '<button class="btn ghost" id="evpCancel">취소</button>' : '') + '</div><div id="evpMsg" class="muted"></div>';
-  const all = e.store.concat(e.mine).filter(x => ui.f === 'all' || x.kind === ui.f).filter(x => !ui.cat || (x.cat || '일반') === ui.cat)
+  const all = e.store.concat(e.mine).filter(x => ui.f === 'all' || x.kind === ui.f)
     .sort((a, b) => (a.d - b.d) || String(a.tm || '99').localeCompare(String(b.tm || '99')));
-  h += '<div class="evp-bar"><div class="chips">' + [['all', '전체'], ['store', '매장 일정'], ['mine', '내 일정']].map(([k, l]) => '<button data-evf="' + k + '"' + (ui.f === k ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div>' +
-    '<select id="evpCF" aria-label="분류 필터">' + opt('', '분류 전체', !ui.cat) + EV_CATS.map(c => opt(c, c, ui.cat === c)).join('') + '</select></div>';
+  h += '<div class="evp-bar"><div class="chips">' + [['all', '전체'], ['store', '매장 일정'], ['mine', '내 일정']].map(([k, l]) => '<button data-evf="' + k + '"' + (ui.f === k ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div></div>';
   h += all.length ? '<ul class="evp-list">' + all.map(x => {
     const can = x.kind === 'mine' || admin, on = ed && ed.id === x.id;
     return '<li' + (on ? ' class="on"' : '') + '><span class="evp-d' + (x.d === d.today ? ' today' : '') + '">' + mdLabel(x.d) + '(' + DOWK[dowOf(x.d)] + ')</span><span class="ev ' + x.kind + '">' + (x.kind === 'store' ? '매장' : '내 일정') + '</span>' +
-      '<span class="evp-c">' + esc(x.cat || '일반') + '</span><span class="evp-t">' + (x.tm ? '<b>' + esc(x.tm) + '</b> ' : '') + esc(x.t) + '</span>' +
+      '<span class="evp-t">' + (x.tm ? '<b>' + esc(x.tm) + '</b> ' : '') + esc(x.t) + '</span>' +
       (can ? '<button class="btn ghost sm" data-eve="' + x.kind + ':' + x.id + '">수정</button><button class="btn danger sm" data-evx="' + x.kind + ':' + x.id + '">삭제</button>' : '') + '</li>';
   }).join('') + '</ul>' : '<p class="muted" style="margin:8px 0 0">' + (d.ym % 100) + '월 일정이 없습니다. 위에서 등록하거나 달력의 날짜를 눌러 보세요.</p>';
   box.innerHTML = h;
   const ref = (kind, id) => kind === 'store' ? doc(db, C.events, id) : doc(db, C.my, S.user.uid, 'events', id);
   const reload = async ym => { await loadEvents(ym, true); refreshCal(); };
   $('evpSave').addEventListener('click', async () => {
-    const dd = Number(($('evpD').value || '').replace(/-/g, '')), t = cleanText($('evpT').value, 40), tm = /^\d{2}:\d{2}$/.test($('evpTm').value) ? $('evpTm').value : '';
-    const cat = EV_CATS.includes($('evpC').value) ? $('evpC').value : '일반', kind = ed ? ed.kind : ($('evpK').value === 'store' && admin ? 'store' : 'mine');
+    const dd = Number(($('evpD').value || '').replace(/-/g, '')), t = cleanText($('evpT').value, 40);
+    const kind = ed ? ed.kind : ($('evpK').value === 'store' && admin ? 'store' : 'mine');
     if (!toDateInt(String(dd))) { $('evpMsg').textContent = '날짜를 골라 주세요.'; return; }
     if (!t) { $('evpMsg').textContent = '일정 내용을 입력해 주세요.'; $('evpT').focus(); return; }
     $('evpSave').disabled = true;
     try {
-      const data = { d: dd, t, tm, cat, at: serverTimestamp() };
+      const data = { d: dd, t, at: serverTimestamp() };
       if (kind === 'store') data.by = S.user.email || '';
       if (ed) await setDoc(ref(ed.kind, ed.id), data);
       else await addDoc(kind === 'store' ? collection(db, C.events) : collection(db, C.my, S.user.uid, 'events'), data);
@@ -1808,7 +1805,6 @@ function renderEvPanel() {
   $('evpT').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); $('evpSave').click(); } });
   if ($('evpCancel')) $('evpCancel').addEventListener('click', () => { ui.edit = null; renderEvPanel(); });
   box.querySelectorAll('[data-evf]').forEach(b => b.addEventListener('click', () => { ui.f = b.dataset.evf; renderEvPanel(); }));
-  $('evpCF').addEventListener('change', () => { ui.cat = $('evpCF').value; renderEvPanel(); });
   box.querySelectorAll('[data-eve]').forEach(b => b.addEventListener('click', () => { const [kind, id] = b.dataset.eve.split(':'); ui.edit = { kind, id }; renderEvPanel(); $('evpT').focus(); }));
   box.querySelectorAll('[data-evx]').forEach(b => b.addEventListener('click', async () => {
     const [kind, id] = b.dataset.evx.split(':');
