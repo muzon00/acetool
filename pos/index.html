@@ -1948,7 +1948,7 @@ function renderHome(d) {
       kpi('누적 회원', v('누적회원'), mdLabel(lm.d) + ' 기준') + kpi('VIP MASTER', v('VIP MASTER 회원'), '') + kpi('MASTER', v('MASTER 회원'), '') + '</div></div>';
   }
   h += branchCard(br);
-  const wu = S.settings && S.settings.workUrl;
+  const wu = (S.settings && S.settings.workUrl) || 'https://acetool.site/sch/'; // 같은 사이트의 일산점 근무표가 기본
   h += '<div class="card work" data-sec="근무표"><div><h2>📅 근무표</h2><p class="muted" style="margin:0">매장 근무표 관리 웹앱으로 이동합니다. 새 창으로 열려요.</p></div>' +
     (wu ? '<a class="btn primary" href="' + esc(wu) + '" target="_blank" rel="noopener noreferrer">근무표 열기 ↗</a>'
       : '<span class="btn ghost" aria-disabled="true">주소 준비 중' + (S.role === 'admin' ? ' · 목표·설정에서 입력' : '') + '</span>') + '</div>';
