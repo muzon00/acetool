@@ -135,6 +135,19 @@ th { color: var(--ink2); font-weight: 600; font-size: .85em; }
 .legend i.dash { height: 0; border-top: 2px dashed; border-radius: 0; vertical-align: 3px; width: 18px; }
 .legend i.dot { height: 0; border-top: 2px dotted; border-radius: 0; vertical-align: 3px; width: 18px; }
 svg text.wk { fill: var(--ink); font-weight: 700; }
+.up-h { font-size: 15px; margin: 18px 0 8px; }
+#upFileBox + #upPasteBox, #upPasteBox + #upFileBox { border-top: 1px dashed var(--line); margin-top: 18px; }
+.sec-title { font-size: 18px; margin: 26px 2px 12px; display: flex; align-items: center; gap: 8px; }
+.brief-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.brief-h h2 { margin: 0; }
+.brief-tot { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 10px 0 6px; }
+.brief-tot b { font-size: 22px; }
+.brief-l { list-style: none; padding: 0; margin: 0; }
+.brief-l li { display: flex; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); font-size: .94em; }
+.brief-l li:first-child { border-top: 0; }
+.brief-l .ic { width: 18px; flex: none; text-align: center; color: var(--ink3); }
+.brief-l li.up .ic { color: var(--ok-ink); }
+.brief-l li.down .ic { color: var(--bad-ink); }
 .hbars { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 10px; }
 .hb { display: grid; grid-template-columns: 76px 1fr 70px; gap: 10px; align-items: center; font-size: .9em; color: var(--ink2); }
 .hb-t { height: 14px; background: var(--grid); border-radius: 4px; overflow: hidden; }
@@ -149,6 +162,15 @@ svg text.wk { fill: var(--ink); font-weight: 700; }
 .topbar .brand { gap: 10px; }
 .topbar .brand-t { font-size: 17px; }
 .sticky-head { position: sticky; top: var(--top-h, 64px); z-index: 25; background: var(--bg); padding: 4px 0 8px; margin-bottom: 6px; }
+/* 헤더 디자인: 상단바 + 제목/칩을 하나의 흰 판으로 묶고, 위쪽에 브랜드 색 띠(경의선 민트 → 메인 색) */
+.topbar { background: linear-gradient(90deg, #77C4A3, var(--s1)) top / 100% 4px no-repeat, var(--surface); }
+.wrap:has(#v-home:not(.hide)) .topbar, .wrap:has(#v-admin:not(.hide)) .topbar {
+  border-radius: var(--radius) var(--radius) 0 0; margin-bottom: 0; border-bottom: 1px solid var(--line); box-shadow: 0 -16px 0 var(--bg); }
+#v-home .sticky-head, #v-admin .sticky-head {
+  background: var(--surface); padding: 10px 18px 12px; margin-bottom: 18px; border: var(--border); border-top: 0;
+  border-radius: 0 0 var(--radius) var(--radius); box-shadow: 0 10px 24px -8px rgba(16, 24, 40, .18); }
+.sticky-head .secnav button:not(.on) { background: var(--bg); border-color: transparent; }
+.sticky-head .head-row .btn.dark { background: var(--chip); color: var(--chip-ink); }
 .head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .head-row .page-title { margin: 0; font-size: 20px; text-align: left; }
 .head-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -289,14 +311,11 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
           <h1 class="page-title">관리자 대시보드</h1>
         </div>
         <div class="toolbar">
-          <select id="adminMonth" aria-label="월 선택"></select>
           <button class="btn dark" id="adminRefresh">새로고침</button>
         </div>
       </div>
       <nav class="secnav" id="adminTabs" aria-label="관리자 메뉴">
-        <button class="pill on" data-tab="analysis">상세 분석</button>
-        <button class="pill" data-tab="cons">시공 분석</button>
-        <button class="pill" data-tab="upload">업로드</button>
+        <button class="pill on" data-tab="upload">업로드</button>
         <button class="pill" data-tab="download">다운로드</button>
         <button class="pill" data-tab="settings">목표·설정</button>
         <button class="pill" data-tab="members">권한 관리</button>
@@ -305,10 +324,9 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
     </div>
     <div class="alert-line" id="adminAlert"></div>
 
-    <div id="a-analysis"></div>
-    <div id="a-cons" class="hide"></div>
+    <p class="muted center" style="margin:0 0 12px">상세 분석(마진·담당자·거래처)과 시공 분석은 홈 화면 아래쪽에 관리자에게만 보입니다.</p>
 
-    <div id="a-upload" class="hide">
+    <div id="a-upload">
       <div class="card">
         <h2>자료 올리기</h2>
         <div class="row" style="margin-bottom:12px">
@@ -317,18 +335,16 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
             <option value="cons">시공 · 욕실 시공 내역</option>
             <option value="sms">문자 · 마감 / 멤버쉽 / 시간별</option>
           </select></label>
-          <div class="pref-group" role="group" aria-label="올리는 방법">
-            <button class="seg on" data-up="file">📄 파일 올리기</button>
-            <button class="seg" data-up="paste">📋 복사해서 붙여넣기</button>
-          </div>
         </div>
         <p class="muted" id="upDesc"></p>
         <div id="upFileBox">
+          <h3 class="up-h">📄 파일 올리기</h3>
           <div class="drop" id="drop" tabindex="0" role="button">여기를 눌러 파일을 선택하거나 끌어다 놓으세요<br><span class="muted" id="upExt"></span></div>
           <input type="file" id="file" class="hide">
         </div>
-        <div id="upPasteBox" class="hide">
-          <textarea id="upText" rows="9"></textarea>
+        <div id="upPasteBox">
+          <h3 class="up-h">📋 복사해서 붙여넣기</h3>
+          <textarea id="upText" rows="8"></textarea>
           <div class="row" style="margin-top:8px"><button class="btn primary" id="upCheck">내용 확인</button><button class="btn ghost" id="upClear">지우기</button></div>
         </div>
         <div class="row hide" id="smsDateRow" style="margin-top:10px">
@@ -608,7 +624,7 @@ const XLSX_SRI = 'sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZ
 const TZ = 'Asia/Seoul';
 const IDLE_MS = 20 * 60 * 1000;
 
-const S = { user: null, role: null, view: 'loading', ym: 0, daily: null, targets: null, settings: null, smsCache: {}, detail: null, parsed: null, adminTab: 'analysis', sum: null };
+const S = { user: null, role: null, view: 'loading', ym: 0, daily: null, targets: null, settings: null, smsCache: {}, detail: null, parsed: null, adminTab: 'upload', sum: null };
 const $ = id => document.getElementById(id);
 
 /* ===================== 공통 도우미 ===================== */
@@ -875,6 +891,10 @@ function buildSummary(daily, targets, holidays, ym, today, sms, smsVat) {
     t.target = targets[m] && targets[m].total ? targets[m].total : null;
     return t;
   });
+  // 전년 같은 달 (같은 기간 = 1일 ~ 이번 달 마지막 등록일과 같은 날짜까지)
+  const lyYm = ym - 100, lyd = daily[lyYm] || {};
+  let lySame = 0, lyTotal = 0, lyHas = false;
+  Object.keys(lyd).forEach(dk => { const v = (Number(lyd[dk].n) || 0) + (Number(lyd[dk].o) || 0); lyHas = true; lyTotal += v; if (lastDay && Number(dk) <= lastDay) lySame += v; });
   const prevDays = [];
   for (let i = 1; i <= dimOf(pm); i++) { const x = pd[i]; prevDays.push(x ? (Number(x.n) || 0) + (Number(x.o) || 0) : null); }
   const holDays = {};
@@ -884,7 +904,7 @@ function buildSummary(daily, targets, holidays, ym, today, sms, smsVat) {
   return {
     ym, months, monthTotals, dim, last, lastDay, cum, target, targetN: tg ? tg.n : null, targetO: tg ? tg.o : null,
     elapsed, achieve, expectedCum: target ? target * elapsed : null, remainDays: remain.length, remainTypes, needPerDay, avgPerDay,
-    daysWithData, forecast, ended, prev: { ym: pm, same: prevSame, total: prevTotal }, daily: days, prevDays, holDays, missing, today,
+    daysWithData, forecast, ended, prev: { ym: pm, same: prevSame, total: prevTotal }, ly: { ym: lyYm, same: lySame, total: lyTotal, has: lyHas }, daily: days, prevDays, holDays, missing, today,
     sms: buildSms(sms || [], smsVat || 'excl', ym, days)
   };
 }
@@ -1493,6 +1513,11 @@ function renderHome(d) {
   }
   if (fb) k += kpi('예상 마감(기본)', won(fb.total), (d.target ? '목표 대비 ' + pct(fb.rate) + ' · ' : '') + '보수 ' + (d.forecast['보수'] ? eok(d.forecast['보수'].total) : '-') + ' · 낙관 ' + (d.forecast['낙관'] ? eok(d.forecast['낙관'].total) : '-'));
   if (d.prev.same) { const r = (d.cum.total / d.prev.same - 1) * 100; k += kpi('전월 같은 기간 대비', (r >= 0 ? '+' : '−') + Math.abs(r).toFixed(1) + '%', '전월 같은 기간 ' + eok(d.prev.same)); }
+  {
+    const ly = d.ly, lyL = Math.floor(ly.ym / 100) + '년 ' + (ly.ym % 100) + '월';
+    if (ly.has && ly.same) { const r = (d.cum.total / ly.same - 1) * 100; k += kpi('전년 같은 달 대비', (r >= 0 ? '+' : '−') + Math.abs(r).toFixed(1) + '%', lyL + ' 같은 기간 ' + eok(ly.same) + ' · 월 전체 ' + eok(ly.total)); }
+    else k += kpi('전년 같은 달 대비', '-', lyL + ' 자료가 아직 없습니다 (업로드하면 비교됩니다)');
+  }
   if (d.sms.latest && d.sms.latest.month) { const lm = d.sms.latest.month; k += kpi('문자 기준 당월 누계', won(lm.vEx), mdLabel(d.sms.latest.d) + ' 마감 문자' + (d.target ? ' · 목표 대비 ' + pct(lm.vEx / d.target) : '')); }
   const br = buildBranches(S.smsCache[d.ym] || [], d.ym);
   if (br && br.monRank) k += kpi('지점 순위 (당월 누계)', br.monRank.pos + '위 / ' + br.monRank.n + '개 매장', '전체 대비 ' + pct(br.monShare) + ' · 1위 ' + esc(br.monRank.top) + ' · ' + mdLabel(br.lastD) + ' 마감');
@@ -1501,6 +1526,7 @@ function renderHome(d) {
     const gv = yy => ((S.consSum[yy] || {})[m] || {})[key] || 0, n = gv(y), ly = gv(y - 1);
     k += kpi((cc.scope === 'bath' ? '욕실 시공' : '시공') + ' (' + m + '월)', n + '건 / ' + cc.T + '건', '달성 ' + pct(n / cc.T, 0) + ' · 작년 같은 달 ' + ly + '건');
   }
+  if (d.last) h += briefHtml(briefBase(d, d.last), null, null, null, 'homeBrief');
   h += '<div class="kpis" data-sec="요약">' + k + '</div>';
   if (d.target) {
     h += '<div class="card" data-sec="목표"><h2>목표 진행</h2><div class="pbar"><div class="fill" style="width:' + Math.min(100, Math.max(0, d.achieve * 100)) + '%"></div><div class="tick" style="left:' + Math.min(100, d.elapsed * 100) + '%"></div></div>' +
@@ -1528,9 +1554,11 @@ function renderHome(d) {
       kpi('누적 회원', v('누적회원'), mdLabel(lm.d) + ' 기준') + kpi('VIP MASTER', v('VIP MASTER 회원'), '') + kpi('MASTER', v('MASTER 회원'), '') + '</div></div>';
   }
   h += branchCard(br);
+  if (S.role === 'admin') h += '<div id="hDetail" data-sec="상세 분석"><div class="card muted">상세 분석 불러오는 중…</div></div><div id="hCons" data-sec="시공 분석"><div class="card muted">시공 분석 불러오는 중…</div></div>';
   $('homeBody').innerHTML = h;
   buildSecNav('homeBody', 'homeNav');
   ch1.bind(); ch2.bind();
+  if (S.role === 'admin') homeAdminParts(d);
   const sl = $('hourSel');
   if (sl) {
     const draw = () => {
@@ -1554,35 +1582,42 @@ window.addEventListener('resize', () => {
 
 /* ===================== 관리자: 탭 ===================== */
 document.querySelectorAll('#adminTabs .pill').forEach(b => b.addEventListener('click', () => showAdminTab(b.dataset.tab)));
-const ATABS = ['analysis', 'cons', 'upload', 'download', 'settings', 'members', 'help'];
+const ATABS = ['upload', 'download', 'settings', 'members', 'help'];
 function showAdminTab(t) {
   S.adminTab = t;
   document.querySelectorAll('#adminTabs .pill').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
   ATABS.forEach(x => $('a-' + x).classList.toggle('hide', x !== t));
-  if (t === 'analysis') loadAnalysis(S.ym);
   if (t === 'download') renderDownloads();
   if (t === 'settings') loadSettings();
   if (t === 'members') loadMembers();
   if (t === 'upload') setUp(false);
-  if (t === 'cons') loadConsAnalysis();
 }
-$('adminMonth').addEventListener('change', function () { loadAnalysis(Number(this.value)); });
 $('adminRefresh').addEventListener('click', () => { invalidate(); showAdminTab(S.adminTab); });
-
-async function loadAnalysis(ym, force) {
-  $('a-analysis').innerHTML = '<div class="card muted">불러오는 중…</div>';
-  try {
-    const d = await summaryFor(ym, force);
-    await loadDetail(force);
-    fillMonthSel($('adminMonth'), d);
-    renderAnalysis(d, buildDetail(S.detail, d.ym, d.lastDay));
-  } catch (e) { $('a-analysis').innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; }
+// 업로드 뒤 "보기" 버튼: 홈으로 가서 해당 칸으로 스크롤
+async function goHomeSec(ym, sec) {
+  show('home');
+  await loadHome(ym);
+  setTimeout(() => { const el = [...document.querySelectorAll('#homeBody [data-sec]')].find(x => x.dataset.sec === sec); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 900);
 }
 
-function renderAnalysis(d, det) {
-  $('adminAlert').innerHTML = alerts(d);
-  if (!d.months.length) { $('a-analysis').innerHTML = '<div class="card"><h2>아직 등록된 데이터가 없습니다</h2><p class="muted">업로드 탭에서 과거 데이터(CSV)를 먼저 올리고, 이어서 이번 달 파일을 올려 주세요.</p></div>'; return; }
-  let h = '', k = '';
+/* 홈 화면의 관리자 전용 칸: 상세 분석 · 시공 분석 (보기 권한 계정에는 아예 그리지 않음, 서버 규칙으로도 막힘) */
+async function homeAdminParts(d) {
+  try {
+    await loadDetail();
+    if (S.sum !== d || !$('hDetail')) return;
+    renderAnalysis(d, buildDetail(S.detail, d.ym, d.lastDay), $('hDetail'));
+    if (d.last && $('homeBrief')) $('homeBrief').outerHTML = briefHtml(briefBase(d, d.last), briefDetail(d.last), null, null, 'homeBrief');
+  } catch (e) { if ($('hDetail')) $('hDetail').innerHTML = '<div class="banner bad">상세 분석: ' + esc(errMsg(e)) + '</div>'; }
+  try {
+    await loadCons();
+    if (S.sum !== d || !$('hCons')) return;
+    renderConsAnalysis($('hCons'));
+  } catch (e) { if ($('hCons')) $('hCons').innerHTML = '<div class="banner bad">시공 분석: ' + esc(errMsg(e)) + '</div>'; }
+}
+
+function renderAnalysis(d, det, el) {
+  if (!d.months.length) { el.innerHTML = ''; return; }
+  let h = '<h2 class="sec-title">📊 상세 분석 <span class="tag admin">관리자만</span></h2>', k = '';
   const marT = det.mar.n + det.mar.o, netT = det.net.n + det.net.o;
   k += kpi(ymLabel(d.ym) + ' 누적 매출', won(d.cum.total), '내판 ' + eok(d.cum.n) + ' · 외판 ' + eok(d.cum.o), true);
   k += kpi('마진 합계', won(marT), '마진율 ' + (netT ? pct(marT / netT) : '-'));
@@ -1613,7 +1648,6 @@ function renderAnalysis(d, det) {
     '<div class="card"><h2>외판 대분류</h2>' + (det.cat.o.length ? table(['대분류', '누적', '비중'], det.cat.o.slice(0, 10).map(c => [esc(c.name), won(c.net), pct(c.share, 0)])) : '<p class="muted">데이터가 없습니다.</p>') + '</div></div>';
 
   const sm = d.sms;
-  h += branchCard(buildBranches(S.smsCache[d.ym] || [], d.ym));
   if (sm.close.length) {
     h += '<div class="card"><h2>마감 문자와 POS 대조</h2>' + table(['일자', '일마감(문자)', '건수', '비율', '환산(VAT별도)', 'POS 순매출', '차이', '당월 누계(문자)', '비율'],
       sm.close.slice().reverse().map(c => {
@@ -1632,8 +1666,91 @@ function renderAnalysis(d, det) {
       })) + '</div>';
   }
   if (d.missing.length) h += '<div class="card"><h2>누락일 점검</h2><p>' + d.missing.map(x => '<span class="tag">' + dLabel(x).slice(5) + '</span>').join(' ') + '</p><p class="muted">휴무일이면 목표·설정 탭에 등록하고, 아니면 해당 날짜 파일을 올려 주세요.</p></div>';
-  $('a-analysis').innerHTML = h;
+  el.innerHTML = h;
   ch3.bind();
+}
+
+/* ===================== 일일 브리핑 (POS=ERP 파일 기준 그날의 주요 내용·특이 사항) ===================== */
+function dayTotal(dd) { const v = ((S.daily || {})[ymOf(dd)] || {})[dayOf(dd)]; return v ? (Number(v.n) || 0) + (Number(v.o) || 0) : null; }
+function chg(a, b) { if (b === null || b === undefined || !b) return null; return a / b - 1; }
+function chgTxt(r) { return r === null ? '-' : (r >= 0 ? '+' : '−') + Math.abs(r * 100).toFixed(1) + '%'; }
+// 보기 권한도 볼 수 있는 부분(일별 합계만 사용)
+function briefBase(sum, date) {
+  const ym = ymOf(date), md = (S.daily || {})[ym] || {}, x = md[dayOf(date)];
+  if (!x) return null;
+  const n = Number(x.n) || 0, o = Number(x.o) || 0, tot = n + o;
+  const pd = dayTotal(addDaysInt(date, -1)), pw = dayTotal(addDaysInt(date, -7));
+  const sw = []; for (let k = 1; k <= 8; k++) { const v = dayTotal(addDaysInt(date, -7 * k)); if (v !== null) sw.push(v); }
+  const swAvg = sw.length ? mean(sw) : null;
+  const vals = Object.keys(md).map(k => (Number(md[k].n) || 0) + (Number(md[k].o) || 0)).sort((a, b) => b - a);
+  const rank = vals.indexOf(tot) + 1, avg = vals.length ? mean(vals) : 0;
+  const pts = [];
+  const dow = DOWK[dowOf(date)];
+  if (pd !== null) pts.push({ t: chg(tot, pd) >= 0 ? 'up' : 'down', s: '전일 대비 ' + chgTxt(chg(tot, pd)) + ' (' + eok(pd) + ')' });
+  if (pw !== null) pts.push({ t: chg(tot, pw) >= 0 ? 'up' : 'down', s: '전주 같은 ' + dow + '요일 대비 ' + chgTxt(chg(tot, pw)) + ' (' + eok(pw) + ')' });
+  const lyD = dayTotal(date - 10000);
+  if (lyD !== null) pts.push({ t: chg(tot, lyD) >= 0 ? 'up' : 'down', s: '전년 같은 날(' + (Math.floor(date / 10000) - 1) + '년 ' + mdLabel(date) + ') 대비 ' + chgTxt(chg(tot, lyD)) + ' (' + eok(lyD) + ')' });
+  if (swAvg !== null && sw.length >= 3) pts.push({ t: tot >= swAvg ? 'up' : 'down', s: '최근 ' + sw.length + '주 ' + dow + '요일 평균 ' + eok(swAvg) + ' 대비 ' + chgTxt(chg(tot, swAvg)) });
+  if (vals.length >= 3) pts.push({ t: rank <= 3 ? 'up' : rank > vals.length - 3 ? 'down' : 'info', s: '이번 달 ' + vals.length + '일 중 ' + rank + '번째로 높은 날 (이달 일평균 ' + eok(avg) + ')' });
+  if (tot && o / tot >= 0.5) pts.push({ t: 'info', s: '외판 비중 ' + pct(o / tot, 0) + ' — 외판 큰 건이 매출을 끌어올린 날' });
+  if (sum && sum.ym === ym && sum.last === date && sum.target) {
+    const gap = sum.target - sum.cum.total;
+    if (gap > 0) pts.push({ t: 'warn', s: '목표까지 ' + won(gap) + ' 부족 · 남은 영업일 ' + sum.remainDays + '일 · 하루 ' + (sum.needPerDay ? won(sum.needPerDay) : '-') + ' 필요 (지금 일평균 ' + eok(sum.avgPerDay) + ')' });
+    else pts.push({ t: 'up', s: '이번 달 목표 달성! 목표보다 ' + won(-gap) + ' 더 팔았습니다' });
+    const fb = sum.forecast && sum.forecast['기본'];
+    if (fb && fb.rate !== null) pts.push({ t: fb.rate >= 1 ? 'up' : 'warn', s: '지금 흐름이면 ' + eok(fb.total) + '로 마감 예상 (목표의 ' + pct(fb.rate) + ')' });
+  }
+  return { date, n, o, tot, pts };
+}
+// 관리자만: 거래처·대분류·반품·마진 (상세 데이터 사용)
+function briefDetail(date) {
+  const ym = ymOf(date), rows = ((S.detail || {})[ym] || {})[dayOf(date)];
+  if (!rows) return [];
+  const pts = [];
+  let net = 0, mar = 0;
+  rows.forEach(r => { net += Number(r.n) || 0; mar += Number(r.r) || 0; });
+  // 이번 달 평균 마진율과 비교
+  let mN = 0, mM = 0;
+  Object.values((S.detail || {})[ym] || {}).forEach(rs => rs.forEach(r => { mN += Number(r.n) || 0; mM += Number(r.r) || 0; }));
+  if (net) pts.push({ t: mN && mar / net < mM / mN - 0.03 ? 'warn' : 'info', s: '마진 ' + won(mar) + ' · 마진율 ' + pct(mar / net) + (mN ? ' (이달 평균 ' + pct(mM / mN) + ')' : '') });
+  // 외판 큰 거래처
+  const cu = {};
+  rows.filter(r => r.g === 'o').forEach(r => { const k = r.c || '(거래처 미기재)'; if (!cu[k]) cu[k] = { v: 0, m: r.m || '' }; cu[k].v += Number(r.n) || 0; });
+  const top = Object.keys(cu).filter(k => cu[k].v > 0).sort((a, b) => cu[b].v - cu[a].v).slice(0, 3);
+  if (top.length) pts.push({ t: 'info', s: '외판 상위: ' + top.map(k => esc(k) + ' ' + eok(cu[k].v) + (cu[k].m ? '(' + esc(cu[k].m) + ')' : '')).join(', ') });
+  // 반품·취소 (음수)
+  const neg = {};
+  rows.forEach(r => { const v = Number(r.n) || 0; if (v < 0) { const k = r.g === 'o' ? (r.c || '외판') : '내판 ' + (r.k || ''); neg[k] = (neg[k] || 0) + v; } });
+  const negK = Object.keys(neg).sort((a, b) => neg[a] - neg[b]);
+  if (negK.length) pts.push({ t: 'warn', s: '반품·취소 ' + won(negK.reduce((s, k) => s + neg[k], 0)) + ': ' + negK.slice(0, 3).map(k => esc(k) + ' ' + eok(neg[k])).join(', ') });
+  // 내판 대분류: 최근 28일 평균보다 크게 늘거나 준 것
+  const cat = {}, base = {};
+  rows.filter(r => r.g === 'n').forEach(r => { const k = r.k || '(미분류)'; cat[k] = (cat[k] || 0) + (Number(r.n) || 0); });
+  let days = 0;
+  for (let k = 1; k <= 28; k++) {
+    const dd = addDaysInt(date, -k), rs = ((S.detail || {})[ymOf(dd)] || {})[dayOf(dd)];
+    if (!rs) continue; days++;
+    rs.filter(r => r.g === 'n').forEach(r => { const c = r.k || '(미분류)'; base[c] = (base[c] || 0) + (Number(r.n) || 0); });
+  }
+  if (days >= 7) {
+    const moves = Object.keys(Object.assign({}, cat, base)).map(k => { const a = cat[k] || 0, b = (base[k] || 0) / days; return { k, a, b, d: a - b }; })
+      .filter(x => Math.abs(x.d) >= 300000 && (x.b <= 0 || x.a / x.b >= 1.8 || x.a / x.b <= 0.4)).sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 3);
+    moves.forEach(x => pts.push({ t: x.d > 0 ? 'up' : 'down', s: '내판 ' + esc(x.k) + ' ' + eok(x.a) + ' — 최근 평균 ' + eok(x.b) + ' 대비 ' + (x.d > 0 ? '크게 늘어남' : '크게 줄어듦') }));
+  }
+  // 마진이 마이너스인 대분류
+  const cm = {};
+  rows.forEach(r => { const k = (r.g === 'n' ? '내판 ' : '외판 ') + (r.k || '(미분류)'); cm[k] = (cm[k] || 0) + (Number(r.r) || 0); });
+  const negM = Object.keys(cm).filter(k => cm[k] < -50000).sort((a, b) => cm[a] - cm[b]).slice(0, 3);
+  if (negM.length) pts.push({ t: 'warn', s: '마진 마이너스: ' + negM.map(k => esc(k) + ' ' + eok(cm[k])).join(', ') + ' — 원가·단가 확인 필요' });
+  return pts;
+}
+const BRIEF_ICON = { up: '▲', down: '▼', warn: '⚠️', info: '•' };
+function briefHtml(b, extra, title, controls, id) {
+  if (!b) return '';
+  const all = b.pts.concat(extra || []);
+  return '<div class="card brief"' + (id ? ' id="' + id + '"' : '') + ' data-sec="브리핑"><div class="brief-h"><h2>' + (title || '📋 ' + mdLabel(b.date) + '(' + DOWK[dowOf(b.date)] + ') 브리핑') + '</h2>' + (controls || '') + '</div>' +
+    '<div class="brief-tot"><b>' + won(b.tot) + '</b><span class="muted">내판 ' + eok(b.n) + ' · 외판 ' + eok(b.o) + '</span></div>' +
+    '<ul class="brief-l">' + all.map(p => '<li class="' + p.t + '"><span class="ic">' + BRIEF_ICON[p.t] + '</span><span>' + p.s + '</span></li>').join('') + '</ul></div>';
 }
 
 /* ===================== 지점 비교 (마감 문자, 전 지점) ===================== */
@@ -1678,16 +1795,10 @@ function branchCard(b) {
   })) + '</details>';
   if (b.series.length > 1) h += '<details><summary>' + ME + ' 날짜별 순위</summary>' + table(['일자', ME + ' 일마감', '순위', '전체 대비', '매장 평균', '평균 대비'], b.series.slice().reverse().map(s => [
     mdLabel(s.d), s.me ? won(s.me.v) : '-', s.rank ? s.rank.pos + ' / ' + s.rank.n : '-', s.share !== null ? pct(s.share) : '-', eok(s.avg), s.me && s.avg ? (s.me.v >= s.avg ? '+' : '−') + pct(Math.abs(s.me.v / s.avg - 1)) : '-'])) + '</details>';
-  return h + '<p class="muted" style="margin:8px 0 0">"비율"은 문자에 적힌 % 값을 그대로 옮긴 것입니다. 금액은 문자 그대로(VAT 기준 환산 없음)입니다.</p></div>';
+  return h + '<p class="muted" style="margin:8px 0 0">"비율"은 문자에 적힌 % 값을 그대로 옮긴 것입니다. 금액은 문자 그대로(부가세 별도)입니다.</p></div>';
 }
 
-/* ===================== 관리자: 시공 분석 ===================== */
-async function loadConsAnalysis(force) {
-  const el = $('a-cons');
-  el.innerHTML = '<div class="card muted">불러오는 중…</div>';
-  try { await loadBase(force); await loadCons(force); renderConsAnalysis(); }
-  catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; }
-}
+/* ===================== 시공 분석 (홈 화면, 관리자만) ===================== */
 function yGridN(x0, x1, y0, y1, max, ticks, fmt) {
   let s = '';
   for (let i = 0; i <= ticks; i++) {
@@ -1717,15 +1828,15 @@ function chartConsMonthly(cnt, cy, py, T, W, curM, live) {
     '<text class="lbl" x="' + (L + pw + 6) + '" y="' + (Y(T) + 4) + '">목표 ' + T + '건</text>';
   return { html: s + '</svg>', bind: () => bindBars('#chCons') };
 }
-function renderConsAnalysis() {
-  const el = $('a-cons'), recs = S.cons || [];
+function renderConsAnalysis(el) {
+  const recs = S.cons || [], H2 = '<h2 class="sec-title">🛁 시공 분석 <span class="tag admin">관리자만</span></h2>';
   const { T, scope, basis } = consCfg();
-  if (!recs.length) { el.innerHTML = '<div class="card"><h2>아직 시공 내역이 없습니다</h2><p class="muted">업로드 탭에서 "올릴 자료"를 <b>시공 · 욕실 시공 내역</b>으로 바꾸고 2025년, 2026년 자료를 올려 주세요. 파일로 올려도 되고 엑셀에서 복사해 붙여넣어도 됩니다.</p></div>'; return; }
+  if (!recs.length) { el.innerHTML = H2 + '<div class="card"><h2>아직 시공 내역이 없습니다</h2><p class="muted">업로드 탭에서 "올릴 자료"를 <b>시공 · 욕실 시공 내역</b>으로 바꾸고 2025년, 2026년 자료를 올려 주세요. 파일로 올려도 되고 엑셀에서 복사해 붙여넣어도 됩니다.</p></div>'; return; }
   const dateOf = r => basis === 'cons' ? r.sd : r.d;
   const counted = r => !r.cx && (scope === 'all' || isBath(r)) && dateOf(r);
   const today = todayInt(), ty = Math.floor(today / 10000);
   const years = [...new Set(recs.filter(counted).map(r => Math.floor(dateOf(r) / 10000)))].sort();
-  if (!years.length) { el.innerHTML = '<div class="card"><h2>셀 수 있는 시공 건이 없습니다</h2><p class="muted">목표·설정의 시공 목표 기준(욕실/전체, 영업일자/시공일자)을 확인해 주세요.</p></div>'; return; }
+  if (!years.length) { el.innerHTML = H2 + '<div class="card"><h2>셀 수 있는 시공 건이 없습니다</h2><p class="muted">목표·설정의 시공 목표 기준(욕실/전체, 영업일자/시공일자)을 확인해 주세요.</p></div>'; return; }
   const cy = years.includes(ty) ? ty : years[years.length - 1], py = cy - 1, live = cy === ty;
   const cutMD = live ? today % 10000 : 1231, curM = live ? Math.floor(today / 100) % 100 : 12;
   const cnt = { [cy]: Array(13).fill(0), [py]: Array(13).fill(0) };
@@ -1740,7 +1851,7 @@ function renderConsAnalysis() {
   const cxN = recs.filter(r => r.cx && Math.floor(r.d / 10000) === cy).length, allN = recs.filter(r => Math.floor(r.d / 10000) === cy).length;
   const label = scope === 'bath' ? '욕실 시공' : '시공', basisL = basis === 'cons' ? '시공일자 기준' : '영업일자(계약) 기준';
   const dif = (a, b) => (a - b >= 0 ? '+' : '−') + Math.abs(a - b) + '건';
-  let h = '<p class="muted center" style="margin:-6px 0 12px">' + label + ' 건수 · ' + basisL + ' · 취소 제외 · 기준은 목표·설정에서 바꿀 수 있습니다</p>';
+  let h = H2 + '<p class="muted" style="margin:-4px 0 12px">' + label + ' 건수 · ' + basisL + ' · 취소 제외 · 기준은 목표·설정에서 바꿀 수 있습니다</p>';
   let k = '';
   k += kpi(cy + '년 ' + curM + '월 ' + label, mNow + '건', '목표 ' + T + '건 · ' + pct(mNow / T, 0) + (live ? (need ? ' · 남은 ' + (dim - dayN) + '일 동안 ' + need + '건 더' : ' · 목표 달성') : ''), true);
   k += kpi(py + '년 ' + curM + '월', mPrev + '건', '올해 ' + dif(mNow, mPrev));
@@ -1749,7 +1860,7 @@ function renderConsAnalysis() {
   k += kpi('건당 실매출', cyR.length ? won(net / cyR.length) : '-', '마진율 ' + (net ? pct(mar / net) : '-'));
   k += kpi('취소', cxN + '건', cy + '년 접수 ' + allN + '건 중 ' + (allN ? pct(cxN / allN) : '-'));
   h += '<div class="kpis">' + k + '</div>';
-  const ch = chartConsMonthly(cnt, cy, py, T, chartW('a-cons'), curM, live);
+  const ch = chartConsMonthly(cnt, cy, py, T, chartW('homeBody'), curM, live);
   h += '<div class="card"><h2>월별 ' + label + ' 건수 · ' + py + '년 vs ' + cy + '년</h2><div class="legend"><span><i style="background:var(--ink3);opacity:.55"></i>' + py + '년</span><span><i style="background:var(--s1)"></i>' + cy + '년</span><span><i class="dot" style="border-color:var(--ink2)"></i>월 목표</span></div><div id="chCons">' + ch.html + '</div>' +
     '<details><summary>표로 보기</summary>' + table(['월', py + '년', cy + '년', '증감', '목표 달성률'], Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
       const future = live && m > curM;
@@ -1802,19 +1913,17 @@ const UP = {
     ph: '여기에 문자를 붙여넣기 (맥북: Cmd+V) — 여러 개를 이어 붙여도 됩니다'
   }
 };
-let upMode = 'file';
+// 파일 올리기와 붙여넣기 칸을 위아래로 둘 다 펼쳐 둠 (문자는 붙여넣기를 위에)
 function setUp(reset) {
   const k = $('upKind').value, c = UP[k];
   $('upDesc').textContent = c.desc; $('file').accept = c.ext; $('upExt').textContent = c.extLabel; $('upText').placeholder = c.ph;
   $('smsDateRow').classList.toggle('hide', k !== 'sms');
   if (k === 'sms' && !$('smsDate').value) $('smsDate').value = dLabel(todayInt());
-  $('upFileBox').classList.toggle('hide', upMode !== 'file');
-  $('upPasteBox').classList.toggle('hide', upMode !== 'paste');
-  document.querySelectorAll('[data-up]').forEach(b => b.classList.toggle('on', b.dataset.up === upMode));
+  const fileBox = $('upFileBox'), pasteBox = $('upPasteBox');
+  if (k === 'sms') fileBox.parentNode.insertBefore(pasteBox, fileBox); else pasteBox.parentNode.insertBefore(fileBox, pasteBox);
   if (reset) { $('preview').innerHTML = ''; S.parsed = null; }
 }
-$('upKind').addEventListener('change', () => { upMode = $('upKind').value === 'sms' ? 'paste' : 'file'; setUp(true); });
-document.querySelectorAll('[data-up]').forEach(b => b.addEventListener('click', () => { upMode = b.dataset.up; setUp(true); }));
+$('upKind').addEventListener('change', () => setUp(true));
 $('upClear').addEventListener('click', () => { $('upText').value = ''; $('preview').innerHTML = ''; });
 $('upCheck').addEventListener('click', () => {
   const text = $('upText').value;
@@ -1897,10 +2006,17 @@ async function doRegister() {
     const r = await registerParsed(p);
     const v = r.verify, ok = v.match;
     invalidate();
+    const lastD = p.stats.dates[p.stats.dates.length - 1], lastYm = ymOf(lastD);
+    // 올린 자료의 마지막 날 브리핑 (주요 내용·특이 사항)
+    let brief = '';
+    try {
+      await loadBase(true); await loadDetail(true);
+      const sum = await summaryFor(lastYm);
+      brief = briefHtml(briefBase(sum, lastD), briefDetail(lastD), '📋 ' + mdLabel(lastD) + '(' + DOWK[dowOf(lastD)] + ') 주요 내용 · 특이 사항');
+    } catch (e) { brief = ''; }
     $('preview').innerHTML = '<div class="card"><div class="banner ' + (ok ? 'ok' : 'bad') + '"><b>' + (ok ? '등록 완료 · 검산 일치' : '검산 불일치 — 다시 올려 주세요') + '</b><br>올린 파일 합계 ' + won(v.fileNet) + '<br>저장된 합계 ' + won(v.savedNet) + '<br>같은 날짜의 기존 데이터 ' + r.removed.toLocaleString('ko-KR') + '행을 교체했습니다</div>' +
-      '<button class="btn primary" id="goAnalysis">상세 분석 보기</button></div>';
-    const lastYm = ymOf(p.stats.dates[p.stats.dates.length - 1]);
-    $('goAnalysis').addEventListener('click', () => { S.ym = lastYm; showAdminTab('analysis'); });
+      '<button class="btn primary" id="goAnalysis">홈에서 상세 분석 보기</button></div>' + brief;
+    $('goAnalysis').addEventListener('click', () => goHomeSec(lastYm, '상세 분석'));
     S.parsed = null; fileIn.value = ''; $('upText').value = '';
   } catch (e) {
     btn.disabled = false;
@@ -2013,7 +2129,7 @@ function renderConsPreview() {
       const r = await registerCons(pick(), p.name);
       invalidate();
       $('preview').innerHTML = '<div class="card"><div class="banner ok"><b>시공 내역 등록 완료</b><br>새로 추가 ' + r.added + '건 · 교체 ' + r.updated + '건</div><button class="btn primary" id="goCons">시공 분석 보기</button></div>';
-      $('goCons').addEventListener('click', () => showAdminTab('cons'));
+      $('goCons').addEventListener('click', () => goHomeSec(0, '시공 분석'));
       fileIn.value = ''; $('upText').value = '';
     } catch (e) { this.disabled = false; $('regMsg').textContent = '저장 실패: ' + errMsg(e); }
   });
