@@ -265,6 +265,13 @@ svg text.wk { fill: var(--ink); font-weight: 700; }
 .up-h { font-size: 15px; margin: 18px 0 8px; }
 #upFileBox + #upPasteBox, #upPasteBox + #upFileBox { border-top: 1px dashed var(--line); margin-top: 18px; }
 .sec-title { font-size: 18px; margin: 26px 2px 12px; display: flex; align-items: center; gap: 8px; }
+.data-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 12px; font-size: .84em; }
+.data-strip .ds-t { font-weight: 700; color: var(--ink2); margin-right: 2px; }
+.data-strip .ds-i { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; color: var(--ink2); }
+.data-strip .ds-i b { color: var(--ink); }
+.data-strip .ds-i small { color: var(--ink3); }
+.data-strip .ds-i.stale { background: var(--warn-bg); border-color: transparent; color: var(--warn-ink); }
+.data-strip .ds-i.stale b { color: var(--warn-ink); }
 .brief-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
 .brief-h h2 { margin: 0; }
 .brief-tot { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 10px 0 6px; }
@@ -460,6 +467,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
     <p class="muted center" style="margin:0 0 12px">상세 분석(마진·담당자·거래처)과 시공 분석은 홈 화면 아래쪽에 관리자에게만 보입니다.</p>
 
     <div id="a-upload">
+      <div id="dataStatus"></div>
       <div class="card">
         <h2>자료 올리기</h2>
         <div class="row" style="margin-bottom:12px">
@@ -1262,7 +1270,77 @@ async function registerSmsRecords(records) {
     });
     added += res.a; updated += res.u;
   }
+  // 등록 이력에 문자 업로드도 남김 (언제 · 어디까지 올렸는지 보이도록)
+  try {
+    const ds = records.map(r => Number(r[0])).filter(Boolean).sort((a, b) => a - b);
+    const kinds = [...new Set(records.map(r => r[1]).filter(k => k === '마감' || k === '멤버십' || k === '시간별'))].join('·');
+    await addDoc(collection(db, C.logs), { at: serverTimestamp(), by: S.user.email || '', file: '[문자] ' + (kinds || '문자'), from: ds[0] || 0, to: ds[ds.length - 1] || 0, usedRows: records.length, fileNet: 0, savedNet: 0, match: true });
+  } catch (e) { }
+  S.logs = null;
   return { added, updated };
+}
+
+/* ===================== 자료 현황: 언제 · 어디까지 올렸는지 ===================== */
+async function loadLogs(force) {
+  if (S.logs && !force) return;
+  const s = await getDocs(query(collection(db, C.logs), orderBy('at', 'desc'), limit(150)));
+  S.logs = []; s.forEach(x => S.logs.push(x.data()));
+}
+function kindOfLog(l) { const f = String(l.file || ''); return f.startsWith('[시공]') ? 'cons' : f.startsWith('[채권]') ? 'ar' : f.startsWith('[문자]') ? 'sms' : 'sales'; }
+function lastLog(kind) { return (S.logs || []).find(l => kindOfLog(l) === kind) || null; }
+function whenTxt(at) {
+  const t = at && at.toDate ? at.toDate() : null;
+  if (!t) return '-';
+  const p = new Intl.DateTimeFormat('ko-KR', { timeZone: TZ, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(t);
+  const g = k => (p.find(x => x.type === k) || {}).value || '';
+  const ago = Math.floor((Date.now() - t.getTime()) / 60000);
+  return g('month') + '/' + g('day') + ' ' + g('hour') + ':' + g('minute') + ' · ' + (ago < 60 ? Math.max(1, ago) + '분 전' : ago < 1440 ? Math.floor(ago / 60) + '시간 전' : Math.floor(ago / 1440) + '일 전');
+}
+function salesRange() {
+  const ds = [];
+  Object.keys(S.daily || {}).forEach(ym => Object.keys(S.daily[ym] || {}).forEach(dd => ds.push(Number(ym) * 100 + Number(dd))));
+  ds.sort((a, b) => a - b);
+  return ds.length ? { from: ds[0], to: ds[ds.length - 1], n: ds.length } : null;
+}
+function smsLatest(kind, metric) {
+  let best = 0;
+  Object.values(S.smsCache || {}).forEach(recs => recs.forEach(r => { if (r.kind === kind && (!metric || r.metric === metric) && r.d > best) best = r.d; }));
+  return best;
+}
+// 홈 맨 위 한 줄: 자료가 어디까지 들어 있는지 (관리자는 업로드 시각까지)
+function dataStrip() {
+  const sr = salesRange(), admin = S.role === 'admin';
+  const ll = k => admin ? lastLog(k) : null;
+  const item = (label, until, log, stale) => '<span class="ds-i' + (stale ? ' stale' : '') + '"><b>' + label + '</b> ' + until + (log ? ' <small>(' + whenTxt(log.at) + ' 업로드)</small>' : '') + '</span>';
+  const t = todayInt(), gap = d => d ? Math.round((Date.UTC(Math.floor(t / 1e4), Math.floor(t / 100) % 100 - 1, t % 100) - Date.UTC(Math.floor(d / 1e4), Math.floor(d / 100) % 100 - 1, d % 100)) / 864e5) : 99;
+  const parts = [];
+  parts.push(item('매출', sr ? mdLabel(sr.to) + '까지' : '없음', ll('sales'), !sr || gap(sr.to) >= 2));
+  const cl = smsLatest('마감'), mb = smsLatest('멤버십');
+  parts.push(item('마감 문자', cl ? mdLabel(cl) : '없음', ll('sms'), !cl || gap(cl) >= 2));
+  if (mb) parts.push(item('멤버쉽', mdLabel(mb), null, gap(mb) >= 3));
+  if (admin) {
+    if (S.cons && S.cons.length) { const mx = Math.max(...S.cons.map(r => r.d)); parts.push(item('시공', mdLabel(mx) + '까지', ll('cons'), false)); }
+    if (S.ar && S.ar.length) parts.push(item('채권', mdLabel(S.ar[0].date) + ' 기준', ll('ar'), gap(S.ar[0].date) >= 8));
+  }
+  return '<div class="data-strip" id="dataStrip"><span class="ds-t">📦 자료 기준</span>' + parts.join('') + '</div>';
+}
+// 업로드 탭 맨 위: 자료 종류별 현황 표
+async function renderDataStatus() {
+  const el = $('dataStatus'); if (!el) return;
+  el.innerHTML = '<div class="card muted">자료 현황 불러오는 중…</div>';
+  try { await Promise.all([loadBase(), loadLogs(true), loadCons().catch(() => { }), loadAr().catch(() => { })]); } catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
+  try { const s = await getDocs(collection(db, C.sms)); s.forEach(x => { S.smsCache[Number(x.id)] = Object.values(x.data().recs || {}); }); } catch (e) { }
+  const sr = salesRange(), cl = smsLatest('마감'), mb = smsLatest('멤버십'), hr = smsLatest('시간별');
+  const consR = S.cons && S.cons.length ? { from: Math.min(...S.cons.map(r => r.d)), to: Math.max(...S.cons.map(r => r.d)) } : null;
+  const rows = [
+    ['💰 매출 (POS)', sr ? dLabel(sr.from) + ' ~ <b>' + dLabel(sr.to) + '</b> (' + sr.n + '일)' : '아직 없음', lastLog('sales')],
+    ['💬 문자', cl || mb || hr ? '마감 <b>' + (cl ? dLabel(cl) : '-') + '</b> · 멤버쉽 ' + (mb ? dLabel(mb) : '-') + ' · 시간별 ' + (hr ? dLabel(hr) : '-') : '아직 없음', lastLog('sms')],
+    ['🛁 시공', consR ? dLabel(consR.from) + ' ~ <b>' + dLabel(consR.to) + '</b> (' + S.cons.length + '건)' : '아직 없음', lastLog('cons')],
+    ['💳 채권', S.ar && S.ar.length ? '<b>' + dLabel(S.ar[0].date) + ' 기준</b>' + (S.ar[1] ? ' (이전 ' + dLabel(S.ar[1].date) + ')' : '') : '아직 없음', lastLog('ar')]
+  ];
+  el.innerHTML = '<div class="card"><h2>📦 자료 현황 · 언제, 어디까지 올렸나</h2>' + table(['자료', '들어 있는 기간', '마지막 업로드', '올린 사람', '파일'],
+    rows.map(([k, range, l]) => [k, range, l ? whenTxt(l.at) : '-', l ? esc(String(l.by || '').split('@')[0]) : '-', l ? esc(String(l.file || '').replace(/^\[[^\]]+\]\s*/, '')) + (l.from ? ' <small class="muted">(' + mdLabel(l.from) + (l.to && l.to !== l.from ? '~' + mdLabel(l.to) : '') + ')</small>' : '') : '-'])) +
+    '<p class="muted" style="margin:8px 0 0">"들어 있는 기간"은 지금 저장된 자료 기준, "파일" 옆 괄호는 그 업로드에 들어 있던 날짜입니다. 전체 이력은 다운로드 › 등록 이력 CSV에서 볼 수 있어요.</p></div>';
 }
 
 /* ===================== 화면 전환 / 로그인 ===================== */
@@ -1860,6 +1938,7 @@ async function loadHome(ym, force) {
     try { await loadConsSum(force); } catch (e) { S.consSum = null; }
     try { await loadPlanSum(force); if (S.role === 'admin') await loadPlans(force); } catch (e) { S.planSum = S.planSum || {}; }
     try { await loadEvents(d.ym, force); } catch (e) { S.ev = S.ev || {}; }
+    if (S.role === 'admin') { try { await loadLogs(force); } catch (e) { S.logs = S.logs || []; } }
     fillMonthSel($('homeMonth'), d); renderHome(d); toFirstChip();
   }
   catch (e) { setStatus('오류: ' + errMsg(e)); $('homeBody').innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; }
@@ -1918,6 +1997,7 @@ function renderHome(d) {
     const gv = yy => ((S.consSum[yy] || {})[m] || {})[key] || 0, n = gv(y), ly = gv(y - 1);
     k += kpi((cc.scope === 'bath' ? '욕실 시공' : '시공') + ' (' + m + '월)', n + '건 / ' + cc.T + '건', '달성 ' + pct(n / cc.T, 0) + ' · 작년 같은 달 ' + ly + '건');
   }
+  h += dataStrip(); // 자료가 어디까지 들어 있는지
   h += calCard(d); // 달력은 맨 위 첫 칩, 그다음 AI 브리핑
   h += briefCard(d, false);
   h += '<div class="kpis" data-sec="요약">' + k + '</div>';
@@ -1985,7 +2065,7 @@ function showAdminTab(t) {
   if (t === 'plans') loadPlansTab();
   if (t === 'settings') loadSettings();
   if (t === 'members') loadMembers();
-  if (t === 'upload') setUp(false);
+  if (t === 'upload') { setUp(false); renderDataStatus(); }
 }
 $('adminRefresh').addEventListener('click', () => { invalidate(); showAdminTab(S.adminTab); });
 // 업로드 뒤 "보기" 버튼: 홈으로 가서 해당 칸으로 스크롤
@@ -2013,6 +2093,7 @@ async function homeAdminParts(d) {
     if (S.sum !== d || !$('hAr')) return;
     renderAr($('hAr'));
   } catch (e) { if ($('hAr')) $('hAr').innerHTML = '<div class="banner bad">채권: ' + esc(errMsg(e)) + '</div>'; }
+  if (S.sum === d && $('dataStrip')) $('dataStrip').outerHTML = dataStrip(); // 시공·채권까지 반영
 }
 
 /* 구성 분석: 카테고리 칩 + 순위 막대 목록 (내판 = 파랑, 외판 = 주황) */
@@ -2564,7 +2645,7 @@ async function doRegister() {
     $('preview').innerHTML = '<div class="card"><div class="banner ' + (ok ? 'ok' : 'bad') + '"><b>' + (ok ? '등록 완료 · 검산 일치' : '검산 불일치 — 다시 올려 주세요') + '</b><br>올린 파일 합계 ' + won(v.fileNet) + '<br>저장된 합계 ' + won(v.savedNet) + '<br>같은 날짜의 기존 데이터 ' + r.removed.toLocaleString('ko-KR') + '행을 교체했습니다' + (matched ? '<br>예정 매출 ' + matched + '건이 POS에 잡혀 자동 완료됐습니다' : '') + '</div>' +
       '<button class="btn primary" id="goAnalysis">홈에서 상세 분석 보기</button></div>' + brief;
     $('goAnalysis').addEventListener('click', () => goHomeSec(lastYm, '상세 분석'));
-    S.parsed = null; fileIn.value = ''; $('upText').value = '';
+    S.parsed = null; fileIn.value = ''; $('upText').value = ''; S.logs = null; renderDataStatus();
   } catch (e) {
     btn.disabled = false;
     $('regMsg').textContent = '';
@@ -2591,7 +2672,7 @@ function handleSms(text) {
       const r = await registerSmsRecords(res.records);
       S.smsCache = {};
       $('preview').innerHTML = '<div class="card"><div class="banner ok"><b>저장 완료</b><br>새로 추가 ' + r.added + '개 · 교체 ' + r.updated + '개</div></div>';
-      $('upText').value = '';
+      $('upText').value = ''; renderDataStatus();
     } catch (e) { this.disabled = false; $('smsMsg').textContent = '저장 실패: ' + errMsg(e); }
   });
 }
@@ -2656,6 +2737,7 @@ function renderArPreview() {
       S.ar = null;
       $('preview').innerHTML = '<div class="card"><div class="banner ok"><b>채권 등록 완료</b><br>기준일 ' + dLabel(date) + ' · 거래처 ' + p.rows.length + '곳 · 잔액 ' + won(t.bal) + '</div><button class="btn primary" id="goAr">홈에서 채권 보기</button></div>';
       $('goAr').addEventListener('click', () => goHomeSec(0, '채권'));
+      S.logs = null; renderDataStatus();
       fileIn.value = ''; $('upText').value = '';
     } catch (e) { this.disabled = false; $('regMsg').textContent = '저장 실패: ' + errMsg(e); }
   });
@@ -2774,6 +2856,7 @@ function renderConsPreview() {
       invalidate();
       $('preview').innerHTML = '<div class="card"><div class="banner ok"><b>시공 내역 등록 완료</b><br>새로 추가 ' + r.added + '건 · 교체 ' + r.updated + '건</div><button class="btn primary" id="goCons">시공 분석 보기</button></div>';
       $('goCons').addEventListener('click', () => goHomeSec(0, '시공 분석'));
+      S.logs = null; renderDataStatus();
       fileIn.value = ''; $('upText').value = '';
     } catch (e) { this.disabled = false; $('regMsg').textContent = '저장 실패: ' + errMsg(e); }
   });
