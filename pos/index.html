@@ -2431,10 +2431,19 @@ function arParse(aoa) {
   if (!rows.length) return { error: '거래처 행을 찾지 못했습니다.' };
   return { rows, stats: { missB, skip } };
 }
+// 거래처별 오래된 채권: 구간에 마이너스(입금·조정)가 섞여 있어 거래처마다 0 아래로 내려가지 않게 계산하고,
+// "3개월 초과"가 "6개월 초과"보다 작아지지 않게 맞춤
+function arOld(r) {
+  const s = k => r.b.slice(k).reduce((a, v) => a + v, 0);
+  const o6 = Math.max(0, s(6)), o3 = Math.max(o6, s(3));
+  return { o3, o6 };
+}
 function arTotals(rows) {
-  const t = { bal: 0, b: AR_B.map(() => 0), n: 0 };
-  rows.forEach(r => { t.bal += r.bal; r.b.forEach((v, i) => { t.b[i] += v; }); if (r.bal > 0) t.n++; });
-  t.over3 = t.b.slice(3).reduce((s, v) => s + v, 0); t.over6 = t.b.slice(6).reduce((s, v) => s + v, 0);
+  const t = { bal: 0, b: AR_B.map(() => 0), n: 0, over3: 0, over6: 0, neg: 0 };
+  rows.forEach(r => {
+    t.bal += r.bal; r.b.forEach((v, i) => { t.b[i] += v; if (v < 0) t.neg++; }); if (r.bal > 0) t.n++;
+    const o = arOld(r); t.over3 += o.o3; t.over6 += o.o6;
+  });
   return t;
 }
 function renderArPreview() {
@@ -2442,6 +2451,7 @@ function renderArPreview() {
   let h = '<div class="card"><h2>미리보기 · ' + esc(p.name) + '</h2>';
   if (p.stats.missB.length) h += '<div class="banner warn">없는 구간 칸: ' + esc(p.stats.missB.join(', ')) + ' (0으로 저장)</div>';
   if (p.stats.skip) h += '<div class="banner warn">합계 행 등 ' + p.stats.skip + '줄은 제외했습니다.</div>';
+  if (t.neg) h += '<div class="banner warn">구간 값에 마이너스(입금·조정)가 ' + t.neg + '칸 있습니다. "3개월 초과", "6개월 초과"는 거래처별로 계산해 마이너스로 내려가지 않게 했습니다.</div>';
   h += '<div class="kpis">' + kpi('거래처', p.rows.length + '곳', '잔액이 있는 곳 ' + t.n + '곳') + kpi('채권 잔액 합계', won(t.bal), '', true) +
     kpi('3개월 초과', won(t.over3), t.bal ? '잔액의 ' + pct(t.over3 / t.bal) : '') + kpi('6개월 초과', won(t.over6), t.bal ? '잔액의 ' + pct(t.over6 / t.bal) : '') + '</div>' +
     '<p class="muted">기준일 <b>' + esc($('arDate').value || '-') + '</b>로 저장합니다. 같은 기준일 자료는 교체됩니다.</p><button class="btn primary" id="arReg">등록</button> <span id="regMsg" class="muted"></span></div>';
@@ -2483,7 +2493,7 @@ function renderAr(el) {
   h += '<div class="card"><h2>연령 구간</h2><div class="arbar">' + gs.map((x, i) => x[1] > 0 ? '<span style="width:' + (x[1] / pos * 100).toFixed(2) + '%;background:' + shade(i) + '" title="' + esc(x[0] + ' ' + won(x[1])) + '"></span>' : '').join('') + '</div>' +
     '<div class="legend" style="margin-top:8px">' + gs.map((x, i) => '<span><i style="background:' + shade(i) + '"></i>' + x[0] + ' ' + eok(x[1]) + '</span>').join('') + '</div>' +
     '<p class="muted" style="margin:6px 0 0">색이 진할수록 오래된 채권입니다. 마이너스 금액(선수금·과입금)은 막대에서 빠지고 합계에는 포함됩니다.</p></div>';
-  const top = cur.rows.filter(r => r.bal > 0).map(r => Object.assign({ o3: r.b.slice(3).reduce((s, v) => s + v, 0) }, r)).sort((a, b) => b.bal - a.bal).slice(0, 12);
+  const top = cur.rows.filter(r => r.bal > 0).map(r => Object.assign({ o3: arOld(r).o3 }, r)).sort((a, b) => b.bal - a.bal).slice(0, 12);
   const pmap = {}; if (prev) prev.rows.forEach(r => { pmap[r.k || r.c] = r.bal; });
   h += '<div class="card"><h2>거래처별 채권 TOP ' + top.length + '</h2><div class="bk-list">' + top.map((r, j) => {
     const gg = grp(r.b), tp = gg.reduce((s, x) => s + Math.max(0, x[1]), 0) || 1, pb = pmap[r.k || r.c];
