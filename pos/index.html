@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://cdn.sheetjs.com; connect-src 'self' https://*.googleapis.com https://www.gstatic.com https://apis.google.com; frame-src https://acetool-923f6.firebaseapp.com https://accounts.google.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://cdn.sheetjs.com; connect-src 'self' https://*.googleapis.com https://www.gstatic.com https://apis.google.com; frame-src https://acetool-923f6.firebaseapp.com https://accounts.google.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <title>매출 현황</title>
@@ -25,7 +25,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Jua&family=Gaegu:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Gaegu:wght@400;700&display=swap">
 <style>
 /* ===== 디자인 3종: 기존(근무표) / 토스형 / 미드나잇 ===== */
 :root, [data-theme="classic"] {
@@ -45,7 +45,7 @@
   color-scheme: light;
   --bg: #f2f4f6; --surface: #ffffff; --surface2: #f9fafb; --ink: #191f28; --ink2: #4e5968; --ink3: #8b95a1;
   --line: #e5e8eb; --grid: #f2f4f6;
-  --s1: #3182f6; --s2: #ffb800;
+  --s1: #3182f6; --s2: #f08c00;
   --accent: #3182f6; --accent-ink: #ffffff; --dark: #e8f3ff; --dark-ink: #1b64da;
   --chip: #e8f3ff; --chip-ink: #1b64da;
   --warn-bg: #fff8e1; --warn-ink: #8a5a00; --ok-bg: #e8f8ef; --ok-ink: #0b7a3e; --bad-bg: #ffeeee; --bad-ink: #d22030;
@@ -57,7 +57,7 @@
   color-scheme: dark;
   --bg: #0d1220; --surface: #161e30; --surface2: #1b2539; --ink: #e8ecf3; --ink2: #a9b2c3; --ink3: #7c869a;
   --line: #263046; --grid: #222b3e;
-  --s1: #4f9dff; --s2: #ff9f5a;
+  --s1: #4a8ff0; --s2: #dc6e30;
   --accent: #34d399; --accent-ink: #052e1c; --dark: #2a3550; --dark-ink: #e8ecf3;
   --chip: #1e2a44; --chip-ink: #9cc4ff;
   --warn-bg: #3a2f10; --warn-ink: #f2d98a; --ok-bg: #12301f; --ok-ink: #9be0b4; --bad-bg: #3b1714; --bad-ink: #f3a39c;
@@ -67,7 +67,8 @@
 }
 /* ===== 글씨 2종: 또박또박 / 동글동글 손글씨 ===== */
 :root, [data-font="neat"] { --font: "Noto Sans KR", -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; --font-head: var(--font); --fs: 15px; }
-[data-font="round"] { --font: "Gaegu", "Noto Sans KR", sans-serif; --font-head: "Jua", "Noto Sans KR", sans-serif; --fs: 17px; }
+@font-face { font-family: 'OngleipUnz'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2406-1@1.0/Ownglyph_UNZ-Rg.woff2') format('woff2'); font-weight: normal; font-display: swap; }
+[data-font="round"] { --font: "OngleipUnz", "Gaegu", "Noto Sans KR", sans-serif; --font-head: var(--font); --fs: 17px; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--ink); }
@@ -129,6 +130,11 @@ th { color: var(--ink2); font-weight: 600; font-size: .85em; }
 .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
 .legend i.line { height: 0; border-top: 2px solid; border-radius: 0; vertical-align: 3px; width: 18px; }
 .legend i.dash { height: 0; border-top: 2px dashed; border-radius: 0; vertical-align: 3px; width: 18px; }
+.legend i.dot { height: 0; border-top: 2px dotted; border-radius: 0; vertical-align: 3px; width: 18px; }
+svg text.wk { fill: var(--ink); font-weight: 700; }
+[data-font="round"] svg text { font-size: 13px; }
+[data-font="round"] svg text.sm { font-size: 11px; }
+svg text.sm { font-size: 9.5px; fill: var(--ink3); }
 svg text { fill: var(--ink2); font-size: 11px; font-family: var(--font); }
 svg text.lbl { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; fill: var(--ink); font-weight: 700; }
 svg.chart { width: 100%; height: auto; display: block; }
@@ -149,7 +155,7 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .seg { border: 1px solid var(--line); background: var(--surface); color: var(--ink2); padding: 7px 14px; border-radius: 999px; cursor: pointer; }
 .seg.on { background: var(--chip); color: var(--chip-ink); border-color: var(--chip-ink); font-weight: 700; }
 .seg[data-font="neat"] { font-family: "Noto Sans KR", sans-serif; }
-.seg[data-font="round"] { font-family: "Jua", sans-serif; }
+.seg[data-font="round"] { font-family: "OngleipUnz", "Gaegu", sans-serif; font-size: 1.08em; }
 .admin-btn { background: var(--dark); color: var(--dark-ink); }
 .center { text-align: center; }
 .login { max-width: 460px; margin: 40px auto; text-align: center; padding: 34px 24px; }
@@ -776,12 +782,16 @@ function buildSummary(daily, targets, holidays, ym, today, sms, smsVat) {
     t.target = targets[m] && targets[m].total ? targets[m].total : null;
     return t;
   });
+  const prevDays = [];
+  for (let i = 1; i <= dimOf(pm); i++) { const x = pd[i]; prevDays.push(x ? (Number(x.n) || 0) + (Number(x.o) || 0) : null); }
+  const holDays = {};
+  for (let i = 1; i <= dim; i++) if (hol[ym * 100 + i]) holDays[i] = 1;
   const missing = [];
   for (let d2 = 1; d2 <= lastDay; d2++) { const key = ym * 100 + d2; if (!md[d2] && !hol[key]) missing.push(key); }
   return {
     ym, months, monthTotals, dim, last, lastDay, cum, target, targetN: tg ? tg.n : null, targetO: tg ? tg.o : null,
     elapsed, achieve, expectedCum: target ? target * elapsed : null, remainDays: remain.length, remainTypes, needPerDay, avgPerDay,
-    daysWithData, forecast, ended, prev: { ym: pm, same: prevSame, total: prevTotal }, daily: days, missing, today,
+    daysWithData, forecast, ended, prev: { ym: pm, same: prevSame, total: prevTotal }, daily: days, prevDays, holDays, missing, today,
     sms: buildSms(sms || [], smsVat || 'incl', ym, days)
   };
 }
@@ -1135,59 +1145,117 @@ function bindBars(sel) {
     g.onmouseleave = hideTip;
   });
 }
-function chartCum(d) {
-  const W = 640, H = 260, L = 52, R = 14, T = 12, B = 28, pw = W - L - R, ph = H - T - B;
+/* 차트는 실제 화면 폭에 맞춰 그립니다 (휴대폰에서도 글씨 11px 유지) */
+function chartW(id) { const el = $(id); const w = (el && el.clientWidth ? el.clientWidth : 900) - 40; return Math.max(300, Math.min(1100, Math.round(w))); }
+// 오른쪽 끝 라벨들이 겹치지 않게 위아래로 벌림
+function placeLabels(items, minGap, top, bottom) {
+  items.sort((a, b) => a.y - b.y);
+  for (let i = 1; i < items.length; i++) if (items[i].y - items[i - 1].y < minGap) items[i].y = items[i - 1].y + minGap;
+  const over = items.length ? items[items.length - 1].y - bottom : 0;
+  if (over > 0) items.forEach(it => { it.y = Math.max(top, it.y - over); });
+  return items;
+}
+const DOWK = ['일', '월', '화', '수', '목', '금', '토'];
+
+function chartCum(d, W) {
+  const H = W < 600 ? 240 : 300, L = 56, R = W < 600 ? 74 : 92, T = 18, B = 30, pw = W - L - R, ph = H - T - B, yb = T + ph;
   const cumA = []; let run = 0;
   for (let i = 0; i < d.dim; i++) { if (i < d.lastDay) { run += d.daily[i].n + d.daily[i].o; cumA.push(run); } else cumA.push(null); }
+  const prevCum = []; let pr = 0, hasPrev = false;
+  for (let i = 0; i < Math.min(d.dim, d.prevDays.length); i++) { const v = d.prevDays[i]; if (v !== null) { pr += v; hasPrev = true; } prevCum.push(pr); }
   const fcT = d.forecast && d.forecast['기본'] ? d.forecast['기본'].total : null;
-  const max = niceMax(Math.max(d.target || 0, fcT || 0, run) * 1.05);
-  const X = day => L + pw * (day - 1) / Math.max(1, d.dim - 1), Y = v => T + ph - ph * v / max;
-  let s = svgOpen(W, H) + yGrid(L, W - R, T, T + ph, max, 4);
-  for (let day = 1; day <= d.dim; day += (d.dim > 28 ? 5 : 4)) s += '<text x="' + X(day) + '" y="' + (H - 8) + '" text-anchor="middle">' + day + '일</text>';
-  if (d.target) s += '<line x1="' + X(1) + '" y1="' + Y(0) + '" x2="' + X(d.dim) + '" y2="' + Y(d.target) + '" stroke="var(--ink3)" stroke-width="1.5" stroke-dasharray="2 4"/>';
-  if (fcT && d.lastDay) s += '<line x1="' + X(d.lastDay) + '" y1="' + Y(run) + '" x2="' + X(d.dim) + '" y2="' + Y(fcT) + '" stroke="var(--s1)" stroke-width="2" stroke-dasharray="6 4"/>' +
-    '<circle cx="' + X(d.dim) + '" cy="' + Y(fcT) + '" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/>' +
-    '<text class="lbl" x="' + (X(d.dim) - 8) + '" y="' + (Y(fcT) - 9) + '" text-anchor="end">예상 ' + eok(fcT) + '</text>';
-  const pts = [];
-  for (let i = 0; i < d.lastDay; i++) pts.push(X(i + 1).toFixed(1) + ',' + Y(cumA[i]).toFixed(1));
-  if (pts.length) s += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="var(--s1)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>' +
-    '<circle cx="' + X(d.lastDay) + '" cy="' + Y(run) + '" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/>';
-  if (d.target) s += '<text class="lbl" x="' + (W - R) + '" y="' + (Y(d.target) - 6) + '" text-anchor="end">목표 ' + eok(d.target) + '</text>';
+  const max = niceMax(Math.max(d.target || 0, fcT || 0, run, hasPrev ? pr : 0) * 1.06 || 1);
+  const X = day => L + pw * (day - 1) / Math.max(1, d.dim - 1), Y = v => yb - ph * v / max;
+  let s = svgOpen(W, H) + yGrid(L, L + pw, T, yb, max, 4);
+  const step = W < 600 ? 7 : 5;
+  for (let day = 1; day <= d.dim; day += step) s += '<text x="' + X(day) + '" y="' + (H - 8) + '" text-anchor="middle">' + day + '일</text>';
+  const ends = [];
+  if (hasPrev) {
+    s += '<polyline points="' + prevCum.map((v, i) => X(i + 1).toFixed(1) + ',' + Y(v).toFixed(1)).join(' ') + '" fill="none" stroke="var(--ink3)" stroke-width="2" stroke-linejoin="round" opacity=".85"/>';
+    ends.push({ y: Y(pr) + 4, t: '전월 ' + eok(pr) });
+  }
+  if (d.target) {
+    s += '<line x1="' + X(1) + '" y1="' + Y(0) + '" x2="' + X(d.dim) + '" y2="' + Y(d.target) + '" stroke="var(--ink2)" stroke-width="2" stroke-dasharray="1 5" stroke-linecap="round"/>';
+    ends.push({ y: Y(d.target) + 4, t: '목표 ' + eok(d.target) });
+  }
+  if (d.lastDay) {
+    const pts = cumA.slice(0, d.lastDay).map((v, i) => X(i + 1).toFixed(1) + ',' + Y(v).toFixed(1));
+    s += '<path d="M' + X(1).toFixed(1) + ',' + yb + ' L' + pts.join(' L') + ' L' + X(d.lastDay).toFixed(1) + ',' + yb + ' Z" fill="var(--s1)" opacity=".12"/>';
+    if (fcT) {
+      s += '<line x1="' + X(d.lastDay) + '" y1="' + Y(run) + '" x2="' + X(d.dim) + '" y2="' + Y(fcT) + '" stroke="var(--s1)" stroke-width="2" stroke-dasharray="6 5"/>' +
+        '<circle cx="' + X(d.dim) + '" cy="' + Y(fcT) + '" r="4" fill="var(--surface)" stroke="var(--s1)" stroke-width="2"/>';
+      ends.push({ y: Y(fcT) + 4, t: '예상 ' + eok(fcT), b: true });
+    }
+    s += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="var(--s1)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>' +
+      '<circle cx="' + X(d.lastDay) + '" cy="' + Y(run) + '" r="5" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/>';
+    if (d.lastDay < d.dim) {
+      const nearEnd = X(d.lastDay) > L + pw * 0.75;
+      s += '<text class="lbl" x="' + (X(d.lastDay) + (nearEnd ? -10 : 0)) + '" y="' + (Y(run) - 12) + '" text-anchor="' + (nearEnd ? 'end' : 'middle') + '">' + eok(run) + '</text>';
+    } else ends.push({ y: Y(run) + 4, t: '실적 ' + eok(run), b: true });
+  }
+  placeLabels(ends, 16, T + 8, yb).forEach(e => { s += '<text class="lbl" x="' + (L + pw + 8) + '" y="' + e.y + '"' + (e.b ? '' : ' style="font-weight:500"') + '>' + e.t + '</text>'; });
   s += '<rect id="cumHit" x="' + L + '" y="' + T + '" width="' + pw + '" height="' + ph + '" fill="transparent"/>';
-  s += '<line id="cumX" x1="0" x2="0" y1="' + T + '" y2="' + (T + ph) + '" stroke="var(--ink3)" stroke-width="1" style="display:none"/></svg>';
+  s += '<line id="cumX" x1="0" x2="0" y1="' + T + '" y2="' + yb + '" stroke="var(--ink3)" stroke-width="1" style="display:none"/></svg>';
   return {
     html: s, bind: () => {
       const svg = document.querySelector('#chCum svg'), hit = $('cumHit'), xl = $('cumX');
       if (!hit) return;
-      hit.onmousemove = e => {
-        const r = svg.getBoundingClientRect();
-        const px = (e.clientX - r.left) * W / r.width;
+      const move = e => {
+        const r = svg.getBoundingClientRect(), cx = e.touches ? e.touches[0].clientX : e.clientX;
+        const px = (cx - r.left) * W / r.width;
         const day = Math.max(1, Math.min(d.dim, Math.round(1 + (px - L) / pw * (d.dim - 1))));
         xl.setAttribute('x1', X(day)); xl.setAttribute('x2', X(day)); xl.style.display = '';
         const row = d.daily[day - 1];
-        let h = '<b>' + (d.ym % 100) + '월 ' + day + '일</b><br>';
+        let h = '<b>' + (d.ym % 100) + '월 ' + day + '일 (' + DOWK[dowOf(d.ym * 100 + day)] + ')</b><br>';
         h += day <= d.lastDay ? '누적 ' + won(cumA[day - 1]) + '<br>당일 ' + won(row.n + row.o) : '아직 등록되지 않은 날';
+        if (hasPrev && prevCum[day - 1] !== undefined) {
+          h += '<br>전월 같은 날 ' + won(prevCum[day - 1]);
+          if (day <= d.lastDay) h += ' (' + (cumA[day - 1] >= prevCum[day - 1] ? '+' : '−') + eok(Math.abs(cumA[day - 1] - prevCum[day - 1])) + ')';
+        }
         if (d.target) h += '<br>목표 진행선 ' + won(d.target * day / d.dim);
-        showTip(e, h);
+        showTip(e.touches ? e.touches[0] : e, h);
       };
+      hit.onmousemove = move; hit.ontouchmove = move;
       hit.onmouseleave = () => { xl.style.display = 'none'; hideTip(); };
     }
   };
 }
-function chartDaily(d) {
-  const W = 640, H = 220, L = 52, R = 10, T = 10, B = 26, pw = W - L - R, ph = H - T - B;
-  let mx = 0; d.daily.forEach(x => { mx = Math.max(mx, x.n + x.o); });
-  const max = niceMax(mx * 1.05 || 1), bw = pw / d.dim;
-  let s = svgOpen(W, H) + yGrid(L, W - R, T, T + ph, max, 4);
+function chartDaily(d, W) {
+  const roomy = W / d.dim >= 18;
+  const H = W < 600 ? 250 : 300, L = 56, R = 16, T = 26, B = roomy ? 44 : 30, pw = W - L - R, ph = H - T - B, yb = T + ph;
+  let mx = 0, best = -1;
+  d.daily.forEach((x, i) => { const t = x.n + x.o; if (t > mx) { mx = t; best = i; } });
+  const max = niceMax(mx * 1.12 || 1), bw = pw / d.dim, Y = v => yb - ph * Math.max(v, 0) / max;
+  let s = svgOpen(W, H);
+  d.daily.forEach((x, i) => { const w = dowOf(d.ym * 100 + x.day); if (w === 0 || w === 6) s += '<rect x="' + (L + bw * i) + '" y="' + T + '" width="' + bw + '" height="' + ph + '" fill="var(--grid)" opacity=".7"/>'; });
+  s += yGrid(L, L + pw, T, yb, max, 4);
+  let run = 0;
   d.daily.forEach((x, i) => {
-    const x0 = L + bw * i + bw * 0.12, w = bw * 0.76, hn = ph * Math.max(x.n, 0) / max, ho = ph * Math.max(x.o, 0) / max, yb = T + ph;
-    const tipHtml = '<b>' + (d.ym % 100) + '월 ' + x.day + '일</b><br>내판 ' + won(x.n) + '<br>외판 ' + won(x.o) + '<br>합계 ' + won(x.n + x.o);
+    run += x.n + x.o;
+    const bwid = Math.max(3, Math.min(26, bw * 0.66)), x0 = L + bw * i + (bw - bwid) / 2, cx = L + bw * i + bw / 2;
+    const hn = ph * Math.max(x.n, 0) / max, ho = ph * Math.max(x.o, 0) / max;
+    const dow = DOWK[dowOf(d.ym * 100 + x.day)], wk = dow === '토' || dow === '일';
+    let tipHtml = '<b>' + (d.ym % 100) + '월 ' + x.day + '일 (' + dow + ')</b><br>';
+    tipHtml += x.has ? '합계 ' + won(x.n + x.o) + '<br>내판 ' + won(x.n) + '<br>외판 ' + won(x.o) + '<br>이달 누적 ' + won(run) : (d.holDays[x.day] ? '휴무일' : '등록된 자료 없음');
     s += '<g class="bar" data-tip="' + esc(tipHtml) + '">';
-    if (hn > 0) s += '<rect x="' + x0 + '" y="' + (yb - hn) + '" width="' + w + '" height="' + hn + '" fill="var(--s1)" rx="2"/>';
-    if (ho > 0) s += '<rect x="' + x0 + '" y="' + (yb - hn - ho - (hn > 0 ? 1 : 0)) + '" width="' + w + '" height="' + ho + '" fill="var(--s2)" rx="2" stroke="var(--surface)" stroke-width="1"/>';
-    s += '<rect x="' + (L + bw * i) + '" y="' + T + '" width="' + bw + '" height="' + ph + '" fill="transparent"/></g>';
-    if ((x.day - 1) % 5 === 0) s += '<text x="' + (L + bw * i + bw / 2) + '" y="' + (H - 8) + '" text-anchor="middle">' + x.day + '</text>';
+    if (hn > 0) s += '<rect x="' + x0 + '" y="' + (yb - hn) + '" width="' + bwid + '" height="' + hn + '" fill="var(--s1)" rx="3"/>';
+    if (ho > 0) s += '<rect x="' + x0 + '" y="' + (yb - hn - ho - (hn > 0 ? 2 : 0)) + '" width="' + bwid + '" height="' + ho + '" fill="var(--s2)" rx="3"/>';
+    s += '<rect x="' + (L + bw * i) + '" y="' + T + '" width="' + bw + '" height="' + (ph + B) + '" fill="transparent"/></g>';
+    if (!x.has && d.holDays[x.day]) s += '<text class="sm" x="' + cx + '" y="' + (yb - 6) + '" text-anchor="middle">휴</text>';
+    if (roomy) {
+      s += '<text' + (wk ? ' class="wk"' : '') + ' x="' + cx + '" y="' + (yb + 17) + '" text-anchor="middle">' + x.day + '</text>';
+      s += '<text class="sm" x="' + cx + '" y="' + (yb + 32) + '" text-anchor="middle">' + dow + '</text>';
+    } else if ((x.day - 1) % 5 === 0) s += '<text x="' + cx + '" y="' + (yb + 18) + '" text-anchor="middle">' + x.day + '일</text>';
   });
+  if (d.daysWithData && d.avgPerDay > 0) {
+    const y = Y(d.avgPerDay);
+    s += '<line x1="' + L + '" x2="' + (L + pw) + '" y1="' + y + '" y2="' + y + '" stroke="var(--ink2)" stroke-width="1.5" stroke-dasharray="5 5" pointer-events="none"/>' +
+      '<text class="lbl" x="' + (L + pw - 2) + '" y="' + (y - 6) + '" text-anchor="end" pointer-events="none">일평균 ' + eok(d.avgPerDay) + '</text>';
+  }
+  if (best >= 0 && mx > 0) {
+    const cx = L + bw * best + bw / 2, anchor = best > d.dim * 0.85 ? 'end' : best < d.dim * 0.15 ? 'start' : 'middle';
+    s += '<text class="lbl" x="' + (anchor === 'end' ? cx + bw / 2 : anchor === 'start' ? cx - bw / 2 : cx) + '" y="' + (Y(mx) - 8) + '" text-anchor="' + anchor + '" pointer-events="none">최고 ' + eok(mx) + '</text>';
+  }
   return { html: s + '</svg>', bind: () => bindBars('#chDaily') };
 }
 function chartMonthly(d) {
@@ -1300,17 +1368,20 @@ function renderHome(d) {
     h += '<div class="card"><h2>목표 진행</h2><div class="pbar"><div class="fill" style="width:' + Math.min(100, Math.max(0, d.achieve * 100)) + '%"></div><div class="tick" style="left:' + Math.min(100, d.elapsed * 100) + '%"></div></div>' +
       '<div class="sub">파란 막대 = 달성률 ' + pct(d.achieve) + ' · 검은 선 = 시간 경과율 ' + pct(d.elapsed) + ' (달력일 기준)</div></div>';
   }
-  const ch1 = chartCum(d), ch2 = chartDaily(d);
-  h += '<div class="card"><h2>누적 매출 추이</h2><div class="legend"><span><i class="line" style="border-color:var(--s1)"></i>누적 실적</span>' +
-    (d.target ? '<span><i class="dash" style="border-color:var(--ink3)"></i>목표 진행선</span>' : '') + (fb ? '<span><i class="dash" style="border-color:var(--s1)"></i>예상(기본)</span>' : '') + '</div><div id="chCum">' + ch1.html + '</div></div>';
+  const cw = chartW('homeBody'); S.chartW = cw;
+  const ch1 = chartCum(d, cw), ch2 = chartDaily(d, cw);
+  const hasPrev = d.prevDays.some(v => v !== null);
+  h += '<div class="card"><h2>일별 매출</h2><div class="legend"><span><i style="background:var(--s1)"></i>내판</span><span><i style="background:var(--s2)"></i>외판</span><span><i class="dash" style="border-color:var(--ink2)"></i>일평균</span><span><i style="background:var(--grid);border:1px solid var(--line)"></i>주말</span></div><div id="chDaily">' + ch2.html + '</div>' +
+    '<details><summary>표로 보기</summary>' + table(['일', '요일', '내판', '외판', '합계'], d.daily.filter(x => x.has).map(x => [x.day + '일', DOWK[dowOf(d.ym * 100 + x.day)], won(x.n), won(x.o), won(x.n + x.o)])) + '</details></div>';
+  h += '<div class="card"><h2>누적 매출 추이</h2><div class="legend"><span><i class="line" style="border-color:var(--s1)"></i>이번 달 누적</span>' +
+    (hasPrev ? '<span><i class="line" style="border-color:var(--ink3)"></i>전월 누적</span>' : '') +
+    (d.target ? '<span><i class="dot" style="border-color:var(--ink2)"></i>목표 진행선</span>' : '') + (fb ? '<span><i class="dash" style="border-color:var(--s1)"></i>예상(기본)</span>' : '') + '</div><div id="chCum">' + ch1.html + '</div></div>';
   const sm = d.sms;
   if (sm.hourlyDates.length) {
     h += '<div class="card"><h2>시간별 누적 매출 (문자 · 일산점)</h2><div class="row" style="margin-bottom:6px"><label>날짜<select id="hourSel">' +
       sm.hourlyDates.slice().reverse().map(x => '<option value="' + x + '">' + mdLabel(x) + '</option>').join('') + '</select></label></div>' +
       '<div class="legend" id="hourLegend"></div><div id="chHour"></div><p class="muted" style="margin:6px 0 0">문자 금액은 VAT ' + (sm.vat === 'incl' ? '포함으로 보고 ÷1.1 환산' : '별도(환산 없음)') + '했습니다.</p></div>';
   }
-  h += '<div class="card"><h2>일별 매출</h2><div class="legend"><span><i style="background:var(--s1)"></i>내판</span><span><i style="background:var(--s2)"></i>외판</span></div><div id="chDaily">' + ch2.html + '</div>' +
-    '<details><summary>표로 보기</summary>' + table(['일', '내판', '외판', '합계'], d.daily.filter(x => x.has).map(x => [x.day + '일', won(x.n), won(x.o), won(x.n + x.o)])) + '</details></div>';
   if (sm.member.length) {
     let newSum = 0; sm.member.forEach(m => { newSum += m['신규가입'] || 0; });
     const lm = sm.member[sm.member.length - 1];
@@ -1331,6 +1402,15 @@ function renderHome(d) {
     sl.onchange = draw; draw();
   }
 }
+
+/* 창 크기가 바뀌면 차트를 다시 그림 */
+let rzT = null;
+window.addEventListener('resize', () => {
+  clearTimeout(rzT);
+  rzT = setTimeout(() => {
+    if (S.view === 'home' && S.sum && Math.abs(chartW('homeBody') - (S.chartW || 0)) >= 40) renderHome(S.sum);
+  }, 250);
+});
 
 /* ===================== 관리자: 탭 ===================== */
 document.querySelectorAll('#adminTabs .pill').forEach(b => b.addEventListener('click', () => showAdminTab(b.dataset.tab)));
