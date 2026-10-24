@@ -9,6 +9,10 @@
 <title>매출 현황</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="매출현황">
 <meta name="theme-color" content="#77C4A3">
 <!-- 링크 공유 미리보기(OG): 로그인 없이 누구에게나 보이므로 매출 수치는 넣지 않음 -->
 <meta property="og:type" content="website">
@@ -388,6 +392,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
       <button class="lk" data-open="dlgTerms">이용약관</button>
       <button class="lk strong" data-open="dlgPrivacy">개인정보처리방침</button>
       <button class="btn ghost sm" id="copyLink">🔗 링크 복사</button>
+      <button class="btn ghost sm" id="addHome">📲 홈 화면에 추가</button>
     </nav>
   </div>
 </div>
@@ -412,6 +417,29 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
     <p>운영상 필요하거나 보안 문제가 생기면 사전 안내 없이 기능을 바꾸거나 이용을 중단·제한할 수 있습니다.</p>
     <h3>제6조 권한 회수</h3>
     <p>퇴사, 부서 이동, 이 약관 위반 등의 경우 관리자는 즉시 권한을 삭제할 수 있습니다.</p>
+  </div>
+</dialog>
+
+<dialog class="doc" id="dlgInstall" aria-labelledby="instT">
+  <div class="dh"><h2 id="instT">홈 화면에 추가</h2><button class="btn ghost sm" data-close>닫기</button></div>
+  <div class="db">
+    <p>휴대폰 홈 화면(또는 PC 바탕화면)에 아이콘을 만들어 앱처럼 바로 열 수 있습니다.</p>
+    <div id="instHint" class="banner ok hide"></div>
+    <h3>아이폰 · 아이패드 (Safari)</h3>
+    <ul>
+      <li>Safari로 acetool.site/pos 를 엽니다. (카카오톡 안에서 열렸다면 오른쪽 아래 메뉴 › "다른 브라우저로 열기")</li>
+      <li>아래쪽 <b>공유 버튼(네모에 위쪽 화살표)</b> › <b>홈 화면에 추가</b> › 오른쪽 위 <b>추가</b></li>
+    </ul>
+    <h3>안드로이드 (크롬 · 삼성 인터넷)</h3>
+    <ul>
+      <li>크롬: 오른쪽 위 <b>⋮</b> › <b>홈 화면에 추가</b> 또는 <b>앱 설치</b></li>
+      <li>삼성 인터넷: 아래쪽 <b>≡</b> › <b>현재 페이지 추가</b> › <b>홈 화면</b></li>
+    </ul>
+    <h3>PC (크롬 · 엣지)</h3>
+    <ul>
+      <li>주소창 오른쪽의 <b>설치 아이콘</b>을 누르거나, 메뉴 › <b>앱 › 이 사이트를 앱으로 설치</b></li>
+    </ul>
+    <p class="muted">공용 PC에는 설치하지 마세요. 설치해도 로그인은 그대로 필요합니다.</p>
   </div>
 </dialog>
 
@@ -1008,6 +1036,29 @@ $('copyLink').addEventListener('click', async () => {
     try { document.execCommand('copy'); } catch (e2) { } ta.remove();
   }
   toast('링크를 복사했습니다 · ' + SITE_URL);
+});
+
+/* 홈 화면에 추가: 크롬·엣지·안드로이드는 브라우저 설치 창, 아이폰 등은 방법 안내 */
+let installEvt = null;
+const standalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+if (standalone()) $('addHome').classList.add('hide');
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; });
+window.addEventListener('appinstalled', () => { installEvt = null; $('addHome').classList.add('hide'); toast('홈 화면에 추가했습니다'); });
+$('addHome').addEventListener('click', async () => {
+  if (installEvt) {
+    installEvt.prompt();
+    const r = await installEvt.userChoice.catch(() => null);
+    installEvt = null;
+    if (r && r.outcome === 'accepted') return;
+  }
+  const ua = navigator.userAgent, hint = $('instHint');
+  let msg = '';
+  if (/KAKAOTALK|NAVER|Instagram|FBAN|FBAV/i.test(ua)) msg = '지금은 앱 안의 브라우저로 열려 있어요. 메뉴에서 "다른 브라우저로 열기"를 먼저 눌러 주세요.';
+  else if (/iPhone|iPad|iPod/i.test(ua)) msg = '이 기기는 아이폰/아이패드예요. 아래 Safari 방법대로 추가해 주세요.';
+  else if (/SamsungBrowser/i.test(ua)) msg = '이 기기는 삼성 인터넷이에요. 아래 삼성 인터넷 방법을 보세요.';
+  else if (/Android/i.test(ua)) msg = '이 기기는 안드로이드예요. 아래 안드로이드 방법을 보세요.';
+  hint.textContent = msg; hint.classList.toggle('hide', !msg);
+  $('dlgInstall').showModal();
 });
 
 onAuthStateChanged(auth, user => {
