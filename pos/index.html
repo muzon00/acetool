@@ -94,7 +94,7 @@ h1, h2, h3, .btn, .kpi .v, .brand-t, .pill, .page-title { font-family: var(--fon
 h2 { font-size: 17px; margin: 0 0 12px; }
 h3 { font-size: 15px; margin: 18px 0 8px; }
 select, input, textarea, button { font: inherit; color: var(--ink); }
-select, input[type=text], input[type=number], input[type=month], input[type=date], textarea {
+select, input[type=text], input[type=number], input[type=month], input[type=date], input[type=time], textarea {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 9px 12px; }
 textarea { width: 100%; }
 .btn { border: 0; border-radius: var(--radius-sm); padding: 10px 18px; cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; justify-content: center; }
@@ -240,6 +240,22 @@ svg text.wk { fill: var(--ink); font-weight: 700; }
 .ev.more { color: var(--ink3); }
 .legend i.ev-k.store { background: color-mix(in srgb, #77C4A3 60%, var(--surface)); }
 .legend i.ev-k.mine { background: var(--chip-ink); opacity: .5; }
+.ev-panel { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.evp-form { display: grid; grid-template-columns: 150px 110px 110px 110px minmax(160px, 1fr) auto auto; gap: 8px; align-items: center; }
+.evp-form.editing { background: var(--chip); padding: 8px; border-radius: var(--radius-sm); }
+.evp-form input, .evp-form select { padding: 8px 10px; min-width: 0; }
+.evp-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; }
+.evp-bar select { padding: 6px 10px; }
+.evp-list { list-style: none; padding: 0; margin: 0; }
+.evp-list li { display: flex; align-items: center; gap: 8px; padding: 7px 4px; border-top: 1px solid var(--line); font-size: .9em; }
+.evp-list li:first-child { border-top: 0; }
+.evp-list li.on { background: var(--chip); border-radius: 8px; }
+.evp-list .ev { flex: none; font-size: .78em; }
+.evp-d { flex: none; width: 76px; color: var(--ink2); font-variant-numeric: tabular-nums; }
+.evp-d.today { color: var(--s1); font-weight: 700; }
+.evp-c { flex: none; font-size: .78em; color: var(--ink2); background: var(--bg); border-radius: 5px; padding: 1px 6px; }
+.evp-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 760px) { .evp-form { grid-template-columns: 1fr 1fr; } .evp-form #evpT { grid-column: 1 / -1; } .evp-d { width: 64px; } .evp-c { display: none; } }
 .day-list { list-style: none; padding: 0; margin: 8px 0 4px; }
 .day-list li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
 .day-list li:first-child { border-top: 0; }
@@ -1734,10 +1750,71 @@ function calCard(d) {
   }
   return '<div class="card" data-sec="달력"><div class="bk-h"><h2>' + ymLabel(d.ym) + '</h2><div class="legend" style="margin:0"><span><i class="ev-k store"></i>매장 일정</span><span><i class="ev-k mine"></i>내 일정</span><span><i style="background:var(--warn-bg)"></i>휴무</span></div></div>' +
     '<div class="cal-h">' + DOWK.map((n, i) => '<span' + (i === 0 ? ' class="sun"' : i === 6 ? ' class="sat"' : '') + '>' + n + '</span>').join('') + '</div>' +
-    '<div class="cal" id="calGrid">' + cells + '</div><p class="muted" style="margin:8px 0 0">날짜를 누르면 일정을 보고 추가할 수 있어요. 내 일정은 나만 보이고, 매장 일정은 모두에게 보입니다' + (S.role === 'admin' ? '' : ' (매장 일정은 관리자가 등록)') + '.</p></div>';
+    '<div class="cal" id="calGrid">' + cells + '</div><div class="ev-panel" id="evPanel"></div></div>';
 }
 function bindCal() {
-  document.querySelectorAll('#calGrid .cd[data-day]').forEach(c => c.addEventListener('click', () => openDay(Number(c.dataset.day))));
+  document.querySelectorAll('#calGrid .cd[data-day]').forEach(c => c.addEventListener('click', () => {
+    const ui = evUi(); ui.date = S.sum.ym * 100 + Number(c.dataset.day); ui.edit = null;
+    renderEvPanel(); const t = $('evpT'); if (t) t.focus({ preventScroll: true });
+  }));
+  renderEvPanel();
+}
+/* 달력 아래 일정 칸: 등록 · 수정 · 삭제 · 분류 필터 */
+const EV_CATS = ['일반', '회의', '행사', '휴가', '교육', '입고·배송'];
+function evUi() { return S.evUi || (S.evUi = { f: 'all', cat: '', edit: null, date: 0 }); }
+function renderEvPanel() {
+  const box = $('evPanel'); if (!box || !S.sum) return;
+  const d = S.sum, ui = evUi(), admin = S.role === 'admin', e = (S.ev || {})[d.ym] || { store: [], mine: [] };
+  const ed = ui.edit ? e.store.concat(e.mine).find(x => x.kind === ui.edit.kind && x.id === ui.edit.id) : null;
+  if (ui.edit && !ed) ui.edit = null;
+  const date = ed ? ed.d : (ui.date && ymOf(ui.date) === d.ym ? ui.date : (ymOf(d.today) === d.ym ? d.today : d.ym * 100 + 1));
+  const opt = (v, l, sel, dis) => '<option value="' + v + '"' + (sel ? ' selected' : '') + (dis ? ' disabled' : '') + '>' + l + '</option>';
+  const kindSel = ed ? ed.kind : (admin && ui.lastKind === 'store' ? 'store' : 'mine');
+  let h = '<div class="evp-form' + (ed ? ' editing' : '') + '">' +
+    '<input type="date" id="evpD" value="' + dLabel(date) + '" aria-label="날짜">' +
+    '<select id="evpK" aria-label="종류"' + (ed ? ' disabled' : '') + '>' + opt('mine', '내 일정', kindSel === 'mine') + opt('store', '매장 일정' + (admin ? '' : ' (관리자)'), kindSel === 'store', !admin) + '</select>' +
+    '<select id="evpC" aria-label="분류">' + EV_CATS.map(c => opt(c, c, (ed ? ed.cat || '일반' : '일반') === c)).join('') + '</select>' +
+    '<input type="time" id="evpTm" value="' + esc(ed ? ed.tm || '' : '') + '" aria-label="시간(선택)">' +
+    '<input type="text" id="evpT" maxlength="40" placeholder="일정 내용 (예: 본사 회의)" value="' + esc(ed ? ed.t : '') + '">' +
+    '<button class="btn primary" id="evpSave">' + (ed ? '수정 저장' : '등록') + '</button>' + (ed ? '<button class="btn ghost" id="evpCancel">취소</button>' : '') + '</div><div id="evpMsg" class="muted"></div>';
+  const all = e.store.concat(e.mine).filter(x => ui.f === 'all' || x.kind === ui.f).filter(x => !ui.cat || (x.cat || '일반') === ui.cat)
+    .sort((a, b) => (a.d - b.d) || String(a.tm || '99').localeCompare(String(b.tm || '99')));
+  h += '<div class="evp-bar"><div class="chips">' + [['all', '전체'], ['store', '매장 일정'], ['mine', '내 일정']].map(([k, l]) => '<button data-evf="' + k + '"' + (ui.f === k ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div>' +
+    '<select id="evpCF" aria-label="분류 필터">' + opt('', '분류 전체', !ui.cat) + EV_CATS.map(c => opt(c, c, ui.cat === c)).join('') + '</select></div>';
+  h += all.length ? '<ul class="evp-list">' + all.map(x => {
+    const can = x.kind === 'mine' || admin, on = ed && ed.id === x.id;
+    return '<li' + (on ? ' class="on"' : '') + '><span class="evp-d' + (x.d === d.today ? ' today' : '') + '">' + mdLabel(x.d) + '(' + DOWK[dowOf(x.d)] + ')</span><span class="ev ' + x.kind + '">' + (x.kind === 'store' ? '매장' : '내 일정') + '</span>' +
+      '<span class="evp-c">' + esc(x.cat || '일반') + '</span><span class="evp-t">' + (x.tm ? '<b>' + esc(x.tm) + '</b> ' : '') + esc(x.t) + '</span>' +
+      (can ? '<button class="btn ghost sm" data-eve="' + x.kind + ':' + x.id + '">수정</button><button class="btn danger sm" data-evx="' + x.kind + ':' + x.id + '">삭제</button>' : '') + '</li>';
+  }).join('') + '</ul>' : '<p class="muted" style="margin:8px 0 0">' + (d.ym % 100) + '월 일정이 없습니다. 위에서 등록하거나 달력의 날짜를 눌러 보세요.</p>';
+  box.innerHTML = h;
+  const ref = (kind, id) => kind === 'store' ? doc(db, C.events, id) : doc(db, C.my, S.user.uid, 'events', id);
+  const reload = async ym => { await loadEvents(ym, true); refreshCal(); };
+  $('evpSave').addEventListener('click', async () => {
+    const dd = Number(($('evpD').value || '').replace(/-/g, '')), t = cleanText($('evpT').value, 40), tm = /^\d{2}:\d{2}$/.test($('evpTm').value) ? $('evpTm').value : '';
+    const cat = EV_CATS.includes($('evpC').value) ? $('evpC').value : '일반', kind = ed ? ed.kind : ($('evpK').value === 'store' && admin ? 'store' : 'mine');
+    if (!toDateInt(String(dd))) { $('evpMsg').textContent = '날짜를 골라 주세요.'; return; }
+    if (!t) { $('evpMsg').textContent = '일정 내용을 입력해 주세요.'; $('evpT').focus(); return; }
+    $('evpSave').disabled = true;
+    try {
+      const data = { d: dd, t, tm, cat, at: serverTimestamp() };
+      if (kind === 'store') data.by = S.user.email || '';
+      if (ed) await setDoc(ref(ed.kind, ed.id), data);
+      else await addDoc(kind === 'store' ? collection(db, C.events) : collection(db, C.my, S.user.uid, 'events'), data);
+      ui.edit = null; ui.lastKind = kind; ui.date = dd;
+      await reload(d.ym); if (ymOf(dd) !== d.ym) toast(mdLabel(dd) + ' 일정을 저장했어요 (다른 달)');
+    } catch (err) { $('evpMsg').textContent = '저장 실패: ' + errMsg(err); $('evpSave').disabled = false; }
+  });
+  $('evpT').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); $('evpSave').click(); } });
+  if ($('evpCancel')) $('evpCancel').addEventListener('click', () => { ui.edit = null; renderEvPanel(); });
+  box.querySelectorAll('[data-evf]').forEach(b => b.addEventListener('click', () => { ui.f = b.dataset.evf; renderEvPanel(); }));
+  $('evpCF').addEventListener('change', () => { ui.cat = $('evpCF').value; renderEvPanel(); });
+  box.querySelectorAll('[data-eve]').forEach(b => b.addEventListener('click', () => { const [kind, id] = b.dataset.eve.split(':'); ui.edit = { kind, id }; renderEvPanel(); $('evpT').focus(); }));
+  box.querySelectorAll('[data-evx]').forEach(b => b.addEventListener('click', async () => {
+    const [kind, id] = b.dataset.evx.split(':');
+    if (!confirm('이 일정을 삭제할까요?')) return;
+    try { await deleteDoc(ref(kind, id)); if (ui.edit && ui.edit.id === id) ui.edit = null; await reload(d.ym); } catch (err) { toast('삭제 실패: ' + errMsg(err)); }
+  }));
 }
 let dayCur = 0;
 function openDay(day) {
@@ -2175,7 +2252,7 @@ function briefCard(d, admin) {
     { k: 'mon', l: '월별 ' + (d.ym % 100) + '월', b: mon, x: admin && mon ? briefDetailRange(mon.cur, mon.prev, '전월 같은 기간') : [] }
   ].filter(m => m.b);
   const sel = modes.some(m => m.k === S.briefMode) ? S.briefMode : 'day';
-  return '<div class="card brief" id="homeBrief" data-sec="AI 브리핑"><div class="brief-h"><h2>✨ AI 브리핑 <span class="tag free">무료</span></h2><div class="chips">' +
+  return '<div class="card brief" id="homeBrief" data-sec="AI 브리핑"><div class="brief-h"><h2>✨ AI 브리핑</h2><div class="chips">' +
     modes.map(m => '<button data-bm="' + m.k + '"' + (m.k === sel ? ' class="on"' : '') + '>' + m.l + '</button>').join('') + '</div></div>' +
     modes.map(m => '<div class="bm' + (m.k === sel ? '' : ' hide') + '" data-bmv="' + m.k + '"><div class="brief-tot"><b>' + won(m.b.tot) + '</b><span class="muted">내판 ' + eok(m.b.n) + ' · 외판 ' + eok(m.b.o) + (m.k === 'week' ? ' · 7일 합계' : m.k === 'mon' ? ' · ' + (d.ym % 100) + '월 누적' : '') + '</span></div>' +
       '<ul class="brief-l">' + m.b.pts.concat(m.x).map(p => '<li class="' + p.t + '"><span class="ic">' + BRIEF_ICON[p.t] + '</span><span>' + p.s + '</span></li>').join('') + '</ul></div>').join('') + '</div>';
@@ -2191,7 +2268,7 @@ document.addEventListener('click', e => {
 function briefHtml(b, extra, title, controls, id) {
   if (!b) return '';
   const all = b.pts.concat(extra || []);
-  return '<div class="card brief"' + (id ? ' id="' + id + '"' : '') + ' data-sec="AI 브리핑"><div class="brief-h"><h2>' + (title || '✨ ' + mdLabel(b.date) + '(' + DOWK[dowOf(b.date)] + ') AI 브리핑 <span class="tag free">무료</span>') + '</h2>' + (controls || '') + '</div>' +
+  return '<div class="card brief"' + (id ? ' id="' + id + '"' : '') + ' data-sec="AI 브리핑"><div class="brief-h"><h2>' + (title || '✨ ' + mdLabel(b.date) + '(' + DOWK[dowOf(b.date)] + ') AI 브리핑') + '</h2>' + (controls || '') + '</div>' +
     '<div class="brief-tot"><b>' + won(b.tot) + '</b><span class="muted">내판 ' + eok(b.n) + ' · 외판 ' + eok(b.o) + '</span></div>' +
     '<ul class="brief-l">' + all.map(p => '<li class="' + p.t + '"><span class="ic">' + BRIEF_ICON[p.t] + '</span><span>' + p.s + '</span></li>').join('') + '</ul></div>';
 }
