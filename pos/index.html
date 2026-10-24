@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko" data-theme="classic" data-font="neat">
+<html lang="ko" data-theme="toss" data-font="neat">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://cdn.sheetjs.com; connect-src 'self' https://*.googleapis.com https://www.gstatic.com https://apis.google.com; frame-src https://acetool-923f6.firebaseapp.com https://accounts.google.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://cdn.sheetjs.com; connect-src 'self' https://*.googleapis.com https://www.gstatic.com https://apis.google.com; frame-src https://acetool-923f6.firebaseapp.com https://accounts.google.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <title>매출 현황</title>
@@ -25,7 +25,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Gaegu:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 /* ===== 디자인 3종: 기존(근무표) / 토스형 / 미드나잇 ===== */
 :root, [data-theme="classic"] {
@@ -66,13 +66,13 @@
   --kpi-size: 19px;
 }
 /* ===== 글씨 2종: 또박또박 / 동글동글 손글씨 ===== */
-:root, [data-font="neat"] { --font: "Noto Sans KR", -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; --font-head: var(--font); --fs: 15px; }
+:root, [data-font="neat"] { --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; --font-head: var(--font); --fs: 15px; --ls: -0.01em; }
 @font-face { font-family: 'OngleipUnz'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2406-1@1.0/Ownglyph_UNZ-Rg.woff2') format('woff2'); font-weight: normal; font-display: swap; }
-[data-font="round"] { --font: "OngleipUnz", "Gaegu", "Noto Sans KR", sans-serif; --font-head: var(--font); --fs: 17px; }
+[data-font="round"] { --font: "OngleipUnz", "Gaegu", "Pretendard Variable", sans-serif; --font-head: var(--font); --fs: 17px; --ls: 0; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--ink); }
-body { font: var(--fs)/1.55 var(--font); -webkit-font-smoothing: antialiased; }
+body { font: var(--fs)/1.55 var(--font); letter-spacing: var(--ls, 0); -webkit-font-smoothing: antialiased; }
 h1, h2, h3, .btn, .kpi .v, .brand-t, .pill, .page-title { font-family: var(--font-head); }
 .wrap { max-width: 1080px; margin: 0 auto; padding: 16px; }
 .hide { display: none !important; }
@@ -154,7 +154,7 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .pref-l { color: var(--ink2); font-size: .85em; margin-right: 2px; }
 .seg { border: 1px solid var(--line); background: var(--surface); color: var(--ink2); padding: 7px 14px; border-radius: 999px; cursor: pointer; }
 .seg.on { background: var(--chip); color: var(--chip-ink); border-color: var(--chip-ink); font-weight: 700; }
-.seg[data-font="neat"] { font-family: "Noto Sans KR", sans-serif; }
+.seg[data-font="neat"] { font-family: "Pretendard Variable", Pretendard, sans-serif; }
 .seg[data-font="round"] { font-family: "OngleipUnz", "Gaegu", sans-serif; font-size: 1.08em; }
 .admin-btn { background: var(--dark); color: var(--dark-ink); }
 .center { text-align: center; }
@@ -489,7 +489,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 (function () {
   try {
     var t = localStorage.getItem('pos.theme'), f = localStorage.getItem('pos.font');
-    if (t === 'classic' || t === 'toss' || t === 'night') document.documentElement.dataset.theme = t;
+    if (t === 'classic' || t === 'toss' || t === 'night') document.documentElement.dataset.theme = t; else document.documentElement.dataset.theme = 'toss';
     if (f === 'neat' || f === 'round') document.documentElement.dataset.font = f;
   } catch (e) { }
 })();
@@ -1105,13 +1105,13 @@ $('backHome').addEventListener('click', () => { show('home'); loadHome(S.ym); })
 
 /* ===================== 글씨 / 디자인 선택 ===================== */
 function applyPrefs() {
-  const th = pref('theme', 'classic'), fo = pref('font', 'neat');
+  const th = pref('theme', 'toss'), fo = pref('font', 'neat');
   document.documentElement.dataset.theme = th;
   document.documentElement.dataset.font = fo;
   document.querySelectorAll('.seg[data-theme]').forEach(b => b.classList.toggle('on', b.dataset.theme === th));
   document.querySelectorAll('.seg[data-font]').forEach(b => b.classList.toggle('on', b.dataset.font === fo));
 }
-document.querySelectorAll('.seg[data-theme]').forEach(b => b.addEventListener('click', () => { pref('theme', 'classic', b.dataset.theme); applyPrefs(); }));
+document.querySelectorAll('.seg[data-theme]').forEach(b => b.addEventListener('click', () => { pref('theme', 'toss', b.dataset.theme); applyPrefs(); }));
 document.querySelectorAll('.seg[data-font]').forEach(b => b.addEventListener('click', () => { pref('font', 'neat', b.dataset.font); applyPrefs(); }));
 applyPrefs();
 
