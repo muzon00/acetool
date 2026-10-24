@@ -1,1 +1,1557 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="classic" data-font="neat">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://cdn.sheetjs.com; connect-src 'self' https://*.googleapis.com https://www.gstatic.com https://apis.google.com; frame-src https://acetool-923f6.firebaseapp.com https://accounts.google.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<title>매출 현황</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Jua&family=Gaegu:wght@400;700&display=swap">
+<style>
+/* ===== 디자인 3종: 기존(근무표) / 토스형 / 미드나잇 ===== */
+:root, [data-theme="classic"] {
+  color-scheme: light;
+  --bg: #f3f4f6; --surface: #ffffff; --surface2: #f8f9fb; --ink: #1f2937; --ink2: #5b6472; --ink3: #9aa3af;
+  --line: #e6e8ec; --grid: #eceef2;
+  --s1: #2f6fe4; --s2: #f0703c;
+  --accent: #1fa64d; --accent-ink: #ffffff; --dark: #4b5563; --dark-ink: #ffffff;
+  --chip: #eef3ff; --chip-ink: #1d4ed8;
+  --warn-bg: #fff6dc; --warn-ink: #7a5200; --ok-bg: #e7f6ec; --ok-ink: #166534; --bad-bg: #fdecec; --bad-ink: #b42318;
+  --alert: #dc2626;
+  --radius: 16px; --radius-sm: 10px; --border: 1px solid var(--line);
+  --shadow: 0 1px 3px rgba(16, 24, 40, .06), 0 1px 2px rgba(16, 24, 40, .04);
+  --kpi-size: 19px;
+}
+[data-theme="toss"] {
+  color-scheme: light;
+  --bg: #f2f4f6; --surface: #ffffff; --surface2: #f9fafb; --ink: #191f28; --ink2: #4e5968; --ink3: #8b95a1;
+  --line: #e5e8eb; --grid: #f2f4f6;
+  --s1: #3182f6; --s2: #ffb800;
+  --accent: #3182f6; --accent-ink: #ffffff; --dark: #e8f3ff; --dark-ink: #1b64da;
+  --chip: #e8f3ff; --chip-ink: #1b64da;
+  --warn-bg: #fff8e1; --warn-ink: #8a5a00; --ok-bg: #e8f8ef; --ok-ink: #0b7a3e; --bad-bg: #ffeeee; --bad-ink: #d22030;
+  --alert: #f04452;
+  --radius: 22px; --radius-sm: 14px; --border: 0 solid transparent; --shadow: none;
+  --kpi-size: 22px;
+}
+[data-theme="night"] {
+  color-scheme: dark;
+  --bg: #0d1220; --surface: #161e30; --surface2: #1b2539; --ink: #e8ecf3; --ink2: #a9b2c3; --ink3: #7c869a;
+  --line: #263046; --grid: #222b3e;
+  --s1: #4f9dff; --s2: #ff9f5a;
+  --accent: #34d399; --accent-ink: #052e1c; --dark: #2a3550; --dark-ink: #e8ecf3;
+  --chip: #1e2a44; --chip-ink: #9cc4ff;
+  --warn-bg: #3a2f10; --warn-ink: #f2d98a; --ok-bg: #12301f; --ok-ink: #9be0b4; --bad-bg: #3b1714; --bad-ink: #f3a39c;
+  --alert: #ff7b72;
+  --radius: 16px; --radius-sm: 10px; --border: 1px solid var(--line); --shadow: none;
+  --kpi-size: 19px;
+}
+/* ===== 글씨 2종: 또박또박 / 동글동글 손글씨 ===== */
+:root, [data-font="neat"] { --font: "Noto Sans KR", -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; --font-head: var(--font); --fs: 15px; }
+[data-font="round"] { --font: "Gaegu", "Noto Sans KR", sans-serif; --font-head: "Jua", "Noto Sans KR", sans-serif; --fs: 17px; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body { font: var(--fs)/1.55 var(--font); -webkit-font-smoothing: antialiased; }
+h1, h2, h3, .btn, .kpi .v, .brand-t, .pill, .page-title { font-family: var(--font-head); }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 16px; }
+.hide { display: none !important; }
+.card { background: var(--surface); border: var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-bottom: 14px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 18px; }
+.brand { display: flex; align-items: center; gap: 14px; }
+.logo { width: 52px; height: 52px; border: 1px dashed var(--line); border-radius: 14px; display: grid; place-items: center; font-size: 26px; background: var(--surface2); }
+.brand-t { font-size: 20px; font-weight: 700; }
+.sub, .muted { color: var(--ink2); font-size: .87em; }
+.userbox { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.chip { background: var(--chip); color: var(--chip-ink); border-radius: 999px; padding: 4px 12px; font-size: .85em; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.page-title { text-align: center; font-size: 28px; margin: 18px 0 6px; letter-spacing: -.5px; }
+.alert-line { text-align: center; color: var(--alert); font-weight: 700; margin: 0 0 16px; font-size: .97em; }
+.alert-line div { margin: 2px 0; }
+h2 { font-size: 17px; margin: 0 0 12px; }
+h3 { font-size: 15px; margin: 18px 0 8px; }
+select, input, textarea, button { font: inherit; color: var(--ink); }
+select, input[type=text], input[type=number], input[type=month], input[type=date], textarea {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 9px 12px; }
+textarea { width: 100%; }
+.btn { border: 0; border-radius: var(--radius-sm); padding: 10px 18px; cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; justify-content: center; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn.dark { background: var(--dark); color: var(--dark-ink); }
+.btn.ghost { background: transparent; border: 1px solid var(--line); color: var(--ink); font-weight: 500; }
+.btn.danger { background: transparent; border: 1px solid var(--bad-ink); color: var(--bad-ink); font-weight: 500; }
+.btn.sm { padding: 6px 12px; font-size: .88em; }
+.btn.lg { padding: 14px 26px; font-size: 1.05em; }
+.btn:disabled { opacity: .45; cursor: default; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; margin-bottom: 18px; }
+.tabsbar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 12px; }
+.pill { border: 0; background: transparent; color: var(--ink2); padding: 10px 18px; border-radius: 999px; cursor: pointer; font-size: 1em; display: inline-flex; align-items: center; gap: 8px; }
+.pill::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--ink3); opacity: .5; }
+.pill.on { background: var(--accent); color: var(--accent-ink); box-shadow: 0 4px 12px rgba(0, 0, 0, .08); }
+.pill.on::before { background: var(--accent-ink); opacity: .85; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.kpi { background: var(--surface); border: var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; }
+.kpi .l { color: var(--ink2); font-size: .82em; }
+.kpi .v { font-size: var(--kpi-size); font-weight: 700; margin: 3px 0; word-break: keep-all; overflow-wrap: anywhere; }
+.kpi .s { color: var(--ink2); font-size: .8em; }
+.kpi.hl .v { color: var(--accent); }
+[data-theme="classic"] .kpi.hl .v, [data-theme="toss"] .kpi.hl .v { color: var(--s1); }
+.banner { border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 12px; font-size: .93em; }
+.banner.warn { background: var(--warn-bg); color: var(--warn-ink); }
+.banner.ok { background: var(--ok-bg); color: var(--ok-ink); }
+.banner.bad { background: var(--bad-bg); color: var(--bad-ink); }
+.pbar { position: relative; height: 14px; background: var(--grid); border-radius: 7px; margin: 10px 0 6px; }
+.pbar .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--s1); border-radius: 7px; }
+.pbar .tick { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink); }
+table { width: 100%; border-collapse: collapse; font-size: .93em; }
+th, td { padding: 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--ink2); font-weight: 600; font-size: .85em; }
+.scroll { overflow-x: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .8em; color: var(--ink2); margin: 0 0 6px; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.legend i.line { height: 0; border-top: 2px solid; border-radius: 0; vertical-align: 3px; width: 18px; }
+.legend i.dash { height: 0; border-top: 2px dashed; border-radius: 0; vertical-align: 3px; width: 18px; }
+svg text { fill: var(--ink2); font-size: 11px; font-family: var(--font); }
+svg text.lbl { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; fill: var(--ink); font-weight: 700; }
+svg.chart { width: 100%; height: auto; display: block; }
+#tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--bg); padding: 6px 9px; border-radius: 6px; font-size: 12px; line-height: 1.45; z-index: 9; display: none; max-width: 260px; }
+#toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-size: .92em; z-index: 10; display: none; max-width: calc(100% - 32px); text-align: center; }
+.drop { border: 2px dashed var(--line); border-radius: var(--radius); padding: 28px 16px; text-align: center; color: var(--ink2); cursor: pointer; background: var(--surface2); }
+.drop.over { border-color: var(--accent); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.grid2 > .card { margin-bottom: 0; }
+.grid2 + .card, .grid2 + .grid2 { margin-top: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.row label { display: flex; flex-direction: column; font-size: .8em; color: var(--ink2); gap: 3px; }
+details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-top: 8px; }
+.prefs { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; margin-top: 24px; }
+.pref-groups { display: flex; flex-wrap: wrap; gap: 14px; }
+.pref-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pref-l { color: var(--ink2); font-size: .85em; margin-right: 2px; }
+.seg { border: 1px solid var(--line); background: var(--surface); color: var(--ink2); padding: 7px 14px; border-radius: 999px; cursor: pointer; }
+.seg.on { background: var(--chip); color: var(--chip-ink); border-color: var(--chip-ink); font-weight: 700; }
+.seg[data-font="neat"] { font-family: "Noto Sans KR", sans-serif; }
+.seg[data-font="round"] { font-family: "Jua", sans-serif; }
+.admin-btn { background: var(--dark); color: var(--dark-ink); }
+.center { text-align: center; }
+.login { max-width: 460px; margin: 40px auto; text-align: center; padding: 34px 24px; }
+.login h1 { font-size: 26px; margin: 0 0 8px; }
+.mono { font-family: ui-monospace, Consolas, monospace; font-size: .9em; background: var(--surface2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; word-break: break-all; user-select: all; }
+.dl-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.dl-item { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; background: var(--surface2); display: flex; flex-direction: column; gap: 8px; justify-content: space-between; }
+.dl-item b { font-family: var(--font-head); }
+.help h3 { margin-top: 20px; }
+.help ol, .help ul { padding-left: 20px; margin: 6px 0; }
+.help li { margin: 4px 0; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .8em; background: var(--chip); color: var(--chip-ink); }
+.tag.admin { background: var(--ok-bg); color: var(--ok-ink); }
+@media (max-width: 560px) { .page-title { font-size: 22px; } .card { padding: 14px; } }
+@media print { .prefs, .toolbar, .tabsbar, .topbar .userbox { display: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="card topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">🏬</div>
+      <div><div class="brand-t">매출 현황</div><div class="sub" id="status">불러오는 중…</div></div>
+    </div>
+    <div class="userbox hide" id="userbox"><span class="chip" id="userChip"></span><button class="btn ghost sm" id="logoutBtn">로그아웃</button></div>
+  </header>
+
+  <!-- 로딩 -->
+  <section id="v-loading"><div class="card center muted">불러오는 중…</div></section>
+
+  <!-- 로그인 -->
+  <section id="v-login" class="hide">
+    <div class="card login">
+      <h1>매출 현황</h1>
+      <p class="muted">허용된 구글 계정으로만 볼 수 있습니다.</p>
+      <button class="btn primary lg" id="loginBtn">Google 계정으로 로그인</button>
+      <p class="muted" style="margin-top:16px">처음 로그인하면 관리자에게 승인 요청이 전달됩니다.<br>공용 PC에서는 사용 후 꼭 로그아웃해 주세요.</p>
+      <div id="loginMsg" class="banner bad hide" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- 승인 대기 -->
+  <section id="v-pending" class="hide">
+    <div class="card login">
+      <h1>승인 대기 중</h1>
+      <p class="muted">관리자가 승인하면 매출 현황을 볼 수 있습니다.</p>
+      <div style="text-align:left;margin:14px 0">
+        <div class="muted">로그인한 계정</div><div class="mono" id="pendEmail"></div>
+        <div class="muted" style="margin-top:10px">사용자 ID (UID)</div><div class="mono" id="pendUid"></div>
+      </div>
+      <div id="pendMsg" class="banner warn"></div>
+      <div class="row" style="justify-content:center">
+        <button class="btn ghost" id="copyUid">UID 복사</button>
+        <button class="btn primary" id="recheckBtn">다시 확인</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 홈 -->
+  <section id="v-home" class="hide">
+    <h1 class="page-title" id="homeTitle">매출 현황</h1>
+    <div class="alert-line" id="homeAlert"></div>
+    <div class="toolbar">
+      <select id="homeMonth" aria-label="월 선택"></select>
+      <button class="btn dark" id="homeRefresh">새로고침</button>
+      <button class="btn ghost" id="homePrint">인쇄</button>
+    </div>
+    <div id="homeBody"></div>
+  </section>
+
+  <!-- 관리자 -->
+  <section id="v-admin" class="hide">
+    <h1 class="page-title">관리자 대시보드</h1>
+    <div class="alert-line" id="adminAlert"></div>
+    <div class="card tabsbar" id="adminTabs">
+      <button class="pill on" data-tab="analysis">상세 분석</button>
+      <button class="pill" data-tab="upload">업로드</button>
+      <button class="pill" data-tab="download">다운로드</button>
+      <button class="pill" data-tab="settings">목표·설정</button>
+      <button class="pill" data-tab="members">권한 관리</button>
+      <button class="pill" data-tab="help">사용 안내</button>
+    </div>
+    <div class="toolbar">
+      <select id="adminMonth" aria-label="월 선택"></select>
+      <button class="btn dark" id="adminRefresh">새로고침</button>
+      <button class="btn ghost" id="backHome">← 홈 화면</button>
+    </div>
+
+    <div id="a-analysis"></div>
+
+    <div id="a-upload" class="hide">
+      <div class="card">
+        <h2>판매 내역 올리기</h2>
+        <p class="muted">POS에서 내려받은 판매 내역 엑셀(.xlsx)이나 CSV를 올리세요. 파일에 들어 있는 날짜의 기존 데이터는 새 파일 내용으로 교체되므로, 같은 날짜를 다시 올려도 중복되지 않습니다. 파일에는 해당 날짜의 내판(일반)과 외판(B2B)이 모두 들어 있어야 합니다.</p>
+        <div class="drop" id="drop" tabindex="0" role="button">여기를 눌러 파일을 선택하거나 끌어다 놓으세요<br><span class="muted">.xlsx · .xls · .csv (최대 30MB)</span></div>
+        <input type="file" id="file" accept=".xlsx,.xls,.csv" class="hide">
+      </div>
+      <div id="preview"></div>
+      <div class="card">
+        <h2>문자 붙여넣기 (일산점만 저장)</h2>
+        <p class="muted">시간별 매출, 일마감, 멤버쉽 현황 문자를 한꺼번에 붙여넣으세요. 세 종류가 섞여 있어도 자동으로 구분하고, 일산점 항목만 저장합니다. 같은 날짜·시각의 기존 값은 새 값으로 교체됩니다.</p>
+        <textarea id="smsText" rows="9" placeholder="여기에 문자를 붙여넣기 (맥북: Cmd+V)"></textarea>
+        <div class="row" style="margin-top:8px">
+          <label>시간별 문자의 첫 날짜<input type="date" id="smsDate"></label>
+          <button class="btn primary" id="smsParse">내용 확인</button>
+        </div>
+        <p class="muted" style="margin:8px 0 0">시간별 문자(“ACE홈센터 - 11시”)에는 날짜가 없습니다. 붙여넣은 첫 시간별 문자의 날짜를 정해 주세요. 시각이 줄어들면(예: 21시 다음 9시) 다음 날로 계산하고, 마감 문자 뒤에 오는 시간별 문자는 다음 날로 계산합니다.</p>
+      </div>
+      <div id="smsPreview"></div>
+    </div>
+
+    <div id="a-download" class="hide"></div>
+
+    <div id="a-settings" class="hide">
+      <div class="card">
+        <h2>월 목표 등록</h2>
+        <div class="row">
+          <label>연월<input type="month" id="tYm"></label>
+          <label>목표 합계(원, VAT 별도)<input type="number" id="tTotal" min="0" step="1000"></label>
+          <label>내판 목표(선택)<input type="number" id="tN" min="0" step="1000"></label>
+          <label>외판 목표(선택)<input type="number" id="tO" min="0" step="1000"></label>
+          <button class="btn primary" id="tSave">저장</button>
+        </div>
+        <div id="tMsg" class="muted" style="margin-top:8px"></div>
+        <div class="scroll" style="margin-top:10px"><table id="tTable"></table></div>
+      </div>
+      <div class="card">
+        <h2>문자 금액 기준</h2>
+        <p class="muted">시간별·마감 문자의 금액이 VAT 포함인지 별도인지 선택하세요. 상세 분석의 "마감 문자와 POS 대조" 표에서 차이가 거의 0으로 나오는 쪽이 맞는 선택입니다.</p>
+        <label style="margin-right:16px"><input type="radio" name="smsVat" value="incl"> VAT 포함 (÷1.1로 환산)</label>
+        <label><input type="radio" name="smsVat" value="excl"> VAT 별도 (그대로 사용)</label>
+        <span id="vMsg" class="muted" style="margin-left:10px"></span>
+      </div>
+      <div class="card">
+        <h2>휴무일</h2>
+        <p class="muted">영업하지 않는 날을 한 줄에 하나씩 YYYY-MM-DD 형식으로 적으세요. 남은 영업일 계산과 누락일 점검에서 제외됩니다.</p>
+        <textarea id="hol" rows="6" placeholder="2026-12-25"></textarea>
+        <div style="margin-top:8px"><button class="btn primary" id="hSave">저장</button> <span id="hMsg" class="muted"></span></div>
+      </div>
+    </div>
+
+    <div id="a-members" class="hide"></div>
+
+    <div id="a-help" class="hide">
+      <div class="card help">
+        <h2>사용 안내</h2>
+        <h3>매일 하실 일</h3>
+        <ol>
+          <li>POS에서 판매 내역 엑셀을 내려받습니다. (당일분 또는 이번 달 1일~오늘 누적분)</li>
+          <li>관리자 모드 › 업로드 › 파일 선택 › 미리보기의 기간과 합계 확인 › 등록</li>
+          <li>"등록 완료 · 검산 일치"가 나오면 끝입니다. 홈 화면에서 달성률, 예상 마감금액을 확인합니다.</li>
+        </ol>
+        <ul>
+          <li>같은 날짜를 다시 올리면 그 날짜의 기존 데이터가 새 내용으로 교체됩니다. 중복 합산되지 않습니다.</li>
+          <li>파일에는 해당 날짜의 내판(일반)과 외판(B2B)이 모두 들어 있어야 합니다.</li>
+        </ul>
+        <h3>처음 한 번: 과거 데이터 올리기</h3>
+        <ol>
+          <li>목표·설정 탭에서 월 목표를 입력합니다. (예: 2026-10 → 350000000, 11월 370000000, 12월 350000000)</li>
+          <li>업로드 탭에서 <b>과거데이터_1-9월.csv</b>를 선택 › 전체 순매출이 <b>2,724,117,720원</b>인지 확인 › 등록</li>
+          <li>이어서 10월 POS 판매 내역 엑셀을 올립니다.</li>
+        </ol>
+        <p class="muted">과거 데이터 파일은 이 페이지(공개 저장소)에 넣지 않았습니다. 매출·거래처 정보가 인터넷에 공개되지 않도록 반드시 로그인 후 업로드로만 넣어 주세요.</p>
+        <h3>POS 파일에 꼭 있어야 하는 열 이름</h3>
+        <ul>
+          <li>필수: 영업일자, 구분, 과세결제금액, 비과세결제금액</li>
+          <li>있으면 더 좋은 열: 담당자, 고객명, 대분류, 결제금액, 마진금액</li>
+          <li>구분 값은 "일반"(내판)과 "B2B"(외판)만 인식합니다.</li>
+          <li>순매출 = 과세결제금액 + 비과세결제금액 (VAT 별도, 반품/취소는 음수로 자동 차감)</li>
+          <li>백업 CSV(일자, 구분, 담당자, 거래처, 대분류, 순매출, 마진) 형식도 그대로 다시 올릴 수 있습니다.</li>
+        </ul>
+        <h3>문자(시간별/마감/멤버쉽) 붙여넣기 - 일산점만 저장</h3>
+        <ol>
+          <li>아이폰 문자를 맥북으로 가져옵니다. (설정 › 메시지 › 문자 메시지 전달에서 맥북 켜기 → 맥북 메시지 앱에서 대화 선택 후 Cmd+A, Cmd+C)</li>
+          <li>업로드 탭 아래 "문자 붙여넣기" 칸에 붙여넣습니다. 시간별 / 마감 / 멤버쉽 문자가 섞여 있어도 자동으로 구분합니다.</li>
+          <li>"시간별 문자의 첫 날짜"를 확인하고 "내용 확인" › 표가 맞으면 "저장"</li>
+        </ol>
+        <ul>
+          <li>시간별 문자: 일산점 금액과 건수를 "그 시각까지의 당일 누적"으로 저장합니다.</li>
+          <li>마감 문자: 일마감과 당월매출의 일산점 금액, 건수, % 값을 저장합니다.</li>
+          <li>멤버쉽 문자: 일산 신규 가입, 누적 회원, VIP MASTER, MASTER, VIP+MASTER 판매건수를 저장합니다.</li>
+          <li>문자 금액이 VAT 포함인지 별도인지는 목표·설정 탭에서 고릅니다. POS 대조표에서 "일치"가 나오면 맞는 선택입니다.</li>
+        </ul>
+        <h3>직원에게 홈 화면 보여주기</h3>
+        <ol>
+          <li>직원이 acetool.site/pos 에서 본인 구글 계정으로 로그인합니다. ("승인 대기 중" 화면이 나옵니다)</li>
+          <li>권한 관리 탭에서 요청을 확인하고 "보기 권한"으로 승인합니다.</li>
+          <li>직원(보기 권한)은 홈 화면만 볼 수 있습니다. 담당자·거래처·마진 정보와 업로드·다운로드는 관리자만 가능합니다. (서버 규칙으로 막혀 있어 화면을 조작해도 볼 수 없습니다)</li>
+        </ol>
+        <h3>보안 수칙</h3>
+        <ul>
+          <li>관리자 모드는 20분 동안 사용이 없으면 자동으로 홈으로 돌아갑니다.</li>
+          <li>다운로드한 CSV/엑셀에는 거래처·마진 정보가 들어 있습니다. 공용 PC라면 사용 후 파일을 지우고 로그아웃해 주세요.</li>
+          <li>퇴사자는 권한 관리 탭에서 바로 삭제해 주세요.</li>
+        </ul>
+        <h3>문제가 생기면</h3>
+        <ul>
+          <li>"검산 불일치"가 나오면 같은 파일을 다시 올려 주세요. (덮어쓰므로 안전합니다)</li>
+          <li>엑셀(.xlsx)이 안 읽히면 엑셀에서 CSV(UTF-8)로 저장해서 올려 보세요. 엑셀 읽기 도구는 인터넷에서 불러옵니다.</li>
+          <li>"권한이 없습니다(permission-denied)"가 나오면 로그아웃 후 다시 로그인해 보세요.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 하단: 글씨 / 디자인 / 관리자 버튼 -->
+  <footer class="card prefs" id="prefsBar">
+    <div class="pref-groups">
+      <div class="pref-group"><span class="pref-l">글씨</span>
+        <button class="seg" data-font="neat">또박또박</button>
+        <button class="seg" data-font="round">동글동글 손글씨</button>
+      </div>
+      <div class="pref-group"><span class="pref-l">디자인</span>
+        <button class="seg" data-theme="classic">기존</button>
+        <button class="seg" data-theme="toss">토스형</button>
+        <button class="seg" data-theme="night">미드나잇</button>
+      </div>
+    </div>
+    <button class="btn admin-btn hide" id="adminBtn">🔒 관리자 모드</button>
+  </footer>
+</div>
+<div id="tip"></div>
+<div id="toast" role="status"></div>
+
+<script>
+// 다른 사이트가 이 페이지를 몰래 iframe에 넣는 것(클릭재킹) 방지
+if (window.top !== window.self) { document.documentElement.style.display = 'none'; try { window.top.location = window.self.location.href; } catch (e) { } }
+// 글씨/디자인 선택은 화면이 깜빡이지 않도록 먼저 적용
+(function () {
+  try {
+    var t = localStorage.getItem('pos.theme'), f = localStorage.getItem('pos.font');
+    if (t === 'classic' || t === 'toss' || t === 'night') document.documentElement.dataset.theme = t;
+    if (f === 'neat' || f === 'round') document.documentElement.dataset.font = f;
+  } catch (e) { }
+})();
+</script>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {
+  getFirestore, doc, getDoc, getDocFromServer, getDocs, setDoc, deleteDoc, addDoc, collection,
+  runTransaction, writeBatch, serverTimestamp, query, orderBy, limit
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+// 이 값들은 공개되어도 괜찮은 식별자입니다. 데이터 보호는 Firestore 보안 규칙과 로그인으로 합니다.
+const firebaseConfig = {
+  apiKey: 'AIzaSyCIL_n5H8sYTEWb4jhISM5yS_6y_ci5Rnk',
+  authDomain: 'acetool-923f6.firebaseapp.com',
+  projectId: 'acetool-923f6',
+  storageBucket: 'acetool-923f6.firebasestorage.app',
+  messagingSenderId: '961124023870',
+  appId: '1:961124023870:web:8753a14fa706f34255db6f'
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app); // 오프라인 캐시는 켜지 않음(공용 PC에 데이터가 남지 않도록)
+const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ prompt: 'select_account' });
+
+const C = { daily: 'pos_daily', detail: 'pos_detail', targets: 'pos_targets', sms: 'pos_sms', config: 'pos_config', logs: 'pos_logs', roles: 'pos_roles', requests: 'pos_requests' };
+const XLSX_URL = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+const XLSX_SRI = 'sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT';
+const TZ = 'Asia/Seoul';
+const IDLE_MS = 20 * 60 * 1000;
+
+const S = { user: null, role: null, view: 'loading', ym: 0, daily: null, targets: null, settings: null, smsCache: {}, detail: null, parsed: null, adminTab: 'analysis', sum: null };
+const $ = id => document.getElementById(id);
+
+/* ===================== 공통 도우미 ===================== */
+function esc(s) { return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function won(n) { return Math.round(n).toLocaleString('ko-KR') + '원'; }
+function eok(n) { const a = Math.abs(n); if (a >= 1e8) return (n / 1e8).toFixed(2) + '억'; return Math.round(n / 1e4).toLocaleString('ko-KR') + '만'; }
+function pct(x, dp) { return (x * 100).toFixed(dp === undefined ? 1 : dp) + '%'; }
+function ymLabel(ym) { return Math.floor(ym / 100) + '년 ' + (ym % 100) + '월'; }
+function dLabel(d) { return Math.floor(d / 10000) + '-' + String(Math.floor(d / 100) % 100).padStart(2, '0') + '-' + String(d % 100).padStart(2, '0'); }
+function mdLabel(d) { return (Math.floor(d / 100) % 100) + '/' + (d % 100); }
+function sign(n) { return (n >= 0 ? '+' : '−') + Math.abs(n).toLocaleString('ko-KR'); }
+function errMsg(e) {
+  const code = e && e.code ? String(e.code) : '';
+  if (code.includes('permission-denied')) return '권한이 없습니다. 관리자에게 승인을 요청하거나 다시 로그인해 주세요.';
+  if (code.includes('unavailable')) return '인터넷 연결을 확인해 주세요.';
+  return e && e.message ? e.message : String(e);
+}
+function todayInt() { return Number(new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()).replace(/-/g, '')); }
+function ymOf(d) { return Math.floor(d / 100); }
+function dayOf(d) { return d % 100; }
+function dimOf(ym) { return new Date(Date.UTC(Math.floor(ym / 100), ym % 100, 0)).getUTCDate(); }
+function dowOf(d) { return new Date(Date.UTC(Math.floor(d / 10000), Math.floor(d / 100) % 100 - 1, d % 100)).getUTCDay(); }
+function typeOf(d) { const w = dowOf(d); return w === 0 ? '일' : (w === 6 ? '토' : '평일'); }
+function addMonths(ym, k) { let y = Math.floor(ym / 100), m = ym % 100 - 1 + k; y += Math.floor(m / 12); m = ((m % 12) + 12) % 12; return y * 100 + m + 1; }
+function mean(a) { if (!a.length) return 0; let s = 0; for (const x of a) s += x; return s / a.length; }
+function trimTop(a, q) { if (a.length < 20) return a; const s = a.slice().sort((x, y) => x - y); const cut = s[Math.floor((s.length - 1) * q)]; return a.filter(x => x <= cut); }
+function addDaysInt(d, k) { const dt = new Date(Date.UTC(Math.floor(d / 10000), Math.floor(d / 100) % 100 - 1, d % 100 + k)); return dt.getUTCFullYear() * 10000 + (dt.getUTCMonth() + 1) * 100 + dt.getUTCDate(); }
+function pref(key, def, val) {
+  try { if (val !== undefined) localStorage.setItem('pos.' + key, val); const v = localStorage.getItem('pos.' + key); return v || def; } catch (e) { return val || def; }
+}
+let toastT = null;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => { t.style.display = 'none'; }, 3500); }
+function setStatus(t) { $('status').textContent = t; }
+
+/* ===================== 파일 집계 (POS 원본 / 백업 CSV) ===================== */
+function toNum(v) {
+  if (typeof v === 'number') return isFinite(v) ? v : 0;
+  if (v === null || v === undefined || v === '') return 0;
+  const n = Number(String(v).replace(/[,\s]/g, ''));
+  return isFinite(n) ? n : 0;
+}
+function toDateInt(v) {
+  if (v === null || v === undefined || v === '') return 0;
+  if (v instanceof Date) return v.getFullYear() * 10000 + (v.getMonth() + 1) * 100 + v.getDate();
+  if (typeof v === 'number' && v < 100000) {
+    const dt = new Date(Math.round((v - 25569) * 86400000));
+    return dt.getUTCFullYear() * 10000 + (dt.getUTCMonth() + 1) * 100 + dt.getUTCDate();
+  }
+  const s = String(v).replace(/\D/g, '');
+  const d = s.length >= 8 ? Number(s.slice(0, 8)) : 0;
+  return d >= 20000101 && d <= 20991231 && d % 100 >= 1 && d % 100 <= 31 ? d : 0;
+}
+function mapG(v) {
+  const s = String(v === null || v === undefined ? '' : v).trim();
+  if (s === '일반' || s === '내판') return '내판';
+  if (s === 'B2B' || s === 'b2b' || s === '외판') return '외판';
+  return '';
+}
+function cleanText(v, max) { return String(v === null || v === undefined ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max || 100); }
+function aggregateRows(aoa) {
+  let hi = -1, i;
+  for (i = 0; i < Math.min(aoa.length, 30); i++) {
+    const line = (aoa[i] || []).map(x => String(x === null || x === undefined ? '' : x).trim());
+    if (line.indexOf('영업일자') >= 0 || line.indexOf('일자') >= 0) { hi = i; break; }
+  }
+  if (hi < 0) return { error: '헤더(영업일자 또는 일자)를 찾지 못했습니다. POS 판매 내역 파일이 맞는지 확인해 주세요.' };
+  const head = aoa[hi].map(x => String(x === null || x === undefined ? '' : x).trim());
+  const col = {};
+  head.forEach((h, k) => { if (h && col[h] === undefined) col[h] = k; });
+  const aggMode = col['순매출'] !== undefined;
+  const need = aggMode ? ['일자', '구분', '순매출'] : ['영업일자', '구분', '과세결제금액', '비과세결제금액'];
+  const miss = need.filter(n => col[n] === undefined);
+  if (miss.length) return { error: '필요한 열이 없습니다: ' + miss.join(', ') };
+
+  const map = {}, order = [];
+  const st = { rowsRead: 0, usedRows: 0, totalNet: 0, byG: { '내판': 0, '외판': 0 }, unknown: {}, badDate: 0, dateSet: {}, adjusted: 0 };
+  const get = (r, name) => { const k = col[name]; return k === undefined ? '' : r[k]; };
+  for (i = hi + 1; i < aoa.length; i++) {
+    const r = aoa[i];
+    if (!r || !r.length) continue;
+    const rawD = get(r, aggMode ? '일자' : '영업일자');
+    if (rawD === '' || rawD === null || rawD === undefined) continue;
+    st.rowsRead++;
+    const d = toDateInt(rawD);
+    if (!d) { st.badDate++; continue; }
+    const gRaw = get(r, '구분');
+    const g = mapG(gRaw);
+    if (!g) { const uk = cleanText(gRaw, 30); st.unknown[uk] = (st.unknown[uk] || 0) + 1; continue; }
+    let net, mar, mgr, cust, cat;
+    if (aggMode) {
+      net = toNum(get(r, '순매출')); mar = toNum(get(r, '마진'));
+      mgr = cleanText(get(r, '담당자'), 40); cust = cleanText(get(r, '거래처'), 80); cat = cleanText(get(r, '대분류'), 40);
+    } else {
+      const tax = toNum(get(r, '과세결제금액')), non = toNum(get(r, '비과세결제금액')), pay = toNum(get(r, '결제금액'));
+      net = tax + non;
+      if (net === 0 && pay !== 0) { net = Math.round(pay / 1.1); st.adjusted++; }
+      mar = toNum(get(r, '마진금액'));
+      mgr = g === '외판' ? (cleanText(get(r, '담당자'), 40) || '(미지정)') : '';
+      cust = g === '외판' ? (cleanText(get(r, '고객명'), 80) || '(거래처 미기재)') : '';
+      cat = cleanText(get(r, '대분류'), 40) || '(미분류)';
+    }
+    const key = d + '|' + g + '|' + mgr + '|' + cust + '|' + cat;
+    let o = map[key];
+    if (!o) { o = map[key] = [d, g, mgr, cust, cat, 0, 0]; order.push(key); }
+    o[5] += net; o[6] += mar;
+    st.usedRows++; st.totalNet += net; st.byG[g] += net; st.dateSet[d] = 1;
+  }
+  const rows = order.map(k => map[k]);
+  const dates = Object.keys(st.dateSet).map(Number).sort((a, b) => a - b);
+  return { rows, stats: { rowsRead: st.rowsRead, usedRows: st.usedRows, totalNet: st.totalNet, byG: st.byG, unknown: st.unknown, badDate: st.badDate, dates, adjusted: st.adjusted, mode: aggMode ? '백업/집계 CSV' : 'POS 원본' } };
+}
+
+/* ===================== 문자 파싱 (일산점) ===================== */
+const SMS_STORE = '일산점', SMS_SHORT = '일산';
+function numOf(s) { return Number(String(s).replace(/,/g, '')); }
+function parseSms(text, opts) {
+  opts = opts || {};
+  const t = String(text || '').replace(/\r/g, '');
+  const heads = [];
+  const re = /ACE홈센터\s*-\s*(?:(\d{4})\.(\d{1,2})\.(\d{1,2})\s*일?|(\d{1,2})\s*시)|<\s*멤버[쉽십]\s*현황\s*>/g;
+  let m;
+  while ((m = re.exec(t)) !== null) {
+    if (m[1]) heads.push({ pos: m.index, kind: '마감', d: Number(m[1]) * 10000 + Number(m[2]) * 100 + Number(m[3]) });
+    else if (m[4]) heads.push({ pos: m.index, kind: '시간별', h: Number(m[4]) });
+    else heads.push({ pos: m.index, kind: '멤버십' });
+  }
+  const out = { records: [], notes: [], counts: { '시간별': 0, '마감': 0, '멤버십': 0 } };
+  if (!heads.length) { out.notes.push('인식할 수 있는 문자가 없습니다. "ACE홈센터 - 11시", "ACE홈센터 - 2026.10.23일", "<멤버쉽 현황>" 로 시작하는 문자를 붙여넣어 주세요.'); return out; }
+  const reHour = new RegExp(SMS_STORE + '\\s*:\\s*([\\d,]+)\\s*원\\s*\\(\\s*([\\d,]+)\\s*건\\s*\\)');
+  const reClose = new RegExp(SMS_STORE + '\\s*:\\s*([\\d,]+)\\s*원\\s*,?\\s*(-?[\\d.]+)\\s*%\\s*\\(\\s*([\\d,]+)\\s*건\\s*\\)');
+  const reMem = new RegExp(SMS_SHORT + '\\s*([\\d,]+)');
+  let curDate = null, prevHour = -1, noDate = false;
+  const map = {}, order = [];
+  const put = rec => { const k = rec.slice(0, 4).join('|'); if (!map[k]) order.push(k); map[k] = rec; };
+  for (let i = 0; i < heads.length; i++) {
+    const h = heads[i];
+    const blk = t.slice(h.pos, i + 1 < heads.length ? heads[i + 1].pos : t.length);
+    out.counts[h.kind]++;
+    if (h.kind === '시간별') {
+      if (curDate === null) { if (opts.startDate) curDate = opts.startDate; }
+      else if (h.h <= prevHour) curDate = addDaysInt(curDate, 1);
+      prevHour = h.h;
+      const mm = reHour.exec(blk);
+      if (!mm) { out.notes.push(h.h + '시 문자에서 ' + SMS_STORE + ' 줄을 찾지 못했습니다.'); continue; }
+      if (curDate === null) { noDate = true; continue; }
+      put([curDate, '시간별', h.h, '당일누적', numOf(mm[1]), numOf(mm[2]), '']);
+    } else if (h.kind === '마감') {
+      curDate = h.d; prevHour = 99;
+      const iM = blk.indexOf('당월매출');
+      const dayPart = iM >= 0 ? blk.slice(0, iM) : blk, monPart = iM >= 0 ? blk.slice(iM) : '';
+      const a = reClose.exec(dayPart), b = monPart ? reClose.exec(monPart) : null;
+      const md = Math.floor(h.d / 100) % 100 + '/' + h.d % 100;
+      if (a) put([h.d, '마감', '', '일마감', numOf(a[1]), numOf(a[3]), Number(a[2])]);
+      else out.notes.push(md + ' 마감 문자에서 일마감 ' + SMS_STORE + ' 줄을 찾지 못했습니다.');
+      if (b) put([h.d, '마감', '', '당월', numOf(b[1]), numOf(b[3]), Number(b[2])]);
+      else out.notes.push(md + ' 마감 문자에서 당월매출 ' + SMS_STORE + ' 줄을 찾지 못했습니다.');
+    } else {
+      const dm = /(\d{1,2})\/(\d{1,2})/.exec(blk);
+      if (!dm) { out.notes.push('멤버쉽 문자에서 날짜를 찾지 못했습니다.'); continue; }
+      const today = opts.today || 0, mo = Number(dm[1]), dd = Number(dm[2]);
+      let y = today ? Math.floor(today / 10000) : new Date().getFullYear();
+      if (today && mo * 100 + dd > today % 10000) y -= 1;
+      const md = y * 10000 + mo * 100 + dd;
+      const iA = blk.indexOf('[누적회원수]');
+      const iV = blk.indexOf('<VIP MASTER 회원수>'), iMa = blk.indexOf('<MASTER 회원수>'), iS = blk.indexOf('<VIP+MASTER 판매건수>');
+      const cut = from => { if (from < 0) return ''; const ends = [blk.length]; [iA, iV, iMa, iS].forEach(x => { if (x > from) ends.push(x); }); return blk.slice(from, Math.min.apply(null, ends)); };
+      const parts = [['신규가입', iA >= 0 ? blk.slice(0, iA) : cut(0)], ['누적회원', cut(iA)], ['VIP MASTER 회원', cut(iV)], ['MASTER 회원', cut(iMa)], ['VIP+MASTER 판매건수', cut(iS)]];
+      parts.forEach(p => {
+        const r = reMem.exec(p[1]);
+        if (r) put([md, '멤버십', '', p[0], numOf(r[1]), '', '']);
+        else out.notes.push('멤버쉽 문자에서 "' + p[0] + '"의 ' + SMS_SHORT + ' 값을 찾지 못했습니다.');
+      });
+    }
+  }
+  if (noDate) out.notes.push('시간별 문자의 날짜를 알 수 없어 제외했습니다. "시간별 문자의 첫 날짜"를 입력해 주세요.');
+  out.records = order.map(k => map[k]);
+  return out;
+}
+
+/* ===================== 계산 (홈: 일별 합계만 사용) ===================== */
+// daily: { ym: { day: {n, o} } }
+function scenarioForecast(daily, ym, remainTypes) {
+  const defs = [{ key: '보수', months: 6, trim: true }, { key: '기본', months: 6, trim: false }, { key: '낙관', months: 3, trim: false }];
+  const out = {}; let any = false;
+  defs.forEach(def => {
+    const dd = [];
+    for (let k = def.months; k >= 1; k--) {
+      const m = addMonths(ym, -k), days = daily[m] || {};
+      Object.keys(days).forEach(dk => dd.push({ d: m * 100 + Number(dk), n: Number(days[dk].n) || 0, o: Number(days[dk].o) || 0 }));
+    }
+    if (!dd.length) { out[def.key] = null; return; }
+    any = true;
+    const res = { n: 0, o: 0 };
+    ['n', 'o'].forEach(g => {
+      const byType = { '평일': [], '토': [], '일': [] }, all = [];
+      dd.forEach(x => { byType[typeOf(x.d)].push(x[g]); all.push(x[g]); });
+      const doTrim = def.trim && g === 'o';
+      const fallback = mean(doTrim ? trimTop(all, 0.95) : all);
+      ['평일', '토', '일'].forEach(t => {
+        const arr = doTrim ? trimTop(byType[t], 0.95) : byType[t];
+        res[g] += (arr.length ? mean(arr) : fallback) * (remainTypes[t] || 0);
+      });
+    });
+    out[def.key] = res;
+  });
+  return any ? out : null;
+}
+
+function buildSummary(daily, targets, holidays, ym, today, sms, smsVat) {
+  const hol = {}; holidays.forEach(h => { hol[h] = 1; });
+  const months = Object.keys(daily).map(Number).filter(m => Object.keys(daily[m] || {}).length).sort((a, b) => a - b);
+  if (!ym) ym = months.length ? months[months.length - 1] : ymOf(today);
+  const dim = dimOf(ym), md = daily[ym] || {};
+  const days = [], cum = { n: 0, o: 0 };
+  let lastDay = 0;
+  for (let d = 1; d <= dim; d++) {
+    const x = md[d], has = !!x;
+    const n = has ? Number(x.n) || 0 : 0, o = has ? Number(x.o) || 0 : 0;
+    days.push({ day: d, n, o, has });
+    if (has) { cum.n += n; cum.o += o; lastDay = d; }
+  }
+  cum.total = cum.n + cum.o;
+  const last = lastDay ? ym * 100 + lastDay : 0;
+  const daysWithData = days.filter(x => x.has).length;
+  const tg = targets[ym] || null;
+  const target = tg && tg.total ? tg.total : null;
+  const elapsed = dim ? lastDay / dim : 0;
+  const achieve = target ? cum.total / target : null;
+  const ended = ym < ymOf(today);
+  const remain = [];
+  if (!ended) for (let day = lastDay + 1; day <= dim; day++) if (!hol[ym * 100 + day]) remain.push(ym * 100 + day);
+  const remainTypes = { '평일': 0, '토': 0, '일': 0 };
+  remain.forEach(d => { remainTypes[typeOf(d)]++; });
+  const needPerDay = (target && remain.length) ? Math.max(0, (target - cum.total) / remain.length) : null;
+  const avgPerDay = daysWithData ? cum.total / daysWithData : 0;
+  const fc = ended ? null : scenarioForecast(daily, ym, remainTypes);
+  let forecast = null;
+  if (fc) {
+    forecast = {};
+    Object.keys(fc).forEach(k => {
+      const f = fc[k];
+      if (!f) { forecast[k] = null; return; }
+      const tn = cum.n + f.n, to = cum.o + f.o;
+      forecast[k] = { n: Math.round(tn), o: Math.round(to), total: Math.round(tn + to), rate: target ? (tn + to) / target : null };
+    });
+  }
+  const pm = addMonths(ym, -1), pd = daily[pm] || {};
+  let prevSame = 0, prevTotal = 0;
+  Object.keys(pd).forEach(dk => { const v = (Number(pd[dk].n) || 0) + (Number(pd[dk].o) || 0); prevTotal += v; if (lastDay && Number(dk) <= lastDay) prevSame += v; });
+  const monthTotals = months.map(m => {
+    const t = { ym: m, n: 0, o: 0 };
+    Object.values(daily[m]).forEach(x => { t.n += Number(x.n) || 0; t.o += Number(x.o) || 0; });
+    t.total = t.n + t.o;
+    t.target = targets[m] && targets[m].total ? targets[m].total : null;
+    return t;
+  });
+  const missing = [];
+  for (let d2 = 1; d2 <= lastDay; d2++) { const key = ym * 100 + d2; if (!md[d2] && !hol[key]) missing.push(key); }
+  return {
+    ym, months, monthTotals, dim, last, lastDay, cum, target, targetN: tg ? tg.n : null, targetO: tg ? tg.o : null,
+    elapsed, achieve, expectedCum: target ? target * elapsed : null, remainDays: remain.length, remainTypes, needPerDay, avgPerDay,
+    daysWithData, forecast, ended, prev: { ym: pm, same: prevSame, total: prevTotal }, daily: days, missing, today,
+    sms: buildSms(sms || [], smsVat || 'incl', ym, days)
+  };
+}
+
+function buildSms(sms, vat, ym, days) {
+  const f = vat === 'excl' ? 1 : 1 / 1.1;
+  const rows = sms.filter(r => ymOf(r.d) === ym);
+  const hourly = {}, hourlyDates = [], close = {}, member = {};
+  rows.forEach(r => {
+    const v = Number(r.v) || 0;
+    if (r.kind === '시간별') {
+      if (!hourly[r.d]) { hourly[r.d] = []; hourlyDates.push(r.d); }
+      hourly[r.d].push({ h: Number(r.h), v, vEx: Math.round(v * f), c: r.c });
+    } else if (r.kind === '마감') {
+      if (!close[r.d]) close[r.d] = { d: r.d };
+      const o = { v, vEx: Math.round(v * f), c: r.c, r: r.r === undefined ? null : r.r };
+      if (r.metric === '일마감') close[r.d].day = o; else if (r.metric === '당월') close[r.d].month = o;
+    } else if (r.kind === '멤버십') {
+      if (!member[r.d]) member[r.d] = { d: r.d };
+      member[r.d][r.metric] = r.v;
+    }
+  });
+  hourlyDates.sort((a, b) => a - b);
+  hourlyDates.forEach(d => hourly[d].sort((a, b) => a.h - b.h));
+  const closeList = Object.keys(close).map(Number).sort((a, b) => a - b).map(d => {
+    const c = close[d], pd = days[dayOf(d) - 1];
+    c.pos = pd && pd.has ? pd.n + pd.o : null;
+    c.diff = (c.pos !== null && c.day) ? c.day.vEx - c.pos : null;
+    return c;
+  });
+  const memberList = Object.keys(member).map(Number).sort((a, b) => a - b).map(d => member[d]);
+  let latest = null;
+  for (let i = closeList.length - 1; i >= 0; i--) if (closeList[i].month) { latest = closeList[i]; break; }
+  return { vat, hourlyDates, hourly, close: closeList, member: memberList, latest };
+}
+
+/* ===================== 계산 (관리자: 상세 데이터) ===================== */
+// detail: { ym: { day: [ {g:'n'|'o', m, c, k, n, r} ] } }
+function buildDetail(detail, ym, lastDay) {
+  const cur = detail[ym] || {}, prev = detail[addMonths(ym, -1)] || {};
+  const mg = {}, cu = {}, ca = { n: {}, o: {} }, mar = { n: 0, o: 0 }, net = { n: 0, o: 0 }, prevMgr = {};
+  Object.keys(cur).forEach(day => (cur[day] || []).forEach(r => {
+    const v = Number(r.n) || 0, mm = Number(r.r) || 0, g = r.g === 'o' ? 'o' : 'n';
+    mar[g] += mm; net[g] += v;
+    if (g === 'o') {
+      const k = r.m || '(미지정)';
+      mg[k] = (mg[k] || 0) + v;
+      const c = r.c || '(거래처 미기재)';
+      if (!cu[c]) cu[c] = { net: 0, m: {} };
+      cu[c].net += v; cu[c].m[k] = (cu[c].m[k] || 0) + v;
+    }
+    const cat = r.k || '(미분류)';
+    ca[g][cat] = (ca[g][cat] || 0) + v;
+  }));
+  if (lastDay) Object.keys(prev).forEach(day => {
+    if (Number(day) > lastDay) return;
+    (prev[day] || []).forEach(r => { if (r.g === 'o') { const k = r.m || '(미지정)'; prevMgr[k] = (prevMgr[k] || 0) + (Number(r.n) || 0); } });
+  });
+  const mgr = Object.keys(mg).map(k => ({ name: k, net: mg[k], share: net.o ? mg[k] / net.o : 0, prev: prevMgr[k] || 0 })).sort((a, b) => b.net - a.net);
+  const cust = Object.keys(cu).map(k => {
+    const top = Object.keys(cu[k].m).sort((a, b) => cu[k].m[b] - cu[k].m[a])[0];
+    return { name: k, net: cu[k].net, mgr: top };
+  }).sort((a, b) => b.net - a.net);
+  const topCat = (bag, total) => Object.keys(bag).map(k => ({ name: k, net: bag[k], share: total ? bag[k] / total : 0 })).sort((a, b) => b.net - a.net);
+  const monthMar = {};
+  Object.keys(detail).forEach(m => { let s = 0; Object.values(detail[m]).forEach(rows => (rows || []).forEach(r => { s += Number(r.r) || 0; })); monthMar[m] = s; });
+  return { mgr, cust, cat: { n: topCat(ca.n, net.n), o: topCat(ca.o, net.o) }, mar, net, monthMar };
+}
+
+/* ===================== Firestore 읽기/쓰기 ===================== */
+function invalidate() { S.daily = null; S.targets = null; S.settings = null; S.smsCache = {}; S.detail = null; }
+async function loadBase(force) {
+  if (S.daily && S.targets && S.settings && !force) return;
+  const [dSnap, tSnap, cSnap] = await Promise.all([getDocs(collection(db, C.daily)), getDocs(collection(db, C.targets)), getDoc(doc(db, C.config, 'settings'))]);
+  S.daily = {}; dSnap.forEach(s => { S.daily[Number(s.id)] = s.data().days || {}; });
+  S.targets = {}; tSnap.forEach(s => { const x = s.data(); S.targets[Number(s.id)] = { total: x.total ?? null, n: x.n ?? null, o: x.o ?? null }; });
+  const c = cSnap.exists() ? cSnap.data() : {};
+  S.settings = { holidays: Array.isArray(c.holidays) ? c.holidays.map(Number).filter(Boolean) : [], smsVat: c.smsVat === 'excl' ? 'excl' : 'incl' };
+}
+async function loadSms(ym, force) {
+  if (!force && S.smsCache[ym]) return S.smsCache[ym];
+  const s = await getDoc(doc(db, C.sms, String(ym)));
+  S.smsCache[ym] = s.exists() ? Object.values(s.data().recs || {}) : [];
+  return S.smsCache[ym];
+}
+async function loadDetail(force) {
+  if (S.detail && !force) return;
+  const snap = await getDocs(collection(db, C.detail));
+  S.detail = {}; snap.forEach(s => { S.detail[Number(s.id)] = s.data().days || {}; });
+}
+async function summaryFor(ym, force) {
+  await loadBase(force);
+  const months = Object.keys(S.daily).map(Number).filter(m => Object.keys(S.daily[m]).length).sort((a, b) => a - b);
+  if (!ym) ym = months.length ? months[months.length - 1] : ymOf(todayInt());
+  const sms = await loadSms(ym, force);
+  S.ym = ym;
+  S.sum = buildSummary(S.daily, S.targets, S.settings.holidays, ym, todayInt(), sms, S.settings.smsVat);
+  return S.sum;
+}
+
+/* 업로드: 월별 문서에 날짜 단위로 교체 저장 (트랜잭션) */
+async function registerParsed(p) {
+  const byYm = {};
+  p.rows.forEach(r => {
+    const ym = ymOf(r[0]), d = dayOf(r[0]);
+    if (!byYm[ym]) byYm[ym] = {};
+    if (!byYm[ym][d]) byYm[ym][d] = [];
+    byYm[ym][d].push({ g: r[1] === '내판' ? 'n' : 'o', m: r[2] || '', c: r[3] || '', k: r[4] || '', n: Math.round(r[5]), r: Math.round(r[6]) });
+  });
+  let removed = 0;
+  const yms = Object.keys(byYm).sort();
+  for (let i = 0; i < yms.length; i++) {
+    const ym = yms[i];
+    $('regMsg').textContent = '저장 중… ' + (i + 1) + '/' + yms.length + ' (' + ymLabel(Number(ym)) + ')';
+    removed += await runTransaction(db, async tx => {
+      const dRef = doc(db, C.detail, ym), sRef = doc(db, C.daily, ym);
+      const dS = await tx.get(dRef), sS = await tx.get(sRef);
+      const det = dS.exists() ? Object.assign({}, dS.data().days || {}) : {};
+      const sum = sS.exists() ? Object.assign({}, sS.data().days || {}) : {};
+      let rm = 0;
+      Object.keys(byYm[ym]).forEach(day => {
+        if (det[day]) rm += det[day].length;
+        det[day] = byYm[ym][day];
+        let n = 0, o = 0;
+        det[day].forEach(x => { if (x.g === 'n') n += x.n; else o += x.n; });
+        sum[day] = { n, o };
+      });
+      if (JSON.stringify(det).length > 900000) throw new Error(ymLabel(Number(ym)) + ' 데이터가 너무 큽니다(문서 1MB 제한). 관리자에게 문의해 주세요.');
+      tx.set(dRef, { ym: Number(ym), days: det, updatedAt: serverTimestamp() });
+      tx.set(sRef, { ym: Number(ym), days: sum, updatedAt: serverTimestamp() });
+      return rm;
+    });
+  }
+  // 검산: 서버에서 다시 읽어 합계 비교
+  const dateSet = {}; p.stats.dates.forEach(d => { dateSet[d] = 1; });
+  let saved = 0;
+  for (const ym of yms) {
+    const s = await getDocFromServer(doc(db, C.detail, ym));
+    const days = s.exists() ? s.data().days || {} : {};
+    Object.keys(days).forEach(day => { if (dateSet[Number(ym) * 100 + Number(day)]) days[day].forEach(x => { saved += Number(x.n) || 0; }); });
+  }
+  const match = Math.abs(saved - p.stats.totalNet) < 1;
+  const dates = p.stats.dates;
+  await addDoc(collection(db, C.logs), {
+    at: serverTimestamp(), by: S.user.email || '', file: cleanText(p.name, 120), from: dates[0] || 0, to: dates[dates.length - 1] || 0,
+    usedRows: p.stats.usedRows, fileNet: p.stats.totalNet, savedNet: saved, match
+  });
+  return { removed, verify: { fileNet: p.stats.totalNet, savedNet: saved, match } };
+}
+
+async function registerSmsRecords(records) {
+  const byYm = {};
+  records.forEach(r => { if (!Number(r[0])) return; const ym = ymOf(Number(r[0])); (byYm[ym] = byYm[ym] || []).push(r); });
+  let added = 0, updated = 0;
+  for (const ym of Object.keys(byYm)) {
+    const res = await runTransaction(db, async tx => {
+      const ref = doc(db, C.sms, ym);
+      const s = await tx.get(ref);
+      const recs = s.exists() ? Object.assign({}, s.data().recs || {}) : {};
+      let a = 0, u = 0;
+      byYm[ym].forEach(r => {
+        const k = [r[0], r[1], r[2], r[3]].join('|');
+        if (recs[k]) u++; else a++;
+        recs[k] = { d: Number(r[0]), kind: r[1], h: r[2] === '' ? '' : Number(r[2]), metric: r[3], v: r[4] === '' ? null : Number(r[4]), c: r[5] === '' ? null : Number(r[5]), r: r[6] === '' ? null : Number(r[6]) };
+      });
+      tx.set(ref, { ym: Number(ym), recs, updatedAt: serverTimestamp() });
+      return { a, u };
+    });
+    added += res.a; updated += res.u;
+  }
+  return { added, updated };
+}
+
+/* ===================== 화면 전환 / 로그인 ===================== */
+const VIEWS = ['loading', 'login', 'pending', 'home', 'admin'];
+function show(v) {
+  S.view = v;
+  VIEWS.forEach(x => $('v-' + x).classList.toggle('hide', x !== v));
+  $('adminBtn').classList.toggle('hide', !(v === 'home' && S.role === 'admin'));
+  window.scrollTo(0, 0);
+  if (v === 'admin') bumpIdle();
+}
+$('loginBtn').addEventListener('click', async () => {
+  $('loginMsg').classList.add('hide');
+  try { await signInWithPopup(auth, provider); }
+  catch (e) {
+    if (e && e.code === 'auth/popup-closed-by-user') return;
+    $('loginMsg').textContent = e && e.code === 'auth/unauthorized-domain' ? '이 주소는 Firebase 승인 도메인에 등록되지 않았습니다.' : '로그인 실패: ' + errMsg(e);
+    $('loginMsg').classList.remove('hide');
+  }
+});
+$('logoutBtn').addEventListener('click', async () => { invalidate(); S.role = null; await signOut(auth); });
+$('copyUid').addEventListener('click', () => { if (navigator.clipboard) navigator.clipboard.writeText(S.user ? S.user.uid : '').then(() => toast('UID를 복사했습니다')); });
+$('recheckBtn').addEventListener('click', () => { if (S.user) routeUser(S.user); });
+
+async function routeUser(user) {
+  show('loading');
+  let role = null;
+  try { const r = await getDoc(doc(db, C.roles, user.uid)); role = r.exists() ? r.data().role : null; }
+  catch (e) { role = null; }
+  if (role === 'admin' || role === 'viewer') {
+    S.role = role;
+    show('home');
+    loadHome(S.ym);
+    return;
+  }
+  S.role = null;
+  $('pendEmail').textContent = user.email || '';
+  $('pendUid').textContent = user.uid;
+  $('pendMsg').textContent = '승인 요청을 보내는 중…';
+  show('pending');
+  setStatus('승인 대기 중');
+  try {
+    await setDoc(doc(db, C.requests, user.uid), { email: user.email || '', name: cleanText(user.displayName || '', 100), at: serverTimestamp() });
+    $('pendMsg').textContent = '승인 요청을 보냈습니다. 관리자가 승인한 뒤 "다시 확인"을 눌러 주세요.';
+  } catch (e) {
+    $('pendMsg').textContent = '요청을 보내지 못했습니다. 첫 관리자라면 사용 안내대로 Firebase 콘솔에서 이 UID를 관리자로 등록해 주세요. (' + errMsg(e) + ')';
+  }
+}
+onAuthStateChanged(auth, user => {
+  S.user = user; S.role = null; invalidate();
+  if (!user) {
+    $('userbox').classList.add('hide');
+    setStatus('로그인이 필요합니다');
+    show('login');
+    return;
+  }
+  $('userChip').textContent = user.email || user.uid;
+  $('userbox').classList.remove('hide');
+  routeUser(user);
+});
+
+/* 관리자 모드: 들어갈 때 서버에서 권한을 다시 확인하고, 20분 동안 쓰지 않으면 홈으로 */
+let idleT = null;
+function bumpIdle() {
+  if (S.view !== 'admin') return;
+  clearTimeout(idleT);
+  idleT = setTimeout(() => { if (S.view === 'admin') { show('home'); loadHome(S.ym); toast('20분 동안 사용이 없어 관리자 모드를 닫았습니다'); } }, IDLE_MS);
+}
+['click', 'keydown', 'touchstart', 'scroll'].forEach(ev => document.addEventListener(ev, bumpIdle, { passive: true }));
+$('adminBtn').addEventListener('click', async () => {
+  try {
+    const r = await getDocFromServer(doc(db, C.roles, S.user.uid));
+    if (!r.exists() || r.data().role !== 'admin') { S.role = r.exists() ? r.data().role : null; show('home'); toast('관리자 권한이 없습니다'); return; }
+  } catch (e) { toast(errMsg(e)); return; }
+  show('admin');
+  showAdminTab(S.adminTab);
+});
+$('backHome').addEventListener('click', () => { show('home'); loadHome(S.ym); });
+
+/* ===================== 글씨 / 디자인 선택 ===================== */
+function applyPrefs() {
+  const th = pref('theme', 'classic'), fo = pref('font', 'neat');
+  document.documentElement.dataset.theme = th;
+  document.documentElement.dataset.font = fo;
+  document.querySelectorAll('.seg[data-theme]').forEach(b => b.classList.toggle('on', b.dataset.theme === th));
+  document.querySelectorAll('.seg[data-font]').forEach(b => b.classList.toggle('on', b.dataset.font === fo));
+}
+document.querySelectorAll('.seg[data-theme]').forEach(b => b.addEventListener('click', () => { pref('theme', 'classic', b.dataset.theme); applyPrefs(); }));
+document.querySelectorAll('.seg[data-font]').forEach(b => b.addEventListener('click', () => { pref('font', 'neat', b.dataset.font); applyPrefs(); }));
+applyPrefs();
+
+/* ===================== 툴팁 / 차트 ===================== */
+const tip = $('tip');
+function showTip(e, html) {
+  tip.innerHTML = html; tip.style.display = 'block';
+  let x = e.clientX + 14; const y = e.clientY + 14, w = tip.offsetWidth;
+  if (x + w > window.innerWidth - 8) x = e.clientX - w - 14;
+  tip.style.left = Math.max(4, x) + 'px'; tip.style.top = y + 'px';
+}
+function hideTip() { tip.style.display = 'none'; }
+function niceMax(v) {
+  if (v <= 0) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(v))), m = v / p;
+  return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p;
+}
+function svgOpen(w, h) { return '<svg class="chart" viewBox="0 0 ' + w + ' ' + h + '" role="img">'; }
+function yGrid(x0, x1, y0, y1, max, ticks) {
+  let s = '';
+  for (let i = 0; i <= ticks; i++) {
+    const v = max * i / ticks, y = y1 - (y1 - y0) * i / ticks;
+    s += '<line x1="' + x0 + '" x2="' + x1 + '" y1="' + y + '" y2="' + y + '" stroke="var(--grid)" stroke-width="1"/>';
+    s += '<text x="' + (x0 - 6) + '" y="' + (y + 4) + '" text-anchor="end">' + (v === 0 ? '0' : eok(v)) + '</text>';
+  }
+  return s;
+}
+function bindBars(sel) {
+  document.querySelectorAll(sel + ' g.bar').forEach(g => {
+    g.onmousemove = e => showTip(e, g.getAttribute('data-tip'));
+    g.onmouseleave = hideTip;
+  });
+}
+function chartCum(d) {
+  const W = 640, H = 260, L = 52, R = 14, T = 12, B = 28, pw = W - L - R, ph = H - T - B;
+  const cumA = []; let run = 0;
+  for (let i = 0; i < d.dim; i++) { if (i < d.lastDay) { run += d.daily[i].n + d.daily[i].o; cumA.push(run); } else cumA.push(null); }
+  const fcT = d.forecast && d.forecast['기본'] ? d.forecast['기본'].total : null;
+  const max = niceMax(Math.max(d.target || 0, fcT || 0, run) * 1.05);
+  const X = day => L + pw * (day - 1) / Math.max(1, d.dim - 1), Y = v => T + ph - ph * v / max;
+  let s = svgOpen(W, H) + yGrid(L, W - R, T, T + ph, max, 4);
+  for (let day = 1; day <= d.dim; day += (d.dim > 28 ? 5 : 4)) s += '<text x="' + X(day) + '" y="' + (H - 8) + '" text-anchor="middle">' + day + '일</text>';
+  if (d.target) s += '<line x1="' + X(1) + '" y1="' + Y(0) + '" x2="' + X(d.dim) + '" y2="' + Y(d.target) + '" stroke="var(--ink3)" stroke-width="1.5" stroke-dasharray="2 4"/>';
+  if (fcT && d.lastDay) s += '<line x1="' + X(d.lastDay) + '" y1="' + Y(run) + '" x2="' + X(d.dim) + '" y2="' + Y(fcT) + '" stroke="var(--s1)" stroke-width="2" stroke-dasharray="6 4"/>' +
+    '<circle cx="' + X(d.dim) + '" cy="' + Y(fcT) + '" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/>' +
+    '<text class="lbl" x="' + (X(d.dim) - 8) + '" y="' + (Y(fcT) - 9) + '" text-anchor="end">예상 ' + eok(fcT) + '</text>';
+  const pts = [];
+  for (let i = 0; i < d.lastDay; i++) pts.push(X(i + 1).toFixed(1) + ',' + Y(cumA[i]).toFixed(1));
+  if (pts.length) s += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="var(--s1)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>' +
+    '<circle cx="' + X(d.lastDay) + '" cy="' + Y(run) + '" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/>';
+  if (d.target) s += '<text class="lbl" x="' + (W - R) + '" y="' + (Y(d.target) - 6) + '" text-anchor="end">목표 ' + eok(d.target) + '</text>';
+  s += '<rect id="cumHit" x="' + L + '" y="' + T + '" width="' + pw + '" height="' + ph + '" fill="transparent"/>';
+  s += '<line id="cumX" x1="0" x2="0" y1="' + T + '" y2="' + (T + ph) + '" stroke="var(--ink3)" stroke-width="1" style="display:none"/></svg>';
+  return {
+    html: s, bind: () => {
+      const svg = document.querySelector('#chCum svg'), hit = $('cumHit'), xl = $('cumX');
+      if (!hit) return;
+      hit.onmousemove = e => {
+        const r = svg.getBoundingClientRect();
+        const px = (e.clientX - r.left) * W / r.width;
+        const day = Math.max(1, Math.min(d.dim, Math.round(1 + (px - L) / pw * (d.dim - 1))));
+        xl.setAttribute('x1', X(day)); xl.setAttribute('x2', X(day)); xl.style.display = '';
+        const row = d.daily[day - 1];
+        let h = '<b>' + (d.ym % 100) + '월 ' + day + '일</b><br>';
+        h += day <= d.lastDay ? '누적 ' + won(cumA[day - 1]) + '<br>당일 ' + won(row.n + row.o) : '아직 등록되지 않은 날';
+        if (d.target) h += '<br>목표 진행선 ' + won(d.target * day / d.dim);
+        showTip(e, h);
+      };
+      hit.onmouseleave = () => { xl.style.display = 'none'; hideTip(); };
+    }
+  };
+}
+function chartDaily(d) {
+  const W = 640, H = 220, L = 52, R = 10, T = 10, B = 26, pw = W - L - R, ph = H - T - B;
+  let mx = 0; d.daily.forEach(x => { mx = Math.max(mx, x.n + x.o); });
+  const max = niceMax(mx * 1.05 || 1), bw = pw / d.dim;
+  let s = svgOpen(W, H) + yGrid(L, W - R, T, T + ph, max, 4);
+  d.daily.forEach((x, i) => {
+    const x0 = L + bw * i + bw * 0.12, w = bw * 0.76, hn = ph * Math.max(x.n, 0) / max, ho = ph * Math.max(x.o, 0) / max, yb = T + ph;
+    const tipHtml = '<b>' + (d.ym % 100) + '월 ' + x.day + '일</b><br>내판 ' + won(x.n) + '<br>외판 ' + won(x.o) + '<br>합계 ' + won(x.n + x.o);
+    s += '<g class="bar" data-tip="' + esc(tipHtml) + '">';
+    if (hn > 0) s += '<rect x="' + x0 + '" y="' + (yb - hn) + '" width="' + w + '" height="' + hn + '" fill="var(--s1)" rx="2"/>';
+    if (ho > 0) s += '<rect x="' + x0 + '" y="' + (yb - hn - ho - (hn > 0 ? 1 : 0)) + '" width="' + w + '" height="' + ho + '" fill="var(--s2)" rx="2" stroke="var(--surface)" stroke-width="1"/>';
+    s += '<rect x="' + (L + bw * i) + '" y="' + T + '" width="' + bw + '" height="' + ph + '" fill="transparent"/></g>';
+    if ((x.day - 1) % 5 === 0) s += '<text x="' + (L + bw * i + bw / 2) + '" y="' + (H - 8) + '" text-anchor="middle">' + x.day + '</text>';
+  });
+  return { html: s + '</svg>', bind: () => bindBars('#chDaily') };
+}
+function chartMonthly(d) {
+  const mt = d.monthTotals.slice(-12);
+  const W = 640, H = 240, L = 52, R = 10, T = 12, B = 26, pw = W - L - R, ph = H - T - B;
+  let mx = 0; mt.forEach(m => { mx = Math.max(mx, m.total, m.target || 0); });
+  const max = niceMax(mx * 1.05 || 1), bw = pw / Math.max(mt.length, 1);
+  let s = svgOpen(W, H) + yGrid(L, W - R, T, T + ph, max, 4);
+  mt.forEach((m, i) => {
+    const x0 = L + bw * i + bw * 0.2, w = bw * 0.6, hn = ph * Math.max(m.n, 0) / max, ho = ph * Math.max(m.o, 0) / max, yb = T + ph;
+    const tipHtml = '<b>' + ymLabel(m.ym) + '</b><br>내판 ' + won(m.n) + '<br>외판 ' + won(m.o) + '<br>합계 ' + won(m.total) + (m.target ? '<br>목표 ' + won(m.target) + ' (' + pct(m.total / m.target) + ')' : '') + (m.ym === d.ym && !d.ended ? '<br><i>진행 중인 달</i>' : '');
+    s += '<g class="bar" data-tip="' + esc(tipHtml) + '">';
+    if (hn > 0) s += '<rect x="' + x0 + '" y="' + (yb - hn) + '" width="' + w + '" height="' + hn + '" fill="var(--s1)" rx="3"/>';
+    if (ho > 0) s += '<rect x="' + x0 + '" y="' + (yb - hn - ho - (hn > 0 ? 2 : 0)) + '" width="' + w + '" height="' + ho + '" fill="var(--s2)" rx="3" stroke="var(--surface)" stroke-width="1"/>';
+    if (m.target) s += '<line x1="' + (x0 - 4) + '" x2="' + (x0 + w + 4) + '" y1="' + (yb - ph * m.target / max) + '" y2="' + (yb - ph * m.target / max) + '" stroke="var(--ink)" stroke-width="2"/>';
+    s += '<rect x="' + (L + bw * i) + '" y="' + T + '" width="' + bw + '" height="' + ph + '" fill="transparent"/></g>';
+    s += '<text x="' + (L + bw * i + bw / 2) + '" y="' + (H - 8) + '" text-anchor="middle">' + (m.ym % 100) + '월</text>';
+  });
+  return { html: s + '</svg>', bind: () => bindBars('#chMonthly') };
+}
+function chartHourly(sm, sel) {
+  const dates = sm.hourlyDates, cur = sm.hourly[sel] || [];
+  const idx = dates.indexOf(sel), cmpDate = idx > 0 ? dates[idx - 1] : null, cmp = cmpDate ? sm.hourly[cmpDate] : [];
+  const W = 640, H = 230, L = 52, R = 14, T = 12, B = 28, pw = W - L - R, ph = H - T - B;
+  const hs = cur.concat(cmp).map(x => x.h);
+  const h0 = Math.min(9, Math.min.apply(null, hs.concat([99]))), h1 = Math.max(21, Math.max.apply(null, hs.concat([0])));
+  let mx = 0; cur.concat(cmp).forEach(x => { mx = Math.max(mx, x.vEx); });
+  const max = niceMax(mx * 1.1 || 1);
+  const X = h => L + pw * (h - h0) / Math.max(1, h1 - h0), Y = v => T + ph - ph * v / max;
+  let s = svgOpen(W, H) + yGrid(L, W - R, T, T + ph, max, 4);
+  for (let h = h0; h <= h1; h += 2) s += '<text x="' + X(h) + '" y="' + (H - 8) + '" text-anchor="middle">' + h + '시</text>';
+  const line = (arr, color, dash) => {
+    if (!arr.length) return '';
+    const p = arr.map(x => X(x.h).toFixed(1) + ',' + Y(x.vEx).toFixed(1)).join(' ');
+    let o = '<polyline points="' + p + '" fill="none" stroke="' + color + '" stroke-width="2"' + (dash ? ' stroke-dasharray="6 4"' : '') + ' stroke-linejoin="round"/>';
+    arr.forEach(x => { o += '<circle cx="' + X(x.h) + '" cy="' + Y(x.vEx) + '" r="4" fill="' + color + '" stroke="var(--surface)" stroke-width="2"/>'; });
+    return o;
+  };
+  const at = (arr, h) => arr.find(x => x.h === h) || null;
+  let hitS = ''; const seen = {};
+  cur.concat(cmp).forEach(x => {
+    if (seen[x.h]) return; seen[x.h] = 1;
+    const a1 = at(cur, x.h), b1 = at(cmp, x.h);
+    const tipHtml = '<b>' + x.h + '시 누적</b><br>' + mdLabel(sel) + ' ' + (a1 ? won(a1.vEx) + ' (' + esc(a1.c) + '건)' : '-') + (cmpDate ? '<br>' + mdLabel(cmpDate) + ' ' + (b1 ? won(b1.vEx) + ' (' + esc(b1.c) + '건)' : '-') : '') + '<br><i>문자 원본 ' + (a1 ? won(a1.v) : '-') + '</i>';
+    hitS += '<g class="bar" data-tip="' + esc(tipHtml) + '"><rect x="' + (X(x.h) - pw / (h1 - h0 + 1) / 2) + '" y="' + T + '" width="' + (pw / (h1 - h0 + 1)) + '" height="' + ph + '" fill="transparent"/></g>';
+  });
+  s += line(cmp, 'var(--ink3)', true) + line(cur, 'var(--s1)', false) + hitS + '</svg>';
+  return { html: s, cmpDate };
+}
+
+/* ===================== 화면 조각 ===================== */
+function kpi(l, v, s, hl) { return '<div class="kpi' + (hl ? ' hl' : '') + '"><div class="l">' + l + '</div><div class="v">' + v + '</div><div class="s">' + (s || '&nbsp;') + '</div></div>'; }
+function table(head, rows) {
+  return '<div class="scroll"><table><tr>' + head.map(h => '<th>' + h + '</th>').join('') + '</tr>' +
+    rows.map(r => '<tr>' + r.map(c => '<td>' + c + '</td>').join('') + '</tr>').join('') + '</table></div>';
+}
+function fillMonthSel(sel, d) {
+  const set = {}; d.months.forEach(m => { set[m] = 1; }); set[d.ym] = 1;
+  sel.innerHTML = Object.keys(set).map(Number).sort((a, b) => b - a).map(m => '<option value="' + m + '"' + (m === d.ym ? ' selected' : '') + '>' + ymLabel(m) + '</option>').join('');
+}
+function alerts(d) {
+  const a = [];
+  if (d.last && !d.ended && d.ym === ymOf(d.today)) {
+    const gap = Math.round((Date.UTC(Math.floor(d.today / 10000), Math.floor(d.today / 100) % 100 - 1, d.today % 100) - Date.UTC(Math.floor(d.last / 10000), Math.floor(d.last / 100) % 100 - 1, d.last % 100)) / 86400000);
+    if (gap >= 2) a.push('마지막 등록일이 ' + gap + '일 전입니다. 최신 판매 내역을 올려 주세요.');
+  }
+  if (d.missing.length) a.push('등록되지 않은 날짜: ' + d.missing.slice(0, 6).map(x => dLabel(x).slice(5)).join(', ') + (d.missing.length > 6 ? ' 외 ' + (d.missing.length - 6) + '일' : ''));
+  if (d.months.length && !d.target) a.push('이 달의 목표가 등록되지 않았습니다.');
+  if (d.target && d.forecast && d.forecast['기본'] && d.forecast['기본'].rate !== null && d.forecast['기본'].rate < 1) a.push('현재 추세라면 목표의 ' + pct(d.forecast['기본'].rate) + '로 마감할 것으로 예상됩니다.');
+  return a.map(x => '<div>⚠️ [알림] ' + esc(x) + '</div>').join('');
+}
+
+/* ===================== 홈 화면 ===================== */
+async function loadHome(ym, force) {
+  setStatus('불러오는 중…');
+  try { const d = await summaryFor(ym, force); fillMonthSel($('homeMonth'), d); renderHome(d); }
+  catch (e) { setStatus('오류: ' + errMsg(e)); $('homeBody').innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; }
+}
+$('homeMonth').addEventListener('change', function () { loadHome(Number(this.value)); });
+$('homeRefresh').addEventListener('click', () => loadHome(S.ym, true));
+$('homePrint').addEventListener('click', () => window.print());
+
+function renderHome(d) {
+  $('homeTitle').textContent = ymLabel(d.ym) + ' 매출 현황';
+  if (!d.months.length) {
+    $('homeAlert').innerHTML = '';
+    $('homeBody').innerHTML = '<div class="card"><h2>아직 등록된 데이터가 없습니다</h2><p class="muted">' + (S.role === 'admin' ? '아래 "관리자 모드" › 업로드에서 과거 데이터(CSV)와 이번 달 판매 내역을 올려 주세요.' : '관리자가 판매 내역을 올리면 여기에 표시됩니다.') + '</p></div>';
+    setStatus('데이터 없음');
+    return;
+  }
+  setStatus(d.last ? '마지막 등록일 ' + dLabel(d.last) + ' · VAT 별도 순매출(반품·취소 차감)' : '이 달에는 등록된 데이터가 없습니다');
+  $('homeAlert').innerHTML = alerts(d);
+  let h = '', k = '';
+  const fb = d.forecast && d.forecast['기본'];
+  k += kpi('누적 매출', won(d.cum.total), '내판 ' + eok(d.cum.n) + ' · 외판 ' + eok(d.cum.o), true);
+  k += kpi('월 목표', d.target ? won(d.target) : '미설정', d.targetN || d.targetO ? '내판 ' + (d.targetN ? eok(d.targetN) : '-') + ' · 외판 ' + (d.targetO ? eok(d.targetO) : '-') : '');
+  if (d.target) {
+    const gp = (d.achieve - d.elapsed) * 100, diff = d.cum.total - d.expectedCum;
+    k += kpi('달성률', pct(d.achieve), '시간 경과율 ' + pct(d.elapsed), true);
+    k += kpi('진도 격차', (gp >= 0 ? '+' : '−') + Math.abs(gp).toFixed(1) + '%p', '목표선 대비 ' + (diff >= 0 ? '+' : '−') + eok(Math.abs(diff)));
+    k += kpi('남은 필요 일평균', d.needPerDay === null ? '-' : won(d.needPerDay), '영업일 ' + d.remainDays + '일 남음 · 현재 일평균 ' + eok(d.avgPerDay));
+  } else {
+    k += kpi('현재 일평균', won(d.avgPerDay), '데이터가 있는 ' + d.daysWithData + '일 기준');
+  }
+  if (fb) k += kpi('예상 마감(기본)', won(fb.total), (d.target ? '목표 대비 ' + pct(fb.rate) + ' · ' : '') + '보수 ' + (d.forecast['보수'] ? eok(d.forecast['보수'].total) : '-') + ' · 낙관 ' + (d.forecast['낙관'] ? eok(d.forecast['낙관'].total) : '-'));
+  if (d.prev.same) { const r = (d.cum.total / d.prev.same - 1) * 100; k += kpi('전월 같은 기간 대비', (r >= 0 ? '+' : '−') + Math.abs(r).toFixed(1) + '%', '전월 같은 기간 ' + eok(d.prev.same)); }
+  if (d.sms.latest && d.sms.latest.month) { const lm = d.sms.latest.month; k += kpi('문자 기준 당월 누계', won(lm.vEx), mdLabel(d.sms.latest.d) + ' 마감 문자' + (d.target ? ' · 목표 대비 ' + pct(lm.vEx / d.target) : '')); }
+  h += '<div class="kpis">' + k + '</div>';
+  if (d.target) {
+    h += '<div class="card"><h2>목표 진행</h2><div class="pbar"><div class="fill" style="width:' + Math.min(100, Math.max(0, d.achieve * 100)) + '%"></div><div class="tick" style="left:' + Math.min(100, d.elapsed * 100) + '%"></div></div>' +
+      '<div class="sub">파란 막대 = 달성률 ' + pct(d.achieve) + ' · 검은 선 = 시간 경과율 ' + pct(d.elapsed) + ' (달력일 기준)</div></div>';
+  }
+  const ch1 = chartCum(d), ch2 = chartDaily(d);
+  h += '<div class="card"><h2>누적 매출 추이</h2><div class="legend"><span><i class="line" style="border-color:var(--s1)"></i>누적 실적</span>' +
+    (d.target ? '<span><i class="dash" style="border-color:var(--ink3)"></i>목표 진행선</span>' : '') + (fb ? '<span><i class="dash" style="border-color:var(--s1)"></i>예상(기본)</span>' : '') + '</div><div id="chCum">' + ch1.html + '</div></div>';
+  const sm = d.sms;
+  if (sm.hourlyDates.length) {
+    h += '<div class="card"><h2>시간별 누적 매출 (문자 · 일산점)</h2><div class="row" style="margin-bottom:6px"><label>날짜<select id="hourSel">' +
+      sm.hourlyDates.slice().reverse().map(x => '<option value="' + x + '">' + mdLabel(x) + '</option>').join('') + '</select></label></div>' +
+      '<div class="legend" id="hourLegend"></div><div id="chHour"></div><p class="muted" style="margin:6px 0 0">문자 금액은 VAT ' + (sm.vat === 'incl' ? '포함으로 보고 ÷1.1 환산' : '별도(환산 없음)') + '했습니다.</p></div>';
+  }
+  h += '<div class="card"><h2>일별 매출</h2><div class="legend"><span><i style="background:var(--s1)"></i>내판</span><span><i style="background:var(--s2)"></i>외판</span></div><div id="chDaily">' + ch2.html + '</div>' +
+    '<details><summary>표로 보기</summary>' + table(['일', '내판', '외판', '합계'], d.daily.filter(x => x.has).map(x => [x.day + '일', won(x.n), won(x.o), won(x.n + x.o)])) + '</details></div>';
+  if (sm.member.length) {
+    let newSum = 0; sm.member.forEach(m => { newSum += m['신규가입'] || 0; });
+    const lm = sm.member[sm.member.length - 1];
+    const v = key => lm[key] === undefined || lm[key] === null ? '-' : Number(lm[key]).toLocaleString('ko-KR');
+    h += '<div class="card"><h2>멤버쉽 (일산)</h2><div class="kpis" style="margin:0">' + kpi('이번 달 신규 가입', newSum.toLocaleString('ko-KR') + '명', '', true) +
+      kpi('누적 회원', v('누적회원'), mdLabel(lm.d) + ' 기준') + kpi('VIP MASTER', v('VIP MASTER 회원'), '') + kpi('MASTER', v('MASTER 회원'), '') + '</div></div>';
+  }
+  $('homeBody').innerHTML = h;
+  ch1.bind(); ch2.bind();
+  const sl = $('hourSel');
+  if (sl) {
+    const draw = () => {
+      const c = chartHourly(sm, Number(sl.value));
+      $('chHour').innerHTML = c.html;
+      $('hourLegend').innerHTML = '<span><i class="line" style="border-color:var(--s1)"></i>' + mdLabel(Number(sl.value)) + '</span>' + (c.cmpDate ? '<span><i class="dash" style="border-color:var(--ink3)"></i>' + mdLabel(c.cmpDate) + ' (비교)</span>' : '');
+      bindBars('#chHour');
+    };
+    sl.onchange = draw; draw();
+  }
+}
+
+/* ===================== 관리자: 탭 ===================== */
+document.querySelectorAll('#adminTabs .pill').forEach(b => b.addEventListener('click', () => showAdminTab(b.dataset.tab)));
+const ATABS = ['analysis', 'upload', 'download', 'settings', 'members', 'help'];
+function showAdminTab(t) {
+  S.adminTab = t;
+  document.querySelectorAll('#adminTabs .pill').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  ATABS.forEach(x => $('a-' + x).classList.toggle('hide', x !== t));
+  if (t === 'analysis') loadAnalysis(S.ym);
+  if (t === 'download') renderDownloads();
+  if (t === 'settings') loadSettings();
+  if (t === 'members') loadMembers();
+  if (t === 'upload' && !$('smsDate').value) $('smsDate').value = dLabel(todayInt());
+}
+$('adminMonth').addEventListener('change', function () { loadAnalysis(Number(this.value)); });
+$('adminRefresh').addEventListener('click', () => { invalidate(); showAdminTab(S.adminTab); });
+
+async function loadAnalysis(ym, force) {
+  $('a-analysis').innerHTML = '<div class="card muted">불러오는 중…</div>';
+  try {
+    const d = await summaryFor(ym, force);
+    await loadDetail(force);
+    fillMonthSel($('adminMonth'), d);
+    renderAnalysis(d, buildDetail(S.detail, d.ym, d.lastDay));
+  } catch (e) { $('a-analysis').innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; }
+}
+
+function renderAnalysis(d, det) {
+  $('adminAlert').innerHTML = alerts(d);
+  if (!d.months.length) { $('a-analysis').innerHTML = '<div class="card"><h2>아직 등록된 데이터가 없습니다</h2><p class="muted">업로드 탭에서 과거 데이터(CSV)를 먼저 올리고, 이어서 이번 달 파일을 올려 주세요.</p></div>'; return; }
+  let h = '', k = '';
+  const marT = det.mar.n + det.mar.o, netT = det.net.n + det.net.o;
+  k += kpi(ymLabel(d.ym) + ' 누적 매출', won(d.cum.total), '내판 ' + eok(d.cum.n) + ' · 외판 ' + eok(d.cum.o), true);
+  k += kpi('마진 합계', won(marT), '마진율 ' + (netT ? pct(marT / netT) : '-'));
+  k += kpi('내판 마진율', det.net.n ? pct(det.mar.n / det.net.n) : '-', '마진 ' + eok(det.mar.n));
+  k += kpi('외판 마진율', det.net.o ? pct(det.mar.o / det.net.o) : '-', '마진 ' + eok(det.mar.o));
+  k += kpi('외판 비중', d.cum.total ? pct(d.cum.o / d.cum.total) : '-', '거래처 ' + det.cust.length + '곳');
+  h += '<div class="kpis">' + k + '</div>';
+
+  if (d.forecast) {
+    const rows = ['보수', '기본', '낙관'].map(key => {
+      const f = d.forecast[key]; if (!f) return [key, '-', '-', '-', '-'];
+      return [key, eok(f.n), eok(f.o), '<b>' + eok(f.total) + '</b>', f.rate === null ? '-' : pct(f.rate)];
+    });
+    h += '<div class="card"><h2>예상 마감금액</h2>' + table(['시나리오', '내판', '외판', '합계', '목표 대비'], rows) +
+      '<p class="muted" style="margin:8px 0 0">현재 누적에 남은 영업일(평일 ' + d.remainTypes['평일'] + '일, 토 ' + d.remainTypes['토'] + '일, 일 ' + d.remainTypes['일'] + '일)의 요일별 평균 매출을 더한 추정치입니다. 보수 = 최근 6개월(외판은 매출이 큰 상위 5% 일자 제외), 기본 = 최근 6개월, 낙관 = 최근 3개월 평균입니다. 외판 대형 건은 반영되지 않습니다.</p></div>';
+  }
+
+  const ch3 = chartMonthly(d);
+  h += '<div class="card"><h2>월별 비교</h2><div class="legend"><span><i style="background:var(--s1)"></i>내판</span><span><i style="background:var(--s2)"></i>외판</span><span><i style="background:var(--ink);height:3px;vertical-align:3px"></i>목표</span></div><div id="chMonthly">' + ch3.html + '</div>' +
+    '<details open><summary>표로 보기</summary>' + table(['월', '내판', '외판', '합계', '마진', '마진율', '목표 대비'], d.monthTotals.slice().reverse().map(m => {
+      const mm = det.monthMar[m.ym] || 0;
+      return [ymLabel(m.ym), won(m.n), won(m.o), won(m.total), won(mm), m.total ? pct(mm / m.total) : '-', m.target ? pct(m.total / m.target) : '-'];
+    })) + '</details></div>';
+
+  h += '<div class="grid2"><div class="card"><h2>외판 담당자별</h2>' + (det.mgr.length ? table(['담당자', '누적', '비중', '전월 같은 기간'], det.mgr.map(m => [esc(m.name), won(m.net), pct(m.share, 0), m.prev ? won(m.prev) : '-'])) : '<p class="muted">외판 데이터가 없습니다.</p>') + '</div>' +
+    '<div class="card"><h2>외판 거래처 TOP 10</h2>' + (det.cust.length ? table(['거래처', '누적', '담당'], det.cust.slice(0, 10).map(c => [esc(c.name), won(c.net), esc(c.mgr || '')])) : '<p class="muted">외판 데이터가 없습니다.</p>') + '</div></div>';
+  h += '<div class="grid2"><div class="card"><h2>내판 대분류</h2>' + (det.cat.n.length ? table(['대분류', '누적', '비중'], det.cat.n.slice(0, 10).map(c => [esc(c.name), won(c.net), pct(c.share, 0)])) : '<p class="muted">데이터가 없습니다.</p>') + '</div>' +
+    '<div class="card"><h2>외판 대분류</h2>' + (det.cat.o.length ? table(['대분류', '누적', '비중'], det.cat.o.slice(0, 10).map(c => [esc(c.name), won(c.net), pct(c.share, 0)])) : '<p class="muted">데이터가 없습니다.</p>') + '</div></div>';
+
+  const sm = d.sms;
+  if (sm.close.length) {
+    h += '<div class="card"><h2>마감 문자와 POS 대조</h2>' + table(['일자', '일마감(문자)', '건수', '비율', '환산(VAT별도)', 'POS 순매출', '차이', '당월 누계(문자)', '비율'],
+      sm.close.slice().reverse().map(c => {
+        const day = c.day, mon = c.month;
+        let st;
+        if (c.diff === null) st = c.pos === null ? 'POS 미등록' : '-';
+        else st = Math.abs(c.diff) <= Math.max(1000, c.pos * 0.001) ? '일치' : sign(Math.round(c.diff)) + '원';
+        return [mdLabel(c.d), day ? won(day.v) : '-', day ? esc(day.c) : '-', day && day.r !== null ? esc(day.r) + '%' : '-', day ? won(day.vEx) : '-', c.pos === null ? '-' : won(c.pos), st, mon ? won(mon.v) : '-', mon && mon.r !== null ? esc(mon.r) + '%' : '-'];
+      })) + '<p class="muted" style="margin:6px 0 0">"비율"은 문자에 표시된 % 값을 그대로 옮긴 것입니다. 차이가 계속 크면 목표·설정 탭에서 문자 금액 기준(VAT 포함/별도)을 바꿔 보세요.</p></div>';
+  }
+  if (sm.member.length) {
+    h += '<div class="card"><h2>멤버쉽 현황</h2>' + table(['일자', '신규 가입', '누적 회원', 'VIP MASTER', 'MASTER', 'VIP+MASTER 판매건수'],
+      sm.member.slice().reverse().map(m => {
+        const v = key => m[key] === undefined || m[key] === null ? '-' : Number(m[key]).toLocaleString('ko-KR');
+        return [mdLabel(m.d), v('신규가입'), v('누적회원'), v('VIP MASTER 회원'), v('MASTER 회원'), v('VIP+MASTER 판매건수')];
+      })) + '</div>';
+  }
+  if (d.missing.length) h += '<div class="card"><h2>누락일 점검</h2><p>' + d.missing.map(x => '<span class="tag">' + dLabel(x).slice(5) + '</span>').join(' ') + '</p><p class="muted">휴무일이면 목표·설정 탭에 등록하고, 아니면 해당 날짜 파일을 올려 주세요.</p></div>';
+  $('a-analysis').innerHTML = h;
+  ch3.bind();
+}
+
+/* ===================== 관리자: 업로드 ===================== */
+let xlsxP = null;
+function loadXlsx() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  if (!xlsxP) xlsxP = new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = XLSX_URL; s.integrity = XLSX_SRI; s.crossOrigin = 'anonymous'; s.referrerPolicy = 'no-referrer';
+    s.onload = () => res(window.XLSX);
+    s.onerror = () => { xlsxP = null; rej(new Error('엑셀 읽기 도구를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.')); };
+    document.head.appendChild(s);
+  });
+  return xlsxP;
+}
+const drop = $('drop'), fileIn = $('file');
+drop.addEventListener('click', () => fileIn.click());
+drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileIn.click(); } });
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]); });
+fileIn.addEventListener('change', () => { if (fileIn.files[0]) readFile(fileIn.files[0]); });
+
+async function readFile(f) {
+  S.parsed = null;
+  if (!/\.(xlsx|xls|csv)$/i.test(f.name)) { $('preview').innerHTML = '<div class="banner bad">.xlsx, .xls, .csv 파일만 올릴 수 있습니다.</div>'; return; }
+  if (f.size > 30 * 1024 * 1024) { $('preview').innerHTML = '<div class="banner bad">파일이 너무 큽니다(30MB 초과).</div>'; return; }
+  $('preview').innerHTML = '<div class="card"><b>' + esc(f.name) + '</b> 읽는 중… 파일이 크면 1분 정도 걸릴 수 있습니다.</div>';
+  try {
+    const X = await loadXlsx();
+    const wb = /\.csv$/i.test(f.name) ? X.read(await f.text(), { type: 'string' }) : X.read(await f.arrayBuffer(), { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const aoa = X.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' });
+    const res = aggregateRows(aoa);
+    if (res.error) { $('preview').innerHTML = '<div class="banner bad">' + esc(res.error) + '</div>'; return; }
+    res.name = f.name;
+    S.parsed = res;
+    renderPreview();
+  } catch (e) { $('preview').innerHTML = '<div class="banner bad">파일을 읽지 못했습니다: ' + esc(errMsg(e)) + '</div>'; }
+}
+function renderPreview() {
+  const p = S.parsed, st = p.stats;
+  let h = '<div class="card"><h2>미리보기 · ' + esc(p.name) + '</h2>';
+  const unk = Object.keys(st.unknown), blocked = !st.usedRows;
+  if (unk.length) h += '<div class="banner bad">구분 값을 알 수 없는 행이 있어 제외됩니다: ' + unk.map(u => esc(u || '(빈칸)') + ' ' + st.unknown[u] + '행').join(', ') + '. 구분은 "일반"(내판)과 "B2B"(외판)만 인식합니다.</div>';
+  if (st.badDate) h += '<div class="banner warn">날짜를 읽지 못한 행 ' + st.badDate + '개는 제외됩니다.</div>';
+  if (st.adjusted) h += '<div class="banner warn">과세/비과세 금액이 모두 0인 반품·취소 ' + st.adjusted + '행은 결제금액÷1.1로 VAT 별도 금액을 계산했습니다.</div>';
+  if (blocked) h += '<div class="banner bad">등록할 수 있는 행이 없습니다.</div>';
+  h += '<div class="kpis">' + kpi('기간', dLabel(st.dates[0] || 0) + '<br>~ ' + dLabel(st.dates[st.dates.length - 1] || 0), st.dates.length + '일') +
+    kpi('읽은 행', st.usedRows.toLocaleString('ko-KR'), esc(st.mode) + ' 형식') +
+    kpi('내판 합계', won(st.byG['내판']), '') + kpi('외판 합계', won(st.byG['외판']), '') + kpi('전체 순매출', won(st.totalNet), 'VAT 별도', true) + '</div>';
+  h += '<p class="muted">등록하면 위 기간(' + st.dates.length + '일)의 기존 데이터가 이 파일 내용으로 교체됩니다.</p>' +
+    '<button class="btn primary" id="regBtn"' + (blocked ? ' disabled' : '') + '>등록</button> <span id="regMsg" class="muted"></span></div>';
+  $('preview').innerHTML = h;
+  $('regBtn').addEventListener('click', doRegister);
+}
+async function doRegister() {
+  const p = S.parsed, btn = $('regBtn');
+  btn.disabled = true;
+  try {
+    const r = await registerParsed(p);
+    const v = r.verify, ok = v.match;
+    invalidate();
+    $('preview').innerHTML = '<div class="card"><div class="banner ' + (ok ? 'ok' : 'bad') + '"><b>' + (ok ? '등록 완료 · 검산 일치' : '검산 불일치 — 다시 올려 주세요') + '</b><br>올린 파일 합계 ' + won(v.fileNet) + '<br>저장된 합계 ' + won(v.savedNet) + '<br>같은 날짜의 기존 데이터 ' + r.removed.toLocaleString('ko-KR') + '행을 교체했습니다</div>' +
+      '<button class="btn primary" id="goAnalysis">상세 분석 보기</button></div>';
+    const lastYm = ymOf(p.stats.dates[p.stats.dates.length - 1]);
+    $('goAnalysis').addEventListener('click', () => { S.ym = lastYm; showAdminTab('analysis'); });
+    S.parsed = null; fileIn.value = '';
+  } catch (e) {
+    btn.disabled = false;
+    $('regMsg').textContent = '';
+    $('preview').insertAdjacentHTML('afterbegin', '<div class="banner bad">저장 실패: ' + esc(errMsg(e)) + ' — 같은 파일을 다시 올리면 안전하게 덮어씁니다.</div>');
+  }
+}
+
+$('smsParse').addEventListener('click', () => {
+  const v = $('smsDate').value;
+  const res = parseSms($('smsText').value, { startDate: v ? Number(v.replace(/-/g, '')) : 0, today: todayInt() });
+  let h = '<div class="card"><h2>문자 확인</h2>';
+  res.notes.forEach(n => { h += '<div class="banner warn">' + esc(n) + '</div>'; });
+  if (res.records.length) {
+    h += '<p class="muted">인식한 문자: 시간별 ' + res.counts['시간별'] + '건 · 마감 ' + res.counts['마감'] + '건 · 멤버쉽 ' + res.counts['멤버십'] + '건 → 일산점 기록 ' + res.records.length + '개</p>' +
+      table(['일자', '종류', '시각', '항목', '값', '건수', '비율'], res.records.map(r => [dLabel(r[0]), esc(r[1]), r[2] === '' ? '-' : esc(r[2]) + '시', esc(r[3]), Number(r[4]).toLocaleString('ko-KR'), r[5] === '' ? '-' : Number(r[5]).toLocaleString('ko-KR'), r[6] === '' ? '-' : esc(r[6]) + '%'])) +
+      '<div style="margin-top:10px"><button class="btn primary" id="smsSave">저장</button> <span id="smsMsg" class="muted"></span></div>';
+  }
+  $('smsPreview').innerHTML = h + '</div>';
+  if (res.records.length) $('smsSave').addEventListener('click', async function () {
+    this.disabled = true; $('smsMsg').textContent = '저장 중…';
+    try {
+      const r = await registerSmsRecords(res.records);
+      S.smsCache = {};
+      $('smsPreview').innerHTML = '<div class="card"><div class="banner ok"><b>저장 완료</b><br>새로 추가 ' + r.added + '개 · 교체 ' + r.updated + '개</div></div>';
+      $('smsText').value = '';
+    } catch (e) { this.disabled = false; $('smsMsg').textContent = '저장 실패: ' + errMsg(e); }
+  });
+});
+
+/* ===================== 관리자: 다운로드 (CSV / 엑셀) ===================== */
+function csvCell(v) {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'number') return isFinite(v) ? String(v) : '';
+  let s = String(v);
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; // 엑셀 수식 실행(CSV 인젝션) 방지
+  if (/[",\r\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+function saveBlob(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function downloadCsv(name, aoa) {
+  const text = '﻿' + aoa.map(r => r.map(csvCell).join(',')).join('\r\n');
+  saveBlob(new Blob([text], { type: 'text/csv;charset=utf-8' }), name);
+}
+const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+function dlRange() {
+  const a = Number($('dlFrom').value), b = Number($('dlTo').value);
+  return [Math.min(a, b), Math.max(a, b)];
+}
+function inRange(ym) { const [a, b] = dlRange(); return ym >= a && ym <= b; }
+function rangeTag() { const [a, b] = dlRange(); return a + '-' + b; }
+async function dataSets() {
+  await loadBase(); await loadDetail();
+  const yms = Object.keys(S.detail).map(Number).filter(inRange).sort((a, b) => a - b);
+  const raw = [['일자', '구분', '담당자', '거래처', '대분류', '순매출', '마진']];
+  yms.forEach(ym => Object.keys(S.detail[ym]).map(Number).sort((a, b) => a - b).forEach(day => {
+    (S.detail[ym][day] || []).forEach(r => raw.push([ym * 100 + day, r.g === 'n' ? '내판' : '외판', r.m || '', r.c || '', r.k || '', Number(r.n) || 0, Number(r.r) || 0]));
+  }));
+  const dailyA = [['일자', '요일', '내판', '외판', '합계']];
+  Object.keys(S.daily).map(Number).filter(inRange).sort((a, b) => a - b).forEach(ym => Object.keys(S.daily[ym]).map(Number).sort((a, b) => a - b).forEach(day => {
+    const x = S.daily[ym][day], d = ym * 100 + day, n = Number(x.n) || 0, o = Number(x.o) || 0;
+    dailyA.push([d, DOW[dowOf(d)], n, o, n + o]);
+  }));
+  const det = buildDetail(S.detail, 0, 0);
+  const monthly = [['월', '내판', '외판', '합계', '마진', '마진율(%)', '목표', '달성률(%)']];
+  Object.keys(S.daily).map(Number).filter(inRange).sort((a, b) => a - b).forEach(ym => {
+    let n = 0, o = 0; Object.values(S.daily[ym]).forEach(x => { n += Number(x.n) || 0; o += Number(x.o) || 0; });
+    const t = S.targets[ym] && S.targets[ym].total ? S.targets[ym].total : '', mm = det.monthMar[ym] || 0;
+    monthly.push([ym, n, o, n + o, mm, n + o ? Math.round(mm / (n + o) * 1000) / 10 : '', t, t ? Math.round((n + o) / t * 1000) / 10 : '']);
+  });
+  return { raw, dailyA, monthly };
+}
+function monthBreakdown(ym) {
+  const det = buildDetail(S.detail, ym, 0);
+  return {
+    mgr: [['담당자', '외판 순매출', '비중(%)']].concat(det.mgr.map(m => [m.name, m.net, Math.round(m.share * 1000) / 10])),
+    cust: [['거래처', '외판 순매출', '주 담당자']].concat(det.cust.map(c => [c.name, c.net, c.mgr || ''])),
+    cat: [['구분', '대분류', '순매출', '비중(%)']].concat(det.cat.n.map(c => ['내판', c.name, c.net, Math.round(c.share * 1000) / 10]), det.cat.o.map(c => ['외판', c.name, c.net, Math.round(c.share * 1000) / 10]))
+  };
+}
+async function smsAoa() {
+  const snap = await getDocs(collection(db, C.sms));
+  const out = [['일자', '종류', '시각', '지표', '값', '건수', '비율']], all = [];
+  snap.forEach(s => { if (inRange(Number(s.id))) Object.values(s.data().recs || {}).forEach(r => all.push(r)); });
+  all.sort((a, b) => (a.d - b.d) || String(a.kind).localeCompare(String(b.kind)) || ((Number(a.h) || 0) - (Number(b.h) || 0)));
+  all.forEach(r => out.push([r.d, r.kind, r.h, r.metric, r.v, r.c, r.r]));
+  return out;
+}
+async function logsAoa() {
+  const snap = await getDocs(query(collection(db, C.logs), orderBy('at', 'desc'), limit(500)));
+  const out = [['등록시각', '등록자', '파일', '시작일', '종료일', '행수', '파일합계', '저장합계', '결과']];
+  snap.forEach(s => {
+    const x = s.data(), at = x.at && x.at.toDate ? x.at.toDate() : null;
+    out.push([at ? new Intl.DateTimeFormat('sv-SE', { timeZone: TZ, dateStyle: 'short', timeStyle: 'medium' }).format(at) : '', x.by || '', x.file || '', x.from, x.to, x.usedRows, x.fileNet, x.savedNet, x.match ? '일치' : '불일치']);
+  });
+  return out;
+}
+function targetsAoa() {
+  return [['연월', '목표합계', '내판목표', '외판목표']].concat(Object.keys(S.targets).map(Number).sort((a, b) => a - b).map(ym => [ym, S.targets[ym].total ?? '', S.targets[ym].n ?? '', S.targets[ym].o ?? '']));
+}
+
+async function renderDownloads() {
+  const el = $('a-download');
+  el.innerHTML = '<div class="card muted">불러오는 중…</div>';
+  try { await loadBase(); await loadDetail(); } catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
+  const months = Object.keys(S.daily).map(Number).sort((a, b) => a - b);
+  if (!months.length) { el.innerHTML = '<div class="card"><h2>내려받을 데이터가 없습니다</h2><p class="muted">업로드 탭에서 먼저 데이터를 올려 주세요.</p></div>'; return; }
+  const opts = sel => months.map(m => '<option value="' + m + '"' + (m === sel ? ' selected' : '') + '>' + ymLabel(m) + '</option>').join('');
+  const cur = months.includes(S.ym) ? S.ym : months[months.length - 1];
+  const item = (id, title, desc, cls) => '<div class="dl-item"><div><b>' + title + '</b><div class="muted">' + desc + '</div></div><button class="btn ' + (cls || 'dark') + ' sm" id="' + id + '">내려받기</button></div>';
+  el.innerHTML = '<div class="card"><h2>다운로드</h2>' +
+    '<div class="banner warn">내려받은 파일에는 거래처·담당자·마진 정보가 들어 있습니다. 메신저·메일로 보내지 말고, 공용 PC라면 사용 후 지워 주세요.</div>' +
+    '<div class="row" style="margin-bottom:14px"><label>시작 월<select id="dlFrom">' + opts(months[0]) + '</select></label><label>끝 월<select id="dlTo">' + opts(months[months.length - 1]) + '</select></label>' +
+    '<label>항목별 집계 기준 월<select id="dlMonth">' + opts(cur) + '</select></label></div>' +
+    '<div class="dl-list">' +
+    item('dlXlsx', '📗 전체 엑셀(.xlsx)', '일별데이터·일별합계·월별합계·목표·문자·등록이력 시트를 한 파일로', 'primary') +
+    item('dlRaw', '📦 백업용 일별데이터 CSV', '과거데이터 CSV와 같은 형식 · 업로드 탭에 그대로 다시 올릴 수 있음') +
+    item('dlDaily', '일별 합계 CSV', '일자·요일·내판·외판·합계') +
+    item('dlMonthly', '월별 합계 CSV', '내판·외판·마진·목표·달성률') +
+    item('dlMgr', '담당자별 CSV', '기준 월의 외판 담당자별 매출') +
+    item('dlCust', '거래처별 CSV', '기준 월의 외판 거래처 전체') +
+    item('dlCat', '대분류별 CSV', '기준 월의 내판/외판 대분류') +
+    item('dlTargets', '월 목표 CSV', '등록된 모든 목표') +
+    item('dlSms', '문자 기록 CSV', '시간별·마감·멤버쉽 (기간 내)') +
+    item('dlLogs', '등록 이력 CSV', '업로드 시각·등록자·검산 결과 (최근 500건)') +
+    '</div><p class="muted" style="margin:12px 0 0">CSV는 엑셀에서 한글이 깨지지 않도록 UTF-8(BOM)로 저장됩니다. "="·"+"·"-"·"@"로 시작하는 글자는 엑셀 수식으로 실행되지 않도록 앞에 작은따옴표를 붙입니다.</p></div>';
+  const stamp = () => String(todayInt());
+  const run = (id, fn) => $(id).addEventListener('click', async function () {
+    const b = this; b.disabled = true;
+    try { await fn(); } catch (e) { toast('다운로드 실패: ' + errMsg(e)); }
+    b.disabled = false;
+  });
+  run('dlRaw', async () => { const s = await dataSets(); downloadCsv('매출_일별데이터_' + rangeTag() + '_' + stamp() + '.csv', s.raw); });
+  run('dlDaily', async () => { const s = await dataSets(); downloadCsv('매출_일별합계_' + rangeTag() + '.csv', s.dailyA); });
+  run('dlMonthly', async () => { const s = await dataSets(); downloadCsv('매출_월별합계_' + rangeTag() + '.csv', s.monthly); });
+  run('dlMgr', async () => { const m = Number($('dlMonth').value); downloadCsv('매출_담당자별_' + m + '.csv', monthBreakdown(m).mgr); });
+  run('dlCust', async () => { const m = Number($('dlMonth').value); downloadCsv('매출_거래처별_' + m + '.csv', monthBreakdown(m).cust); });
+  run('dlCat', async () => { const m = Number($('dlMonth').value); downloadCsv('매출_대분류별_' + m + '.csv', monthBreakdown(m).cat); });
+  run('dlTargets', async () => downloadCsv('매출_목표.csv', targetsAoa()));
+  run('dlSms', async () => downloadCsv('매출_문자기록_' + rangeTag() + '.csv', await smsAoa()));
+  run('dlLogs', async () => downloadCsv('매출_등록이력_' + stamp() + '.csv', await logsAoa()));
+  run('dlXlsx', async () => {
+    const X = await loadXlsx();
+    const s = await dataSets(), m = Number($('dlMonth').value), bd = monthBreakdown(m);
+    const wb = X.utils.book_new();
+    const add = (aoa, name) => X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet(aoa), name);
+    add(s.monthly, '월별합계'); add(s.dailyA, '일별합계'); add(s.raw, '일별데이터');
+    add(bd.mgr, '담당자별_' + m); add(bd.cust, '거래처별_' + m); add(bd.cat, '대분류별_' + m);
+    add(targetsAoa(), '목표'); add(await smsAoa(), '문자'); add(await logsAoa(), '등록이력');
+    X.writeFile(wb, '매출현황_' + rangeTag() + '_' + stamp() + '.xlsx');
+  });
+}
+
+/* ===================== 관리자: 목표·설정 ===================== */
+async function loadSettings() {
+  try { await loadBase(true); } catch (e) { $('tMsg').textContent = errMsg(e); return; }
+  const list = Object.keys(S.targets).map(Number).sort((a, b) => b - a);
+  const t = $('tTable');
+  t.innerHTML = '<tr><th>연월</th><th>목표 합계</th><th>내판</th><th>외판</th><th></th></tr>' + list.map(ym => {
+    const x = S.targets[ym];
+    return '<tr><td>' + ymLabel(ym) + '</td><td>' + (x.total ? won(x.total) : '-') + '</td><td>' + (x.n ? won(x.n) : '-') + '</td><td>' + (x.o ? won(x.o) : '-') +
+      '</td><td><button class="btn ghost sm" data-edit="' + ym + '">수정</button> <button class="btn danger sm" data-del="' + ym + '">삭제</button></td></tr>';
+  }).join('');
+  t.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => {
+    const ym = Number(b.dataset.edit), x = S.targets[ym];
+    $('tYm').value = Math.floor(ym / 100) + '-' + String(ym % 100).padStart(2, '0');
+    $('tTotal').value = x.total || ''; $('tN').value = x.n || ''; $('tO').value = x.o || '';
+  }));
+  t.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+    const ym = Number(b.dataset.del);
+    if (!confirm(ymLabel(ym) + ' 목표를 삭제할까요?')) return;
+    try { await deleteDoc(doc(db, C.targets, String(ym))); loadSettings(); } catch (e) { $('tMsg').textContent = '삭제 실패: ' + errMsg(e); }
+  }));
+  $('hol').value = S.settings.holidays.slice().sort((a, b) => a - b).map(dLabel).join('\n');
+  document.querySelectorAll('input[name=smsVat]').forEach(r => { r.checked = r.value === S.settings.smsVat; });
+  if (!$('tYm').value) { const td = todayInt(); $('tYm').value = Math.floor(td / 10000) + '-' + String(Math.floor(td / 100) % 100).padStart(2, '0'); }
+}
+const numOrNull = v => { if (v === '' || v === null) return null; const n = Number(v); return isFinite(n) && n >= 0 ? Math.round(n) : null; };
+$('tSave').addEventListener('click', async () => {
+  const v = $('tYm').value, total = numOrNull($('tTotal').value);
+  if (!v || !total) { $('tMsg').textContent = '연월과 목표 합계를 입력해 주세요.'; return; }
+  const ym = Number(v.replace('-', ''));
+  if (ym < 200001 || ym > 209912) { $('tMsg').textContent = '연월이 올바르지 않습니다.'; return; }
+  try {
+    await setDoc(doc(db, C.targets, String(ym)), { total, n: numOrNull($('tN').value), o: numOrNull($('tO').value), updatedAt: serverTimestamp() });
+    $('tMsg').textContent = ymLabel(ym) + ' 목표를 저장했습니다.'; loadSettings();
+  } catch (e) { $('tMsg').textContent = '저장 실패: ' + errMsg(e); }
+});
+document.querySelectorAll('input[name=smsVat]').forEach(r => r.addEventListener('change', async () => {
+  try { await setDoc(doc(db, C.config, 'settings'), { smsVat: r.value === 'excl' ? 'excl' : 'incl' }, { merge: true }); $('vMsg').textContent = '저장했습니다.'; invalidate(); }
+  catch (e) { $('vMsg').textContent = '저장 실패: ' + errMsg(e); }
+}));
+$('hSave').addEventListener('click', async () => {
+  const list = $('hol').value.split(/\n+/).map(x => x.trim()).filter(Boolean);
+  const bad = list.filter(x => !/^\d{4}-\d{2}-\d{2}$/.test(x));
+  if (bad.length) { $('hMsg').textContent = '형식이 올바르지 않은 줄: ' + bad[0]; return; }
+  const nums = Array.from(new Set(list.map(x => Number(x.replace(/-/g, ''))))).sort((a, b) => a - b);
+  try { await setDoc(doc(db, C.config, 'settings'), { holidays: nums }, { merge: true }); $('hMsg').textContent = nums.length + '일 저장했습니다.'; invalidate(); }
+  catch (e) { $('hMsg').textContent = '저장 실패: ' + errMsg(e); }
+});
+
+/* ===================== 관리자: 권한 관리 ===================== */
+async function loadMembers() {
+  const el = $('a-members');
+  el.innerHTML = '<div class="card muted">불러오는 중…</div>';
+  let roles, reqs;
+  try { [roles, reqs] = await Promise.all([getDocs(collection(db, C.roles)), getDocs(collection(db, C.requests))]); }
+  catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
+  const rl = [], rq = [];
+  roles.forEach(s => rl.push(Object.assign({ uid: s.id }, s.data())));
+  reqs.forEach(s => { if (!rl.some(r => r.uid === s.id)) rq.push(Object.assign({ uid: s.id }, s.data())); });
+  let h = '<div class="card"><h2>승인 요청 ' + rq.length + '건</h2>';
+  h += rq.length ? table(['이름', '이메일', 'UID', ''], rq.map(r => [esc(r.name || '-'), esc(r.email || '-'), '<span class="muted">' + esc(r.uid.slice(0, 8)) + '…</span>',
+    '<button class="btn primary sm" data-ok="' + esc(r.uid) + '" data-role="viewer">보기 권한</button> <button class="btn ghost sm" data-ok="' + esc(r.uid) + '" data-role="admin">관리자</button> <button class="btn danger sm" data-rej="' + esc(r.uid) + '">거절</button>']))
+    : '<p class="muted">대기 중인 요청이 없습니다. 직원이 acetool.site/pos 에서 로그인하면 여기에 나타납니다.</p>';
+  h += '</div><div class="card"><h2>사용자 ' + rl.length + '명</h2>' + table(['이름', '이메일', '권한', ''], rl.map(r => {
+    const me = S.user && r.uid === S.user.uid;
+    return [esc(r.name || '-') + (me ? ' <span class="tag">나</span>' : ''), esc(r.email || '-'), '<span class="tag' + (r.role === 'admin' ? ' admin' : '') + '">' + (r.role === 'admin' ? '관리자' : '보기') + '</span>',
+      me ? '' : '<button class="btn ghost sm" data-set="' + esc(r.uid) + '" data-role="' + (r.role === 'admin' ? 'viewer' : 'admin') + '">' + (r.role === 'admin' ? '보기로 변경' : '관리자로 변경') + '</button> <button class="btn danger sm" data-rm="' + esc(r.uid) + '">삭제</button>'];
+  })) + '<p class="muted" style="margin:8px 0 0">보기 권한: 홈 화면(전체 매출·목표·예상)만 볼 수 있습니다. 관리자: 담당자·거래처·마진, 업로드, 다운로드, 설정, 권한 관리까지 가능합니다. 퇴사자는 바로 삭제해 주세요.</p></div>';
+  el.innerHTML = h;
+  const find = uid => rq.find(x => x.uid === uid) || rl.find(x => x.uid === uid) || {};
+  el.querySelectorAll('[data-ok]').forEach(b => b.addEventListener('click', async () => {
+    const r = find(b.dataset.ok), role = b.dataset.role;
+    if (role === 'admin' && !confirm((r.email || '') + ' 계정에 관리자 권한을 줄까요? 거래처·마진 정보까지 볼 수 있습니다.')) return;
+    try {
+      const wb = writeBatch(db);
+      wb.set(doc(db, C.roles, r.uid), { role, email: String(r.email || ''), name: String(r.name || ''), at: serverTimestamp(), by: S.user.email || '' });
+      wb.delete(doc(db, C.requests, r.uid));
+      await wb.commit(); toast('승인했습니다'); loadMembers();
+    } catch (e) { toast('실패: ' + errMsg(e)); }
+  }));
+  el.querySelectorAll('[data-rej]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('요청을 거절할까요?')) return;
+    try { await deleteDoc(doc(db, C.requests, b.dataset.rej)); loadMembers(); } catch (e) { toast('실패: ' + errMsg(e)); }
+  }));
+  el.querySelectorAll('[data-set]').forEach(b => b.addEventListener('click', async () => {
+    const r = find(b.dataset.set), role = b.dataset.role;
+    if (!confirm((r.email || '') + ' 계정을 ' + (role === 'admin' ? '관리자' : '보기 권한') + '로 바꿀까요?')) return;
+    try { await setDoc(doc(db, C.roles, r.uid), { role, email: String(r.email || ''), name: String(r.name || ''), at: serverTimestamp(), by: S.user.email || '' }); loadMembers(); } catch (e) { toast('실패: ' + errMsg(e)); }
+  }));
+  el.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', async () => {
+    const r = find(b.dataset.rm);
+    if (!confirm((r.email || '') + ' 계정의 권한을 삭제할까요? 바로 볼 수 없게 됩니다.')) return;
+    try { await deleteDoc(doc(db, C.roles, r.uid)); loadMembers(); } catch (e) { toast('실패: ' + errMsg(e)); }
+  }));
+}
+</script>
+</body>
+</html>
 
