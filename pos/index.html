@@ -139,6 +139,33 @@ th { color: var(--ink2); font-weight: 600; font-size: .85em; }
 .legend i.dash { height: 0; border-top: 2px dashed; border-radius: 0; vertical-align: 3px; width: 18px; }
 .legend i.dot { height: 0; border-top: 2px dotted; border-radius: 0; vertical-align: 3px; width: 18px; }
 svg text.wk { fill: var(--ink); font-weight: 700; }
+.grid2 > .card { min-width: 0; }
+.row label.amt { min-width: 200px; }
+.row:has(> label.amt) { align-items: flex-start; }
+.row:has(> label.amt) > .btn { margin-top: 20px; }
+.amt-read { min-height: 1.2em; font-size: 1.05em; font-weight: 700; color: var(--chip-ink); }
+.amt-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.amt-chips button { border: 1px solid var(--line); background: var(--surface); color: var(--ink2); border-radius: 999px; padding: 3px 9px; font: inherit; font-size: .92em; cursor: pointer; }
+.amt-chips button:hover { border-color: var(--s1); color: var(--s1); }
+.amt-chips button.clr { color: var(--ink3); }
+.bk-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.bk-h h2 { margin: 0; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chips button { border: 1px solid transparent; background: var(--bg); color: var(--ink2); border-radius: 999px; padding: 6px 13px; font: inherit; font-size: .86em; cursor: pointer; }
+.chips button:hover { color: var(--ink); }
+.chips button.on { background: var(--ink); color: var(--surface); font-weight: 700; }
+.bk-row { display: grid; grid-template-columns: 26px minmax(120px, 1.3fr) 2fr minmax(96px, auto) 44px; gap: 12px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); }
+.bk-row:first-child { border-top: 0; }
+.bk-r { width: 24px; height: 24px; border-radius: 8px; background: var(--bg); color: var(--ink2); font-size: .8em; font-weight: 700; display: grid; place-items: center; }
+.bk-row:nth-child(-n+3) .bk-r { background: var(--chip); color: var(--chip-ink); }
+.bk-n { display: flex; flex-direction: column; min-width: 0; }
+.bk-n b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bk-n small { color: var(--ink3); font-size: .78em; }
+.bk-t { height: 10px; background: var(--grid); border-radius: 5px; overflow: hidden; }
+.bk-t i { display: block; height: 100%; border-radius: 5px; }
+.bk-v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.bk-s { text-align: right; color: var(--ink2); font-size: .86em; }
+@media (max-width: 640px) { .bk-row { grid-template-columns: 22px 1fr auto 38px; row-gap: 6px; } .bk-t { grid-column: 2 / 5; grid-row: 2; } }
 .card.work { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
 .card.work h2 { margin-bottom: 4px; }
 .card.work a.btn { text-decoration: none; }
@@ -152,9 +179,19 @@ svg text.wk { fill: var(--ink); font-weight: 700; }
 .gb-n { background: var(--s1); border-radius: 8px 0 0 8px; }
 .gb-o { background: var(--s2); border-left: 2px solid var(--surface); }
 .gb-f { position: absolute; top: 0; height: 100%; border: 1.5px dashed var(--s1); border-left: 0; border-radius: 0 8px 8px 0; box-sizing: border-box; }
-.gbar i { position: absolute; top: -5px; bottom: -5px; width: 3px; border-radius: 2px; transform: translateX(-1.5px); }
-.gb-t { background: var(--ink); }
-.gb-e { background: var(--ink3); }
+.gwrap { position: relative; padding: 30px 0 30px; }
+.gm { position: absolute; display: flex; flex-direction: column; align-items: center; transform: translateX(-50%); pointer-events: none; z-index: 1; }
+.gm.up { top: 0; height: 60px; flex-direction: column-reverse; justify-content: flex-end; }
+.gm.down { bottom: 0; height: 60px; justify-content: flex-start; }
+.gm b { width: 0; flex: 1; border-left: 2px dotted var(--ink); }
+.gm.down b { border-left-color: var(--ink3); }
+.gm em { font-style: normal; font-size: 11.5px; font-weight: 700; white-space: nowrap; padding: 3px 9px; border-radius: 999px; line-height: 1.3; }
+.gm.up em { background: var(--ink); color: var(--surface); box-shadow: 0 2px 6px rgba(0, 0, 0, .15); }
+.gm.down em { background: var(--surface); color: var(--ink2); border: 1px solid var(--line); }
+.gm.end { transform: translateX(-100%); align-items: flex-end; }
+.gm.end b { margin-right: -1px; }
+.gm.start { transform: none; align-items: flex-start; }
+.gm.start b { margin-left: -1px; }
 .gsub { display: grid; grid-template-columns: 36px 1fr auto; gap: 8px; align-items: center; font-size: .86em; color: var(--ink2); margin-top: 8px; }
 .gsub-t { height: 8px; background: var(--grid); border-radius: 4px; overflow: hidden; }
 .gsub-t i { display: block; height: 100%; border-radius: 4px; }
@@ -402,11 +439,12 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
         <h2>월 목표 등록</h2>
         <div class="row">
           <label>연월<input type="month" id="tYm"></label>
-          <label>목표 합계(원, VAT 별도)<input type="number" id="tTotal" min="0" step="1000"></label>
-          <label>내판 목표(선택)<input type="number" id="tN" min="0" step="1000"></label>
-          <label>외판 목표(선택)<input type="number" id="tO" min="0" step="1000"></label>
+          <label class="amt">목표 합계(원, VAT 별도)<input type="number" id="tTotal" min="0" step="1000"><span class="amt-read" data-for="tTotal"></span><span class="amt-chips" data-for="tTotal"></span></label>
+          <label class="amt">내판 목표(선택)<input type="number" id="tN" min="0" step="1000"><span class="amt-read" data-for="tN"></span><span class="amt-chips" data-for="tN"></span></label>
+          <label class="amt">외판 목표(선택)<input type="number" id="tO" min="0" step="1000"><span class="amt-read" data-for="tO"></span><span class="amt-chips" data-for="tO"></span></label>
           <button class="btn primary" id="tSave">저장</button>
         </div>
+        <div id="tSumHint" class="muted" style="margin-top:6px"></div>
         <div id="tMsg" class="muted" style="margin-top:8px"></div>
         <div class="scroll" style="margin-top:10px"><table id="tTable"></table></div>
       </div>
@@ -1540,12 +1578,13 @@ function goalCard(d) {
     '<text x="80" y="100" text-anchor="middle" class="g-l">달성률</text></svg>';
   const T = d.target, fb = d.forecast && d.forecast['기본'], mx = Math.max(T, fb ? fb.total : 0, d.cum.total) * 1.02;
   const P = v => (Math.max(0, v) / mx * 100).toFixed(2) + '%';
-  let bar = '<div class="gbar"><span class="gb-n" style="width:' + P(d.cum.n) + '"></span><span class="gb-o" style="width:' + P(d.cum.o) + '"></span>' +
-    (fb ? '<span class="gb-f" style="left:' + P(d.cum.total) + ';width:' + P(Math.max(0, fb.total - d.cum.total)) + '"></span>' : '') +
-    '<i class="gb-t" style="left:' + P(T) + '" title="목표"></i><i class="gb-e" style="left:' + P(T * d.elapsed) + '" title="오늘까지 목표선"></i></div>' +
-    '<div class="legend" style="margin-top:6px"><span><i style="background:var(--s1)"></i>내판 ' + eok(d.cum.n) + '</span><span><i style="background:var(--s2)"></i>외판 ' + eok(d.cum.o) + '</span>' +
-    (fb ? '<span><i style="background:transparent;border:1.5px dashed var(--s1)"></i>남은 기간 예상 ' + eok(fb.total - d.cum.total) + '</span>' : '') +
-    '<span><i style="background:var(--ink);width:3px"></i>목표 ' + eok(T) + '</span><span><i style="background:var(--ink3);width:3px"></i>오늘까지 목표선 ' + eok(T * d.elapsed) + '</span></div>';
+  // 표시 깃발: 위 = 목표, 아래 = 오늘까지 목표선 (오른쪽 끝에 가까우면 깃발을 왼쪽으로 펼침)
+  const flag = (v, cls, label) => { const p = Math.max(0, v) / mx * 100; return '<span class="gm ' + cls + (p > 86 ? ' end' : p < 10 ? ' start' : '') + '" style="left:' + p.toFixed(2) + '%"><b></b><em>' + label + '</em></span>'; };
+  let bar = '<div class="gwrap">' + flag(T, 'up', '🎯 목표 ' + eok(T)) + flag(T * d.elapsed, 'down', '오늘 목표 ' + eok(T * d.elapsed)) +
+    '<div class="gbar"><span class="gb-n" style="width:' + P(d.cum.n) + '"></span><span class="gb-o" style="width:' + P(d.cum.o) + '"></span>' +
+    (fb ? '<span class="gb-f" style="left:' + P(d.cum.total) + ';width:' + P(Math.max(0, fb.total - d.cum.total)) + '"></span>' : '') + '</div></div>' +
+    '<div class="legend" style="margin-top:4px"><span><i style="background:var(--s1)"></i>내판 ' + eok(d.cum.n) + '</span><span><i style="background:var(--s2)"></i>외판 ' + eok(d.cum.o) + '</span>' +
+    (fb ? '<span><i style="background:transparent;border:1.5px dashed var(--s1)"></i>남은 기간 예상 ' + eok(fb.total - d.cum.total) + '</span>' : '') + '</div>';
   const gap = T - d.cum.total;
   const facts = [
     ['남은 금액', gap > 0 ? won(gap) : '목표 달성 (+' + eok(-gap) + ')'],
@@ -1739,6 +1778,30 @@ async function homeAdminParts(d) {
   } catch (e) { if ($('hCons')) $('hCons').innerHTML = '<div class="banner bad">시공 분석: ' + esc(errMsg(e)) + '</div>'; }
 }
 
+/* 구성 분석: 카테고리 칩 + 순위 막대 목록 (내판 = 파랑, 외판 = 주황) */
+const BK_TABS = [{ k: 'mgr', n: '외판 담당자' }, { k: 'cust', n: '외판 거래처 TOP 10' }, { k: 'catn', n: '내판 대분류' }, { k: 'cato', n: '외판 대분류' }];
+function bkRows(det, k) {
+  if (k === 'mgr') return { col: 'var(--s2)', rows: det.mgr.map(m => ({ name: m.name, v: m.net, share: m.share, sub: m.prev ? '전월 같은 기간 ' + eok(m.prev) + ' · ' + chgTxt(chg(m.net, m.prev)) : '' })) };
+  if (k === 'cust') return { col: 'var(--s2)', rows: det.cust.slice(0, 10).map(c => ({ name: c.name, v: c.net, share: det.net.o ? c.net / det.net.o : 0, sub: c.mgr ? '담당 ' + c.mgr : '' })) };
+  const n = k === 'catn';
+  return { col: n ? 'var(--s1)' : 'var(--s2)', rows: (n ? det.cat.n : det.cat.o).slice(0, 12).map(c => ({ name: c.name, v: c.net, share: c.share, sub: '' })) };
+}
+function bindBk(det) {
+  const chips = $('bkChips'), body = $('bkBody');
+  if (!chips) return;
+  const draw = i => {
+    chips.querySelectorAll('button').forEach(b => b.classList.toggle('on', Number(b.dataset.bk) === i));
+    const { col, rows } = bkRows(det, BK_TABS[i].k);
+    if (!rows.length) { body.innerHTML = '<p class="muted">데이터가 없습니다.</p>'; return; }
+    const mx = Math.max(1, ...rows.map(r => r.v));
+    body.innerHTML = '<div class="bk-list">' + rows.map((r, j) => '<div class="bk-row"><span class="bk-r">' + (j + 1) + '</span>' +
+      '<span class="bk-n"><b>' + esc(r.name) + '</b>' + (r.sub ? '<small>' + esc(r.sub) + '</small>' : '') + '</span>' +
+      '<span class="bk-t"><i style="width:' + (Math.max(0, r.v) / mx * 100).toFixed(1) + '%;background:' + col + '"></i></span>' +
+      '<span class="bk-v">' + won(r.v) + '</span><span class="bk-s">' + pct(r.share, 0) + '</span></div>').join('') + '</div>';
+  };
+  chips.querySelectorAll('button').forEach(b => b.addEventListener('click', () => draw(Number(b.dataset.bk))));
+  draw(0);
+}
 function renderAnalysis(d, det, el) {
   if (!d.months.length) { el.innerHTML = ''; return; }
   let h = '<h2 class="sec-title">📊 상세 분석 <span class="tag admin">관리자만</span></h2>', k = '';
@@ -1766,10 +1829,8 @@ function renderAnalysis(d, det, el) {
       return [ymLabel(m.ym), won(m.n), won(m.o), won(m.total), won(mm), m.total ? pct(mm / m.total) : '-', m.target ? pct(m.total / m.target) : '-'];
     })) + '</details></div>';
 
-  h += '<div class="grid2"><div class="card"><h2>외판 담당자별</h2>' + (det.mgr.length ? table(['담당자', '누적', '비중', '전월 같은 기간'], det.mgr.map(m => [esc(m.name), won(m.net), pct(m.share, 0), m.prev ? won(m.prev) : '-'])) : '<p class="muted">외판 데이터가 없습니다.</p>') + '</div>' +
-    '<div class="card"><h2>외판 거래처 TOP 10</h2>' + (det.cust.length ? table(['거래처', '누적', '담당'], det.cust.slice(0, 10).map(c => [esc(c.name), won(c.net), esc(c.mgr || '')])) : '<p class="muted">외판 데이터가 없습니다.</p>') + '</div></div>';
-  h += '<div class="grid2"><div class="card"><h2>내판 대분류</h2>' + (det.cat.n.length ? table(['대분류', '누적', '비중'], det.cat.n.slice(0, 10).map(c => [esc(c.name), won(c.net), pct(c.share, 0)])) : '<p class="muted">데이터가 없습니다.</p>') + '</div>' +
-    '<div class="card"><h2>외판 대분류</h2>' + (det.cat.o.length ? table(['대분류', '누적', '비중'], det.cat.o.slice(0, 10).map(c => [esc(c.name), won(c.net), pct(c.share, 0)])) : '<p class="muted">데이터가 없습니다.</p>') + '</div></div>';
+  h += '<div class="card"><div class="bk-h"><h2>구성 분석</h2><div class="chips" id="bkChips">' +
+    BK_TABS.map((t, i) => '<button data-bk="' + i + '"' + (i === 0 ? ' class="on"' : '') + '>' + t.n + '</button>').join('') + '</div></div><div id="bkBody"></div></div>';
 
   const sm = d.sms;
   if (sm.close.length) {
@@ -1792,6 +1853,7 @@ function renderAnalysis(d, det, el) {
   if (d.missing.length) h += '<div class="card"><h2>누락일 점검</h2><p>' + d.missing.map(x => '<span class="tag">' + dLabel(x).slice(5) + '</span>').join(' ') + '</p><p class="muted">휴무일이면 목표·설정 탭에 등록하고, 아니면 해당 날짜 파일을 올려 주세요.</p></div>';
   el.innerHTML = h;
   ch3.bind();
+  bindBk(det);
 }
 
 /* ===================== 일일 브리핑 (POS=ERP 파일 기준 그날의 주요 내용·특이 사항) ===================== */
@@ -2470,6 +2532,7 @@ async function loadSettings() {
     const ym = Number(b.dataset.edit), x = S.targets[ym];
     $('tYm').value = Math.floor(ym / 100) + '-' + String(ym % 100).padStart(2, '0');
     $('tTotal').value = x.total || ''; $('tN').value = x.n || ''; $('tO').value = x.o || '';
+    ['tTotal', 'tN', 'tO'].forEach(syncAmt);
   }));
   t.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
     const ym = Number(b.dataset.del);
@@ -2497,6 +2560,30 @@ document.querySelectorAll('input[name=smsVat]').forEach(r => r.addEventListener(
   try { await setDoc(doc(db, C.config, 'settings'), { smsVat: r.value === 'excl' ? 'excl' : 'incl' }, { merge: true }); $('vMsg').textContent = '저장했습니다.'; invalidate(); }
   catch (e) { $('vMsg').textContent = '저장 실패: ' + errMsg(e); }
 }));
+/* 금액 입력 도우미: +1억 / +5천만 / +1천만 / +100만 칩과 "3억 5,000만원" 읽기 */
+function krw(n) {
+  n = Math.round(Number(n) || 0); if (!n) return '';
+  const e = Math.floor(n / 1e8), m = Math.floor((n % 1e8) / 1e4), r = n % 1e4;
+  return [e ? e.toLocaleString('ko-KR') + '억' : '', m ? m.toLocaleString('ko-KR') + '만' : '', r ? r.toLocaleString('ko-KR') : ''].filter(Boolean).join(' ') + '원';
+}
+const AMT_STEPS = [[1e8, '+1억'], [5e7, '+5천만'], [1e7, '+1천만'], [1e6, '+100만']];
+function syncAmt(id) {
+  const inp = $(id), sum = $('tSumHint');
+  document.querySelector('.amt-read[data-for="' + id + '"]').textContent = krw(inp.value);
+  const n = Number($('tN').value) || 0, o = Number($('tO').value) || 0, t = Number($('tTotal').value) || 0;
+  sum.textContent = (n || o) ? '내판 + 외판 = ' + (krw(n + o) || '0원') + (t && n + o !== t ? ' (목표 합계와 ' + krw(Math.abs(t - n - o)) + ' 차이)' : '') : '';
+}
+document.querySelectorAll('.amt-chips').forEach(box => {
+  const id = box.dataset.for, inp = $(id);
+  box.innerHTML = AMT_STEPS.map(([v, l]) => '<button type="button" data-v="' + v + '">' + l + '</button>').join('') + '<button type="button" data-v="0" class="clr">지우기</button>';
+  box.querySelectorAll('button').forEach(b => b.addEventListener('click', e => {
+    e.preventDefault();
+    const v = Number(b.dataset.v);
+    inp.value = v ? (Number(inp.value) || 0) + v : '';
+    syncAmt(id);
+  }));
+  inp.addEventListener('input', () => syncAmt(id));
+});
 $('wSave').addEventListener('click', async () => {
   const raw = $('wUrl').value.trim(), u = safeUrl(raw);
   if (raw && !u) { $('wMsg').textContent = 'https://로 시작하는 올바른 주소를 입력해 주세요.'; return; }
