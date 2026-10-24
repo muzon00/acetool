@@ -186,7 +186,12 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .seg.on { background: var(--chip); color: var(--chip-ink); border-color: var(--chip-ink); font-weight: 700; }
 .seg[data-font="neat"] { font-family: "Pretendard Variable", Pretendard, sans-serif; }
 .seg[data-font="round"] { font-family: "OngleipUnz", "Gaegu", sans-serif; font-size: 1.08em; }
-.admin-btn { background: var(--dark); color: var(--dark-ink); }
+/* 관리자 모드 버튼: 홈에서 스크롤해도 오른쪽 아래에 항상 떠 있음 */
+.admin-btn { position: fixed; right: 20px; bottom: 20px; z-index: 40; background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: 12px 20px; box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }
+.admin-btn:hover { filter: brightness(1.05); }
+.wrap { padding-bottom: 84px; }
+@media (max-width: 560px) { .admin-btn { right: 16px; bottom: 16px; padding: 11px 16px; } }
+@media print { .admin-btn { display: none !important; } }
 .center { text-align: center; }
 .login { max-width: 460px; margin: 40px auto; text-align: center; padding: 34px 24px; }
 .login h1 { font-size: 26px; margin: 0 0 8px; }
