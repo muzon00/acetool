@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://cdn.sheetjs.com; connect-src 'self' https://*.googleapis.com https://www.gstatic.com https://apis.google.com; frame-src https://acetool-923f6.firebaseapp.com https://accounts.google.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://cdn.sheetjs.com https://cdn.jsdelivr.net; connect-src 'self' https://*.googleapis.com https://www.gstatic.com https://apis.google.com; frame-src https://acetool-923f6.firebaseapp.com https://accounts.google.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <title>매출 현황</title>
@@ -284,6 +284,23 @@ details > summary.up-h { cursor: pointer; margin: 6px 0; font-weight: 700; }
 .sms-kv span { color: var(--ink2); }
 .sms-kv small { color: var(--ink2); font-weight: 500; }
 .sms-done { margin-top: 14px; font-size: 16px; padding: 14px; }
+/* 본사 참고자료: 월별 100% 누적 막대 */
+.stks { display: grid; gap: 6px; margin: 8px 0 10px; }
+.stk-r { display: grid; grid-template-columns: 34px 1fr 64px; align-items: center; gap: 8px; font-size: 13px; }
+.stk-r b { text-align: right; font-size: 12px; }
+.stk { display: flex; height: 16px; border-radius: 5px; overflow: hidden; background: var(--grid); }
+.stk i { display: block; height: 100%; }
+/* 📁 올린 파일 목록 */
+.fl { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); max-height: 460px; overflow-y: auto; }
+.fl li { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-top: 1px solid var(--line); }
+.fl li:first-child { border-top: 0; }
+.fl li:hover { background: var(--surface2); }
+.fl-i { font-size: 22px; flex: 0 0 auto; }
+.fl-m { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.fl-m b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fl-m small, .fl-r small { color: var(--ink2); font-size: 12px; }
+.fl-r { flex: 0 0 auto; text-align: right; display: flex; flex-direction: column; font-size: 13px; }
+@media (max-width: 560px) { .fl li { flex-wrap: wrap; } .fl-r { flex-basis: 100%; flex-direction: row; gap: 8px; text-align: left; padding-left: 32px; } }
 .mcols { display: flex; align-items: flex-end; gap: 3px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 8px; }
 .mcol { flex: 1 0 18px; max-width: 30px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; color: var(--ink2); }
 .mcol b { font-size: 10px; color: var(--ink); }
@@ -397,6 +414,20 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .site-foot .lk.strong { font-weight: 700; }
 .faint { font-size: 11px; color: var(--ink3); opacity: .55; letter-spacing: .2px; user-select: none; }
 dialog.doc { border: 0; border-radius: var(--radius); padding: 0; width: min(720px, calc(100% - 32px)); max-height: calc(100vh - 64px); background: var(--surface); color: var(--ink); box-shadow: 0 20px 60px rgba(0, 0, 0, .25); }
+dialog.doc.wide { width: min(980px, calc(100% - 20px)); }
+.rp-t { border-collapse: collapse; font-size: 13px; width: 100%; }
+.rp-t th, .rp-t td { border: 1px solid var(--line); padding: 4px 6px; text-align: center; white-space: nowrap; }
+.rp-t th { background: var(--surface2); font-weight: 700; }
+.rp-t td.l { text-align: left; }
+.rp-t input { width: 100%; min-width: 86px; text-align: right; padding: 5px 6px; font-size: 13px; }
+.rp-t input.t { text-align: left; min-width: 110px; }
+.rp-t td.auto { color: var(--ink2); text-align: right; background: var(--surface2); }
+.rp-sec { margin-top: 18px; }
+.rp-sec h3 { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rp-st { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.rp-st span { font-size: 13px; padding: 4px 10px; border-radius: 999px; background: var(--surface2); border: 1px solid var(--line); }
+.rp-st span.bad { background: var(--warn-bg); }
+.rp-save { position: sticky; bottom: 0; background: var(--surface); padding: 12px 0 4px; display: flex; gap: 8px; align-items: center; }
 dialog.doc::backdrop { background: rgba(10, 15, 25, .45); }
 dialog.doc .dh { position: sticky; top: 0; background: var(--surface); display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--line); }
 dialog.doc .dh h2 { margin: 0; }
@@ -509,20 +540,13 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
 
       <div id="dataStatus"></div>
 
-      <!-- 2. 파일 올리기 (매출·시공·채권) -->
+      <!-- 2. 파일 올리기: 종류를 고르지 않고 아무 파일이나 올리면 내용으로 알아봄 -->
       <div class="card">
         <h2>📄 파일 올리기</h2>
-        <div class="row" style="margin-bottom:12px">
-          <label>올릴 자료<select id="upKind">
-            <option value="sales">매출 · POS 판매 내역</option>
-            <option value="cons">시공 · 욕실 시공 내역</option>
-            <option value="ar">채권 · 채권연령 관리</option>
-          </select></label>
-        </div>
-        <p class="muted" id="upDesc"></p>
+        <p class="muted" style="margin-top:0">종류를 고를 필요 없이 그냥 올리세요. 파일 안의 머리글을 보고 <b>매출(POS 판매 내역) · 시공 내역 · 채권연령 · 본사 참고자료(매출 유형별 추이 / PB 실적)</b> 중 무엇인지 알아서 구분합니다. 문자 .txt도 됩니다.</p>
         <div id="upFileBox">
-          <div class="drop" id="drop" tabindex="0" role="button">여기를 눌러 파일을 선택하거나 끌어다 놓으세요<br><span class="muted" id="upExt"></span></div>
-          <input type="file" id="file" class="hide">
+          <div class="drop" id="drop" tabindex="0" role="button">여기를 눌러 파일을 선택하거나 끌어다 놓으세요<br><span class="muted">.xlsx · .xls · .csv · .txt (최대 30MB)</span></div>
+          <input type="file" id="file" class="hide" accept=".xlsx,.xls,.csv,.txt">
         </div>
         <div class="row hide" id="arDateRow" style="margin-top:10px">
           <label>채권 기준일<input type="date" id="arDate"></label>
@@ -530,11 +554,12 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
         </div>
         <details id="upPasteBox" style="margin-top:12px">
           <summary class="up-h">📋 엑셀 표를 복사해서 붙여넣기 (파일 대신)</summary>
-          <textarea id="upText" rows="8"></textarea>
+          <textarea id="upText" rows="8" placeholder="엑셀에서 머리글 줄부터 표를 드래그해 복사(Ctrl+C)한 뒤 여기에 붙여넣기(Ctrl+V) — 종류는 자동으로 구분합니다"></textarea>
           <div class="row" style="margin-top:8px"><button class="btn primary" id="upCheck">내용 확인</button><button class="btn ghost" id="upClear">지우기</button></div>
         </details>
       </div>
       <div id="preview"></div>
+      <div id="fileList"></div>
     </div>
 
     <div id="a-plans" class="hide">
@@ -638,7 +663,8 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
         <h3>올리는 방법 두 가지 (모든 자료 공통)</h3>
         <ul>
           <li><b>📱 문자 올리기</b>(맨 위): 휴대폰에서 받은 문자를 붙여넣으면 바로 아래에 내용이 나오고 저장 버튼이 생깁니다.</li>
-          <li><b>📄 파일 올리기</b>: 올릴 자료(매출 / 시공 / 채권)를 고르고 엑셀(.xlsx/.xls)이나 CSV 파일을 선택하거나 끌어다 놓습니다. (문자 .txt도 됩니다)</li>
+          <li><b>📄 파일 올리기</b>: 종류를 고를 필요 없이 엑셀(.xlsx/.xls)·CSV·문자 .txt를 그냥 올립니다. 머리글을 보고 매출 / 시공 / 채권 / 본사 참고자료(매출 유형별·PB 실적)를 알아서 구분합니다.</li>
+          <li><b>📁 올린 파일</b>: 올린 파일 이름·올린 시간·올린 사람·자료 기간이 폴더처럼 쌓입니다. 파일명순·올린 시간순 정렬, 종류별로 골라 보기가 됩니다.</li>
           <li><b>📋 엑셀 표를 복사해서 붙여넣기</b>: 파일 대신 엑셀에서 <b>머리글 줄부터</b> 표를 복사해 붙여넣고 "내용 확인"을 누릅니다.</li>
         </ul>
         <h3>욕실·시공 내역 (2025년, 2026년)</h3>
@@ -748,6 +774,11 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
   </div>
 </dialog>
 
+<dialog class="doc wide" id="dlgReport" aria-labelledby="rpT">
+  <div class="dh"><h2 id="rpT">분석 보고서 · 목표·실적 입력</h2><button class="btn ghost sm" data-close>닫기</button></div>
+  <div class="db" id="rpBody"></div>
+</dialog>
+
 <dialog class="doc" id="dlgInstall" aria-labelledby="instT">
   <div class="dh"><h2 id="instT">홈 화면에 추가</h2><button class="btn ghost sm" data-close>닫기</button></div>
   <div class="db">
@@ -846,7 +877,7 @@ const db = getFirestore(app); // 오프라인 캐시는 켜지 않음(공용 PC�
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: 'select_account' });
 
-const C = { daily: 'pos_daily', detail: 'pos_detail', targets: 'pos_targets', sms: 'pos_sms', config: 'pos_config', logs: 'pos_logs', roles: 'pos_roles', requests: 'pos_requests', stats: 'pos_stats', cons: 'pos_cons', consSum: 'pos_cons_sum', plans: 'pos_plans', planSum: 'pos_plan_sum', ar: 'pos_ar', events: 'pos_events', my: 'pos_my' };
+const C = { daily: 'pos_daily', detail: 'pos_detail', targets: 'pos_targets', sms: 'pos_sms', config: 'pos_config', logs: 'pos_logs', roles: 'pos_roles', requests: 'pos_requests', stats: 'pos_stats', cons: 'pos_cons', consSum: 'pos_cons_sum', plans: 'pos_plans', planSum: 'pos_plan_sum', ar: 'pos_ar', events: 'pos_events', my: 'pos_my', report: 'pos_report', ref: 'pos_ref' };
 const SITE_URL = 'https://acetool.site/pos/';
 const XLSX_URL = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
 const XLSX_SRI = 'sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT';
@@ -1224,7 +1255,7 @@ function buildDetail(detail, ym, lastDay) {
 /* ===================== Firestore 읽기/쓰기 ===================== */
 // https 주소만 허용 (javascript: 같은 위험한 링크 차단)
 function safeUrl(u) { try { const x = new URL(String(u || '').trim()); return x.protocol === 'https:' ? x.href : ''; } catch (e) { return ''; } }
-function invalidate() { S.daily = null; S.targets = null; S.settings = null; S.smsCache = {}; S.detail = null; S.cons = null; S.consSum = null; S.plans = null; S.planSum = null; S.ar = null; S.ev = null; }
+function invalidate() { S.daily = null; S.targets = null; S.settings = null; S.smsCache = {}; S.detail = null; S.cons = null; S.consSum = null; S.plans = null; S.planSum = null; S.ar = null; S.ev = null; S.ref = null; }
 async function loadBase(force) {
   if (S.daily && S.targets && S.settings && !force) return;
   const [dSnap, tSnap, cSnap] = await Promise.all([getDocs(collection(db, C.daily)), getDocs(collection(db, C.targets)), getDoc(doc(db, C.config, 'settings'))]);
@@ -1340,7 +1371,32 @@ async function loadLogs(force) {
   const s = await getDocs(query(collection(db, C.logs), orderBy('at', 'desc'), limit(150)));
   S.logs = []; s.forEach(x => S.logs.push(x.data()));
 }
-function kindOfLog(l) { const f = String(l.file || ''); return f.startsWith('[시공]') ? 'cons' : f.startsWith('[채권]') ? 'ar' : f.startsWith('[문자]') ? 'sms' : 'sales'; }
+function kindOfLog(l) { const f = String(l.file || ''); return f.startsWith('[시공]') ? 'cons' : f.startsWith('[채권]') ? 'ar' : f.startsWith('[문자]') ? 'sms' : f.startsWith('[참고') ? 'ref' : 'sales'; }
+/* 📁 올린 파일: 폴더처럼 파일명 · 올린 시간 · 올린 사람 · 자료 기간 (이름순 / 시간순 정렬) */
+const FL_KIND = { all: ['📁', '전체'], sales: ['💰', '매출'], cons: ['🛁', '시공'], ar: ['💳', '채권'], ref: ['📚', '참고자료'], sms: ['💬', '문자'] };
+function renderFiles() {
+  const el = $('fileList'); if (!el || !S.logs) return;
+  const ui = S.fl || (S.fl = { k: 'at', dir: -1, f: 'all' });
+  const atMs = l => l.at && l.at.toMillis ? l.at.toMillis() : 0;
+  const nameOf = l => String(l.file || '').replace(/^\[[^\]]+\]\s*/, '') || '(이름 없음)';
+  const list = S.logs.filter(l => ui.f === 'all' || kindOfLog(l) === ui.f).slice()
+    .sort((a, b) => ui.k === 'name' ? ui.dir * nameOf(a).localeCompare(nameOf(b), 'ko') || atMs(b) - atMs(a) : ui.dir * (atMs(a) - atMs(b)));
+  const cnt = k => k === 'all' ? S.logs.length : S.logs.filter(l => kindOfLog(l) === k).length;
+  const arrow = k => ui.k === k ? (ui.dir > 0 ? ' ▲' : ' ▼') : '';
+  let h = '<div class="card"><div class="bk-h"><h2>📁 올린 파일 <span class="muted" style="font-weight:400;font-size:.8em">최근 ' + S.logs.length + '개</span></h2>' +
+    '<div class="chips"><button data-fs="name"' + (ui.k === 'name' ? ' class="on"' : '') + '>파일명' + arrow('name') + '</button><button data-fs="at"' + (ui.k === 'at' ? ' class="on"' : '') + '>올린 시간' + arrow('at') + '</button></div></div>' +
+    '<div class="chips" style="margin:4px 0 10px">' + Object.keys(FL_KIND).filter(k => k === 'all' || cnt(k)).map(k => '<button data-ff="' + k + '"' + (ui.f === k ? ' class="on"' : '') + '>' + FL_KIND[k][0] + ' ' + FL_KIND[k][1] + ' ' + cnt(k) + '</button>').join('') + '</div>';
+  h += list.length ? '<ul class="fl">' + list.map(l => {
+    const k = kindOfLog(l), rng = l.from ? mdLabel(l.from) + (l.to && l.to !== l.from ? ' ~ ' + mdLabel(l.to) : '') : '';
+    return '<li><span class="fl-i">' + FL_KIND[k][0] + '</span><div class="fl-m"><b>' + esc(nameOf(l)) + '</b><small>' + FL_KIND[k][1] + (rng ? ' · 자료 ' + rng : '') + (l.usedRows ? ' · ' + Number(l.usedRows).toLocaleString('ko-KR') + '줄' : '') + '</small></div>' +
+      '<div class="fl-r"><span>' + whenTxt(l.at) + '</span><small>' + esc(String(l.by || '').split('@')[0]) + (l.match === false ? ' · ⚠️ 검산 불일치' : '') + '</small></div></li>';
+  }).join('') + '</ul>' : '<p class="muted">아직 올린 파일이 없습니다.</p>';
+  el.innerHTML = h + '<p class="muted" style="margin:8px 0 0">파일 자체는 서버에 보관하지 않고, 읽은 내용만 저장합니다. (매출·거래처 정보 보호)</p></div>';
+  el.querySelectorAll('[data-fs]').forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.fs; if (ui.k === k) ui.dir = -ui.dir; else { ui.k = k; ui.dir = k === 'name' ? 1 : -1; } renderFiles();
+  }));
+  el.querySelectorAll('[data-ff]').forEach(b => b.addEventListener('click', () => { ui.f = b.dataset.ff; renderFiles(); }));
+}
 function lastLog(kind) { return (S.logs || []).find(l => kindOfLog(l) === kind) || null; }
 function whenTxt(at) {
   const t = at && at.toDate ? at.toDate() : null;
@@ -1384,7 +1440,7 @@ function dataStrip() {
 async function renderDataStatus() {
   const el = $('dataStatus'); if (!el) return;
   el.innerHTML = '<div class="card muted">자료 현황 불러오는 중…</div>';
-  try { await Promise.all([loadBase(), loadLogs(true), loadCons().catch(() => { }), loadAr().catch(() => { })]); } catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
+  try { await Promise.all([loadBase(), loadLogs(true), loadCons().catch(() => { }), loadAr().catch(() => { }), loadRef(true).catch(() => { })]); } catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
   try { const s = await getDocs(collection(db, C.sms)); s.forEach(x => { S.smsCache[Number(x.id)] = Object.values(x.data().recs || {}); }); } catch (e) { }
   const sr = salesRange(), cl = smsLatest('마감'), pb = smsLatest('PB'), mb = smsLatest('멤버십'), hr = smsLatest('시간별');
   const consR = S.cons && S.cons.length ? { from: Math.min(...S.cons.map(r => r.d)), to: Math.max(...S.cons.map(r => r.d)) } : null;
@@ -1392,11 +1448,13 @@ async function renderDataStatus() {
     ['💰 매출 (POS)', sr ? dLabel(sr.from) + ' ~ <b>' + dLabel(sr.to) + '</b> (' + sr.n + '일)' : '아직 없음', lastLog('sales')],
     ['💬 문자', cl || pb || mb || hr ? '마감 <b>' + (cl ? dLabel(cl) : '-') + '</b> · PB ' + (pb ? dLabel(pb) : '-') + ' · 멤버쉽 ' + (mb ? dLabel(mb) : '-') + ' · 시간별 ' + (hr ? dLabel(hr) : '-') : '아직 없음', lastLog('sms')],
     ['🛁 시공', consR ? dLabel(consR.from) + ' ~ <b>' + dLabel(consR.to) + '</b> (' + S.cons.length + '건)' : '아직 없음', lastLog('cons')],
-    ['💳 채권', S.ar && S.ar.length ? '<b>' + dLabel(S.ar[0].date) + ' 기준</b>' + (S.ar[1] ? ' (이전 ' + dLabel(S.ar[1].date) + ')' : '') : '아직 없음', lastLog('ar')]
+    ['💳 채권', S.ar && S.ar.length ? '<b>' + dLabel(S.ar[0].date) + ' 기준</b>' + (S.ar[1] ? ' (이전 ' + dLabel(S.ar[1].date) + ')' : '') : '아직 없음', lastLog('ar')],
+    ['📚 본사 참고자료', S.ref && S.ref.length ? S.ref.map(x => (x.kind === 'mix' ? '매출유형' : 'PB') + ' ' + esc(x.store) + ' <b>' + (x.basis ? dLabel(x.basis) : '-') + '</b>').join(' · ') : '아직 없음', lastLog('ref')]
   ];
   el.innerHTML = '<div class="card"><h2>📦 자료 현황 · 언제, 어디까지 올렸나</h2>' + table(['자료', '들어 있는 기간', '마지막 업로드', '올린 사람', '파일'],
     rows.map(([k, range, l]) => [k, range, l ? whenTxt(l.at) : '-', l ? esc(String(l.by || '').split('@')[0]) : '-', l ? esc(String(l.file || '').replace(/^\[[^\]]+\]\s*/, '')) + (l.from ? ' <small class="muted">(' + mdLabel(l.from) + (l.to && l.to !== l.from ? '~' + mdLabel(l.to) : '') + ')</small>' : '') : '-'])) +
     '<p class="muted" style="margin:8px 0 0">"들어 있는 기간"은 지금 저장된 자료 기준, "파일" 옆 괄호는 그 업로드에 들어 있던 날짜입니다. 전체 이력은 다운로드 › 등록 이력 CSV에서 볼 수 있어요.</p></div>';
+  renderFiles();
 }
 
 /* ===================== 화면 전환 / 로그인 ===================== */
@@ -2079,7 +2137,7 @@ function renderHome(d) {
   h += '<div class="card work" data-sec="근무표"><div><h2>📅 근무표</h2><p class="muted" style="margin:0">매장 근무표 관리 웹앱으로 이동합니다. 새 창으로 열려요.</p></div>' +
     (wu ? '<a class="btn primary" href="' + esc(wu) + '" target="_blank" rel="noopener noreferrer">근무표 열기 ↗</a>'
       : '<span class="btn ghost" aria-disabled="true">주소 준비 중' + (S.role === 'admin' ? ' · 목표·설정에서 입력' : '') + '</span>') + '</div>';
-  if (S.role === 'admin') h += '<div id="hDetail" data-sec="상세 분석"><div class="card muted">상세 분석 불러오는 중…</div></div><div id="hCons" data-sec="시공 분석"><div class="card muted">시공 분석 불러오는 중…</div></div><div id="hAr" data-sec="채권"><div class="card muted">채권 불러오는 중…</div></div>';
+  if (S.role === 'admin') h += '<div id="hDetail" data-sec="상세 분석"><div class="card muted">상세 분석 불러오는 중…</div></div><div id="hCons" data-sec="시공 분석"><div class="card muted">시공 분석 불러오는 중…</div></div><div id="hAr" data-sec="채권"><div class="card muted">채권 불러오는 중…</div></div><div id="hRef" data-sec="본사 참고자료"><div class="card muted">본사 참고자료 불러오는 중…</div></div>';
   $('homeBody').innerHTML = h;
   buildSecNav('homeBody', 'homeNav');
   ch1.bind(); ch2.bind(); bindCal();
@@ -2116,7 +2174,7 @@ function showAdminTab(t) {
   if (t === 'plans') loadPlansTab();
   if (t === 'settings') loadSettings();
   if (t === 'members') loadMembers();
-  if (t === 'upload') { setUp(false); renderDataStatus(); }
+  if (t === 'upload') renderDataStatus();
 }
 $('adminRefresh').addEventListener('click', () => { invalidate(); showAdminTab(S.adminTab); });
 // 업로드 뒤 "보기" 버튼: 홈으로 가서 해당 칸으로 스크롤
@@ -2144,6 +2202,10 @@ async function homeAdminParts(d) {
     if (S.sum !== d || !$('hAr')) return;
     renderAr($('hAr'));
   } catch (e) { if ($('hAr')) $('hAr').innerHTML = '<div class="banner bad">채권: ' + esc(errMsg(e)) + '</div>'; }
+  try {
+    await loadRef();
+    if (S.sum === d && $('hRef')) renderRef($('hRef'));
+  } catch (e) { if ($('hRef')) $('hRef').innerHTML = '<div class="banner bad">본사 참고자료: ' + esc(errMsg(e)) + '</div>'; }
   if (S.sum === d && $('dataStrip')) $('dataStrip').outerHTML = dataStrip(); // 시공·채권까지 반영
 }
 
@@ -2592,32 +2654,30 @@ function loadXlsx() {
   });
   return xlsxP;
 }
-/* 자료 종류(매출/시공/문자) × 방법(파일/붙여넣기) */
-const UP = {
-  sales: {
-    desc: 'POS에서 내려받은 판매 내역입니다. 파일에 들어 있는 날짜의 기존 데이터는 새 내용으로 교체되므로 같은 날짜를 다시 올려도 중복되지 않습니다. 해당 날짜의 내판(일반)과 외판(B2B)이 모두 들어 있어야 합니다.',
-    ext: '.xlsx,.xls,.csv', extLabel: '.xlsx · .xls · .csv (최대 30MB)',
-    ph: '엑셀에서 머리글 줄(영업일자, 구분, 과세결제금액…)부터 표를 드래그해 복사(Ctrl+C)한 뒤 여기에 붙여넣기(Ctrl+V)'
-  },
-  cons: {
-    desc: '시공 내역(상태, 영업일자, 판매번호, … 시공일자, 시공상태, 무료욕실, 유료욕실, 욕실리모델링 …)입니다. 같은 판매번호는 새 내용으로 교체되므로 2025년·2026년 자료를 나눠서 여러 번 올려도 됩니다. 비고·상담결과 같은 메모 칸과 배송·이동번호는 개인정보 보호를 위해 저장하지 않습니다.',
-    ext: '.xlsx,.xls,.csv', extLabel: '.xlsx · .xls · .csv (최대 30MB)',
-    ph: '엑셀에서 머리글 줄(상태, 영업일자, 판매번호…)부터 표를 드래그해 복사(Ctrl+C)한 뒤 여기에 붙여넣기(Ctrl+V)'
-  },
-  ar: {
-    desc: '채권연령 관리 파일(지점명, 거래처명, 고객코드, 잔액, 1개월이하 … 12개월초과)입니다. 기준일별로 저장해 지난번과 비교합니다. 사업자등록번호는 저장하지 않습니다.',
-    ext: '.xlsx,.xls,.csv', extLabel: '.xlsx · .xls · .csv (최대 30MB)',
-    ph: '엑셀에서 머리글 줄(지점코드, 지점명, 사업자등록번호, 거래처명…)부터 표를 드래그해 복사(Ctrl+C)한 뒤 여기에 붙여넣기(Ctrl+V)'
-  }
+/* 올린 파일의 종류를 머리글로 알아봄 (드롭다운 없이 아무 파일이나) */
+const UP_KINDS = {
+  sales: { icon: '💰', name: '매출 · POS 판매 내역', desc: '파일에 들어 있는 날짜의 기존 데이터는 새 내용으로 교체되어 같은 날짜를 다시 올려도 중복되지 않습니다.' },
+  cons: { icon: '🛁', name: '시공 내역', desc: '같은 판매번호는 새 내용으로 교체됩니다. 비고·상담결과 같은 메모 칸과 배송·이동번호는 저장하지 않습니다.' },
+  ar: { icon: '💳', name: '채권연령 관리', desc: '기준일별로 저장해 지난번과 비교합니다. 사업자등록번호는 저장하지 않습니다.' },
+  mix: { icon: '📚', name: '본사 참고자료 · 매출 유형별 비중 및 추이', desc: '관계사 · 일반 B2B · 일반 내판의 월별 실매출·매총이익을 저장합니다. 같은 지점·연도를 다시 올리면 교체됩니다.' },
+  pb: { icon: '🏷️', name: '본사 참고자료 · 점포별 PB 실적', desc: '전체·PB 월별 실적, PB 카테고리별 매출, 잘 팔리는 PB 상품 상위 50개를 저장합니다. 같은 지점·연도를 다시 올리면 교체됩니다.' }
 };
-function setUp(reset) {
-  const k = $('upKind').value, c = UP[k];
-  $('upDesc').textContent = c.desc; $('file').accept = c.ext + ',.txt'; $('upExt').textContent = c.extLabel + ' · 문자 .txt도 가능'; $('upText').placeholder = c.ph;
-  $('arDateRow').classList.toggle('hide', k !== 'ar');
-  if (k === 'ar' && !$('arDate').value) $('arDate').value = dLabel(todayInt());
-  if (reset) { $('preview').innerHTML = ''; S.parsed = null; }
+function detectKind(aoa) {
+  const top = aoa.slice(0, 40).map(r => (r || []).map(hnorm));
+  const has = (...ns) => top.some(l => ns.every(n => l.includes(n)));
+  const txt = aoa.slice(0, 10).map(r => (r || []).join(' ')).join(' ');
+  if (/PB\s*실적/.test(txt) || has('PB실매출')) return 'pb';
+  if (/매출\s*유형/.test(txt) || top.some(l => l.some(c => /^[ㄴ└]?관계사$/.test(c)))) return 'mix';
+  if (has('영업일자', '판매번호') && top.some(l => l.some(c => ['시공일자', '시공상태', '시공PKG'].concat(CONS_CATS).includes(c)))) return 'cons';
+  if (has('거래처명', '잔액')) return 'ar';
+  if (has('영업일자', '구분') || has('일자', '구분', '순매출')) return 'sales';
+  return '';
 }
-$('upKind').addEventListener('change', () => setUp(true));
+const UP_NONE = '어떤 자료인지 알아보지 못했습니다. 매출(영업일자·구분·과세결제금액), 시공(영업일자·판매번호·시공일자), 채권(거래처명·잔액), 본사 참고자료(매출 유형별 / PB 실적) 파일인지, 머리글 줄까지 들어 있는지 확인해 주세요.';
+function kindBanner(kind, name) {
+  const k = UP_KINDS[kind];
+  return '<div class="banner ok">🔎 <b>' + esc(name) + '</b> → <b>' + k.icon + ' ' + k.name + '</b>(으)로 알아봤어요. ' + k.desc + '</div>';
+}
 $('upClear').addEventListener('click', () => { $('upText').value = ''; $('preview').innerHTML = ''; });
 
 /* 📱 문자 올리기: 붙여넣으면 바로 아래에 확인 + 저장 버튼 */
@@ -2655,9 +2715,8 @@ $('upCheck').addEventListener('click', () => {
   const text = $('upText').value;
   if (!text.trim()) { $('preview').innerHTML = '<div class="banner warn">붙여넣은 내용이 없습니다.</div>'; return; }
   if (looksSms(text)) { $('upText').value = ''; toSms(text); return; }
-  handleTable(parseTSV(text), '붙여넣은 표');
+  handleSheets([parseTSV(text)], '붙여넣은 표');
 });
-setUp(false);
 
 // 엑셀에서 복사한 표(탭 구분) 또는 CSV 텍스트 → 2차원 배열
 function parseTSV(text) {
@@ -2686,26 +2745,35 @@ fileIn.addEventListener('change', () => { if (fileIn.files[0]) readFile(fileIn.f
 
 async function readFile(f) {
   S.parsed = null;
-  const kind = $('upKind').value;
   if (f.size > 30 * 1024 * 1024) { $('preview').innerHTML = '<div class="banner bad">파일이 너무 큽니다(30MB 초과).</div>'; return; }
   if (/\.txt$/i.test(f.name)) { toSms(await f.text()); fileIn.value = ''; return; }
-  if (!/\.(xlsx|xls|csv)$/i.test(f.name)) { $('preview').innerHTML = '<div class="banner bad">.xlsx, .xls, .csv 파일만 올릴 수 있습니다.</div>'; return; }
-  if (kind === 'ar') { const m = /(\d{1,2})\s*월\s*(\d{1,2})\s*일/.exec(f.name); if (m) { const t = todayInt(), md = Number(m[1]) * 100 + Number(m[2]); let y = Math.floor(t / 10000); if (md > t % 10000) y--; $('arDate').value = dLabel(y * 10000 + md); } }
+  if (!/\.(xlsx|xls|csv)$/i.test(f.name)) { $('preview').innerHTML = '<div class="banner bad">.xlsx, .xls, .csv, .txt 파일만 올릴 수 있습니다.</div>'; return; }
   $('preview').innerHTML = '<div class="card"><b>' + esc(f.name) + '</b> 읽는 중… 파일이 크면 1분 정도 걸릴 수 있습니다.</div>';
   try {
     const X = await loadXlsx();
     const wb = /\.csv$/i.test(f.name) ? X.read(await f.text(), { type: 'string' }) : X.read(await f.arrayBuffer(), { type: 'array' });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    handleTable(X.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' }), f.name);
+    // 시트를 모두 살펴봄 (본사 참고자료는 한 파일에 시트가 여러 장일 수 있음)
+    handleSheets(wb.SheetNames.map(n => X.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: '' })), f.name);
   } catch (e) { $('preview').innerHTML = '<div class="banner bad">파일을 읽지 못했습니다: ' + esc(errMsg(e)) + '</div>'; }
 }
-function handleTable(aoa, name) {
-  const kind = $('upKind').value;
+function handleSheets(sheets, name) {
+  const found = sheets.map(aoa => ({ aoa, kind: detectKind(aoa) })).filter(x => x.kind);
+  if (!found.length) { $('preview').innerHTML = '<div class="banner bad">' + UP_NONE + '</div>'; return; }
+  const refs = found.filter(x => x.kind === 'mix' || x.kind === 'pb');
+  if (refs.length) { handleRef(refs, name); return; }
+  const { aoa, kind } = found[0];
+  $('arDateRow').classList.toggle('hide', kind !== 'ar');
+  if (kind === 'ar') {
+    const m = /(\d{1,2})\s*월\s*(\d{1,2})\s*일/.exec(name), t = todayInt();
+    if (m) { const md = Number(m[1]) * 100 + Number(m[2]); let y = Math.floor(t / 10000); if (md > t % 10000) y--; $('arDate').value = dLabel(y * 10000 + md); }
+    else if (!$('arDate').value) $('arDate').value = dLabel(t);
+  }
   const res = kind === 'cons' ? consParse(aoa) : kind === 'ar' ? arParse(aoa) : aggregateRows(aoa);
-  if (res.error) { $('preview').innerHTML = '<div class="banner bad">' + esc(res.error) + '</div>'; return; }
+  if (res.error) { $('preview').innerHTML = kindBanner(kind, name) + '<div class="banner bad">' + esc(res.error) + '</div>'; return; }
   res.name = name;
   S.parsed = res;
   if (kind === 'cons') renderConsPreview(); else if (kind === 'ar') renderArPreview(); else renderPreview();
+  $('preview').insertAdjacentHTML('afterbegin', kindBanner(kind, name));
 }
 function renderPreview() {
   const p = S.parsed, st = p.stats;
@@ -3230,7 +3298,7 @@ async function renderDownloads() {
   el.innerHTML = '<div class="card muted">불러오는 중…</div>';
   try { await loadBase(); await loadDetail(); } catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
   const months = Object.keys(S.daily).map(Number).sort((a, b) => a - b);
-  if (!months.length) { el.innerHTML = '<div class="card"><h2>내려받을 데이터가 없습니다</h2><p class="muted">업로드 탭에서 먼저 데이터를 올려 주세요.</p></div>'; return; }
+  if (!months.length) { el.innerHTML = '<div class="card"><h2>내려받을 데이터가 없습니다</h2><p class="muted">업로드 탭에서 먼저 데이터를 올려 주세요.</p></div>'; rpMount(el); return; }
   const opts = sel => months.map(m => '<option value="' + m + '"' + (m === sel ? ' selected' : '') + '>' + ymLabel(m) + '</option>').join('');
   const cur = months.includes(S.ym) ? S.ym : months[months.length - 1];
   const item = (id, title, desc, cls) => '<div class="dl-item"><div><b>' + title + '</b><div class="muted">' + desc + '</div></div><button class="btn ' + (cls || 'dark') + ' sm" id="' + id + '">내려받기</button></div>';
@@ -3281,6 +3349,625 @@ async function renderDownloads() {
     add(await logsAoa(), '등록이력');
     X.writeFile(wb, '매출현황_' + rangeTag() + '_' + stamp() + '.xlsx');
   });
+  rpMount(el);
+}
+
+/* ===================== 본사 참고자료 (백데이터) =====================
+   pos_ref/mix_{연도}_{지점}: 매출 유형별 비중 및 추이 → months: { YYYYMM: { s: { tot, aff, b2b, pos }, g: { … } } }  (s = 실매출, g = 매총이익)
+   pos_ref/pb_{연도}_{지점}:  점포별 PB 실적        → months: { YYYYMM: { tot: { s, g }, pb: { s, g } } }, cats: { 카테고리: { YYYYMM: 실매출 } },
+                                                     top: [{ rank, cat, code, name, first, q, s, g }] (누적 실매출 상위 50)
+   비중·매총율·월평균은 저장하지 않고 화면에서 다시 계산 */
+const REF_STORES = ['금천', '용산', '일산', '퇴계원', '강남'];
+function refStore(aoa) {
+  for (let i = 0; i < Math.min(aoa.length, 12); i++) {
+    const r = aoa[i] || [];
+    for (let c = 0; c < r.length; c++) if (/지점\s*선택/.test(String(r[c]))) {
+      const cand = r.slice(c + 1).concat((aoa[i + 1] || []).slice(Math.max(0, c - 2), c + 4)).map(String);
+      for (const v of cand) { const s = REF_STORES.find(n => v.includes(n)); if (s) return s; }
+    }
+  }
+  return '';
+}
+function refBasis(aoa) {
+  const t = aoa.slice(0, 8).map(r => (r || []).join(' ')).join(' ');
+  let m = /\(?\s*(\d{6})\s*기준/.exec(t); if (m) return 20000000 + Number(m[1]);
+  m = /~\s*(20\d{2})-(\d{2})-(\d{2})/.exec(t); if (m) return Number(m[1] + m[2] + m[3]);
+  return 0;
+}
+function refMonthCols(row) { const o = {}; (row || []).forEach((v, k) => { const m = /^(20\d{2})(0[1-9]|1[0-2])/.exec(String(v).trim()); if (m) o[k] = Number(m[1] + m[2]); }); return o; }
+const refHead = (aoa, from, test) => { for (let i = from; i < aoa.length; i++) if (Object.keys(refMonthCols(aoa[i])).length >= 3 && (!test || test(aoa[i]))) return i; return -1; };
+const refLabelCol = (row, re) => { const k = (row || []).findIndex(v => re.test(hnorm(v))); return k < 0 ? 0 : k; };
+function parseMix(aoa) {
+  const hi = refHead(aoa, 0); if (hi < 0) return { error: '월(202601 같은) 머리글 줄을 찾지 못했습니다.' };
+  const mc = refMonthCols(aoa[hi]), lc = refLabelCol(aoa[hi], /^구분$/), months = {};
+  let sec = null;
+  for (let i = hi + 1; i < aoa.length; i++) {
+    const r = aoa[i] || [], L = hnorm(r[lc]); if (!L) continue;
+    let key = null;
+    if (/^실매출/.test(L)) { sec = 's'; key = 'tot'; }
+    else if (/^매총이익/.test(L)) { sec = 'g'; key = 'tot'; }
+    else if (/^매총율/.test(L)) { sec = null; continue; }
+    else if (L.startsWith('(%)') || !sec) continue;
+    else key = /관계사/.test(L) ? 'aff' : /B2B/i.test(L) ? 'b2b' : /내판/.test(L) ? 'pos' : null;
+    if (!key) continue;
+    Object.entries(mc).forEach(([k, ym]) => { const v = r[k]; if (v === '' || v === null || v === undefined) return; const o = months[ym] = months[ym] || { s: {}, g: {} }; o[sec][key] = Math.round(toNum(v)); });
+  }
+  if (!Object.keys(months).length) return { error: '실매출 · 매총이익 줄을 찾지 못했습니다.' };
+  return { kind: 'mix', store: refStore(aoa), basis: refBasis(aoa), months };
+}
+function parsePB(aoa) {
+  const hi = refHead(aoa, 0, r => r.some(v => hnorm(v) === '구분')); if (hi < 0) return { error: '월(202601 같은) 머리글 줄을 찾지 못했습니다.' };
+  const mc = refMonthCols(aoa[hi]), lc = refLabelCol(aoa[hi], /^구분$/), months = {};
+  const MAP = { '전체실매출': ['tot', 's'], '전체매총이익': ['tot', 'g'], '전체매출이익': ['tot', 'g'], 'PB실매출': ['pb', 's'], 'PB매총이익': ['pb', 'g'], 'PB매출이익': ['pb', 'g'] };
+  let i = hi + 1;
+  for (; i < aoa.length; i++) {
+    const r = aoa[i] || [], L = hnorm(r[lc]);
+    if (/카테고리/.test(L) || r.some(v => /카테고리별/.test(hnorm(v)))) break;
+    const m = MAP[L]; if (!m) continue;
+    Object.entries(mc).forEach(([k, ym]) => { const v = r[k]; if (v === '' || v === null || v === undefined) return; const o = months[ym] = months[ym] || { tot: {}, pb: {} }; o[m[0]][m[1]] = Math.round(toNum(v)); });
+  }
+  // PB 매출 카테고리별
+  const cats = {}, ci = refHead(aoa, i, r => r.some(v => /카테고리별/.test(hnorm(v))));
+  if (ci >= 0) {
+    const cm = refMonthCols(aoa[ci]), cl = refLabelCol(aoa[ci], /카테고리별/);
+    for (let j = ci + 1; j < aoa.length; j++) {
+      const r = aoa[j] || [], L = cleanText(r[cl], 30);
+      if (!L || /상품|▼|순위/.test(L)) break;
+      const o = {}; Object.entries(cm).forEach(([k, ym]) => { const v = toNum(r[k]); if (v) o[ym] = Math.round(v); });
+      cats[L] = o; i = j;
+    }
+  }
+  // 잘 팔리는 PB 상품 (첫 번째 판매량 · 실매출 · 매총이익 = 누적)
+  const top = [];
+  const ti = aoa.findIndex((r, k) => k > hi && (r || []).some(v => hnorm(v) === '상품코드') && (r || []).some(v => hnorm(v) === '상품명'));
+  if (ti >= 0) {
+    const hd = aoa[ti].map(hnorm), at = n => hd.indexOf(n), after = (n, from) => hd.findIndex((v, k) => k > from && v === n);
+    const cN = at('상품명'), col = { rank: at('순위'), cat: at('대분류'), code: at('상품코드'), name: cN, first: at('최초입고일'), q: after('판매량', cN), s: after('실매출', cN), g: after('매총이익', cN) };
+    for (let j = ti + 1; j < aoa.length && top.length < 50; j++) {
+      const r = aoa[j] || [], nm = cleanText(r[col.name], 80); if (!nm) { if (top.length) break; continue; }
+      top.push({ rank: Number(r[col.rank]) || top.length + 1, cat: cleanText(r[col.cat], 30), code: cleanText(r[col.code], 20), name: nm, first: col.first >= 0 ? toDateInt(r[col.first]) : 0, q: Math.round(toNum(r[col.q])), s: Math.round(toNum(r[col.s])), g: Math.round(toNum(r[col.g])) });
+    }
+  }
+  if (!Object.keys(months).length) return { error: '전체 실매출 · PB 실매출 줄을 찾지 못했습니다.' };
+  return { kind: 'pb', store: refStore(aoa), basis: refBasis(aoa), months, cats, top };
+}
+function refId(p) { const ys = Object.keys(p.months).map(Number).sort(); return p.kind + '_' + Math.floor((ys[0] || p.basis * 100) / 100) + '_' + (p.store || '미지정'); }
+function handleRef(sheets, name) {
+  const list = sheets.map(x => Object.assign(x.kind === 'mix' ? parseMix(x.aoa) : parsePB(x.aoa), { kind: x.kind }));
+  const ok = list.filter(p => !p.error);
+  let h = sheets.map(x => kindBanner(x.kind, name)).filter((v, i, a) => a.indexOf(v) === i).join('');
+  list.filter(p => p.error).forEach(p => { h += '<div class="banner bad">' + UP_KINDS[p.kind].name + ': ' + esc(p.error) + '</div>'; });
+  ok.forEach((p, n) => {
+    const ms = Object.keys(p.months).map(Number).sort((a, b) => a - b);
+    h += '<div class="card"><h2>' + UP_KINDS[p.kind].icon + ' ' + UP_KINDS[p.kind].name + '</h2>' +
+      '<div class="row" style="margin-bottom:8px"><label>지점<select data-rs="' + n + '">' + REF_STORES.map(s => '<option' + (s === p.store ? ' selected' : '') + '>' + s + '</option>').join('') + '</select></label>' +
+      '<span class="muted">' + (p.store ? '파일의 지점 선택 칸에서 "' + p.store + '"을(를) 읽었습니다' : '⚠️ 지점을 찾지 못했습니다. 골라 주세요') + (p.basis ? ' · ' + dLabel(p.basis) + ' 기준' : '') + '</span></div>';
+    if (p.kind === 'mix') h += table(['월', '실매출', '관계사', '일반 B2B', '일반 내판', '매총이익', '매총율'], ms.map(ym => { const s = p.months[ym].s, g = p.months[ym].g; return [ymLabel(ym), won(s.tot || 0), won(s.aff || 0), won(s.b2b || 0), won(s.pos || 0), won(g.tot || 0), s.tot ? pct((g.tot || 0) / s.tot) : '-']; }));
+    else h += table(['월', '전체 실매출', 'PB 실매출', 'PB 비중', 'PB 매총율'], ms.map(ym => { const x = p.months[ym]; return [ymLabel(ym), won(x.tot.s || 0), won(x.pb.s || 0), x.tot.s ? pct((x.pb.s || 0) / x.tot.s) : '-', x.pb.s ? pct((x.pb.g || 0) / x.pb.s) : '-']; })) +
+      '<p class="muted">카테고리 ' + Object.keys(p.cats).length + '개 · 잘 팔리는 상품 ' + p.top.length + '개도 함께 저장합니다.</p>';
+    h += '</div>';
+  });
+  if (ok.length) h += '<div class="card"><button class="btn primary" id="refSave">저장 (' + ok.length + '개)</button> <span class="muted" id="refMsg">같은 지점·연도 자료가 있으면 새 내용으로 교체됩니다.</span></div>';
+  $('preview').innerHTML = h;
+  $('preview').querySelectorAll('[data-rs]').forEach(sel => sel.addEventListener('change', () => { ok[Number(sel.dataset.rs)].store = sel.value; }));
+  if (ok.length) $('refSave').addEventListener('click', async function () {
+    this.disabled = true; $('refMsg').textContent = '저장 중…';
+    try {
+      for (const p of ok) {
+        if (!p.store) p.store = REF_STORES.find(s => s === '일산');
+        const ms = Object.keys(p.months).map(Number).sort((a, b) => a - b);
+        await setDoc(doc(db, C.ref, refId(p)), Object.assign({ file: cleanText(name, 120), at: serverTimestamp(), by: S.user.email || '' }, p));
+        await addDoc(collection(db, C.logs), { at: serverTimestamp(), by: S.user.email || '', file: '[참고] ' + (p.kind === 'mix' ? '매출유형 ' : 'PB실적 ') + p.store + ' · ' + cleanText(name, 100), from: ms[0] * 100 + 1, to: p.basis || ms[ms.length - 1] * 100 + 1, usedRows: ms.length, fileNet: 0, savedNet: 0, match: true });
+      }
+      S.ref = null; S.logs = null;
+      $('preview').innerHTML = '<div class="card"><div class="banner ok"><b>본사 참고자료 저장 완료</b><br>' + ok.map(p => UP_KINDS[p.kind].name + ' · ' + p.store).join('<br>') + '</div><button class="btn primary" id="goRef">홈에서 보기</button></div>';
+      $('goRef').addEventListener('click', () => goHomeSec(0, '본사 참고자료'));
+      fileIn.value = ''; $('upText').value = ''; renderDataStatus();
+    } catch (e) { this.disabled = false; $('refMsg').textContent = '저장 실패: ' + errMsg(e); }
+  });
+}
+async function loadRef(force) {
+  if (S.ref && !force) return;
+  const s = await getDocs(collection(db, C.ref));
+  S.ref = []; s.forEach(x => S.ref.push(Object.assign({ id: x.id }, x.data())));
+}
+const refPick = (kind, store) => (S.ref || []).filter(x => x.kind === kind && x.store === store).sort((a, b) => (b.basis || 0) - (a.basis || 0))[0] || null;
+// 홈(관리자만): 매출 유형별 비중 추이 + PB 실적
+function renderRef(el) {
+  const H2 = '<h2 class="sec-title">📚 본사 참고자료 <span class="tag admin">관리자만</span></h2>';
+  if (!S.ref || !S.ref.length) { el.innerHTML = H2 + '<div class="card"><p class="muted" style="margin:0">아직 없습니다. 관리자 모드 › 업로드에 "지점별 매출 유형별 비중 및 추이", "점포별 PB 실적" 엑셀을 그대로 올리면 여기에 정리됩니다.</p></div>'; return; }
+  const stores = [...new Set(S.ref.map(x => x.store))].sort((a, b) => (b === '일산') - (a === '일산'));
+  const st = S.refStore && stores.includes(S.refStore) ? S.refStore : stores[0];
+  let h = H2 + (stores.length > 1 ? '<div class="chips" style="margin-bottom:10px">' + stores.map(s => '<button data-rst="' + esc(s) + '"' + (s === st ? ' class="on"' : '') + '>' + esc(s) + '</button>').join('') + '</div>' : '');
+  const mix = refPick('mix', st), pb = refPick('pb', st);
+  const seg = (parts, tot) => '<span class="stk">' + parts.map(([v, c]) => '<i style="width:' + (tot ? Math.max(0, v) / tot * 100 : 0).toFixed(1) + '%;background:' + c + '"></i>').join('') + '</span>';
+  if (mix) {
+    const ms = Object.keys(mix.months).map(Number).sort((a, b) => a - b), sum = (sec, k) => ms.reduce((s, ym) => s + ((mix.months[ym][sec] || {})[k] || 0), 0);
+    const T = sum('s', 'tot'), G = sum('g', 'tot'), r = (sec, k) => T ? sum(sec, k) / (sec === 's' ? T : G || 1) : 0, mr = k => sum('s', k) ? sum('g', k) / sum('s', k) : 0;
+    const COL = { aff: 'var(--ink3)', b2b: 'var(--s2)', pos: 'var(--s1)' };
+    h += '<div class="card" data-sec="본사 참고자료"><h2>매출 유형별 비중 · ' + esc(st) + (mix.basis ? ' · ' + mdLabel(mix.basis) + ' 기준' : '') + '</h2><div class="kpis" style="margin:0 0 12px">' +
+      kpi(ms.length + '개월 실매출', won(T), '월평균 ' + eok(T / ms.length), true) + kpi('매총이익', won(G), '매총율 ' + pct(G / (T || 1))) +
+      kpi('비중 (실매출)', '내판 ' + pct(r('s', 'pos'), 0), 'B2B ' + pct(r('s', 'b2b'), 0) + ' · 관계사 ' + pct(r('s', 'aff'), 0)) +
+      kpi('유형별 매총율', '내판 ' + pct(mr('pos')), 'B2B ' + pct(mr('b2b')) + ' · 관계사 ' + pct(mr('aff'))) + '</div>' +
+      '<div class="legend"><span><i style="background:' + COL.pos + '"></i>일반 내판 (POS)</span><span><i style="background:' + COL.b2b + '"></i>일반 B2B</span><span><i style="background:' + COL.aff + '"></i>관계사</span></div>' +
+      '<div class="stks">' + ms.map(ym => { const s = mix.months[ym].s; return '<div class="stk-r"><span>' + (ym % 100) + '월</span>' + seg([[s.pos || 0, COL.pos], [s.b2b || 0, COL.b2b], [s.aff || 0, COL.aff]], s.tot || 1) + '<b>' + eok(s.tot || 0) + '</b></div>'; }).join('') + '</div>' +
+      '<details><summary>표로 보기</summary>' + table(['월', '실매출', '내판', 'B2B', '관계사', '매총이익', '매총율', '내판 매총율', 'B2B 매총율', '관계사 매총율'], ms.map(ym => {
+        const s = mix.months[ym].s, g = mix.months[ym].g, rt = k => s[k] ? pct((g[k] || 0) / s[k]) : '-';
+        return [ymLabel(ym), won(s.tot || 0), won(s.pos || 0), won(s.b2b || 0), won(s.aff || 0), won(g.tot || 0), rt('tot'), rt('pos'), rt('b2b'), rt('aff')];
+      })) + '</details><p class="muted" style="margin:8px 0 0">본사 파일 ' + esc(mix.file || '') + ' 기준 · 마지막 달은 기준일까지 일부 실적일 수 있습니다.</p></div>';
+  }
+  if (pb) {
+    const ms = Object.keys(pb.months).map(Number).sort((a, b) => a - b), sm = (a, k) => ms.reduce((s, ym) => s + ((pb.months[ym][a] || {})[k] || 0), 0);
+    const TS = sm('tot', 's'), TG = sm('tot', 'g'), PS = sm('pb', 's'), PG = sm('pb', 'g');
+    const lift = TS - PS ? TG / TS - (TG - PG) / (TS - PS) : 0; // PB가 전체 매총율을 몇 %p 올렸나
+    const cats = Object.entries(pb.cats || {}).map(([n, o]) => [n, Object.values(o).reduce((s, v) => s + v, 0)]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]), cmx = cats.length ? cats[0][1] : 1;
+    h += '<div class="card"' + (mix ? '' : ' data-sec="본사 참고자료"') + '><h2>🏷️ PB 실적 · ' + esc(st) + (pb.basis ? ' · ' + mdLabel(pb.basis) + ' 기준' : '') + '</h2><div class="kpis" style="margin:0 0 12px">' +
+      kpi('PB 실매출 (' + ms.length + '개월)', won(PS), '전체 매출 중 ' + pct(PS / (TS || 1)), true) + kpi('PB 매총이익', won(PG), '전체 이익 중 ' + pct(PG / (TG || 1))) +
+      kpi('PB 매총율', pct(PG / (PS || 1)), '전체 ' + pct(TG / (TS || 1))) + kpi('PB 매총율 기여도', (lift * 100).toFixed(1) + '%p', 'PB가 없었다면 매총율 ' + pct((TG - PG) / ((TS - PS) || 1))) + '</div>' +
+      '<details open><summary>월별 PB 비중</summary>' + table(['월', '전체 실매출', 'PB 실매출', 'PB 매출비중', 'PB 이익비중', 'PB 매총율'], ms.map(ym => { const x = pb.months[ym]; return [ymLabel(ym), won(x.tot.s || 0), won(x.pb.s || 0), x.tot.s ? pct((x.pb.s || 0) / x.tot.s) : '-', x.tot.g ? pct((x.pb.g || 0) / x.tot.g) : '-', x.pb.s ? pct((x.pb.g || 0) / x.pb.s) : '-']; })) + '</details>';
+    if (cats.length) h += '<p class="muted" style="margin:12px 0 6px">PB 카테고리별 실매출 (누계)</p><div class="hbars">' + cats.map(([n, v]) => '<div class="hb"><span class="hb-l">' + esc(n) + '</span><span class="hb-t"><i style="width:' + (v / cmx * 100).toFixed(1) + '%"></i></span><span class="hb-v">' + eok(v) + '</span></div>').join('') + '</div>';
+    if (pb.top && pb.top.length) {
+      const row = p => [p.rank, esc(p.cat), esc(p.name), Number(p.q).toLocaleString('ko-KR'), won(p.s), p.s ? pct(p.g / p.s) : '-'];
+      h += '<p class="muted" style="margin:12px 0 6px">잘 팔리는 PB 상품 (누적 실매출)</p>' + table(['순위', '대분류', '상품명', '판매량', '실매출', '매총율'], pb.top.slice(0, 10).map(row)) +
+        (pb.top.length > 10 ? '<details><summary>11~' + pb.top.length + '위 더 보기</summary>' + table(['순위', '대분류', '상품명', '판매량', '실매출', '매총율'], pb.top.slice(10).map(row)) + '</details>' : '');
+    }
+    h += '</div>';
+  }
+  el.innerHTML = h;
+  el.querySelectorAll('[data-rst]').forEach(b => b.addEventListener('click', () => { S.refStore = b.dataset.rst; renderRef(el); }));
+}
+
+/* ===================== 분석 보고서 (양식 엑셀: Master · ACE 설치 서비스 · HP 시너지) =====================
+   목표와 아직 업로드할 수 없는 실적은 관리자가 입력해 pos_report/{기간 첫 달}에 저장.
+   실적은 웹에 있는 자료로 채움: 멤버쉽 문자(회원수·VIP+MASTER 판매건수), 시공 내역(설치 건수·매출·마진) */
+const EXJS_URL = 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+const EXJS_SRI = 'sha384-Pqp51FUN2/qzfxZxBCtF0stpc9ONI6MYZpVqmo8m20SoaQCzf+arZvACkLkirlPz';
+let exjsP = null;
+function loadExcelJs() {
+  if (window.ExcelJS) return Promise.resolve(window.ExcelJS);
+  if (!exjsP) exjsP = new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = EXJS_URL; s.integrity = EXJS_SRI; s.crossOrigin = 'anonymous'; s.referrerPolicy = 'no-referrer';
+    s.onload = () => res(window.ExcelJS);
+    s.onerror = () => { exjsP = null; rej(new Error('엑셀 만들기 도구를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.')); };
+    document.head.appendChild(s);
+  });
+  return exjsP;
+}
+const RP_STORES = [{ n: '금천점', s: '금천', hp: '건자재수주3팀' }, { n: '용산점', s: '용산', hp: '건자재수주1팀' }, { n: '일산점', s: '일산', hp: '건자재수주4팀' }, { n: '퇴계원점', s: '퇴계원', hp: '건자재수주2팀' }, { n: '강남점', s: '강남', hp: '건자재수주1팀' }];
+const RP_ME = 2; // 일산점 줄
+// 설치 서비스 4줄 ↔ 시공 자료 품목 (한 건에 여러 품목이면 RP_PRI 앞쪽 줄에 한 번만 셈)
+const RP_LINES = [
+  { k: 'single', g: 'ㄴ 단품설치', d: '방등, 도어락, 욕실단품', cats: ['조명', '디지털도어락', '무료욕실'] },
+  { k: 'set9', g: 'ㄴ 세트설치', d: '욕실 9종', cats: ['유료욕실'] },
+  { k: 'remodel', g: 'ㄴ 세트설치', d: '욕실리모델링 패키지', cats: ['욕실리모델링'] },
+  { k: 'sink', g: 'ㄴ 세트설치', d: '싱크볼 설치 (ALTESSA)', cats: ['싱크볼'] }
+];
+const RP_PRI = ['remodel', 'set9', 'sink', 'single'];
+const z3 = v => [v, v, v];
+function rpBlank() {
+  return {
+    boss: ['', '', '', '', ''], hpTeam: RP_STORES.map(x => x.hp),
+    master: { cust: z3(0), aov: z3(0), vipDeal: 0, mstDeal: 0, vipSales: 0, mstSales: 0 },
+    inst: Object.fromEntries(RP_LINES.map(l => [l.k, { cnt: z3(0), sales: z3(0), gp: z3(0) }])),
+    hp: { sales: z3(0), gp: z3(0), aSales: z3(null), aGp: z3(null), aSrc: '' }
+  };
+}
+// 저장된 값을 빈 틀에 덮어씀 (새로 생긴 칸이 있어도 깨지지 않게)
+function rpMerge(base, x) {
+  if (!x || typeof x !== 'object') return base;
+  Object.keys(base).forEach(k => {
+    if (Array.isArray(base[k])) { if (Array.isArray(x[k])) base[k] = base[k].map((v, i) => x[k][i] === undefined ? v : x[k][i]); }
+    else if (base[k] && typeof base[k] === 'object') rpMerge(base[k], x[k]);
+    else if (x[k] !== undefined) base[k] = x[k];
+  });
+  return base;
+}
+const rpMonths = q => [0, 1, 2].map(i => addMonths(q, i));
+const rpQOf = ym => Math.floor(ym / 100) * 100 + Math.floor((ym % 100 - 1) / 3) * 3 + 1;
+async function rpLoad(q) {
+  const s = await getDoc(doc(db, C.report, String(q)));
+  S.rp = { q, doc: rpMerge(rpBlank(), s.exists() ? s.data() : null) };
+}
+async function rpSave() {
+  await setDoc(doc(db, C.report, String(S.rp.q)), Object.assign({}, S.rp.doc, { updatedAt: serverTimestamp(), by: S.user.email || '' }));
+}
+// 웹에 있는 실적 모으기
+async function rpData(q) {
+  const ms = rpMonths(q), basisYm = addMonths(q, -1), basis = basisYm * 100 + dimOf(basisYm), now = todayInt();
+  const all = [];
+  const s = await getDocs(collection(db, C.sms));
+  s.forEach(x => { const recs = Object.values(x.data().recs || {}); S.smsCache[Number(x.id)] = recs; recs.forEach(r => all.push(r)); });
+  // 회원수: 기준일(기간 전달 말일) 이하 가장 최근 멤버쉽 문자, 없으면 가장 최근 문자
+  const memDates = [...new Set(all.filter(r => r.kind === '지점멤버십').map(r => r.d))].sort((a, b) => a - b);
+  const memD = memDates.filter(d => d <= basis).pop() || memDates[memDates.length - 1] || 0;
+  const mv = (metric, st, d) => { const r = all.find(x => x.kind === '지점멤버십' && x.d === d && x.metric === metric + '|' + st); return r ? Number(r.v) || 0 : null; };
+  const members = RP_STORES.map(x => ({ vip: memD ? mv('VIP MASTER 회원', x.s, memD) : null, mst: memD ? mv('MASTER 회원', x.s, memD) : null }));
+  // VIP+MASTER 판매건수: 월별 합계 (문자 기준)
+  const dealM = RP_STORES.map(() => ({}));
+  all.filter(r => r.kind === '지점멤버십' && String(r.metric).startsWith('VIP+MASTER 판매건수|')).forEach(r => {
+    const i = RP_STORES.findIndex(x => String(r.metric).endsWith('|' + x.s)); if (i < 0) return;
+    const ym = ymOf(r.d); dealM[i][ym] = (dealM[i][ym] || 0) + (Number(r.v) || 0);
+  });
+  // 현시점 월평균 거래건: 기준월까지 최근 3개월 평균
+  const dealAvg = dealM.map(o => { const ks = Object.keys(o).map(Number).filter(ym => ym <= basisYm).sort((a, b) => b - a).slice(0, 3); return ks.length ? { v: Math.round(mean(ks.map(k => o[k]))), n: ks.length } : null; });
+  const dealAct = dealM.map(o => ms.map(ym => ym <= ymOf(now) && o[ym] !== undefined ? o[ym] : null));
+  // 설치 실적 (일산점 시공 자료)
+  try { await loadCons(); } catch (e) { }
+  const cc = consCfg(), inst = Object.fromEntries(RP_LINES.map(l => [l.k, { cnt: z3(0), sales: z3(0), gp: z3(0) }]));
+  let consMax = 0;
+  (S.cons || []).forEach(r => {
+    if (r.cx || (r.br && !/일산/.test(r.br))) return;
+    const d = cc.basis === 'cons' ? r.sd : r.d; if (!d) return;
+    consMax = Math.max(consMax, d);
+    const i = ms.indexOf(ymOf(d)); if (i < 0) return;
+    const k = RP_PRI.find(k => RP_LINES.find(l => l.k === k).cats.some(c => (r.cats || []).includes(c))); if (!k) return;
+    inst[k].cnt[i]++; inst[k].sales[i] += r.net || 0; inst[k].gp[i] += r.mar || 0;
+  });
+  return { ms, basis, memD, members, dealAvg, dealAct, inst, hasCons: !!(S.cons && S.cons.length), consMax, now };
+}
+// 다운로드 전 확인: 비어 있는 목표 · 실적
+function rpCheck(ver) {
+  const d = S.rp.doc, ms = rpMonths(S.rp.q), cur = ymOf(todayInt());
+  const any = a => a.some(v => Number(v) > 0);
+  const hpMiss = ver === 'B' ? ms.filter((ym, i) => ym <= cur && (d.hp.aSales[i] === null || d.hp.aSales[i] === '')) : [];
+  return {
+    master: any(d.master.cust) || any(d.master.aov),
+    inst: RP_LINES.some(l => any(d.inst[l.k].cnt) || any(d.inst[l.k].sales)),
+    hp: any(d.hp.sales),
+    masterAct: d.master.vipSales > 0 || d.master.mstSales > 0,
+    hpMiss
+  };
+}
+function rpMount(el) {
+  const cur = rpQOf(ymOf(todayInt())), qs = [-2, -1, 0, 1, 2].map(k => addMonths(cur, k * 3));
+  el.insertAdjacentHTML('afterbegin', '<div class="card" id="rpCard"><h2>📑 분석 보고서 (양식 엑셀)</h2>' +
+    '<p class="muted" style="margin-top:0">Master · ACE 설치 서비스 · HP 시너지 양식에 웹 자료(멤버쉽 문자 · 시공 내역)와 입력한 목표·실적을 채워 내려받습니다. 엑셀을 열 때 합계·객단가·이익률은 수식으로 다시 계산됩니다.</p>' +
+    '<div class="row" style="margin-bottom:8px"><label>기간<select id="rpQ">' + qs.map(q => { const m = rpMonths(q); return '<option value="' + q + '"' + (q === cur ? ' selected' : '') + '>' + Math.floor(q / 100) + '년 ' + m.map(x => x % 100).join('·') + '월</option>'; }).join('') + '</select></label>' +
+    '<label>버전<select id="rpVer"><option value="B">목표 + 실적 비교</option><option value="A">양식 그대로 (목표만)</option></select></label>' +
+    '<button class="btn ghost" id="rpEdit">✏️ 목표·실적 입력</button></div>' +
+    '<div class="rp-st" id="rpStatus"></div><div id="rpPrompt"></div>' +
+    '<div class="dl-list">' +
+    ['all|📗 전체 (3장 한 파일)|Master · ACE 설치 · HP 시너지', 'master|Master|회원수·거래건·객단가·실매출 + 객수·객단가·매출 목표', 'inst|ACE 설치 서비스|단품·세트 설치 목표 건수·매출·매총이익', 'hp|HP 시너지|매출·매총이익·이익률 목표'].map((x, i) => {
+      const [k, t, s] = x.split('|');
+      return '<div class="dl-item"><div><b>' + t + '</b><div class="muted">' + s + '</div></div><button class="btn ' + (i ? 'dark' : 'primary') + ' sm" data-rp="' + k + '">내려받기</button></div>';
+    }).join('') + '</div><input type="file" id="rpHpFile" class="hide" accept=".xlsx,.xls,.csv"></div>');
+  const refresh = async () => {
+    $('rpStatus').innerHTML = '<span>불러오는 중…</span>'; $('rpPrompt').innerHTML = '';
+    try { await rpLoad(Number($('rpQ').value)); } catch (e) { $('rpStatus').innerHTML = '<span class="bad">' + esc(errMsg(e)) + '</span>'; return; }
+    rpStatus();
+  };
+  $('rpQ').addEventListener('change', refresh);
+  $('rpVer').addEventListener('change', rpStatus);
+  $('rpEdit').addEventListener('click', () => rpForm());
+  $('rpHpFile').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await rpHpFromFile(f); });
+  el.querySelectorAll('[data-rp]').forEach(b => b.addEventListener('click', () => rpDownload(b.dataset.rp, false)));
+  refresh();
+}
+function rpStatus() {
+  if (!S.rp) return;
+  const c = rpCheck($('rpVer').value), ms = rpMonths(S.rp.q), ml = ym => ym % 100 + '월';
+  const it = (ok, t) => '<span class="' + (ok ? '' : 'bad') + '">' + (ok ? '✅ ' : '⚠️ ') + t + '</span>';
+  $('rpStatus').innerHTML = it(c.master, 'Master 목표') + it(c.inst, '설치 목표') + it(c.hp, 'HP 목표') +
+    it(c.masterAct, 'Master 실매출 ' + (c.masterAct ? '입력됨' : '(나중에 업로드 · 지금은 비움)')) +
+    ($('rpVer').value === 'B' ? it(!c.hpMiss.length, 'HP 실적' + (c.hpMiss.length ? ' 없음: ' + c.hpMiss.map(ml).join('·') : ' ' + ms.filter(ym => ym <= ymOf(todayInt())).map(ml).join('·'))) : '');
+}
+// 내려받기: HP 실적이 비어 있으면 먼저 묻기
+async function rpDownload(kind, skipCheck) {
+  if (!S.rp) return;
+  const ver = $('rpVer').value, c = rpCheck(ver), ml = ym => ym % 100 + '월';
+  if (!skipCheck && (kind === 'all' || kind === 'hp') && c.hpMiss.length) {
+    $('rpPrompt').innerHTML = '<div class="banner warn"><b>HP 시너지 실적이 비어 있어요: ' + c.hpMiss.map(ml).join(', ') + '</b><br>내려받기 전에 실적 파일을 올리거나 직접 입력해 주세요.' +
+      '<div class="row" style="margin-top:8px"><button class="btn primary sm" id="rpPFile">📄 실적 파일 올리기</button><button class="btn primary sm" id="rpPRef">📚 본사 자료의 관계사 실적 넣기</button><button class="btn dark sm" id="rpPHand">✏️ 직접 입력</button><button class="btn ghost sm" id="rpPSkip">실적 비우고 내려받기</button></div></div>';
+    S.rpPending = kind;
+    $('rpPFile').onclick = () => $('rpHpFile').click();
+    $('rpPRef').onclick = () => rpHpFromRef();
+    $('rpPHand').onclick = () => rpForm('rpHpAct');
+    $('rpPSkip').onclick = () => { $('rpPrompt').innerHTML = ''; rpDownload(kind, true); };
+    return;
+  }
+  $('rpPrompt').innerHTML = '';
+  const btns = document.querySelectorAll('[data-rp]'); btns.forEach(b => { b.disabled = true; });
+  try {
+    const [X, data] = await Promise.all([loadExcelJs(), rpData(S.rp.q)]);
+    const wb = new X.Workbook(); wb.calcProperties.fullCalcOnLoad = true;
+    if (kind === 'all' || kind === 'master') rpMaster(wb, data, ver);
+    if (kind === 'all' || kind === 'inst') rpInst(wb, data, ver);
+    if (kind === 'all' || kind === 'hp') rpHp(wb, data, ver);
+    const buf = await wb.xlsx.writeBuffer();
+    const nm = { all: '분석보고서', master: 'Master', inst: 'ACE설치서비스', hp: 'HP시너지' }[kind];
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    a.download = nm + '_일산점_' + data.ms[0] % 100 + '-' + data.ms[2] % 100 + '월_' + (ver === 'B' ? '목표실적' : '목표') + '_' + todayInt() + '.xlsx';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+  } catch (e) { toast('보고서 만들기 실패: ' + errMsg(e)); }
+  btns.forEach(b => { b.disabled = false; });
+}
+
+/* 목표·실적 입력 창 */
+function rpForm(focusId) {
+  const d = S.rp.doc, ms = rpMonths(S.rp.q), mh = ms.map(ym => '<th>' + ym % 100 + '월</th>').join('');
+  const fmt = v => v === null || v === undefined || v === '' ? '' : Number(v).toLocaleString('ko-KR');
+  const inp = (p, v) => '<td><input class="rp-in" data-p="' + p + '" inputmode="numeric" value="' + fmt(v) + '"></td>';
+  const row3 = (label, p, arr) => '<tr><td class="l">' + label + '</td>' + arr.map((v, i) => inp(p + '.' + i, v)).join('') + '</tr>';
+  let h = '<p class="muted">금액은 원 단위(부가세 별도)입니다. 이익률·객단가·매출목표(객수×객단가)는 자동으로 계산됩니다. 일산점 줄만 입력하면 되고, 다른 점포 칸은 엑셀에서 노란 빈칸으로 나옵니다.</p>';
+  h += '<div class="rp-sec"><h3>👤 점포별 해결사 · HP 시너지 팀</h3><div class="scroll"><table class="rp-t"><tr><th>점포</th><th>해결사</th><th>HP 시너지</th></tr>' +
+    RP_STORES.map((x, i) => '<tr><td class="l">' + x.n + '</td><td><input class="rp-in t" data-t="boss.' + i + '" maxlength="20" value="' + esc(d.boss[i]) + '"></td><td><input class="rp-in t" data-t="hpTeam.' + i + '" maxlength="30" value="' + esc(d.hpTeam[i]) + '"></td></tr>').join('') + '</table></div></div>';
+  h += '<div class="rp-sec"><h3>🎯 Master 목표 (일산점)</h3><div class="scroll"><table class="rp-t"><tr><th></th>' + mh + '</tr>' +
+    row3('객수 목표 (명)', 'master.cust', d.master.cust) + row3('객단가 목표 (원)', 'master.aov', d.master.aov) +
+    '<tr><td class="l">마스터 매출목표</td>' + ms.map((_, i) => '<td class="auto" id="rpMs' + i + '"></td>').join('') + '</tr></table></div></div>';
+  h += '<div class="rp-sec"><h3>📊 Master 현시점 월평균 (일산점 · 실적 자료를 올리기 전까지 직접 입력)</h3><div class="scroll"><table class="rp-t"><tr><th></th><th>VIP Master</th><th>Master</th></tr>' +
+    '<tr><td class="l">거래건 (월평균)</td>' + inp('master.vipDeal', d.master.vipDeal) + inp('master.mstDeal', d.master.mstDeal) + '</tr>' +
+    '<tr><td class="l">마스터 실매출 (월평균, 원)</td>' + inp('master.vipSales', d.master.vipSales) + inp('master.mstSales', d.master.mstSales) + '</tr></table></div>' +
+    '<p class="muted">회원수는 멤버쉽 문자에서 자동으로 채웁니다. 거래건을 비워 두면 문자의 "VIP+MASTER 판매건수" 월평균을 합계에 넣습니다.</p></div>';
+  h += '<div class="rp-sec"><h3>🛁 ACE 설치 서비스 목표 (일산점)</h3><div class="scroll"><table class="rp-t"><tr><th rowspan="2">구분</th><th colspan="3">목표 건수</th><th colspan="3">매출 목표 (원)</th><th colspan="3">매총이익액 목표 (원)</th></tr><tr>' + mh + mh + mh + '</tr>' +
+    RP_LINES.map(l => '<tr><td class="l">' + esc(l.d) + '</td>' + ['cnt', 'sales', 'gp'].map(f => d.inst[l.k][f].map((v, i) => inp('inst.' + l.k + '.' + f + '.' + i, v)).join('')).join('') + '</tr>').join('') + '</table></div>' +
+    '<p class="muted">실적은 시공 내역에서 자동 집계: 단품 = 조명·디지털도어락·무료욕실 / 욕실 9종 = 유료욕실 / 리모델링 패키지 = 욕실리모델링 / 싱크볼 = 싱크볼</p></div>';
+  h += '<div class="rp-sec"><h3>🤝 HP 시너지 목표 (일산점)</h3><div class="scroll"><table class="rp-t"><tr><th></th>' + mh + '</tr>' +
+    row3('매출 목표 (원)', 'hp.sales', d.hp.sales) + row3('매총이익액 목표 (원)', 'hp.gp', d.hp.gp) + '</table></div></div>';
+  h += '<div class="rp-sec" id="rpHpAct"><h3><span>📈 HP 시너지 실적 (일산점)</span><span><button class="btn ghost sm" id="rpFormFile" type="button">📄 실적 파일에서 불러오기</button> <button class="btn ghost sm" id="rpFormRef" type="button">📚 본사 자료의 관계사 실적 넣기</button></span></h3><div class="scroll"><table class="rp-t"><tr><th></th>' + mh + '</tr>' +
+    row3('매출 실적 (원)', 'hp.aSales', d.hp.aSales) + row3('매총이익 실적 (원)', 'hp.aGp', d.hp.aGp) + '</table></div>' +
+    '<p class="muted" id="rpHpSrc">' + (d.hp.aSrc ? '마지막 입력: ' + esc(d.hp.aSrc) : '아직 없음 · 빈칸은 "실적 없음"으로 봅니다 (0원이면 0을 입력)') + '</p></div>';
+  h += '<div class="rp-save"><button class="btn primary" id="rpSaveBtn">저장</button><span class="muted" id="rpMsg"></span></div>';
+  $('rpBody').innerHTML = h;
+  const calc = () => ms.forEach((_, i) => { $('rpMs' + i).textContent = (d.master.cust[i] * d.master.aov[i] || 0).toLocaleString('ko-KR'); });
+  const setP = (p, v) => { const ks = p.split('.'); let o = d; ks.slice(0, -1).forEach(k => { o = o[k]; }); o[ks[ks.length - 1]] = v; };
+  $('rpBody').querySelectorAll('input[data-p]').forEach(el => el.addEventListener('input', () => {
+    const raw = el.value.replace(/[^\d-]/g, ''), nullable = /^hp\.a/.test(el.dataset.p);
+    const v = raw === '' || raw === '-' ? (nullable ? null : 0) : Number(raw);
+    setP(el.dataset.p, v); el.value = v === null ? '' : raw === '' ? '' : v.toLocaleString('ko-KR');
+    if (/^hp\.a/.test(el.dataset.p)) d.hp.aSrc = '직접 입력';
+    calc();
+  }));
+  $('rpBody').querySelectorAll('input[data-t]').forEach(el => el.addEventListener('input', () => setP(el.dataset.t, cleanText(el.value, 30))));
+  $('rpFormFile').onclick = () => $('rpHpFile').click();
+  $('rpFormRef').onclick = () => rpHpFromRef();
+  $('rpSaveBtn').onclick = async () => {
+    $('rpMsg').textContent = '저장 중…';
+    try {
+      await rpSave(); $('rpMsg').textContent = '저장했습니다'; rpStatus();
+      if (S.rpPending) { const k = S.rpPending; S.rpPending = null; $('dlgReport').close(); rpDownload(k, false); }
+    } catch (e) { $('rpMsg').textContent = '저장 실패: ' + errMsg(e); }
+  };
+  calc();
+  if (!$('dlgReport').open) $('dlgReport').showModal();
+  if (focusId) setTimeout(() => $(focusId).scrollIntoView({ block: 'start' }), 50);
+}
+// HP 시너지 실적 파일: 날짜(또는 월) + 매출 + (있으면) 매총이익 칸을 찾아 기간의 월별로 합침. 팀·지점 칸이 있으면 일산점 / 그 팀만
+async function rpHpFromFile(f) {
+  try {
+    const X = await loadXlsx();
+    const wb = /\.csv$/i.test(f.name) ? X.read(await f.text(), { type: 'string' }) : X.read(await f.arrayBuffer(), { type: 'array' });
+    const aoa = X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: '' });
+    const r = rpParseHp(aoa, rpMonths(S.rp.q), S.rp.doc.hpTeam[RP_ME]);
+    if (r.error) { toast(r.error); return; }
+    const d = S.rp.doc;
+    d.hp.aSales = r.sales; d.hp.aGp = r.hasGp ? r.gp : d.hp.aGp; d.hp.aSrc = f.name + ' (' + r.rows + '줄' + (r.filtered ? ', ' + r.filtered : '') + ')';
+    await rpSave(); rpStatus();
+    toast('HP 실적을 불러와 저장했습니다: ' + r.sales.map((v, i) => rpMonths(S.rp.q)[i] % 100 + '월 ' + (v === null ? '-' : eok(v))).join(' · '));
+    if ($('dlgReport').open) rpForm('rpHpAct');
+    if (S.rpPending) { const k = S.rpPending; S.rpPending = null; if ($('dlgReport').open) $('dlgReport').close(); rpDownload(k, false); }
+  } catch (e) { toast('파일을 읽지 못했습니다: ' + errMsg(e)); }
+}
+// 본사 참고자료(매출 유형별)의 일산 관계사 실매출·매총이익을 HP 시너지 실적으로
+async function rpHpFromRef() {
+  try { await loadRef(); } catch (e) { toast(errMsg(e)); return; }
+  const mix = refPick('mix', '일산'), ms = rpMonths(S.rp.q);
+  const has = mix && ms.some(ym => mix.months[ym]);
+  if (!has) { toast('이 기간의 일산 "매출 유형별 비중 및 추이" 자료가 없습니다. 업로드 탭에 먼저 올려 주세요.'); return; }
+  const d = S.rp.doc;
+  ms.forEach((ym, i) => { const x = mix.months[ym]; if (x) { d.hp.aSales[i] = x.s.aff ?? null; d.hp.aGp[i] = x.g.aff ?? null; } });
+  d.hp.aSrc = '본사 자료 관계사 (' + (mix.basis ? dLabel(mix.basis) + ' 기준' : cleanText(mix.file, 40)) + ')';
+  try { await rpSave(); } catch (e) { toast('저장 실패: ' + errMsg(e)); return; }
+  rpStatus(); toast('관계사 실적을 HP 시너지 실적으로 넣었습니다');
+  if ($('dlgReport').open) rpForm('rpHpAct');
+  if (S.rpPending) { const k = S.rpPending; S.rpPending = null; if ($('dlgReport').open) $('dlgReport').close(); rpDownload(k, false); }
+}
+function rpParseHp(aoa, ms, team) {
+  const DATE = ['영업일자', '매출일자', '판매일자', '거래일자', '일자', '날짜', '년월', '월'], AMT = ['실매출', '순매출', '매출액', '매출금액', '공급가액', '매출'], GP = ['매총이익', '매출총이익', '매출이익', '마진금액', '마진', '이익'];
+  let hi = -1, col = {};
+  for (let i = 0; i < Math.min(aoa.length, 30); i++) {
+    const line = (aoa[i] || []).map(hnorm), find = list => { for (const n of list) { const k = line.indexOf(n); if (k >= 0) return k; } return -1; };
+    const di = find(DATE), ai = find(AMT), ti = line.indexOf('과세결제금액');
+    if (di >= 0 && (ai >= 0 || ti >= 0)) { hi = i; col = { d: di, a: ai, tax: ti, non: line.indexOf('비과세결제금액'), g: find(GP), team: find(['수주팀', '팀', '담당팀', '부서', '팀명']), br: find(['지점명', '점포', '지점']) }; break; }
+  }
+  if (hi < 0) return { error: '머리글에서 날짜(영업일자·일자·월)와 매출(실매출·순매출·매출액) 칸을 찾지 못했습니다.' };
+  const sales = z3(null), gp = z3(null), y0 = Math.floor(ms[0] / 100); let rows = 0, skip = 0;
+  for (let i = hi + 1; i < aoa.length; i++) {
+    const r = aoa[i]; if (!r || !r.length) continue;
+    if (col.team >= 0 && team && r[col.team] !== '' && hnorm(r[col.team]) !== hnorm(team)) { skip++; continue; }
+    if (col.br >= 0 && r[col.br] !== '' && !/일산/.test(String(r[col.br]))) { skip++; continue; }
+    const dv = r[col.d]; let ym = 0;
+    const di = typeof dv === 'number' && dv < 1000 ? 0 : toDateInt(dv); if (di) ym = ymOf(di); // 10 같은 "월" 숫자는 날짜로 보지 않음
+    else { const s = String(dv), m1 = /(\d{4})\D{0,3}(\d{1,2})/.exec(s), m2 = /^(\d{1,2})\s*월?$/.exec(s.trim()); if (m1) ym = Number(m1[1]) * 100 + Number(m1[2]); else if (m2) ym = y0 * 100 + Number(m2[1]) + (Number(m2[1]) < ms[0] % 100 ? 100 : 0); }
+    const k = ms.indexOf(ym); if (k < 0) continue;
+    const a = col.a >= 0 ? toNum(r[col.a]) : toNum(r[col.tax]) + (col.non >= 0 ? toNum(r[col.non]) : 0);
+    sales[k] = (sales[k] || 0) + a;
+    if (col.g >= 0) gp[k] = (gp[k] || 0) + toNum(r[col.g]);
+    rows++;
+  }
+  if (!rows) return { error: '이 기간(' + ms.map(x => x % 100 + '월').join('·') + ')에 해당하는 줄이 없습니다.' };
+  return { sales: sales.map(v => v === null ? null : Math.round(v)), gp: gp.map(v => v === null ? null : Math.round(v)), hasGp: col.g >= 0, rows, filtered: skip ? '다른 팀·지점 ' + skip + '줄 제외' : '' };
+}
+
+/* 엑셀 시트 공통 (사진 양식: 남색 합계 줄 · 노란 입력 칸 · 점선 안쪽 테두리) */
+function rpWs(wb, name, widths, ySplit) {
+  const ws = wb.addWorksheet(name, { views: [{ state: 'frozen', xSplit: 3, ySplit, showGridLines: false }], pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 } });
+  widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+  const FONT = { name: '맑은 고딕', size: 10 };
+  const put = (r, c, v, o) => {
+    o = o || {};
+    const cell = ws.getCell(r, c);
+    if (v !== undefined && v !== null && v !== '') cell.value = typeof v === 'string' && v[0] === '=' ? { formula: v.slice(1) } : v;
+    cell.font = Object.assign({}, FONT, o.font || {});
+    cell.alignment = Object.assign({ vertical: 'middle', horizontal: 'center', wrapText: true }, o.al || {});
+    if (o.fill) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + o.fill } };
+    if (o.fmt) cell.numFmt = o.fmt;
+    return cell;
+  };
+  const merge = (r1, c1, r2, c2, v, o) => { if (r1 !== r2 || c1 !== c2) ws.mergeCells(r1, c1, r2, c2); for (let r = r1; r <= r2; r++) for (let c = c1; c <= c2; c++) put(r, c, r === r1 && c === c1 ? v : null, o); };
+  const grid = (r1, c1, r2, c2) => {
+    const IN = { style: 'dotted', color: { argb: 'FF7F7F7F' } }, OUT = { style: 'medium', color: { argb: 'FF000000' } };
+    for (let r = r1; r <= r2; r++) for (let c = c1; c <= c2; c++) ws.getCell(r, c).border = { top: r === r1 ? OUT : IN, bottom: r === r2 ? OUT : IN, left: c === c1 ? OUT : IN, right: c === c2 ? OUT : IN };
+  };
+  return { ws, put, merge, grid };
+}
+const RPF = { navy: '002060', yellow: 'FFFF00', head: 'F2F2F2', grey: 'D9D9D9', blue: 'DDEBF7', ylight: 'FFF2CC', green: 'E2EFDA' };
+const XL = c => { let s = ''; while (c > 0) { const m = (c - 1) % 26; s = String.fromCharCode(65 + m) + s; c = Math.floor((c - 1) / 26); } return s; };
+const FMT = { won: '#,##0;-#,##0;"-"', man: '#,##0"명"', gun: '#,##0"건"', pct: '0.0%' };
+const NAVY = { fill: RPF.navy, font: { bold: true, color: { argb: 'FFFFFFFF' } } };
+function rpStamp(data) { return '웹 자료 기준 ' + dLabel(data.now).replace(/-/g, '.') + ' 출력 · 일산점'; }
+
+// 1) Master
+function rpMaster(wb, data, ver) {
+  const B = ver === 'B', d = S.rp.doc, ms = data.ms, last = B ? 30 : 24;
+  const W = [6, 12, 12].concat(Array(21).fill(11)).concat(B ? Array(6).fill(11) : []);
+  const { ws, put, merge, grid } = rpWs(wb, 'Master', W, 5);
+  merge(1, 1, 5, 1, 'NO', { fill: RPF.head, font: { bold: true } }); merge(1, 2, 5, 2, '점포별', { fill: RPF.head, font: { bold: true } }); merge(1, 3, 5, 3, '해결사', { fill: RPF.head, font: { bold: true } });
+  merge(1, 4, 1, last, { richText: [{ text: 'M', font: { bold: true, size: 16, color: { argb: 'FFFF0000' }, name: '맑은 고딕' } }, { text: 'aster', font: { bold: true, size: 16, name: '맑은 고딕' } }] }, {});
+  merge(2, 4, 2, last, 'Master · ' + rpStamp(data), { font: { bold: true } });
+  const bd = String(data.basis), bl = bd.slice(2, 4) + '.' + bd.slice(4, 6) + '.' + bd.slice(6);
+  merge(3, 4, 3, 15, '현시점 월평균 (' + bl + ' 기준)', { fill: RPF.grey, font: { bold: true } });
+  merge(3, 16, 3, 24, '◀ 좌측 ' + Number(bd.slice(4, 6)) + '월말 기준 월평균 수치 참조 : 목표 설정', { fill: RPF.head, font: { bold: true }, al: { horizontal: 'left' } });
+  if (B) merge(3, 25, 3, 30, '실적 (멤버쉽 문자 · VIP+MASTER 판매건수)', { fill: RPF.green, font: { bold: true } });
+  const grp = [[4, '회원수'], [7, '거래건'], [10, '객단가 (단위 : 원)'], [13, '마스터 실매출 (단위 : 원)'], [16, '객수 목표'], [19, '객단가 목표'], [22, '마스터 매출목표']].concat(B ? [[25, '거래건 실적'], [28, '객수 목표 달성률']] : []);
+  grp.forEach(([c, t]) => merge(4, c, 4, c + 2, t, { fill: c >= 25 ? RPF.green : c >= 16 ? RPF.head : RPF.grey, font: { bold: true } }));
+  for (let c = 4; c <= last; c++) {
+    const sub = c < 16 ? ['합계', 'VIP\nMaster', 'Master'][(c - 4) % 3] : ms[(c - 16) % 3] % 100 + '월';
+    put(5, c, sub, { fill: c >= 25 ? RPF.green : c >= 16 ? RPF.head : RPF.grey, font: { bold: true } });
+  }
+  ws.getRow(5).height = 30;
+  const R0 = 7, RN = R0 + RP_STORES.length - 1;
+  RP_STORES.forEach((s, i) => {
+    const r = R0 + i, me = i === RP_ME, m = data.members[i];
+    put(r, 1, i + 1); put(r, 2, s.n, { al: { horizontal: 'left' }, font: { bold: me } }); put(r, 3, d.boss[i] || '');
+    put(r, 4, '=IF(COUNT(E' + r + ':F' + r + '),SUM(E' + r + ':F' + r + '),"")', { fmt: FMT.man }); put(r, 5, m.vip, { fmt: FMT.man }); put(r, 6, m.mst, { fmt: FMT.man });
+    const md = me && (d.master.vipDeal || d.master.mstDeal);
+    put(r, 7, md ? '=SUM(H' + r + ':I' + r + ')' : data.dealAvg[i] ? data.dealAvg[i].v : null, { fmt: FMT.gun });
+    put(r, 8, me && d.master.vipDeal ? d.master.vipDeal : null, { fmt: FMT.gun }); put(r, 9, me && d.master.mstDeal ? d.master.mstDeal : null, { fmt: FMT.gun });
+    [[10, 13, 7], [11, 14, 8], [12, 15, 9]].forEach(([c, sc, dc]) => put(r, c, '=IFERROR(' + XL(sc) + r + '/' + XL(dc) + r + ',"")', { fmt: FMT.won }));
+    const msales = me && (d.master.vipSales || d.master.mstSales);
+    put(r, 13, msales ? '=SUM(N' + r + ':O' + r + ')' : null, { fmt: FMT.won });
+    put(r, 14, me && d.master.vipSales ? d.master.vipSales : null, { fmt: FMT.won }); put(r, 15, me && d.master.mstSales ? d.master.mstSales : null, { fmt: FMT.won });
+    for (let k = 0; k < 3; k++) {
+      put(r, 16 + k, me && d.master.cust[k] ? d.master.cust[k] : null, { fill: RPF.yellow, fmt: FMT.man });
+      put(r, 19 + k, me && d.master.aov[k] ? d.master.aov[k] : null, { fill: RPF.yellow, fmt: FMT.won });
+      put(r, 22 + k, '=IF(AND(ISNUMBER(' + XL(16 + k) + r + '),ISNUMBER(' + XL(19 + k) + r + ')),' + XL(16 + k) + r + '*' + XL(19 + k) + r + ',"")', { fill: RPF.yellow, fmt: FMT.won });
+      if (B) {
+        put(r, 25 + k, data.dealAct[i][k], { fmt: FMT.gun });
+        put(r, 28 + k, '=IFERROR(' + XL(25 + k) + r + '/' + XL(16 + k) + r + ',"")', { fmt: FMT.pct });
+      }
+    }
+  });
+  // 합계 줄 (6행)
+  put(6, 1, null, NAVY); put(6, 2, '합계', Object.assign({ al: { horizontal: 'left' } }, NAVY)); put(6, 3, null, NAVY);
+  for (let c = 4; c <= last; c++) {
+    const L = XL(c), sum = '=SUM(' + L + R0 + ':' + L + RN + ')';
+    let f = sum, fmt = c <= 9 ? (c <= 6 ? FMT.man : FMT.gun) : FMT.won;
+    if (c >= 10 && c <= 12) f = '=IFERROR(' + XL(c + 3) + '6/' + XL(c - 3) + '6,"")';
+    if (c >= 16 && c <= 18) fmt = FMT.man;
+    if (c >= 19 && c <= 21) f = '=IFERROR(' + XL(c + 3) + '6/' + XL(c - 3) + '6,"")';
+    if (c >= 25 && c <= 27) fmt = FMT.gun;
+    if (c >= 28) { f = '=IFERROR(' + XL(c - 3) + '6/' + XL(c - 12) + '6,"")'; fmt = FMT.pct; }
+    put(6, c, f, Object.assign({ fmt }, NAVY));
+  }
+  grid(1, 1, RN, last);
+  const notes = [
+    '· 회원수: 멤버쉽 문자 ' + (data.memD ? mdLabel(data.memD) + ' 기준' : '없음 (멤버쉽 문자를 올리면 채워집니다)'),
+    '· 거래건: ' + (d.master.vipDeal || d.master.mstDeal ? '관리자 입력값' : '멤버쉽 문자의 VIP+MASTER 판매건수 월평균(' + (data.dealAvg[RP_ME] ? data.dealAvg[RP_ME].n + '개월' : '자료 없음') + ') · 등급별 구분은 실적 자료를 올리면 채워집니다'),
+    '· 객단가 = 실매출 ÷ 거래건, 마스터 매출목표 = 객수 목표 × 객단가 목표 (수식) · 노란 칸 = 목표 입력 칸'
+  ];
+  notes.forEach((t, k) => put(RN + 2 + k, 2, t, { al: { horizontal: 'left', wrapText: false }, font: { color: { argb: 'FF595959' } } }));
+}
+
+// 2) ACE 설치 서비스
+function rpInst(wb, data, ver) {
+  const B = ver === 'B', d = S.rp.doc, ms = data.ms, last = B ? 30 : 15;
+  const W = [6, 14, 22].concat(Array(12).fill(10)).concat(B ? Array(15).fill(10) : []);
+  const { ws, put, merge, grid } = rpWs(wb, 'ACE 설치 서비스', W, 3);
+  const H = { fill: RPF.head, font: { bold: true } }, Y = { fill: RPF.ylight, font: { bold: true } };
+  merge(1, 1, 3, 1, 'NO', H); merge(1, 2, 3, 2, '점포별', H); merge(1, 3, 3, 3, '해결사', H);
+  merge(1, 4, 1, 15, 'ACE 설치 서비스 (ACE Bath, ACE Kitchen 등)', Y);
+  if (B) merge(1, 16, 1, 30, '실적 (시공 내역 · ' + (data.consMax ? mdLabel(data.consMax) + '까지' : '자료 없음') + ' · 일산점)', { fill: RPF.green, font: { bold: true } });
+  const grp = [[4, '목표 건수'], [7, '매출 목표'], [10, '매총이익액 목표'], [13, '매총이익률 목표']].concat(B ? [[16, '실적 건수'], [19, '실적 매출'], [22, '실적 매총이익'], [25, '실적 이익률'], [28, '건수 달성률']] : []);
+  grp.forEach(([c, t]) => { merge(2, c, 2, c + 2, t, c >= 16 ? { fill: RPF.green, font: { bold: true } } : Y); for (let k = 0; k < 3; k++) put(3, c + k, ms[k] % 100 + '월', c >= 16 ? { fill: RPF.green, font: { bold: true } } : Y); });
+  const rate = (r, gc, sc) => '=IFERROR(' + XL(gc) + r + '/' + XL(sc) + r + ',"")';
+  let r = 6; const storeRows = [];
+  RP_STORES.forEach((s, i) => {
+    const me = i === RP_ME, hr = r; storeRows.push(hr);
+    const SB = { fill: RPF.blue, font: { bold: true } };
+    put(hr, 1, i + 1, SB); put(hr, 2, s.n, Object.assign({ al: { horizontal: 'left' } }, SB)); put(hr, 3, d.boss[i] || '', SB);
+    for (let c = 4; c <= last; c++) {
+      const L = XL(c), sum = '=SUM(' + L + (hr + 1) + ':' + L + (hr + 4) + ')';
+      const isRate = (c >= 13 && c <= 15) || (c >= 25 && c <= 27), isAch = c >= 28;
+      const f = isRate ? rate(hr, c - 3, c - 6) : isAch ? '=IFERROR(' + XL(c - 12) + hr + '/' + XL(c - 24) + hr + ',"")' : sum;
+      put(hr, c, f, Object.assign({ fmt: isRate || isAch ? FMT.pct : (c <= 6 || (c >= 16 && c <= 18)) ? FMT.gun : FMT.won }, SB));
+    }
+    RP_LINES.forEach((l, j) => {
+      const rr = hr + 1 + j, t = d.inst[l.k], a = data.inst[l.k];
+      put(rr, 2, l.g, { al: { horizontal: 'left' } }); put(rr, 3, l.d);
+      for (let k = 0; k < 3; k++) {
+        put(rr, 4 + k, me && t.cnt[k] ? t.cnt[k] : null, { fill: RPF.yellow, fmt: FMT.gun });
+        put(rr, 7 + k, me && t.sales[k] ? t.sales[k] : null, { fill: RPF.yellow, fmt: FMT.won });
+        put(rr, 10 + k, me && t.gp[k] ? t.gp[k] : null, { fill: RPF.grey, fmt: FMT.won });
+        put(rr, 13 + k, rate(rr, 10 + k, 7 + k), { fill: RPF.grey, fmt: FMT.pct });
+        if (B) {
+          const live = ms[k] <= ymOf(data.now) && data.hasCons;
+          put(rr, 16 + k, me && live ? a.cnt[k] : null, { fmt: FMT.gun });
+          put(rr, 19 + k, me && live ? a.sales[k] : null, { fmt: FMT.won });
+          put(rr, 22 + k, me && live ? a.gp[k] : null, { fmt: FMT.won });
+          put(rr, 25 + k, rate(rr, 22 + k, 19 + k), { fmt: FMT.pct });
+          put(rr, 28 + k, '=IFERROR(' + XL(16 + k) + rr + '/' + XL(4 + k) + rr + ',"")', { fmt: FMT.pct });
+        }
+      }
+    });
+    r = hr + 5;
+  });
+  put(4, 1, null, NAVY); put(4, 2, '합계', Object.assign({ al: { horizontal: 'left' } }, NAVY)); put(4, 3, null, NAVY);
+  for (let c = 4; c <= last; c++) {
+    const isRate = (c >= 13 && c <= 15) || (c >= 25 && c <= 27), isAch = c >= 28;
+    const f = isRate ? rate(4, c - 3, c - 6) : isAch ? '=IFERROR(' + XL(c - 12) + '4/' + XL(c - 24) + '4,"")' : '=' + storeRows.map(x => XL(c) + x).join('+');
+    put(4, c, f, Object.assign({ fmt: isRate || isAch ? FMT.pct : (c <= 6 || (c >= 16 && c <= 18)) ? FMT.gun : FMT.won }, NAVY));
+  }
+  grid(1, 1, r - 1, last);
+  put(r + 1, 2, '· 실적 분류: 단품 = 조명·디지털도어락·무료욕실 / 욕실 9종 = 유료욕실 / 리모델링 패키지 = 욕실리모델링 / 싱크볼 = 싱크볼 (취소 제외, ' + (consCfg().basis === 'cons' ? '시공일자' : '영업일자') + ' 기준)', { al: { horizontal: 'left', wrapText: false }, font: { color: { argb: 'FF595959' } } });
+}
+
+// 3) HP 시너지
+function rpHp(wb, data, ver) {
+  const B = ver === 'B', d = S.rp.doc, ms = data.ms, last = B ? 24 : 12;
+  const W = [6, 14, 20].concat(Array(9).fill(11)).concat(B ? Array(12).fill(11) : []);
+  const { put, merge, grid } = rpWs(wb, 'HP 시너지', W, 3);
+  const H = { fill: RPF.head, font: { bold: true } }, BL = { fill: RPF.blue, font: { bold: true } }, G = { fill: RPF.green, font: { bold: true } };
+  merge(1, 1, 3, 1, 'NO', H); merge(1, 2, 3, 2, '점포별', H); merge(1, 3, 3, 3, '시너지', H);
+  merge(1, 4, 1, 12, 'HP 시너지', BL);
+  if (B) merge(1, 13, 1, 24, '실적 (' + (d.hp.aSrc ? cleanText(d.hp.aSrc, 60) : '입력 없음') + ')', G);
+  const grp = [[4, '매출 목표'], [7, '매총이익액 목표'], [10, '매총이익률 목표']].concat(B ? [[13, '실적 매출'], [16, '실적 매총이익'], [19, '실적 이익률'], [22, '매출 달성률']] : []);
+  grp.forEach(([c, t]) => { const o = c >= 13 ? G : BL; merge(2, c, 2, c + 2, t, o); for (let k = 0; k < 3; k++) put(3, c + k, ms[k] % 100 + '월', o); });
+  const rate = (r, a, b) => '=IFERROR(' + XL(a) + r + '/' + XL(b) + r + ',"")';
+  const R0 = 7, RN = R0 + RP_STORES.length - 1;
+  RP_STORES.forEach((s, i) => {
+    const r = R0 + i, me = i === RP_ME;
+    put(r, 1, i + 1); put(r, 2, s.n, { al: { horizontal: 'left' }, font: { bold: me } }); put(r, 3, 'x  ' + (d.hpTeam[i] || s.hp), { al: { horizontal: 'left' } });
+    for (let k = 0; k < 3; k++) {
+      put(r, 4 + k, me && d.hp.sales[k] ? d.hp.sales[k] : null, { fill: RPF.yellow, fmt: FMT.won });
+      put(r, 7 + k, me && d.hp.gp[k] ? d.hp.gp[k] : null, { fill: RPF.yellow, fmt: FMT.won });
+      put(r, 10 + k, rate(r, 7 + k, 4 + k), { fmt: FMT.pct });
+      if (B) {
+        put(r, 13 + k, me ? d.hp.aSales[k] : null, { fmt: FMT.won });
+        put(r, 16 + k, me ? d.hp.aGp[k] : null, { fmt: FMT.won });
+        put(r, 19 + k, rate(r, 16 + k, 13 + k), { fmt: FMT.pct });
+        put(r, 22 + k, rate(r, 13 + k, 4 + k), { fmt: FMT.pct });
+      }
+    }
+  });
+  put(5, 1, null, NAVY); put(5, 2, '합계', Object.assign({ al: { horizontal: 'left' } }, NAVY)); put(5, 3, null, NAVY);
+  for (let c = 4; c <= last; c++) {
+    const isRate = (c >= 10 && c <= 12) || c >= 19;
+    const f = c >= 10 && c <= 12 ? rate(5, c - 3, c - 6) : c >= 19 && c <= 21 ? rate(5, c - 3, c - 6) : c >= 22 ? rate(5, c - 9, c - 18) : '=SUM(' + XL(c) + R0 + ':' + XL(c) + RN + ')';
+    put(5, c, f, Object.assign({ fmt: isRate ? FMT.pct : FMT.won }, NAVY));
+  }
+  grid(1, 1, RN, last);
 }
 
 /* ===================== 관리자: 목표·설정 ===================== */
