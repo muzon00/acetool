@@ -514,6 +514,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
         </div>
         <div class="toolbar">
           <button class="btn dark" id="adminRefresh">새로고침</button>
+          <button class="btn ghost" id="copyAdminLink" title="관리자 페이지 주소 복사 (…/pos/#admin)">🔗 관리자 주소</button>
         </div>
       </div>
       <nav class="secnav" id="adminTabs" aria-label="관리자 메뉴">
@@ -705,6 +706,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
         <h3>보안 수칙</h3>
         <ul>
           <li>관리자 모드는 20분 동안 사용이 없으면 자동으로 홈으로 돌아갑니다.</li>
+          <li>관리자 페이지 주소는 <b>acetool.site/pos/#admin</b> 입니다. 새로고침해도 보던 탭(예: #admin/download)으로 다시 들어가고, 들어갈 때마다 관리자 권한을 서버에서 확인합니다.</li>
           <li>다운로드한 CSV/엑셀에는 거래처·마진 정보가 들어 있습니다. 공용 PC라면 사용 후 파일을 지우고 로그아웃해 주세요.</li>
           <li>퇴사자는 권한 관리 탭에서 바로 삭제해 주세요.</li>
         </ul>
@@ -1467,8 +1469,14 @@ async function renderDataStatus() {
 
 /* ===================== 화면 전환 / 로그인 ===================== */
 const VIEWS = ['loading', 'login', 'pending', 'home', 'admin'];
+// 주소: 관리자 페이지 = …/pos/#admin (탭까지 #admin/download 처럼). 새로고침하면 그 화면으로 다시 들어감
+const ADMIN_URL = SITE_URL.replace(/\/?$/, '/') + '#admin';
+const wantAdmin = () => /^#admin\b/.test(location.hash);
+const hashTab = () => (/^#admin\/(\w+)/.exec(location.hash) || [])[1] || '';
+function setHash(h) { if (location.hash !== h) history.replaceState(null, '', h || location.pathname + location.search); }
 function show(v) {
   S.view = v;
+  if (v === 'home' && wantAdmin()) setHash('');
   VIEWS.forEach(x => $('v-' + x).classList.toggle('hide', x !== v));
   // 로그인·승인 전에는 로그인 카드 말고 아무것도 보이지 않게
   $('prefsBar').classList.toggle('hide', !(v === 'home' || v === 'admin'));
@@ -1497,9 +1505,10 @@ async function routeUser(user) {
   catch (e) { role = null; }
   if (role === 'admin' || role === 'viewer') {
     S.role = role;
+    countVisit(user);
+    if (wantAdmin()) { enterAdmin(hashTab() || S.adminTab); return; } // 관리자 주소로 들어오면 바로 관리자 페이지
     show('home');
     loadHome(S.ym);
-    countVisit(user);
     return;
   }
   S.role = null;
@@ -1594,15 +1603,28 @@ function bumpIdle() {
   idleT = setTimeout(() => { if (S.view === 'admin') { show('home'); loadHome(S.ym); toast('20분 동안 사용이 없어 관리자 모드를 닫았습니다'); } }, IDLE_MS);
 }
 ['click', 'keydown', 'touchstart', 'scroll'].forEach(ev => document.addEventListener(ev, bumpIdle, { passive: true }));
-$('adminBtn').addEventListener('click', async () => {
+// 관리자 페이지 들어가기 (버튼 · 관리자 주소 · 새로고침 모두 여기로, 들어갈 때마다 서버에서 권한 확인)
+async function enterAdmin(tab) {
   try {
     const r = await getDocFromServer(doc(db, C.roles, S.user.uid));
-    if (!r.exists() || r.data().role !== 'admin') { S.role = r.exists() ? r.data().role : null; show('home'); toast('관리자 권한이 없습니다'); return; }
-  } catch (e) { toast(errMsg(e)); return; }
+    if (!r.exists() || r.data().role !== 'admin') { S.role = r.exists() ? r.data().role : null; show('home'); loadHome(S.ym); toast('관리자 권한이 없습니다'); return; }
+  } catch (e) { toast(errMsg(e)); if (S.view === 'loading') { show('home'); loadHome(S.ym); } return; }
   show('admin');
-  showAdminTab(S.adminTab);
-});
+  showAdminTab(tab || S.adminTab);
+}
+$('adminBtn').addEventListener('click', () => enterAdmin(S.adminTab));
 $('backHome').addEventListener('click', () => { show('home'); loadHome(S.ym); });
+// 주소창에서 #admin을 붙이거나 지우면 화면도 따라감
+window.addEventListener('hashchange', () => {
+  if (!S.user || !S.role) return;
+  if (wantAdmin() && S.view !== 'admin') enterAdmin(hashTab() || S.adminTab);
+  else if (!wantAdmin() && S.view === 'admin') { show('home'); loadHome(S.ym); }
+  else if (wantAdmin() && hashTab() && hashTab() !== S.adminTab) showAdminTab(hashTab());
+});
+$('copyAdminLink').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(ADMIN_URL); toast('관리자 페이지 주소를 복사했습니다 · ' + ADMIN_URL); }
+  catch (e) { toast('관리자 페이지 주소: ' + ADMIN_URL); }
+});
 
 /* ===================== 글씨 / 디자인 선택 ===================== */
 function applyPrefs() {
@@ -2180,7 +2202,9 @@ window.addEventListener('resize', () => {
 document.querySelectorAll('#adminTabs .pill').forEach(b => b.addEventListener('click', () => showAdminTab(b.dataset.tab)));
 const ATABS = ['upload', 'plans', 'download', 'settings', 'members', 'help'];
 function showAdminTab(t) {
+  if (!ATABS.includes(t)) t = 'upload';
   S.adminTab = t;
+  if (S.view === 'admin') setHash('#admin/' + t); // 새로고침해도 이 탭으로
   document.querySelectorAll('#adminTabs .pill').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
   ATABS.forEach(x => $('a-' + x).classList.toggle('hide', x !== t));
   if (t === 'download') renderDownloads();
