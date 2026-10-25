@@ -1967,16 +1967,21 @@ function renderEvPanel() {
     '<select id="evpK" aria-label="종류"' + (ed ? ' disabled' : '') + '>' + opt('mine', '내 일정', kindSel === 'mine') + opt('store', '매장 일정' + (admin ? '' : ' (관리자)'), kindSel === 'store', !admin) + '</select>' +
     '<input type="text" id="evpT" maxlength="40" placeholder="예) 15시 아이 태권도" value="' + esc(ed ? (ed.tm ? ed.tm + ' ' : '') + ed.t : '') + '">' +
     '<button class="btn primary" id="evpSave">' + (ed ? '수정 저장' : '등록') + '</button>' + (ed ? '<button class="btn ghost" id="evpCancel">취소</button>' : '') + '</div><div id="evpMsg" class="muted"></div>';
-  const all = e.store.concat(e.mine).filter(x => ui.f === 'all' || x.kind === ui.f)
+  // 지나간 일정은 목록에서 빼고 달력에만 남김 (수정 중인 일정은 예외)
+  const today = todayInt(), mine = e.store.concat(e.mine).filter(x => ui.f === 'all' || x.kind === ui.f);
+  const past = mine.filter(x => x.d < today && !(ed && ed.id === x.id)).length;
+  const all = mine.filter(x => ui.past || x.d >= today || (ed && ed.id === x.id))
     .sort((a, b) => (a.d - b.d) || String(a.tm || '99').localeCompare(String(b.tm || '99')));
-  h += '<div class="evp-bar"><div class="chips">' + [['all', '전체'], ['store', '매장 일정'], ['mine', '내 일정']].map(([k, l]) => '<button data-evf="' + k + '"' + (ui.f === k ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div></div>';
+  h += '<div class="evp-bar"><div class="chips">' + [['all', '전체'], ['store', '매장 일정'], ['mine', '내 일정']].map(([k, l]) => '<button data-evf="' + k + '"' + (ui.f === k ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div>' +
+    (past ? '<button class="btn ghost sm" id="evpPast">' + (ui.past ? '지난 일정 숨기기' : '지난 일정 ' + past + '개 보기') + '</button>' : '') + '</div>';
   h += all.length ? '<ul class="evp-list">' + all.map(x => {
     const can = x.kind === 'mine' || admin, on = ed && ed.id === x.id;
     return '<li' + (on ? ' class="on"' : '') + '><span class="evp-d' + (x.d === d.today ? ' today' : '') + '">' + mdLabel(x.d) + '(' + DOWK[dowOf(x.d)] + ')</span><span class="ev ' + x.kind + '">' + (x.kind === 'store' ? '매장' : '내 일정') + '</span>' +
       '<span class="evp-t">' + (x.tm ? '<b>' + esc(x.tm) + '</b> ' : '') + esc(x.t) + '</span>' +
       (can ? '<button class="btn ghost sm" data-eve="' + x.kind + ':' + x.id + '">수정</button><button class="btn danger sm" data-evx="' + x.kind + ':' + x.id + '">삭제</button>' : '') + '</li>';
-  }).join('') + '</ul>' : '<p class="muted" style="margin:8px 0 0">' + (d.ym % 100) + '월 일정이 없습니다. 위에서 등록하거나 달력의 날짜를 눌러 보세요.</p>';
+  }).join('') + '</ul>' : '<p class="muted" style="margin:8px 0 0">' + (d.ym % 100) + '월 ' + (past ? '남은 ' : '') + '일정이 없습니다. 위에서 등록하거나 달력의 날짜를 눌러 보세요.</p>';
   box.innerHTML = h;
+  if ($('evpPast')) $('evpPast').addEventListener('click', () => { ui.past = !ui.past; renderEvPanel(); });
   const ref = (kind, id) => kind === 'store' ? doc(db, C.events, id) : doc(db, C.my, S.user.uid, 'events', id);
   const reload = async ym => { await loadEvents(ym, true); refreshCal(); };
   $('evpSave').addEventListener('click', async () => {
