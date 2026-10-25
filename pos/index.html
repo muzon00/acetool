@@ -305,6 +305,14 @@ details > summary.up-h { cursor: pointer; margin: 6px 0; font-weight: 700; }
 ::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--ink3) 80%, transparent); }
 ::-webkit-scrollbar-button, ::-webkit-scrollbar-corner { display: none; background: transparent; }
 @supports (-moz-appearance: none) { * { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--ink3) 55%, transparent) transparent; } }
+/* ✨ AI 분석 보고서 브리핑 */
+.rpb { margin-top: 14px; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; background: var(--surface2); }
+.rpb-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+.rpb-h h2 { margin: 0; }
+.rpb-sec h3 { margin: 14px 0 6px; font-size: 15px; }
+.rpb-sec ul { margin: 0; padding-left: 18px; }
+.rpb-sec li { margin: 5px 0; line-height: 1.6; }
+.rpb-tip { display: block; background: var(--surface); border-left: 3px solid var(--s1); border-radius: 6px; padding: 6px 10px; margin: 2px 0; }
 /* 📁 올린 파일 목록 */
 .fl { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); max-height: 460px; overflow-y: auto; }
 .fl li { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-top: 1px solid var(--line); }
@@ -3837,6 +3845,12 @@ async function rpData(q) {
   const memD = memDates.filter(d => d <= basis).pop() || memDates[memDates.length - 1] || 0;
   const mv = (metric, st) => { const r = all.find(x => x.d === memD && x.metric === metric + '|' + st); return r ? Number(r.v) || 0 : null; };
   const members = RP_STORES.map(x => ({ vip: memD ? mv('VIP MASTER 회원', x.s) : null, mst: memD ? mv('MASTER 회원', x.s) : null }));
+  // 등급별 자료가 없을 때 대신 쓰는 거래건: 멤버쉽 문자 "VIP+MASTER 판매건수" 월 합계의 기준월까지 최근 3개월 평균
+  const smsDeal = RP_STORES.map(x => {
+    const byM = {}; all.filter(r => r.metric === 'VIP+MASTER 판매건수|' + x.s && ymOf(r.d) <= basisYm).forEach(r => { byM[ymOf(r.d)] = (byM[ymOf(r.d)] || 0) + (Number(r.v) || 0); });
+    const ks = Object.keys(byM).map(Number).sort((a, b) => b - a).slice(0, 3);
+    return ks.length ? Math.round(mean(ks.map(k => byM[k]))) : null;
+  });
   // 고객등급별 월평균 (기준월까지 그해) · 본사B2B / 관계사 (HP 시너지 근거)
   const grade = RP_STORES.map(x => {
     const mix = refPick('mix', x.s); if (!mix) return null;
@@ -3857,16 +3871,18 @@ async function rpData(q) {
   const lyBase = mean([...Array(basisYm % 100)].map((_, i) => tot((Y - 1) * 100 + i + 1)).filter(v => v > 0));
   const season = ms.map(ym => { const v = tot(ym - 100); return lyBase && v ? Math.min(1.25, Math.max(0.8, v / lyBase)) : 1; });
   // 시공(일산): 줄별 월 건수 · 건당 실매출
-  const cc = consCfg(), cnt = {}, amt = {};
-  RP_LINES.forEach(l => { cnt[l.k] = {}; amt[l.k] = { s: 0, n: 0 }; });
+  const cc = consCfg(), cnt = {}, amt = {}; let consMax = 0;
+  RP_LINES.forEach(l => { cnt[l.k] = {}; amt[l.k] = { s: 0, n: 0, g: 0 }; });
   (S.cons || []).forEach(r => {
     if (r.cx || (r.br && !/일산/.test(r.br))) return;
     const d = cc.basis === 'cons' ? r.sd : r.d; if (!d) return;
+    consMax = Math.max(consMax, d);
     const k = RP_PRI.find(k => RP_LINES.find(l => l.k === k).cats.some(c => (r.cats || []).includes(c))); if (!k) return;
     const ym = ymOf(d); cnt[k][ym] = (cnt[k][ym] || 0) + 1;
-    if (ym <= basisYm && ym > addMonths(basisYm, -12) && r.net > 0) { amt[k].s += r.net; amt[k].n++; }
+    if (ym <= basisYm && ym > addMonths(basisYm, -12) && r.net > 0) { amt[k].s += r.net; amt[k].g += r.mar || 0; amt[k].n++; }
   });
-  return { q, ms, basisYm, basis, now, memD, members, grade, season, cnt, amt, hasCons: !!(S.cons && S.cons.length) };
+  const mixMe = refPick('mix', '일산');
+  return { q, ms, basisYm, basis, now, memD, members, smsDeal, grade, season, lyBase, cnt, amt, consMax, consBasis: cc.basis, mixBasis: mixMe ? mixMe.basis : 0, mixFile: mixMe ? mixMe.file || '' : '', hasCons: !!(S.cons && S.cons.length) };
 }
 
 // 목표 자동 계산 (근거 문장도 함께)
@@ -3880,6 +3896,9 @@ function rpTargets(D) {
     T.master.aov = D.ms.map(() => r1000(A * 1.03));
     why.push('Master 객수 목표 = ' + ml(me.from) + '~' + ml(me.to) + ' 월평균 VIP+MASTER 거래건 ' + N.toLocaleString('ko-KR') + '건 × 계절 보정(' + fx + ') × (1 + ' + (up * 100).toFixed(1) + '%) [기본 5% + 최근 3개월 상승분 ' + (Math.max(0, me.trend) * 100).toFixed(1) + '%의 절반]');
     why.push('Master 객단가 목표 = 월평균 객단가 ' + Math.round(A).toLocaleString('ko-KR') + '원 × 1.03 (천 원 단위 반올림) · 마스터 매출목표 = 객수 × 객단가');
+  } else if (D.smsDeal[RP_ME]) {
+    T.master.cust = D.season.map(f => r5(D.smsDeal[RP_ME] * f * 1.05));
+    why.push('Master 객수 목표 = 멤버쉽 문자 VIP+MASTER 판매건수 월평균 ' + D.smsDeal[RP_ME] + '건 × 계절 보정 × 1.05 (본사 고객등급별 자료가 없어 대신 사용 · 객단가 목표는 비움)');
   } else why.push('Master: 본사 "매출 유형별" 파일(Export 시트)을 올리면 고객등급별 실적으로 목표가 채워집니다.');
   // ACE 설치: 건수 = max(최근 6개월 평균 × 1.1, 작년 같은 달 × 1.05) 올림, 매출 = 건수 × 최근 12개월 건당 실매출
   RP_LINES.forEach(l => {
@@ -3902,6 +3921,78 @@ function rpTargets(D) {
   return Object.assign(T, { why });
 }
 
+// ✨ AI 분석 보고서 브리핑: 내려받는 파일의 숫자를 왜 그렇게 잡았는지 · 달성 요령 (관리자 화면)
+function rpBrief(D, T) {
+  const me = D.grade[RP_ME], ms = D.ms, ml = ym => ym % 100 + '월', nf = v => Math.round(v).toLocaleString('ko-KR'), per = ms.map(ml).join('·');
+  const sumA = a => a.reduce((t, v) => t + (v || 0), 0), r1 = v => Math.round(v * 10) / 10;
+  const sec = (t, items) => items.length ? '<div class="rpb-sec"><h3>' + t + '</h3><ul>' + items.map(x => '<li>' + x + '</li>').join('') + '</ul></div>' : '';
+  const tip = t => '<span class="rpb-tip">💡 ' + t + '</span>';
+  let h = '<div class="rpb"><div class="rpb-h"><h2>✨ AI 분석 보고서 브리핑</h2><span class="muted">' + per + ' · 일산점 · 내려받는 파일의 노란 칸을 이렇게 채웠어요</span></div>';
+  // 한눈에
+  const mSales = T.master.cust.map((c, i) => c && T.master.aov[i] ? c * T.master.aov[i] : 0);
+  const iCnt = RP_LINES.reduce((t, l) => t + sumA(T.inst[l.k].cnt), 0), iSales = r1(RP_LINES.reduce((t, l) => t + sumA(T.inst[l.k].sales), 0));
+  const hpS = r1(sumA(T.hp.sales)), hpG = r1(sumA(T.hp.gp));
+  h += sec('📌 한눈에 보기', [
+    sumA(mSales) ? 'Master 매출목표 <b>' + eok(sumA(mSales)) + '</b> (' + ms.map((ym, i) => ml(ym) + ' ' + eok(mSales[i])).join(' · ') + ')' : 'Master 매출목표: 자료가 부족해 비어 있어요 (아래 "확인할 점")',
+    iCnt ? 'ACE 설치 <b>' + iCnt + '건 · ' + iSales + '백만원</b> (단품·욕실 9종·리모델링·싱크볼 합계)' : 'ACE 설치: 시공 자료가 없어 비어 있어요',
+    hpS ? 'HP 시너지 매출 <b>' + hpS + '백만원</b> · 매총이익 ' + hpG + '백만원 (이익률 ' + pct(hpG / hpS) + ')' : 'HP 시너지: 본사 자료가 없어 비어 있어요'
+  ]);
+  // 계절 보정 설명
+  const seasonTxt = D.lyBase ? '작년 같은 달 POS 매출이 평소의 ' + ms.map((ym, i) => ml(ym) + ' ' + D.season[i].toFixed(2) + '배').join(', ') + '여서 그만큼 달마다 높이거나 낮췄어요'
+    : '작년 POS 자료가 없어 세 달을 같게 잡았어요 (작년 판매 내역을 올리면 성수기·비수기가 반영돼요)';
+  // Master
+  const mi = [];
+  if (me && me.hasGr && me.vipN + me.mstN > 0) {
+    const N = me.vipN + me.mstN, A = (me.vipS + me.mstS) / N, vA = me.vipN ? me.vipS / me.vipN : 0, mA = me.mstN ? me.mstS / me.mstN : 0, share = me.vipN / N;
+    const tr = Math.max(-1, me.trend), up = 0.05 + Math.max(0, Math.min(0.2, me.trend)) / 2;
+    mi.push('<b>출발점</b>: ' + ml(me.from) + '~' + ml(me.to) + ' 월평균 VIP+MASTER 거래건 <b>' + nf(N) + '건</b> (VIP Master ' + nf(me.vipN) + ' · Master ' + nf(me.mstN) + '), 객단가 <b>' + nf(A) + '원</b>, 실매출 ' + eok(me.vipS + me.mstS) + '. 양식의 "현시점 월평균" 칸이 이 숫자예요.');
+    mi.push('<b>객수 목표</b>: 최근 3개월 거래건이 평균보다 ' + (tr >= 0 ? '+' : '') + (tr * 100).toFixed(1) + '% ' + (tr > 0 ? '늘고 있어 기본 5%에 상승분의 절반을 더해 <b>+' + (up * 100).toFixed(1) + '%</b>' : '흐름이라 무리하지 않고 기본 <b>+5%</b>') + '로 잡았어요. ' + seasonTxt + '. → ' + T.master.cust.map((c, i) => ml(ms[i]) + ' ' + (c === null ? '-' : nf(c) + '명')).join(', '));
+    mi.push('<b>객단가 목표</b>: 월평균 객단가에 3%를 더해 천 원 단위로 맞췄어요 → ' + (T.master.aov[0] ? nf(T.master.aov[0]) + '원' : '-') + '. 마스터 매출목표는 객수 × 객단가 수식이에요.');
+    if (vA && mA) mi.push(tip('VIP Master 객단가(' + nf(vA) + '원)가 Master(' + nf(mA) + '원)의 <b>' + (vA / mA).toFixed(1) + '배</b>예요. 지금 VIP 비중 ' + pct(share, 0) + '에서 5%p만 올려도 같은 객수로 객단가가 약 ' + nf(0.05 * (vA - mA)) + '원(' + pct(0.05 * (vA - mA) / A, 1) + ') 올라 목표 객단가 인상분(3%)을 ' + (0.05 * (vA - mA) / A >= 0.03 ? '넘어요' : '상당 부분 채워요') + '. Master → VIP 전환·재구매 관리가 지름길이에요.'));
+  } else if (D.smsDeal[RP_ME]) {
+    mi.push('본사 고객등급별 자료가 없어 멤버쉽 문자의 VIP+MASTER 판매건수 월평균(' + nf(D.smsDeal[RP_ME]) + '건)으로 객수 목표만 잡았어요 (+5%, ' + seasonTxt + '). 객단가 · 매출목표는 비워 뒀어요.');
+  } else mi.push('본사 "■ 지점별 매출 유형별 비중 및 추이" 파일(Export 시트 포함)을 올리면 채워져요.');
+  h += sec('👥 Master — 왜 이 숫자인가', mi);
+  // ACE 설치
+  const ai = [];
+  if (D.hasCons) {
+    let best = null;
+    RP_LINES.forEach(l => {
+      const t = T.inst[l.k], c = D.cnt[l.k], ly = ms.map(ym => c[ym - 100] || 0), a = D.amt[l.k];
+      const why = ms.map((ym, i) => ly[i] * 1.05 > t.avg6 * 1.1 ? '작년' : '최근');
+      const basis = why.every(w => w === '작년') ? '작년 같은 달(' + ly.join('/') + '건)이 최근 평균보다 높아 작년 × 1.05' : why.every(w => w === '최근') ? '최근 6개월 평균 ' + t.avg6.toFixed(1) + '건 × 1.1' : '달마다 작년 같은 달(' + ly.join('/') + '건)과 최근 평균(' + t.avg6.toFixed(1) + '건) 중 높은 쪽';
+      ai.push('<b>' + esc(l.d) + '</b>: ' + basis + ' → ' + t.cnt.map((v, i) => ml(ms[i]) + ' ' + (v || 0) + '건').join(', ') + (t.price ? ', 건당 ' + eok(t.price) + ' (마진율 ' + pct(a.s ? a.g / a.s : 0, 0) + ') → ' + t.sales.map(v => v ?? '-').join('/') + '백만원' : ''));
+      const s = sumA(t.sales); if (!best || s > best.s) best = { l, s, price: t.price };
+    });
+    const single = T.inst.single.price;
+    if (best && best.price && single && best.l.k !== 'single') ai.push(tip('매출은 <b>' + esc(best.l.d) + '</b>가 가장 커요. 1건(' + eok(best.price) + ')이 단품 설치 약 ' + Math.round(best.price / single) + '건과 같아서, 욕실 상담 때 리모델링·세트로 올려 제안하는 것이 매출 목표에 가장 크게 작용해요.'));
+    else if (best) ai.push(tip('매출은 <b>' + esc(best.l.d) + '</b> 줄이 가장 커요. 건수 목표를 먼저 챙기면 매출 목표도 따라와요.'));
+  } else ai.push('시공 내역 파일을 올리면 채워져요.');
+  h += sec('🛁 ACE 설치 서비스 — 왜 이 숫자인가', ai);
+  // HP 시너지
+  const hi = [];
+  if (me && (me.b2bS > 0 || me.affS > 0)) {
+    const useB2b = me.b2bS > 0, S0 = useB2b ? me.b2bS : me.affS, G0 = useB2b ? me.b2bG : me.affG, rate = S0 ? G0 / S0 : 0;
+    hi.push('<b>출발점</b>: 본사 자료의 <b>' + (useB2b ? '본사B2B 등급' : '관계사') + '</b> 월평균 실매출 ' + eok(S0) + ', 매총율 ' + pct(rate) + '. 건자재수주팀과 함께 하는 매출로 보고 잡았어요.');
+    hi.push('<b>목표</b>: 매출은 월평균 × 1.05 (' + seasonTxt + ') → ' + T.hp.sales.map((v, i) => ml(ms[i]) + ' ' + (v ?? '-') + '백만원').join(', ') + '. 매총이익은 매총율을 지금보다 0.5%p 높인 ' + pct(rate + 0.005) + '로 계산했어요.');
+    hi.push(tip('건자재 수주는 금액이 크고 마진이 얇아요. 매총율 ' + pct(rate + 0.005) + '를 지키려면 견적 단계에서 저마진 품목 비중을 확인하는 것이 핵심이에요.'));
+  } else hi.push('본사 "매출 유형별" 파일을 올리면 채워져요.');
+  h += sec('🤝 HP 시너지 — 왜 이 숫자인가', hi);
+  // 확인할 점 · 사용한 자료
+  const ck = [];
+  if (ymOf(D.now) >= ms[0]) ck.push(ml(ms[0]) + '은 이미 진행 중이라 목표를 참고용으로 봐 주세요.');
+  if (!D.lyBase) ck.push('작년 POS 판매 내역이 없어 계절 보정을 하지 못했어요.');
+  if (me && me.b2bS > 0) ck.push('HP 시너지를 본사B2B 등급 실적으로 보았어요. 기준이 다르면 알려 주세요.');
+  if (!(me && me.hasGr)) ck.push('Master 거래건·실매출이 비어요 → 본사 "매출 유형별" 파일을 다시 올려 주세요.');
+  h += sec('⚠️ 확인할 점', ck);
+  h += sec('📂 사용한 자료', [
+    '본사 매출 유형별: ' + (D.mixBasis ? dLabel(D.mixBasis) + ' 기준' : me ? '있음' : '없음') + (D.mixFile ? ' (' + esc(D.mixFile) + ')' : ''),
+    '시공 내역: ' + (D.consMax ? dLabel(D.consMax) + '까지 (' + (D.consBasis === 'cons' ? '시공일자' : '영업일자') + ' 기준)' : '없음'),
+    '멤버쉽 문자(회원수): ' + (D.memD ? dLabel(D.memD) : '없음'),
+    'POS 판매 내역(계절 보정): ' + (D.lyBase ? '작년 자료 있음' : '작년 자료 없음')
+  ]);
+  return h + '<p class="muted" style="margin:6px 0 0">올린 자료로 계산한 결과예요. 자료를 새로 올리면 브리핑과 목표가 함께 바뀌어요.</p></div>';
+}
 function rpMount(el) {
   const cur = rpQOf(ymOf(todayInt())), qs = [-2, -1, 0, 1, 2].map(k => addMonths(cur, k * 3));
   el.insertAdjacentHTML('afterbegin', '<div class="card" id="rpCard"><h2>📑 분석 보고서 (양식 엑셀)</h2>' +
@@ -3909,6 +4000,7 @@ function rpMount(el) {
     '<div class="row" style="margin-bottom:8px"><label>기간<select id="rpQ">' + qs.map(q => '<option value="' + q + '"' + (q === cur ? ' selected' : '') + '>' + Math.floor(q / 100) + '년 ' + rpMonths(q).map(x => x % 100).join('·') + '월</option>').join('') + '</select></label>' +
     '<button class="btn primary" id="rpDl">📗 분석 보고서 내려받기</button></div>' +
     '<div id="rpPrev" class="muted">목표 계산 중…</div>' +
+    '<div id="rpBrief"></div>' +
     '<details style="margin-top:8px"><summary>점포별 해결사 이름</summary><div class="row" style="margin-top:8px">' +
     RP_STORES.map((x, i) => '<label>' + x.n + '<input class="rp-boss" data-i="' + i + '" maxlength="20" style="width:110px"></label>').join('') +
     '<button class="btn ghost sm" id="rpBossSave">저장</button><span class="muted" id="rpBossMsg"></span></div></details></div>');
@@ -3919,12 +4011,20 @@ function rpMount(el) {
       document.querySelectorAll('.rp-boss').forEach(inp => { inp.value = S.rp.boss[Number(inp.dataset.i)] || ''; });
       const D = await rpData(S.rp.q), T = rpTargets(D); S.rp.D = D; S.rp.T = T;
       const ml = D.ms.map(ym => ym % 100 + '월'), v = a => a.map(x => x === null ? '-' : Number(x).toLocaleString('ko-KR'));
-      $('rpPrev').innerHTML = '<b>일산점 자동 목표 미리보기</b>' + table(['항목'].concat(ml), [
+      // 빠진 자료 안내 (무엇을 올리면 채워지는지)
+      const miss = [];
+      if (!(D.grade[RP_ME] && D.grade[RP_ME].hasGr)) miss.push('Master 거래건·실매출·객단가: 본사 <b>"■ 지점별 매출 유형별 비중 및 추이"</b> 파일을 다시 올려 주세요. (Export 시트의 고객등급별 실적을 씁니다. 전에 올린 자료에는 등급별 실적이 없습니다)');
+      if (!D.memD) miss.push('회원수: 멤버쉽 문자를 올려 주세요.');
+      if (!D.hasCons) miss.push('ACE 설치: 시공 내역 파일을 올려 주세요.');
+      if (!D.grade[RP_ME]) miss.push('HP 시너지: 본사 "매출 유형별" 파일이 필요합니다.');
+      $('rpPrev').innerHTML = (miss.length ? '<div class="banner warn"><b>⚠️ 아직 빈칸이 생기는 곳</b><br>' + miss.join('<br>') + '</div>' : '<div class="banner ok">✅ 필요한 자료가 모두 있어 노란 칸이 모두 채워집니다.</div>') +
+        '<b>일산점 자동 목표 미리보기</b>' + table(['항목'].concat(ml), [
         ['Master 객수 목표 (명)'].concat(v(T.master.cust)), ['Master 객단가 목표 (원)'].concat(v(T.master.aov)),
         ['Master 매출목표 (원)'].concat(T.master.cust.map((c, i) => c && T.master.aov[i] ? (c * T.master.aov[i]).toLocaleString('ko-KR') : '-'))]
         .concat(RP_LINES.map(l => ['설치 ' + l.d + ' (건 / 백만원)'].concat(T.inst[l.k].cnt.map((c, i) => c ? c + '건 / ' + (T.inst[l.k].sales[i] ?? '-') : '-'))))
         .concat([['HP 시너지 매출 / 매총이익 (백만원)'].concat(T.hp.sales.map((s, i) => s === null ? '-' : s + ' / ' + T.hp.gp[i]))])) +
-        '<details><summary>목표 산출 근거</summary><ul>' + T.why.map(w => '<li>' + esc(w) + '</li>').join('') + '</ul></details>';
+        '<details><summary>계산식 그대로 보기</summary><ul>' + T.why.map(w => '<li>' + esc(w) + '</li>').join('') + '</ul></details>';
+      $('rpBrief').innerHTML = rpBrief(D, T);
     } catch (e) { $('rpPrev').innerHTML = '<span class="banner bad">' + esc(errMsg(e)) + '</span>'; }
   };
   $('rpQ').addEventListener('change', refresh);
@@ -3958,7 +4058,8 @@ function rpWs(wb, name, widths) {
   const put = (r, c, v, o) => {
     o = o || {};
     const cell = ws.getCell(r, c);
-    if (v !== undefined && v !== null && v !== '') cell.value = typeof v === 'string' && v[0] === '=' ? { formula: v.slice(1) } : v;
+    // 수식은 계산 결과(o.res)도 함께 저장 → 보호된 보기 · 휴대폰 미리보기처럼 다시 계산하지 않는 곳에서도 숫자가 보임
+    if (v !== undefined && v !== null && v !== '') cell.value = typeof v === 'string' && v[0] === '=' ? (o.res === undefined || o.res === null || !isFinite(o.res) ? { formula: v.slice(1) } : { formula: v.slice(1), result: o.res }) : v;
     cell.font = Object.assign({}, FONT, o.font || {});
     cell.alignment = Object.assign({ vertical: 'middle', horizontal: 'center', wrapText: true }, o.al || {});
     if (o.fill) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + o.fill } };
@@ -3995,31 +4096,36 @@ function rpSheet(wb, D, T, boss) {
   for (let c = 4; c <= 24; c++) put(m0 + 4, c, c < 16 ? ['합계', 'VIP\nMaster', 'Master'][(c - 4) % 3] : ml(ms[(c - 16) % 3]), { fill: c >= 16 ? RPF.head : RPF.grey, font: { bold: true } });
   ws.getRow(m0 + 4).height = 30; thin(m0 + 5); thin(m0 + 7);
   const mt = m0 + 6, mr = m0 + 8, g = D.grade;
-  // 일산점 줄
-  const me = g[RP_ME], mem = D.members[RP_ME];
+  const add = (a, b) => a === null && b === null ? null : (a || 0) + (b || 0), div = (a, b) => a !== null && b ? a / b : null;
+  // 한 줄(합계 · 일산점) 값 계산 → 칸마다 수식 + 결과값
+  const masterRow = (rr, v, targets, o) => {
+    o = o || {};
+    const sum2 = (c, a, b) => put(rr, c, a === null && b === null ? null : '=SUM(' + XL(c + 1) + rr + ':' + XL(c + 2) + rr + ')', Object.assign({ fmt: o.fmt[c], res: add(a, b) }, o.st));
+    sum2(4, v.vip, v.mst); put(rr, 5, v.vip, Object.assign({ fmt: FMT.man }, o.st)); put(rr, 6, v.mst, Object.assign({ fmt: FMT.man }, o.st));
+    if (v.vipN === null && v.mstN === null) put(rr, 7, v.dealAll, Object.assign({ fmt: FMT.gun }, o.st)); else sum2(7, v.vipN, v.mstN);
+    put(rr, 8, v.vipN, Object.assign({ fmt: FMT.gun }, o.st)); put(rr, 9, v.mstN, Object.assign({ fmt: FMT.gun }, o.st));
+    const S1 = add(v.vipS, v.mstS), N1 = v.vipN === null && v.mstN === null ? null : add(v.vipN, v.mstN);
+    [[10, 13, 7, S1, N1], [11, 14, 8, v.vipS, v.vipN], [12, 15, 9, v.mstS, v.mstN]].forEach(([c, sc, dc, s, n]) => put(rr, c, s !== null && n ? '=IFERROR(' + XL(sc) + rr + '/' + XL(dc) + rr + ',"")' : null, Object.assign({ fmt: FMT.won, res: div(s, n) }, o.st)));
+    if (v.vipS === null && v.mstS === null) put(rr, 13, null, o.st); else sum2(13, v.vipS, v.mstS);
+    put(rr, 14, v.vipS, Object.assign({ fmt: FMT.won }, o.st)); put(rr, 15, v.mstS, Object.assign({ fmt: FMT.won }, o.st));
+    for (let k = 0; k < 3; k++) {
+      const c1 = targets.cust[k], a1 = targets.aov[k], ty = o.target || { fill: RPF.yellow };
+      put(rr, 16 + k, o.ref ? (c1 !== null ? '=' + XL(16 + k) + o.ref : null) : c1, Object.assign({ fmt: FMT.man, res: c1 }, ty));
+      put(rr, 19 + k, o.ref ? (a1 !== null ? '=' + XL(19 + k) + o.ref : null) : a1, Object.assign({ fmt: FMT.won, res: a1 }, ty));
+      const m1 = c1 !== null && a1 !== null ? c1 * a1 : null, f = o.ref ? '=' + XL(22 + k) + o.ref : '=IF(AND(ISNUMBER(' + XL(16 + k) + rr + '),ISNUMBER(' + XL(19 + k) + rr + ')),' + XL(16 + k) + rr + '*' + XL(19 + k) + rr + ',"")';
+      put(rr, 22 + k, m1 !== null ? f : null, Object.assign({ fmt: FMT.won, res: m1 }, ty));
+    }
+  };
+  const FM = { 4: FMT.man, 7: FMT.gun, 13: FMT.won };
+  const me = g[RP_ME], gr = me && me.hasGr, mem = D.members[RP_ME];
+  // 일산점 줄: 등급별 자료가 있으면 그것, 없으면 거래건 합계만 멤버쉽 문자 판매건수 월평균
   put(mr, 1, 3); put(mr, 2, '일산점', { al: { horizontal: 'left' } }); put(mr, 3, bossOf(RP_ME));
-  put(mr, 4, '=IF(COUNT(E' + mr + ':F' + mr + '),SUM(E' + mr + ':F' + mr + '),"")', { fmt: FMT.man }); put(mr, 5, mem.vip, { fmt: FMT.man }); put(mr, 6, mem.mst, { fmt: FMT.man });
-  const gr = me && me.hasGr;
-  put(mr, 7, gr ? '=SUM(H' + mr + ':I' + mr + ')' : null, { fmt: FMT.gun }); put(mr, 8, gr ? me.vipN : null, { fmt: FMT.gun }); put(mr, 9, gr ? me.mstN : null, { fmt: FMT.gun });
-  [[10, 13, 7], [11, 14, 8], [12, 15, 9]].forEach(([c, sc, dc]) => put(mr, c, gr ? '=IFERROR(' + XL(sc) + mr + '/' + XL(dc) + mr + ',"")' : null, { fmt: FMT.won }));
-  put(mr, 13, gr ? '=SUM(N' + mr + ':O' + mr + ')' : null, { fmt: FMT.won }); put(mr, 14, gr ? me.vipS : null, { fmt: FMT.won }); put(mr, 15, gr ? me.mstS : null, { fmt: FMT.won });
-  for (let k = 0; k < 3; k++) {
-    put(mr, 16 + k, T.master.cust[k], { fill: RPF.yellow, fmt: FMT.man });
-    put(mr, 19 + k, T.master.aov[k], { fill: RPF.yellow, fmt: FMT.won });
-    put(mr, 22 + k, '=IF(AND(ISNUMBER(' + XL(16 + k) + mr + '),ISNUMBER(' + XL(19 + k) + mr + ')),' + XL(16 + k) + mr + '*' + XL(19 + k) + mr + ',"")', { fill: RPF.yellow, fmt: FMT.won });
-  }
+  masterRow(mr, { vip: mem.vip, mst: mem.mst, vipN: gr ? me.vipN : null, mstN: gr ? me.mstN : null, vipS: gr ? me.vipS : null, mstS: gr ? me.mstS : null, dealAll: D.smsDeal[RP_ME] }, T.master, { fmt: FM });
   // 합계 줄: 현시점 월평균은 5개 점포 합, 목표는 일산점(채운 점포) 그대로
   const sum = f => { const xs = RP_STORES.map((_, i) => f(i)).filter(v => v !== null && v !== undefined); return xs.length ? xs.reduce((a, b) => a + b, 0) : null; };
+  const gv = (i, k) => g[i] && g[i].hasGr ? g[i][k] : null;
   put(mt, 1, null, NAVY); put(mt, 2, '합계', Object.assign({ al: { horizontal: 'left' } }, NAVY)); put(mt, 3, null, NAVY);
-  const tv = { 5: sum(i => D.members[i].vip), 6: sum(i => D.members[i].mst), 8: sum(i => g[i] && g[i].hasGr ? g[i].vipN : null), 9: sum(i => g[i] && g[i].hasGr ? g[i].mstN : null), 14: sum(i => g[i] && g[i].hasGr ? g[i].vipS : null), 15: sum(i => g[i] && g[i].hasGr ? g[i].mstS : null) };
-  for (let c = 4; c <= 24; c++) {
-    let v = null, fmt = c <= 6 || (c >= 16 && c <= 18) ? FMT.man : c <= 9 ? FMT.gun : FMT.won;
-    if (tv[c] !== undefined) v = tv[c];
-    else if (c === 4 || c === 7 || c === 13) v = '=IF(COUNT(' + XL(c + 1) + mt + ':' + XL(c + 2) + mt + '),SUM(' + XL(c + 1) + mt + ':' + XL(c + 2) + mt + '),"")';
-    else if (c >= 10 && c <= 12) v = '=IFERROR(' + XL(c + 3) + mt + '/' + XL(c - 3) + mt + ',"")';
-    else if (c >= 16) v = '=' + XL(c) + mr;
-    put(mt, c, v, Object.assign({ fmt }, NAVY));
-  }
+  masterRow(mt, { vip: sum(i => D.members[i].vip), mst: sum(i => D.members[i].mst), vipN: sum(i => gv(i, 'vipN')), mstN: sum(i => gv(i, 'mstN')), vipS: sum(i => gv(i, 'vipS')), mstS: sum(i => gv(i, 'mstS')), dealAll: sum(i => D.smsDeal[i]) }, T.master, { fmt: FM, st: NAVY, ref: mr, target: NAVY });
   grid(m0, 1, mr, 24);
 
   // ② ACE 설치 서비스 (단위: 백만원, 건, %)
@@ -4031,10 +4137,12 @@ function rpSheet(wb, D, T, boss) {
   [[4, '목표 건수'], [7, '매출 목표'], [10, '매총이익액 목표'], [13, '매총이익률 목표']].forEach(([c, t]) => { merge(h0 + 1, c, h0 + 1, c + 2, t, Y); for (let k = 0; k < 3; k++) put(h0 + 2, c + k, ml(ms[k]), Y); });
   const at = h0 + 3; thin(at + 1);
   let r = at + 2; const storeRows = [];
+  // 일산점 줄별 값 → 점포 머리 줄 · 합계 줄 결과값
+  const instCol = c => RP_LINES.reduce((t, l) => { const v = c <= 6 ? T.inst[l.k].cnt[c - 4] : T.inst[l.k].sales[c - 7]; return v === null || v === undefined ? t : Math.round(((t || 0) + v) * 10) / 10; }, null);
   RP_STORES.forEach((s, i) => {
     const hr = r, SB = { fill: RPF.blue, font: { bold: true } }, mine = i === RP_ME; storeRows.push(hr);
     put(hr, 1, i + 1, SB); put(hr, 2, s.n, Object.assign({ al: { horizontal: 'left' } }, SB)); put(hr, 3, bossOf(i), SB);
-    for (let c = 4; c <= 15; c++) put(hr, c, c <= 9 ? '=SUM(' + XL(c) + (hr + 1) + ':' + XL(c) + (hr + 4) + ')' : null, Object.assign({ fmt: c <= 6 ? FMT.gun : 'General' }, SB));
+    for (let c = 4; c <= 15; c++) put(hr, c, c <= 9 ? '=SUM(' + XL(c) + (hr + 1) + ':' + XL(c) + (hr + 4) + ')' : null, Object.assign({ fmt: c <= 6 ? FMT.gun : 'General', res: c <= 9 ? (mine ? instCol(c) || 0 : 0) : undefined }, SB));
     RP_LINES.forEach((l, j) => {
       const rr = hr + 1 + j, t = T.inst[l.k];
       put(rr, 2, l.g, { al: { horizontal: 'left' } }); put(rr, 3, l.d);
@@ -4047,7 +4155,7 @@ function rpSheet(wb, D, T, boss) {
     r = hr + 5;
   });
   put(at, 1, null, NAVY); put(at, 2, '합계', Object.assign({ al: { horizontal: 'left' } }, NAVY)); put(at, 3, null, NAVY);
-  for (let c = 4; c <= 15; c++) put(at, c, c <= 9 ? '=' + storeRows.map(x => XL(c) + x).join('+') : null, Object.assign({ fmt: c <= 6 ? FMT.gun : 'General' }, NAVY));
+  for (let c = 4; c <= 15; c++) put(at, c, c <= 9 ? '=' + storeRows.map(x => XL(c) + x).join('+') : null, Object.assign({ fmt: c <= 6 ? FMT.gun : 'General', res: c <= 9 ? instCol(c) || 0 : undefined }, NAVY));
   grid(h0, 1, r - 1, 15);
 
   // ③ HP 시너지 (단위: 백만원, %)
@@ -4065,11 +4173,15 @@ function rpSheet(wb, D, T, boss) {
     for (let k = 0; k < 3; k++) {
       put(rr, 4 + k, mine ? T.hp.sales[k] : null, { fill: RPF.yellow, fmt: 'General', al: { horizontal: 'right' } });
       put(rr, 7 + k, mine ? T.hp.gp[k] : null, { fill: RPF.yellow, fmt: 'General', al: { horizontal: 'right' } });
-      put(rr, 10 + k, rate(rr, 7 + k, 4 + k), { fmt: FMT.pct });
+      const hr = mine && T.hp.sales[k] ? T.hp.gp[k] / T.hp.sales[k] : null;
+      put(rr, 10 + k, hr !== null ? rate(rr, 7 + k, 4 + k) : null, { fmt: FMT.pct, res: hr });
     }
   });
   put(pt, 1, null, NAVY); put(pt, 2, '합계', Object.assign({ al: { horizontal: 'left' } }, NAVY)); put(pt, 3, null, NAVY);
-  for (let c = 4; c <= 12; c++) put(pt, c, c <= 9 ? '=SUM(' + XL(c) + R0 + ':' + XL(c) + RN + ')' : rate(pt, c - 3, c - 6), Object.assign({ fmt: c <= 9 ? 'General' : FMT.pct }, NAVY));
+  for (let c = 4; c <= 12; c++) {
+    const k = (c - 4) % 3, sv = T.hp.sales[k] || 0, gv2 = T.hp.gp[k] || 0;
+    put(pt, c, c <= 9 ? '=SUM(' + XL(c) + R0 + ':' + XL(c) + RN + ')' : rate(pt, c - 3, c - 6), Object.assign({ fmt: c <= 9 ? 'General' : FMT.pct, res: c <= 6 ? sv : c <= 9 ? gv2 : sv ? gv2 / sv : null }, NAVY));
+  }
   grid(q0, 1, RN, 12);
 
   // 근거 (표 아래, 인쇄 영역 밖)
