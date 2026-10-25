@@ -290,6 +290,13 @@ details > summary.up-h { cursor: pointer; margin: 6px 0; font-weight: 700; }
 .stk-r b { text-align: right; font-size: 12px; }
 .stk { display: flex; height: 16px; border-radius: 5px; overflow: hidden; background: var(--grid); }
 .stk i { display: block; height: 100%; }
+/* 스크롤 막대: 얇고 둥글게, 화살표 없이, 테마 색 */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background-color: color-mix(in srgb, var(--ink3) 45%, transparent); border-radius: 999px; border: 3px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--ink3) 80%, transparent); }
+::-webkit-scrollbar-button, ::-webkit-scrollbar-corner { display: none; background: transparent; }
+@supports (-moz-appearance: none) { * { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--ink3) 55%, transparent) transparent; } }
 /* 📁 올린 파일 목록 */
 .fl { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); max-height: 460px; overflow-y: auto; }
 .fl li { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-top: 1px solid var(--line); }
@@ -545,8 +552,8 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
         <h2>📄 파일 올리기</h2>
         <p class="muted" style="margin-top:0">종류를 고를 필요 없이 그냥 올리세요. 파일 안의 머리글을 보고 <b>매출(POS 판매 내역) · 시공 내역 · 채권연령 · 본사 참고자료(매출 유형별 추이 / PB 실적)</b> 중 무엇인지 알아서 구분합니다. 문자 .txt도 됩니다.</p>
         <div id="upFileBox">
-          <div class="drop" id="drop" tabindex="0" role="button">여기를 눌러 파일을 선택하거나 끌어다 놓으세요<br><span class="muted">.xlsx · .xls · .csv · .txt (최대 30MB)</span></div>
-          <input type="file" id="file" class="hide" accept=".xlsx,.xls,.csv,.txt">
+          <div class="drop" id="drop" tabindex="0" role="button">여기를 눌러 파일을 선택하거나 끌어다 놓으세요<br><b>여러 개를 한꺼번에</b> 골라도 됩니다 (Ctrl·Shift 누르고 클릭)<br><span class="muted">.xlsx · .xls · .csv · .txt (파일당 최대 100MB)</span></div>
+          <input type="file" id="file" class="hide" accept=".xlsx,.xls,.csv,.txt" multiple>
         </div>
         <div class="row hide" id="arDateRow" style="margin-top:10px">
           <label>채권 기준일<input type="date" id="arDate"></label>
@@ -1286,6 +1293,8 @@ async function summaryFor(ym, force) {
 }
 
 /* 업로드: 월별 문서에 날짜 단위로 교체 저장 (트랜잭션) */
+// 저장 진행 상황 글자 (여러 파일 한꺼번에 올릴 때는 칸이 없을 수 있음)
+function regMsg(t) { const el = $('regMsg'); if (el) el.textContent = t; }
 async function registerParsed(p) {
   const byYm = {};
   p.rows.forEach(r => {
@@ -1298,7 +1307,7 @@ async function registerParsed(p) {
   const yms = Object.keys(byYm).sort();
   for (let i = 0; i < yms.length; i++) {
     const ym = yms[i];
-    $('regMsg').textContent = '저장 중… ' + (i + 1) + '/' + yms.length + ' (' + ymLabel(Number(ym)) + ')';
+    regMsg('저장 중… ' + (i + 1) + '/' + yms.length + ' (' + ymLabel(Number(ym)) + ')');
     removed += await runTransaction(db, async tx => {
       const dRef = doc(db, C.detail, ym), sRef = doc(db, C.daily, ym);
       const dS = await tx.get(dRef), sS = await tx.get(sRef);
@@ -1379,17 +1388,20 @@ function renderFiles() {
   const ui = S.fl || (S.fl = { k: 'at', dir: -1, f: 'all' });
   const atMs = l => l.at && l.at.toMillis ? l.at.toMillis() : 0;
   const nameOf = l => String(l.file || '').replace(/^\[[^\]]+\]\s*/, '') || '(이름 없음)';
-  const list = S.logs.filter(l => ui.f === 'all' || kindOfLog(l) === ui.f).slice()
+  // 같은 파일을 다시 올리면 한 줄로 묶고 가장 최근 올린 시간을 보여 줌
+  const seen = {}, uniq = [];
+  S.logs.forEach(l => { const key = kindOfLog(l) + '|' + nameOf(l); if (seen[key]) { seen[key].times++; return; } seen[key] = Object.assign({ times: 1 }, l); uniq.push(seen[key]); });
+  const list = uniq.filter(l => ui.f === 'all' || kindOfLog(l) === ui.f).slice()
     .sort((a, b) => ui.k === 'name' ? ui.dir * nameOf(a).localeCompare(nameOf(b), 'ko') || atMs(b) - atMs(a) : ui.dir * (atMs(a) - atMs(b)));
-  const cnt = k => k === 'all' ? S.logs.length : S.logs.filter(l => kindOfLog(l) === k).length;
+  const cnt = k => k === 'all' ? uniq.length : uniq.filter(l => kindOfLog(l) === k).length;
   const arrow = k => ui.k === k ? (ui.dir > 0 ? ' ▲' : ' ▼') : '';
-  let h = '<div class="card"><div class="bk-h"><h2>📁 올린 파일 <span class="muted" style="font-weight:400;font-size:.8em">최근 ' + S.logs.length + '개</span></h2>' +
+  let h = '<div class="card"><div class="bk-h"><h2>📁 올린 파일 <span class="muted" style="font-weight:400;font-size:.8em">' + uniq.length + '개</span></h2>' +
     '<div class="chips"><button data-fs="name"' + (ui.k === 'name' ? ' class="on"' : '') + '>파일명' + arrow('name') + '</button><button data-fs="at"' + (ui.k === 'at' ? ' class="on"' : '') + '>올린 시간' + arrow('at') + '</button></div></div>' +
     '<div class="chips" style="margin:4px 0 10px">' + Object.keys(FL_KIND).filter(k => k === 'all' || cnt(k)).map(k => '<button data-ff="' + k + '"' + (ui.f === k ? ' class="on"' : '') + '>' + FL_KIND[k][0] + ' ' + FL_KIND[k][1] + ' ' + cnt(k) + '</button>').join('') + '</div>';
   h += list.length ? '<ul class="fl">' + list.map(l => {
     const k = kindOfLog(l), rng = l.from ? mdLabel(l.from) + (l.to && l.to !== l.from ? ' ~ ' + mdLabel(l.to) : '') : '';
     return '<li><span class="fl-i">' + FL_KIND[k][0] + '</span><div class="fl-m"><b>' + esc(nameOf(l)) + '</b><small>' + FL_KIND[k][1] + (rng ? ' · 자료 ' + rng : '') + (l.usedRows ? ' · ' + Number(l.usedRows).toLocaleString('ko-KR') + '줄' : '') + '</small></div>' +
-      '<div class="fl-r"><span>' + whenTxt(l.at) + '</span><small>' + esc(String(l.by || '').split('@')[0]) + (l.match === false ? ' · ⚠️ 검산 불일치' : '') + '</small></div></li>';
+      '<div class="fl-r"><span>' + whenTxt(l.at) + '</span><small>' + esc(String(l.by || '').split('@')[0]) + (l.times > 1 ? ' · ' + l.times + '번 올림' : '') + (l.match === false ? ' · ⚠️ 검산 불일치' : '') + '</small></div></li>';
   }).join('') + '</ul>' : '<p class="muted">아직 올린 파일이 없습니다.</p>';
   el.innerHTML = h + '<p class="muted" style="margin:8px 0 0">파일 자체는 서버에 보관하지 않고, 읽은 내용만 저장합니다. (매출·거래처 정보 보호)</p></div>';
   el.querySelectorAll('[data-fs]').forEach(b => b.addEventListener('click', () => {
@@ -2745,20 +2757,108 @@ drop.addEventListener('click', () => fileIn.click());
 drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileIn.click(); } });
 drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
 drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]); });
-fileIn.addEventListener('change', () => { if (fileIn.files[0]) readFile(fileIn.files[0]); });
+drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); pickFiles([...e.dataTransfer.files]); });
+fileIn.addEventListener('change', () => pickFiles([...fileIn.files]));
+// 한 개면 미리보기 후 등록, 여러 개면 한꺼번에 읽어 목록으로 보여 주고 "모두 저장"
+function pickFiles(fs) {
+  if (!fs.length) return;
+  if (fs.length === 1) readFile(fs[0]); else readMany(fs);
+}
+const UP_MAX = 100 * 1024 * 1024;
+async function readSheets(f) {
+  const X = await loadXlsx();
+  const wb = /\.csv$/i.test(f.name) ? X.read(await f.text(), { type: 'string' }) : X.read(await f.arrayBuffer(), { type: 'array' });
+  return wb.SheetNames.map(n => X.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: '' }));
+}
+// 파일 하나 → 저장할 일감 { kind, info, save() } (저장 화면 없이 바로 저장할 수 있게)
+function makeJobs(sheets, name) {
+  const found = sheets.map(aoa => ({ aoa, kind: detectKind(aoa) })).filter(x => x.kind);
+  if (!found.length) return [{ name, error: '어떤 자료인지 알아보지 못했습니다' }];
+  const refs = found.filter(x => x.kind === 'mix' || x.kind === 'pb');
+  if (refs.length) return refs.map(x => {
+    const p = x.kind === 'mix' ? parseMix(x.aoa) : parsePB(x.aoa);
+    if (p.error) return { name, kind: x.kind, error: p.error };
+    p.kind = x.kind; if (!p.store) p.store = '일산';
+    const ms = Object.keys(p.months).map(Number).sort((a, b) => a - b);
+    return { name, kind: x.kind, info: p.store + ' · ' + ymLabel(ms[0]) + ' ~ ' + (ms[ms.length - 1] % 100) + '월' + (p.basis ? ' · ' + mdLabel(p.basis) + ' 기준' : ''), save: async () => { await saveRef(p, name); return '저장'; } };
+  });
+  const { aoa, kind } = found[0];
+  if (kind === 'sales') {
+    const p = aggregateRows(aoa); if (p.error) return [{ name, kind, error: p.error }];
+    p.name = name; const ds = p.stats.dates;
+    if (!p.stats.usedRows) return [{ name, kind, error: '등록할 수 있는 행이 없습니다' }];
+    return [{ name, kind, info: mdLabel(ds[0]) + ' ~ ' + mdLabel(ds[ds.length - 1]) + ' (' + ds.length + '일) · 순매출 ' + eok(p.stats.totalNet), save: async () => { const r = await registerParsed(p); return r.verify.match ? '검산 일치 · ' + r.removed.toLocaleString('ko-KR') + '행 교체' : '⚠️ 검산 불일치'; } }];
+  }
+  if (kind === 'cons') {
+    const p = consParse(aoa); if (p.error) return [{ name, kind, error: p.error }];
+    const brs = Object.keys(p.stats.branches), br = brs.length > 1 ? brs.find(b => b.includes('일산')) : '';
+    const recs = p.recs.filter(r => !br || r.br === br), ds = recs.map(r => r.d).sort((a, b) => a - b);
+    return [{ name, kind, info: (br ? br + ' · ' : '') + recs.length + '건 · ' + (ds.length ? dLabel(ds[0]) + ' ~ ' + dLabel(ds[ds.length - 1]) : ''), save: async () => { const r = await registerCons(recs, name); return '추가 ' + r.added + ' · 교체 ' + r.updated; } }];
+  }
+  if (kind === 'ar') {
+    const p = arParse(aoa); if (p.error) return [{ name, kind, error: p.error }];
+    p.name = name; const date = arDateFromName(name) || todayInt();
+    return [{ name, kind, info: '기준일 ' + dLabel(date) + (arDateFromName(name) ? '' : ' (파일 이름에 날짜가 없어 오늘로)') + ' · 거래처 ' + p.rows.length + '곳', save: async () => { const t = await saveAr(p, date); return '잔액 ' + eok(t.bal); } }];
+  }
+  return [{ name, error: '어떤 자료인지 알아보지 못했습니다' }];
+}
+async function readMany(files) {
+  S.parsed = null;
+  // 오래된 파일부터 저장 → 같은 날짜가 겹치면 가장 최근 파일 내용이 남음
+  files = files.slice().sort((a, b) => a.lastModified - b.lastModified);
+  await loadLogs().catch(() => { });
+  const before = name => (S.logs || []).find(l => String(l.file || '').replace(/^\[[^\]]+\]\s*/, '') === name);
+  const jobs = [];
+  const draw = (saving) => {
+    $('preview').innerHTML = '<div class="card"><h2>📂 파일 ' + files.length + '개 한꺼번에 올리기</h2><ul class="fl">' + jobs.map((j, i) => {
+      const k = UP_KINDS[j.kind] || { icon: '❓', name: '알 수 없음' }, old = !j.error && before(j.name);
+      return '<li><span class="fl-i">' + k.icon + '</span><div class="fl-m"><b>' + esc(j.name) + '</b><small>' + esc(k.name) + (j.info ? ' · ' + esc(j.info) : '') + (old ? ' · 🔁 이미 올린 파일 (' + whenTxt(old.at) + ') → 덮어씀' : '') + '</small></div>' +
+        '<div class="fl-r"><span>' + (j.error ? '❌ ' + esc(j.error) : j.st || (j.reading ? '읽는 중…' : '대기')) + '</span></div></li>';
+    }).join('') + '</ul>' +
+      '<div class="row" style="margin-top:12px"><button class="btn primary" id="manySave"' + (saving || !jobs.some(j => j.save && !j.done) ? ' disabled' : '') + '>모두 저장 (' + jobs.filter(j => j.save && !j.done).length + '개)</button><span class="muted" id="regMsg">이미 올린 자료는 새 내용으로 덮어쓰고 올린 시간도 지금으로 바뀝니다.</span></div></div>';
+    const b = $('manySave'); if (b) b.onclick = saveAll;
+  };
+  const saveAll = async () => {
+    draw(true);
+    for (const j of jobs) {
+      if (!j.save || j.done) continue;
+      j.st = '⏳ 저장 중…'; draw(true);
+      try { j.st = '✅ ' + await j.save(); j.done = true; } catch (e) { j.st = '❌ ' + errMsg(e); }
+      draw(true);
+    }
+    invalidate(); S.logs = null;
+    try { await autoMatchPlans(); } catch (e) { }
+    draw(false); fileIn.value = ''; renderDataStatus();
+    toast('저장을 마쳤습니다: ' + jobs.filter(j => j.done).length + '개');
+  };
+  for (const f of files) {
+    const j = { name: f.name, reading: true }; jobs.push(j); draw(true);
+    try {
+      if (f.size > UP_MAX) throw new Error('100MB가 넘습니다');
+      if (/\.txt$/i.test(f.name)) {
+        const res = parseSms(await f.text(), { startDate: Number(($('smsDate').value || '').replace(/-/g, '')) || 0, today: todayInt() });
+        if (!res.records.length) throw new Error('문자를 찾지 못했습니다');
+        Object.assign(j, { kind: 'sms', info: '문자 ' + res.records.length + '개', save: async () => { const r = await registerSmsRecords(res.records); return '추가 ' + r.added + ' · 교체 ' + r.updated; } });
+      } else if (!/\.(xlsx|xls|csv)$/i.test(f.name)) throw new Error('.xlsx · .xls · .csv · .txt만 됩니다');
+      else {
+        const made = makeJobs(await readSheets(f), f.name);
+        Object.assign(j, made[0]); made.slice(1).forEach(x => jobs.push(x));
+      }
+    } catch (e) { j.error = errMsg(e); }
+    j.reading = false; draw(true);
+  }
+  draw(false);
+}
 
 async function readFile(f) {
   S.parsed = null;
-  if (f.size > 30 * 1024 * 1024) { $('preview').innerHTML = '<div class="banner bad">파일이 너무 큽니다(30MB 초과).</div>'; return; }
+  if (f.size > UP_MAX) { $('preview').innerHTML = '<div class="banner bad">파일이 너무 큽니다(100MB 초과).</div>'; return; }
   if (/\.txt$/i.test(f.name)) { toSms(await f.text()); fileIn.value = ''; return; }
   if (!/\.(xlsx|xls|csv)$/i.test(f.name)) { $('preview').innerHTML = '<div class="banner bad">.xlsx, .xls, .csv, .txt 파일만 올릴 수 있습니다.</div>'; return; }
   $('preview').innerHTML = '<div class="card"><b>' + esc(f.name) + '</b> 읽는 중… 파일이 크면 1분 정도 걸릴 수 있습니다.</div>';
   try {
-    const X = await loadXlsx();
-    const wb = /\.csv$/i.test(f.name) ? X.read(await f.text(), { type: 'string' }) : X.read(await f.arrayBuffer(), { type: 'array' });
     // 시트를 모두 살펴봄 (본사 참고자료는 한 파일에 시트가 여러 장일 수 있음)
-    handleSheets(wb.SheetNames.map(n => X.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: '' })), f.name);
+    handleSheets(await readSheets(f), f.name);
   } catch (e) { $('preview').innerHTML = '<div class="banner bad">파일을 읽지 못했습니다: ' + esc(errMsg(e)) + '</div>'; }
 }
 function handleSheets(sheets, name) {
@@ -2768,11 +2868,7 @@ function handleSheets(sheets, name) {
   if (refs.length) { handleRef(refs, name); return; }
   const { aoa, kind } = found[0];
   $('arDateRow').classList.toggle('hide', kind !== 'ar');
-  if (kind === 'ar') {
-    const m = /(\d{1,2})\s*월\s*(\d{1,2})\s*일/.exec(name), t = todayInt();
-    if (m) { const md = Number(m[1]) * 100 + Number(m[2]); let y = Math.floor(t / 10000); if (md > t % 10000) y--; $('arDate').value = dLabel(y * 10000 + md); }
-    else if (!$('arDate').value) $('arDate').value = dLabel(t);
-  }
+  if (kind === 'ar') { const ad = arDateFromName(name); if (ad) $('arDate').value = dLabel(ad); else if (!$('arDate').value) $('arDate').value = dLabel(todayInt()); }
   const res = kind === 'cons' ? consParse(aoa) : kind === 'ar' ? arParse(aoa) : aggregateRows(aoa);
   if (res.error) { $('preview').innerHTML = kindBanner(kind, name) + '<div class="banner bad">' + esc(res.error) + '</div>'; return; }
   res.name = name;
@@ -2912,16 +3008,28 @@ function renderArPreview() {
     if (!toDateInt(String(date))) { $('regMsg').textContent = '채권 기준일을 입력해 주세요.'; return; }
     this.disabled = true;
     try {
-      if (JSON.stringify(p.rows).length > 900000) throw new Error('채권 자료가 너무 큽니다(문서 1MB 제한).');
-      await setDoc(doc(db, C.ar, String(date)), { date, rows: p.rows, total: t.bal, at: serverTimestamp(), by: S.user.email || '' });
-      await addDoc(collection(db, C.logs), { at: serverTimestamp(), by: S.user.email || '', file: '[채권] ' + cleanText(p.name, 110), from: date, to: date, usedRows: p.rows.length, fileNet: t.bal, savedNet: t.bal, match: true });
-      S.ar = null;
+      await saveAr(p, date);
       $('preview').innerHTML = '<div class="card"><div class="banner ok"><b>채권 등록 완료</b><br>기준일 ' + dLabel(date) + ' · 거래처 ' + p.rows.length + '곳 · 잔액 ' + won(t.bal) + '</div><button class="btn primary" id="goAr">홈에서 채권 보기</button></div>';
       $('goAr').addEventListener('click', () => goHomeSec(0, '채권'));
       S.logs = null; renderDataStatus();
       fileIn.value = ''; $('upText').value = '';
     } catch (e) { this.disabled = false; $('regMsg').textContent = '저장 실패: ' + errMsg(e); }
   });
+}
+async function saveAr(p, date) {
+  const t = arTotals(p.rows);
+  if (JSON.stringify(p.rows).length > 900000) throw new Error('채권 자료가 너무 큽니다(문서 1MB 제한).');
+  await setDoc(doc(db, C.ar, String(date)), { date, rows: p.rows, total: t.bal, at: serverTimestamp(), by: S.user.email || '' });
+  await addDoc(collection(db, C.logs), { at: serverTimestamp(), by: S.user.email || '', file: '[채권] ' + cleanText(p.name, 110), from: date, to: date, usedRows: p.rows.length, fileNet: t.bal, savedNet: t.bal, match: true });
+  S.ar = null;
+  return t;
+}
+// 파일 이름의 "10월 24일" → 채권 기준일 (오늘보다 뒤면 작년)
+function arDateFromName(name) {
+  const m = /(\d{1,2})\s*월\s*(\d{1,2})\s*일/.exec(name), t = todayInt();
+  if (!m) return 0;
+  const md = Number(m[1]) * 100 + Number(m[2]); let y = Math.floor(t / 10000); if (md > t % 10000) y--;
+  return y * 10000 + md;
 }
 async function loadAr(force) {
   if (S.ar && !force) return;
@@ -3047,7 +3155,7 @@ async function registerCons(recs, name) {
   recs.forEach(r => { const y = String(Math.floor(r.d / 10000)); (byY[y] = byY[y] || {})[r.no] = r; });
   let added = 0, updated = 0;
   for (const y of Object.keys(byY).sort()) {
-    $('regMsg').textContent = y + '년 저장 중…';
+    regMsg(y + '년 저장 중…');
     const res = await runTransaction(db, async tx => {
       const ref = doc(db, C.cons, y), s = await tx.get(ref);
       const cur = s.exists() ? Object.assign({}, s.data().recs || {}) : {};
@@ -3458,18 +3566,21 @@ function handleRef(sheets, name) {
   if (ok.length) $('refSave').addEventListener('click', async function () {
     this.disabled = true; $('refMsg').textContent = '저장 중…';
     try {
-      for (const p of ok) {
-        if (!p.store) p.store = REF_STORES.find(s => s === '일산');
-        const ms = Object.keys(p.months).map(Number).sort((a, b) => a - b);
-        await setDoc(doc(db, C.ref, refId(p)), Object.assign({ file: cleanText(name, 120), at: serverTimestamp(), by: S.user.email || '' }, p));
-        await addDoc(collection(db, C.logs), { at: serverTimestamp(), by: S.user.email || '', file: '[참고] ' + (p.kind === 'mix' ? '매출유형 ' : 'PB실적 ') + p.store + ' · ' + cleanText(name, 100), from: ms[0] * 100 + 1, to: p.basis || ms[ms.length - 1] * 100 + 1, usedRows: ms.length, fileNet: 0, savedNet: 0, match: true });
-      }
-      S.ref = null; S.logs = null;
+      for (const p of ok) await saveRef(p, name);
+      S.logs = null;
       $('preview').innerHTML = '<div class="card"><div class="banner ok"><b>본사 참고자료 저장 완료</b><br>' + ok.map(p => UP_KINDS[p.kind].name + ' · ' + p.store).join('<br>') + '</div><button class="btn primary" id="goRef">홈에서 보기</button></div>';
       $('goRef').addEventListener('click', () => goHomeSec(0, '본사 참고자료'));
       fileIn.value = ''; $('upText').value = ''; renderDataStatus();
     } catch (e) { this.disabled = false; $('refMsg').textContent = '저장 실패: ' + errMsg(e); }
   });
+}
+async function saveRef(p, name) {
+  if (!p.store) p.store = '일산';
+  const ms = Object.keys(p.months).map(Number).sort((a, b) => a - b);
+  await setDoc(doc(db, C.ref, refId(p)), Object.assign({ file: cleanText(name, 120), at: serverTimestamp(), by: S.user.email || '' }, p));
+  // 등록 이력의 파일 이름은 원래 파일 이름 그대로 (같은 파일을 다시 올리면 목록에서 한 줄로 묶임)
+  await addDoc(collection(db, C.logs), { at: serverTimestamp(), by: S.user.email || '', file: '[참고] ' + cleanText(name, 110), from: ms[0] * 100 + 1, to: p.basis || ms[ms.length - 1] * 100 + 1, usedRows: ms.length, fileNet: 0, savedNet: 0, match: true, ref: p.kind + ' ' + p.store });
+  S.ref = null;
 }
 async function loadRef(force) {
   if (S.ref && !force) return;
