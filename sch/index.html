@@ -101,6 +101,9 @@ select, input[type=text], input[type=date], input[type=number] { background: var
 .chips button.on.emp { background: #16a34a; }
 .me-chip { font-size: .86em; color: var(--ink2); }
 .me-chip b { color: var(--ink); }
+.me-pick { font-weight: 700; font-size: .9em; margin-right: auto; display: inline-flex; align-items: center; gap: 6px; }
+.me-pick select { font-weight: 700; }
+.me-pick.need select { outline: 2px solid var(--accent); outline-offset: 1px; }
 .alert-line { text-align: center; color: var(--alert); font-weight: 700; margin: 0 0 12px; font-size: .93em; }
 .adminbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; margin-bottom: 14px; }
 
@@ -215,31 +218,12 @@ body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .
   <header class="topbar alone" id="topbar">
     <a class="brand" id="brandBtn" href="./" title="근무표 처음 화면">
       <img class="logo" src="icon.svg" alt="" width="40" height="40">
-      <span class="brand-txt"><span class="brand-t">근무표 · 일산점</span><span class="sub" id="status">🔒 로그인 전</span></span>
+      <span class="brand-txt"><span class="brand-t">근무표 · 일산점</span><span class="sub" id="status">연결 중…</span></span>
     </a>
     <div class="userbox hide" id="userbox"><span class="chip" id="userChip"></span><button class="btn ghost sm" id="logoutBtn">로그아웃</button></div>
   </header>
 
   <section id="v-loading"><div class="card muted" style="text-align:center">불러오는 중…</div></section>
-
-  <section id="v-login" class="hide">
-    <div class="card login">
-      <h1>근무표</h1>
-      <p class="muted">매출 현황과 같은 구글 계정으로 로그인합니다.<br>허용된 계정만 볼 수 있습니다.</p>
-      <button class="btn primary lg" id="loginBtn">Google 계정으로 로그인</button>
-      <div id="loginMsg" class="banner bad hide" style="margin-top:12px"></div>
-    </div>
-  </section>
-
-  <section id="v-pending" class="hide">
-    <div class="card login">
-      <h1>승인 대기 중</h1>
-      <p class="muted">관리자가 승인하면 근무표를 볼 수 있습니다. (매출 현황 승인과 같습니다)</p>
-      <div class="mono" id="pendEmail" style="margin:12px 0"></div>
-      <div id="pendMsg" class="banner warn"></div>
-      <button class="btn primary" id="recheckBtn">다시 확인</button>
-    </div>
-  </section>
 
   <section id="v-main" class="hide">
     <div class="sticky-head" id="head">
@@ -256,13 +240,14 @@ body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .
       </div>
       <div class="row2">
         <span class="mode-tag" id="modeTag">🟢 휴무 신청</span>
+        <label class="me-pick" id="mePick">내 이름 <select id="meSel" aria-label="내 이름"></select></label>
         <span class="me-chip" id="meChip"></span>
       </div>
     </div>
 
     <div class="alert-line" id="warn"></div>
     <div class="adminbar hide" id="adminBar">
-      <button class="btn ghost sm" id="rosterBtn">👥 직원 관리 · 이름 연결</button>
+      <button class="btn ghost sm" id="rosterBtn">👥 직원 관리</button>
       <button class="btn ghost sm" id="holBtn">📅 공휴일 관리</button>
       <button class="btn ghost sm" id="logBtn">📝 변경 기록</button>
       <button class="btn danger sm" id="resetBtn">이번 달 초기화</button>
@@ -287,11 +272,11 @@ body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .
 
 <!-- 직원 관리 -->
 <dialog class="doc" id="dlgRoster">
-  <div class="dh"><h2>직원 관리 · 이름 연결</h2><button class="btn ghost sm" data-close>닫기</button></div>
+  <div class="dh"><h2>직원 관리</h2><button class="btn ghost sm" data-close>닫기</button></div>
   <div class="db">
     <p class="muted" style="margin-top:0">엑셀 근무표에 나오는 순서대로 정렬됩니다. 같은 부서끼리 묶이고, 부서 인원이 2명 이상이면 "근무인원" 줄이 붙습니다.<br>
-      <b>로그인 계정</b>을 연결하면 그 직원은 본인 칸에만 휴무를 신청할 수 있습니다. (서버 규칙으로 막혀 있어 다른 사람 칸은 못 바꿉니다)</p>
-    <div style="overflow-x:auto"><table class="rt"><thead><tr><th>부서</th><th>직급</th><th>성명</th><th>담당</th><th>입사일</th><th>퇴사일</th><th>로그인 계정</th><th></th></tr></thead><tbody id="rosterBody"></tbody></table></div>
+      직원은 로그인 없이 근무표 위의 <b>내 이름</b>을 골라 휴무를 신청합니다. 누가 바꿨는지는 📝 변경 기록에 남습니다.</p>
+    <div style="overflow-x:auto"><table class="rt"><thead><tr><th>부서</th><th>직급</th><th>성명</th><th>담당</th><th>입사일</th><th>퇴사일</th><th></th></tr></thead><tbody id="rosterBody"></tbody></table></div>
     <button class="btn ghost sm" id="rosterAdd" style="margin-top:10px">+ 직원 추가</button>
     <p class="muted">· 퇴사한 직원은 삭제하지 말고 퇴사일을 넣어 주세요. 퇴사일 다음 날부터 빠지고, 엑셀에는 회색으로 표시됩니다.<br>· 부서 이름이 "점장"이면 맨 위 줄에 나옵니다.</p>
     <div class="err" id="rosterErr"></div>
@@ -353,12 +338,12 @@ const provider = new GoogleAuthProvider(); provider.setCustomParameters({ prompt
 
 /* 저장 구조 (모두 sch_ 로 시작해 매출 자료와 섞이지 않음)
    sch_schedule/{YYYY-MM-DD}  → { 직원id: 상태 }
-   sch_settings/roster        → { members: [{ id, group, title, name, duty, start, end, uid }] }
+   sch_settings/roster        → { members: [{ id, group, title, name, duty, start, end }], ids }
    sch_settings/quotas        → { 'YYYY-MM': 기준 휴무일 }
    sch_settings/holidays      → { 'YYYY-MM-DD': 이름 }   (이름 '' = 기본 공휴일 끔)
-   sch_link/{uid}             → { mid, name }  로그인 계정 ↔ 직원 연결 (관리자만 작성)
-   sch_meta/lastChange, sch_logs, sch_backups */
-const C = { sched: 'sch_schedule', set: 'sch_settings', link: 'sch_link', meta: 'sch_meta', logs: 'sch_logs', backups: 'sch_backups', roles: 'pos_roles', requests: 'pos_requests' };
+   sch_meta/lastChange, sch_logs, sch_backups
+   직원은 로그인 없이 "내 이름"만 골라 사용 (이 기기에 기억). 관리자 모드만 구글 로그인 + pos_roles 관리자 */
+const C = { sched: 'sch_schedule', set: 'sch_settings', meta:'sch_meta', logs: 'sch_logs', backups: 'sch_backups', roles: 'pos_roles', requests: 'pos_requests' };
 const STORE_NAME = '일산점';
 const XLSX_URL = 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
 const XLSX_SRI = 'sha384-Pqp51FUN2/qzfxZxBCtF0stpc9ONI6MYZpVqmo8m20SoaQCzf+arZvACkLkirlPz';
@@ -374,7 +359,7 @@ const DEFAULT_ROSTER = [
   { id: 'i6', group: '디자인', title: '대리', name: '최승동', duty: '전기조명/인테리어' },
   { id: 'i7', group: '디자인', title: '대리', name: '홍준형', duty: '생활/인테리어' },
   { id: 'i8', group: '캐셔', title: '캐셔', name: '박지원', duty: '' }
-].map(m => Object.assign({ start: '', end: '', uid: '' }, m));
+].map(m => Object.assign({ start: '', end: '' }, m));
 
 // 상태: 직원이 신청 / 관리자가 배정
 const EMP = ['휴무', '연차', '반차', '생일반차', '경조', '예비군', '시험'];
@@ -399,6 +384,8 @@ const S = { user: null, role: null, admin: false, mode: 'employee', page: 'home'
   sched: {}, quotas: {}, hols: {}, myId: '', unsub: [], lastTs: 0, firstMeta: true };
 const clientId = 'c_' + Math.random().toString(36).slice(2);
 const $ = id => document.getElementById(id);
+const WHO_KEY = 'sch.myMemberId';
+try { S.myId = localStorage.getItem(WHO_KEY) || ''; } catch (e) { }
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pad = n => String(n).padStart(2, '0');
 const dateKey = (y, m, d) => y + '-' + pad(m) + '-' + pad(d);
@@ -447,7 +434,7 @@ function quotaFor(y, m) {
 
 /* ===================== 화면 ===================== */
 function show(v) {
-  ['loading', 'login', 'pending', 'main'].forEach(x => $('v-' + x).classList.toggle('hide', x !== v));
+  ['loading', 'main'].forEach(x => $('v-' + x).classList.toggle('hide', x !== v));
   $('topbar').classList.toggle('alone', v !== 'main');
   measure();
 }
@@ -465,10 +452,15 @@ function renderAll() {
   const mine = me();
   $('meChip').innerHTML = adminPage ? '칸을 누르면 조출 → 마감 → 육아휴직 → 교육 순서로 바뀌어요'
     : S.admin ? '관리자 · 모든 직원 휴무를 바꿀 수 있어요'
-    : mine ? '내 이름: <b>' + esc(mine.name) + '</b> · 내 칸을 누르면 휴무가 바뀌어요' : '⚠️ 로그인 계정이 아직 직원 이름에 연결되지 않았어요. 관리자에게 요청해 주세요. (보기만 가능)';
+    : mine ? '내 칸을 누르면 휴무가 바뀌어요' : '👈 먼저 내 이름을 골라 주세요 (고르기 전에는 보기만 가능)';
+  const sel = $('meSel'), opts = '<option value="">선택</option>' + membersForMonth(y, m).map(x => '<option value="' + esc(x.id) + '">' + esc(x.name) + '</option>').join('');
+  if (sel.dataset.opts !== opts) { sel.innerHTML = opts; sel.dataset.opts = opts; }
+  sel.value = mine ? mine.id : '';
+  $('mePick').classList.toggle('hide', adminPage || S.admin);
+  $('mePick').classList.toggle('need', !mine);
   $('adminBar').classList.toggle('hide', !(S.admin && adminPage));
   $('backBtn').classList.toggle('hide', !adminPage);
-  $('adminFab').classList.toggle('hide', !S.admin || adminPage);
+  $('adminFab').classList.toggle('hide', adminPage);
   document.body.classList.toggle('admin-page', adminPage);
   $('quotaSel').disabled = !S.admin;
   $('quotaHint').textContent = S.admin ? '직접 고를 수 있어요 (8~15일)' : '관리자만 바꿀 수 있습니다';
@@ -530,7 +522,7 @@ $('grid').addEventListener('click', e => {
 });
 function cycle(ds, mem) {
   if (!canEdit(mem)) {
-    toast(S.mode === 'employee' && !me() ? '로그인 계정이 직원 이름에 연결되지 않았어요. 관리자에게 요청해 주세요.' : '본인 칸만 바꿀 수 있어요.');
+    toast(S.mode === 'employee' && !me() ? '먼저 위에서 내 이름을 골라 주세요.' : '본인 칸만 바꿀 수 있어요.');
     return;
   }
   const cur = status(ds, mem);
@@ -549,12 +541,13 @@ function cycle(ds, mem) {
   save(ds, mem, next, cur);
 }
 async function save(ds, mem, next, prev) {
-  try { await setDoc(doc(db, C.sched, ds), { [mem.id]: next }, { merge: true }); }
+  // _k: 서버 규칙이 "이 칸 하나만" 바뀌는지 확인하는 표시
+  try { await setDoc(doc(db, C.sched, ds), { [mem.id]: next, _k: mem.id }, { merge: true }); }
   catch (e) { S.sched[ds][mem.id] = prev; renderAll(); toast(mem.name + ' ' + ds + ' 저장 실패: ' + errMsg(e)); return; }
   note({ date: ds, name: mem.name, status: next, action: 'update' });
   log({ action: 'update', date: ds, name: mem.name, from: prev, to: next });
 }
-function actor() { return S.admin && S.mode === 'manager' ? '관리자' : (me() ? me().name : (S.user && S.user.email) || ''); }
+function actor() { return S.admin ? '관리자' : (me() ? me().name : ''); }
 async function note(x) {
   try { await setDoc(doc(db, C.meta, 'lastChange'), { ts: Date.now(), clientId, date: x.date || '', name: x.name || '', status: x.status || '', actor: actor(), action: x.action || 'update' }); } catch (e) { }
 }
@@ -796,40 +789,27 @@ async function downloadXlsx() {
 }
 
 /* ===================== 로그인 · 실시간 동기화 ===================== */
-$('loginBtn').addEventListener('click', async () => {
-  $('loginMsg').classList.add('hide');
-  try { await signInWithPopup(auth, provider); }
-  catch (e) { if (e && e.code === 'auth/popup-closed-by-user') return; $('loginMsg').textContent = '로그인 실패: ' + errMsg(e); $('loginMsg').classList.remove('hide'); }
-});
+// 직원: 로그인 없이 바로 근무표. 관리자: 관리자 모드 버튼에서 구글 로그인 → pos_roles 관리자 확인
 $('logoutBtn').addEventListener('click', () => signOut(auth));
-$('recheckBtn').addEventListener('click', () => S.user && route(S.user));
 function stopLive() { S.unsub.forEach(f => { try { f(); } catch (e) { } }); S.unsub = []; }
-async function route(user) {
-  show('loading');
-  let role = null;
-  try { const r = await getDoc(doc(db, C.roles, user.uid)); role = r.exists() ? r.data().role : null; } catch (e) { role = null; }
-  if (role !== 'admin' && role !== 'viewer') {
-    $('pendEmail').textContent = user.email || '';
-    $('status').textContent = '승인 대기 중';
-    try {
-      await setDoc(doc(db, C.requests, user.uid), { email: user.email || '', name: cleanText(user.displayName, 100), at: serverTimestamp() });
-      $('pendMsg').textContent = '승인 요청을 보냈습니다. 관리자가 승인한 뒤 "다시 확인"을 눌러 주세요.';
-    } catch (e) { $('pendMsg').textContent = '요청을 보내지 못했습니다: ' + errMsg(e); }
-    show('pending'); return;
-  }
-  S.role = role; S.admin = role === 'admin';
-  try { const l = await getDoc(doc(db, C.link, user.uid)); S.myId = l.exists() ? l.data().mid : ''; } catch (e) { S.myId = ''; }
-  $('status').textContent = '실시간 동기화 중 · ' + (S.admin ? '관리자' : '직원');
-  show('main');
-  startLive();
+async function isAdmin(user) {
+  try { const r = await getDoc(doc(db, C.roles, user.uid)); return r.exists() && r.data().role === 'admin'; } catch (e) { return false; }
 }
-onAuthStateChanged(auth, user => {
-  S.user = user; stopLive(); S.page = 'home'; S.mode = 'employee';
-  if (!user) { $('userbox').classList.add('hide'); $('status').textContent = '🔒 로그인 전'; show('login'); return; }
-  $('userChip').textContent = user.email || '';
-  $('userbox').classList.remove('hide');
-  route(user);
+function setStatus() { $('status').textContent = '실시간 동기화 중' + (S.admin ? ' · 관리자' : ''); }
+onAuthStateChanged(auth, async user => {
+  S.user = user;
+  S.admin = user ? await isAdmin(user) : false;
+  S.role = S.admin ? 'admin' : null;
+  $('userChip').textContent = user ? user.email || '' : '';
+  $('userbox').classList.toggle('hide', !user);
+  if (!S.admin && S.page === 'admin') setPage('home');
+  ensureRoster(); setStatus(); renderAll();
 });
+show('main'); startLive(); setStatus();
+// 관리자 첫 로그인 때 기본 명단 저장 (서버 규칙이 이 명단의 ids로 직원 칸을 확인)
+function ensureRoster() {
+  if (S.admin && S.rosterLoaded && !S.rosterExists) { S.rosterExists = true; saveRoster(S.roster).catch(e => { S.rosterExists = false; console.error(e); }); }
+}
 function startLive() {
   const on = (ref, fn) => S.unsub.push(onSnapshot(ref, fn, e => console.error(e)));
   on(collection(db, C.sched), snap => { const d = {}; snap.forEach(x => { d[x.id] = x.data(); }); S.sched = d; renderAll(); });
@@ -838,8 +818,7 @@ function startLive() {
     S.rosterExists = snap.exists();
     const ms = snap.exists() ? snap.data().members : null;
     S.roster = Array.isArray(ms) && ms.length ? ms : DEFAULT_ROSTER.map(m => ({ ...m }));
-    // 관리자 첫 로그인 때 기본 명단 저장
-    if (S.admin && S.rosterLoaded && !S.rosterExists) { S.rosterExists = true; saveRoster(S.roster).catch(e => { S.rosterExists = false; console.error(e); }); }
+    ensureRoster();
     renderAll();
   });
   on(doc(db, C.set, 'quotas'), snap => { S.quotas = snap.exists() ? snap.data() : {}; renderAll(); });
@@ -887,11 +866,21 @@ function bumpIdle() {
 }
 ['click', 'keydown', 'touchstart', 'scroll'].forEach(ev => document.addEventListener(ev, bumpIdle, { passive: true }));
 $('adminFab').addEventListener('click', async () => {
-  try {
-    const r = await getDoc(doc(db, C.roles, S.user.uid));
-    if (!r.exists() || r.data().role !== 'admin') { S.admin = false; renderAll(); toast('관리자 권한이 없습니다'); return; }
-  } catch (e) { toast(errMsg(e)); return; }
-  setPage('admin');
+  let user = S.user;
+  if (!user) {
+    try { user = (await signInWithPopup(auth, provider)).user; }
+    catch (e) { if (!(e && e.code === 'auth/popup-closed-by-user')) toast('로그인 실패: ' + errMsg(e)); return; }
+  }
+  // 들어갈 때마다 서버에서 다시 확인
+  S.admin = await isAdmin(user); S.role = S.admin ? 'admin' : null;
+  if (!S.admin) { toast('관리자 권한이 없는 계정입니다'); await signOut(auth); return; }
+  ensureRoster(); setStatus(); setPage('admin');
+});
+$('meSel').addEventListener('change', () => {
+  S.myId = $('meSel').value;
+  try { S.myId ? localStorage.setItem(WHO_KEY, S.myId) : localStorage.removeItem(WHO_KEY); } catch (e) { }
+  renderAll();
+  if (S.myId) toast((me() || {}).name + ' 님으로 설정했어요 (이 기기에 기억)');
 });
 $('backBtn').addEventListener('click', () => setPage('home'));
 $('quotaSel').addEventListener('change', async () => {
@@ -922,17 +911,16 @@ $('resetBtn').addEventListener('click', async () => {
   } catch (e) { toast('초기화 실패: ' + errMsg(e)); }
 });
 
-/* 직원 관리 + 로그인 계정 연결 */
-let draft = [], accounts = [];
+/* 직원 관리 */
+let draft = [];
 async function saveRoster(list) {
-  const clean = list.map(m => ({ id: m.id, group: cleanText(m.group, 20) || '매장운영', title: cleanText(m.title, 10), name: cleanText(m.name, 20), duty: cleanText(m.duty, 30), start: m.start || '', end: m.end || '', uid: m.uid || '' }));
+  const clean = list.map(m => ({ id: m.id, group: cleanText(m.group, 20) || '매장운영', title: cleanText(m.title, 10), name: cleanText(m.name, 20), duty: cleanText(m.duty, 30), start: m.start || '', end: m.end || '' }));
   await setDoc(doc(db, C.set, 'roster'), { members: clean, ids: clean.map(m => m.id) });
   return clean;
 }
 $('rosterBtn').addEventListener('click', async () => {
   draft = S.roster.map(m => ({ ...m }));
   $('rosterErr').textContent = '';
-  try { const s = await getDocs(collection(db, C.roles)); accounts = []; s.forEach(x => accounts.push(Object.assign({ uid: x.id }, x.data()))); } catch (e) { accounts = []; }
   drawRoster(); $('dlgRoster').showModal();
 });
 function drawRoster() {
@@ -944,7 +932,6 @@ function drawRoster() {
     '<td><input data-f="duty" value="' + esc(m.duty) + '" placeholder="예) 공구" style="width:130px"></td>' +
     '<td><input data-f="start" type="date" value="' + esc(m.start) + '"></td>' +
     '<td><input data-f="end" type="date" value="' + esc(m.end) + '"></td>' +
-    '<td><select data-f="uid" style="width:170px"><option value="">(연결 안 함)</option>' + accounts.map(a => '<option value="' + esc(a.uid) + '"' + (a.uid === m.uid ? ' selected' : '') + '>' + esc(a.email || a.uid) + '</option>').join('') + '</select></td>' +
     '<td class="act"><button class="btn ghost sm" data-mv="-1">↑</button> <button class="btn ghost sm" data-mv="1">↓</button> <button class="btn danger sm" data-rm>삭제</button></td></tr>').join('') +
     '<datalist id="grpList">' + groups.map(g => '<option value="' + esc(g) + '">').join('') + '</datalist>';
   $('rosterBody').querySelectorAll('tr').forEach(tr => {
@@ -954,7 +941,7 @@ function drawRoster() {
     tr.querySelector('[data-rm]').addEventListener('click', () => { if (confirm((draft[i].name || '(이름 없음)') + ' 직원을 삭제할까요?\n퇴사했다면 삭제 대신 퇴사일을 넣는 것을 권합니다.')) { draft.splice(i, 1); drawRoster(); } });
   });
 }
-$('rosterAdd').addEventListener('click', () => { draft.push({ id: 'i' + Date.now().toString(36), group: '', title: '사원', name: '', duty: '', start: '', end: '', uid: '' }); drawRoster(); });
+$('rosterAdd').addEventListener('click', () => { draft.push({ id: 'i' + Date.now().toString(36), group: '', title: '사원', name: '', duty: '', start: '', end: '' }); drawRoster(); });
 $('rosterSave').addEventListener('click', async () => {
   const err = t => { $('rosterErr').textContent = t; };
   const list = draft.map(m => Object.assign({}, m, { name: (m.name || '').trim() }));
@@ -962,18 +949,10 @@ $('rosterSave').addEventListener('click', async () => {
   if (list.some(m => !/^[가-힣A-Za-z0-9 ]{1,20}$/.test(m.name))) return err('성명은 한글/영문/숫자 20자 이내로 입력해 주세요.');
   const names = list.map(m => m.name), dup = names.find((n, i) => names.indexOf(n) !== i);
   if (dup) return err('같은 이름이 두 번 있습니다: ' + dup);
-  const uids = list.map(m => m.uid).filter(Boolean), dupU = uids.find((u, i) => uids.indexOf(u) !== i);
-  if (dupU) return err('같은 로그인 계정이 두 직원에 연결되어 있습니다.');
   const bad = list.find(m => m.start && m.end && m.end < m.start);
   if (bad) return err(bad.name + ': 퇴사일이 입사일보다 빠릅니다.');
   try {
-    const clean = await saveRoster(list);
-    // 로그인 계정 ↔ 직원 연결 (서버 규칙이 이 연결로 "본인 칸"을 확인)
-    const old = await getDocs(collection(db, C.link)), b = writeBatch(db);
-    old.forEach(x => { if (!clean.some(m => m.uid === x.id)) b.delete(doc(db, C.link, x.id)); });
-    clean.filter(m => m.uid).forEach(m => b.set(doc(db, C.link, m.uid), { mid: m.id, name: m.name }));
-    await b.commit();
-    if (S.user) { const l = clean.find(m => m.uid === S.user.uid); S.myId = l ? l.id : ''; }
+    await saveRoster(list);
     note({ action: 'roster' });
     $('dlgRoster').close(); toast('직원 명단을 저장했습니다');
   } catch (e) { err('저장 실패: ' + errMsg(e)); }
