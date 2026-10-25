@@ -975,28 +975,37 @@ function aggregateRows(aoa) {
     if (line.indexOf('영업일자') >= 0 || line.indexOf('일자') >= 0) { hi = i; break; }
   }
   if (hi < 0) return { error: '헤더(영업일자 또는 일자)를 찾지 못했습니다. POS 판매 내역 파일이 맞는지 확인해 주세요.' };
-  const head = aoa[hi].map(x => String(x === null || x === undefined ? '' : x).trim());
+  const a = salesAgg(aoa[hi]); if (a.error) return a;
+  for (i = hi + 1; i < aoa.length; i++) a.add(aoa[i]);
+  return a.done();
+}
+// POS 판매 내역 집계기: 머리글을 받고 줄을 하나씩 더함 (아주 큰 파일은 압축을 풀면서 줄 단위로 넣음)
+function salesAgg(headRow) {
+  const head = headRow.map(x => String(x === null || x === undefined ? '' : x).trim());
   const col = {};
   head.forEach((h, k) => { if (h && col[h] === undefined) col[h] = k; });
   const aggMode = col['순매출'] !== undefined;
   const need = aggMode ? ['일자', '구분', '순매출'] : ['영업일자', '구분', '과세결제금액', '비과세결제금액'];
   const miss = need.filter(n => col[n] === undefined);
   if (miss.length) return { error: '필요한 열이 없습니다: ' + miss.join(', ') };
+  // 전 지점이 섞인 파일이면 일산점 줄만 (판매지점 코드 P936 또는 판매지점명에 "일산")
+  const brK = col['판매지점'], brN = col['판매지점명'];
+  const isMine = r => (brK === undefined || !r[brK] || String(r[brK]).trim() === 'P936') && (brN === undefined || !r[brN] || /일산/.test(r[brN]));
 
   const map = {}, order = [];
-  const st = { rowsRead: 0, usedRows: 0, totalNet: 0, byG: { '내판': 0, '외판': 0 }, unknown: {}, badDate: 0, dateSet: {}, adjusted: 0 };
+  const st = { rowsRead: 0, usedRows: 0, totalNet: 0, byG: { '내판': 0, '외판': 0 }, unknown: {}, badDate: 0, dateSet: {}, adjusted: 0, other: 0 };
   const get = (r, name) => { const k = col[name]; return k === undefined ? '' : r[k]; };
-  for (i = hi + 1; i < aoa.length; i++) {
-    const r = aoa[i];
-    if (!r || !r.length) continue;
+  const add = r => {
+    if (!r || !r.length) return;
     const rawD = get(r, aggMode ? '일자' : '영업일자');
-    if (rawD === '' || rawD === null || rawD === undefined) continue;
+    if (rawD === '' || rawD === null || rawD === undefined) return;
     st.rowsRead++;
+    if (!isMine(r)) { st.other++; return; }
     const d = toDateInt(rawD);
-    if (!d) { st.badDate++; continue; }
+    if (!d) { st.badDate++; return; }
     const gRaw = get(r, '구분');
     const g = mapG(gRaw);
-    if (!g) { const uk = cleanText(gRaw, 30); st.unknown[uk] = (st.unknown[uk] || 0) + 1; continue; }
+    if (!g) { const uk = cleanText(gRaw, 30); st.unknown[uk] = (st.unknown[uk] || 0) + 1; return; }
     let net, mar, mgr, cust, cat;
     if (aggMode) {
       net = toNum(get(r, '순매출')); mar = toNum(get(r, '마진'));
@@ -1015,10 +1024,13 @@ function aggregateRows(aoa) {
     if (!o) { o = map[key] = [d, g, mgr, cust, cat, 0, 0]; order.push(key); }
     o[5] += net; o[6] += mar;
     st.usedRows++; st.totalNet += net; st.byG[g] += net; st.dateSet[d] = 1;
-  }
-  const rows = order.map(k => map[k]);
-  const dates = Object.keys(st.dateSet).map(Number).sort((a, b) => a - b);
-  return { rows, stats: { rowsRead: st.rowsRead, usedRows: st.usedRows, totalNet: st.totalNet, byG: st.byG, unknown: st.unknown, badDate: st.badDate, dates, adjusted: st.adjusted, mode: aggMode ? '백업/집계 CSV' : 'POS 원본' } };
+  };
+  const done = () => {
+    const rows = order.map(k => map[k]);
+    const dates = Object.keys(st.dateSet).map(Number).sort((a, b) => a - b);
+    return { rows, stats: { rowsRead: st.rowsRead, usedRows: st.usedRows, totalNet: st.totalNet, byG: st.byG, unknown: st.unknown, badDate: st.badDate, dates, adjusted: st.adjusted, other: st.other, mode: aggMode ? '백업/집계 CSV' : 'POS 원본' } };
+  };
+  return { add, done };
 }
 
 /* ===================== 문자 파싱 (일산점) ===================== */
@@ -2816,7 +2828,98 @@ const UP_MAX = 100 * 1024 * 1024;
 async function readSheets(f) {
   const X = await loadXlsx();
   const wb = /\.csv$/i.test(f.name) ? X.read(await f.text(), { type: 'string' }) : X.read(await f.arrayBuffer(), { type: 'array' });
+  // 본사 시스템에서 내려받은 파일 중 시트 크기가 "A1"로 잘못 적힌 것이 있음 → 실제 칸으로 범위를 다시 잡음
+  wb.SheetNames.forEach(n => {
+    const ws = wb.Sheets[n]; let r1 = 0, c1 = 0;
+    Object.keys(ws).forEach(k => { if (k[0] === '!') return; const a = X.utils.decode_cell(k); if (a.r > r1) r1 = a.r; if (a.c > c1) c1 = a.c; });
+    const cur = ws['!ref'] ? X.utils.decode_range(ws['!ref']) : null;
+    if (!cur || cur.e.r < r1 || cur.e.c < c1) ws['!ref'] = X.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: r1, c: c1 } });
+  });
   return wb.SheetNames.map(n => X.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: '' }));
+}
+/* 아주 큰 엑셀(예: 1년치 POS 판매 내역 58MB → 풀면 650MB)은 한 번에 읽으면 브라우저가 멈춤.
+   .xlsx(zip) 안의 첫 시트를 압축을 풀면서 줄 단위로 읽어 바로 집계함 (파일 전체를 메모리에 올리지 않음) */
+const BIG_XLSX = 20 * 1024 * 1024;
+const isBigXlsx = f => /\.xlsx$/i.test(f.name) && f.size > BIG_XLSX;
+async function zipEntries(f) {
+  const tail = new Uint8Array(await f.slice(Math.max(0, f.size - 70000)).arrayBuffer()), dv = new DataView(tail.buffer);
+  let e = -1; for (let i = tail.length - 22; i >= 0; i--) if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; }
+  if (e < 0) throw new Error('엑셀(.xlsx) 파일 구조를 읽지 못했습니다.');
+  const cdSize = dv.getUint32(e + 12, true), cdOff = dv.getUint32(e + 16, true);
+  const cd = new Uint8Array(await f.slice(cdOff, cdOff + cdSize).arrayBuffer()), cv = new DataView(cd.buffer), td = new TextDecoder();
+  const out = {};
+  for (let p = 0; p + 46 <= cd.length && cv.getUint32(p, true) === 0x02014b50;) {
+    const method = cv.getUint16(p + 10, true), comp = cv.getUint32(p + 20, true), nl = cv.getUint16(p + 28, true), xl = cv.getUint16(p + 30, true), cl = cv.getUint16(p + 32, true), off = cv.getUint32(p + 42, true);
+    out[td.decode(cd.subarray(p + 46, p + 46 + nl))] = { method, comp, off };
+    p += 46 + nl + xl + cl;
+  }
+  return out;
+}
+async function zipText(f, ent, onBytes) {
+  const lh = new DataView(await f.slice(ent.off, ent.off + 30).arrayBuffer());
+  const start = ent.off + 30 + lh.getUint16(26, true) + lh.getUint16(28, true);
+  let s = f.slice(start, start + ent.comp).stream();
+  if (onBytes) { let n = 0; s = s.pipeThrough(new TransformStream({ transform(ch, c) { n += ch.length; onBytes(n / ent.comp); c.enqueue(ch); } })); }
+  if (ent.method === 8) {
+    if (typeof DecompressionStream === 'undefined') throw new Error('이 브라우저는 큰 엑셀 읽기를 지원하지 않습니다. 크롬·엣지 최신 버전에서 올려 주세요.');
+    s = s.pipeThrough(new DecompressionStream('deflate-raw'));
+  }
+  return s.pipeThrough(new TextDecoderStream());
+}
+const xmlTxt = s => s.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16))).replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+  .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+const colIdx = a => { let n = 0; for (let i = 0; i < a.length; i++) n = n * 26 + a.charCodeAt(i) - 64; return n - 1; };
+// 첫 시트의 줄을 하나씩 onRow(배열)로 넘김. 첫 줄(머리글)을 보고 onHead가 false를 돌려주면 중단
+async function streamXlsxRows(f, onHead, onRow, onProgress) {
+  const ents = await zipEntries(f);
+  const sheet = Object.keys(ents).filter(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort((a, b) => Number(a.match(/\d+/)[0]) - Number(b.match(/\d+/)[0]))[0];
+  if (!sheet) throw new Error('엑셀 시트를 찾지 못했습니다.');
+  let shared = [];
+  if (ents['xl/sharedStrings.xml']) {
+    let t = ''; const rd = (await zipText(f, ents['xl/sharedStrings.xml'])).getReader();
+    for (;;) { const { done, value } = await rd.read(); if (done) break; t += value; }
+    shared = [...t.matchAll(/<si>([\s\S]*?)<\/si>/g)].map(m => xmlTxt([...m[1].matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g)].map(x => x[1]).join('')));
+  }
+  const cellRe = /<c r="([A-Z]+)\d+"([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
+  const parseRow = xml => {
+    const row = []; let m; cellRe.lastIndex = 0;
+    while ((m = cellRe.exec(xml)) !== null) {
+      const t = (/\bt="([^"]+)"/.exec(m[2]) || [])[1] || '', inner = m[3] || '';
+      let v = '';
+      if (t === 'inlineStr') v = xmlTxt([...inner.matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g)].map(x => x[1]).join(''));
+      else { const vv = (/<v>([\s\S]*?)<\/v>/.exec(inner) || [])[1]; if (vv !== undefined) v = t === 's' ? (shared[Number(vv)] || '') : t === 'str' || t === 'e' ? xmlTxt(vv) : t === 'b' ? vv === '1' : Number(vv); }
+      row[colIdx(m[1])] = v;
+    }
+    for (let i = 0; i < row.length; i++) if (row[i] === undefined) row[i] = '';
+    return row;
+  };
+  const rd = (await zipText(f, ents[sheet], onProgress)).getReader();
+  let buf = '', first = true;
+  for (;;) {
+    const { done, value } = await rd.read();
+    if (value) buf += value;
+    const end = done ? buf.length : buf.lastIndexOf('</row>') + 6;
+    if (end > 5) {
+      const part = buf.slice(0, end); buf = buf.slice(end);
+      const re = /<row\b[^>]*>([\s\S]*?)<\/row>/g; let m;
+      while ((m = re.exec(part)) !== null) {
+        const row = parseRow(m[1]);
+        if (first) { first = false; if (onHead(row) === false) { rd.cancel().catch(() => { }); return; } }
+        else onRow(row);
+      }
+    }
+    if (done) break;
+  }
+}
+// 큰 POS 판매 내역 → 집계 결과 (aggregateRows와 같은 모양)
+async function streamSales(f, onProgress) {
+  let agg = null, err = '';
+  await streamXlsxRows(f, head => {
+    if (detectKind([head]) !== 'sales') { err = '큰 파일(20MB 넘음)은 POS 판매 내역만 올릴 수 있습니다. 머리글(영업일자·구분·과세결제금액)을 확인해 주세요.'; return false; }
+    agg = salesAgg(head); if (agg.error) { err = agg.error; return false; }
+  }, row => agg.add(row), onProgress);
+  if (err) return { error: err };
+  return agg.done();
 }
 // 파일 하나 → 저장할 일감 { kind, info, save() } (저장 화면 없이 바로 저장할 수 있게)
 // 분석 보고서 양식(핵심지표 목표설정) 파일인지: 올릴 자료가 아니라 다운로드 탭에서 만드는 파일
@@ -2891,7 +2994,14 @@ async function readMany(files) {
         if (!res.records.length) throw new Error('문자를 찾지 못했습니다');
         Object.assign(j, { kind: 'sms', info: '문자 ' + res.records.length + '개', save: async () => { const r = await registerSmsRecords(res.records); return '추가 ' + r.added + ' · 교체 ' + r.updated; } });
       } else if (!/\.(xlsx|xls|csv)$/i.test(f.name)) throw new Error('.xlsx · .xls · .csv · .txt만 됩니다');
-      else {
+      else if (isBigXlsx(f)) {
+        let last = 0;
+        const p = await streamSales(f, r => { const now = Date.now(); if (now - last > 500) { last = now; j.st = '읽는 중… ' + Math.round(r * 100) + '%'; draw(true); } });
+        if (p.error) throw new Error(p.error);
+        p.name = f.name; const ds = p.stats.dates;
+        Object.assign(j, { kind: 'sales', info: mdLabel(ds[0]) + ' ~ ' + mdLabel(ds[ds.length - 1]) + ' (' + ds.length + '일) · 순매출 ' + eok(p.stats.totalNet) + (p.stats.other ? ' · 다른 지점 ' + p.stats.other.toLocaleString('ko-KR') + '줄 제외' : ''), save: async () => { const r = await registerParsed(p); return r.verify.match ? '검산 일치 · ' + r.removed.toLocaleString('ko-KR') + '행 교체' : '⚠️ 검산 불일치'; } });
+        j.st = '';
+      } else {
         const made = makeJobs(await readSheets(f), f.name);
         Object.assign(j, made[0]); made.slice(1).forEach(x => jobs.push(x));
       }
@@ -2906,7 +3016,16 @@ async function readFile(f) {
   if (f.size > UP_MAX) { $('preview').innerHTML = '<div class="banner bad">파일이 너무 큽니다(100MB 초과).</div>'; return; }
   if (/\.txt$/i.test(f.name)) { toSms(await f.text()); fileIn.value = ''; return; }
   if (!/\.(xlsx|xls|csv)$/i.test(f.name)) { $('preview').innerHTML = '<div class="banner bad">.xlsx, .xls, .csv, .txt 파일만 올릴 수 있습니다.</div>'; return; }
-  $('preview').innerHTML = '<div class="card"><b>' + esc(f.name) + '</b> 읽는 중… 파일이 크면 1분 정도 걸릴 수 있습니다.</div>';
+  $('preview').innerHTML = '<div class="card"><b>' + esc(f.name) + '</b> 읽는 중… <span id="readPct"></span><br><span class="muted">파일이 크면 몇 분 걸릴 수 있습니다. 창을 닫지 말고 기다려 주세요.</span></div>';
+  if (isBigXlsx(f)) {
+    let last = 0;
+    try {
+      const p = await streamSales(f, r => { const now = Date.now(); if (now - last > 400 && $('readPct')) { last = now; $('readPct').textContent = Math.round(r * 100) + '%'; } });
+      if (p.error) { $('preview').innerHTML = '<div class="banner bad">' + esc(p.error) + '</div>'; return; }
+      p.name = f.name; S.parsed = p; renderPreview(); $('preview').insertAdjacentHTML('afterbegin', kindBanner('sales', f.name));
+    } catch (e) { $('preview').innerHTML = '<div class="banner bad">큰 파일을 읽지 못했습니다: ' + esc(errMsg(e)) + '</div>'; }
+    return;
+  }
   try {
     // 시트를 모두 살펴봄 (본사 참고자료는 한 파일에 시트가 여러 장일 수 있음)
     handleSheets(await readSheets(f), f.name);
@@ -2933,6 +3052,7 @@ function renderPreview() {
   const unk = Object.keys(st.unknown), blocked = !st.usedRows;
   if (unk.length) h += '<div class="banner bad">구분 값을 알 수 없는 행이 있어 제외됩니다: ' + unk.map(u => esc(u || '(빈칸)') + ' ' + st.unknown[u] + '행').join(', ') + '. 구분은 "일반"(내판)과 "B2B"(외판)만 인식합니다.</div>';
   if (st.badDate) h += '<div class="banner warn">날짜를 읽지 못한 행 ' + st.badDate + '개는 제외됩니다.</div>';
+  if (st.other) h += '<div class="banner warn">다른 지점 줄 ' + st.other.toLocaleString('ko-KR') + '개는 빼고 일산점만 등록합니다.</div>';
   if (st.adjusted) h += '<div class="banner warn">과세/비과세 금액이 모두 0인 반품·취소 ' + st.adjusted + '행은 결제금액÷1.1로 VAT 별도 금액을 계산했습니다.</div>';
   if (blocked) h += '<div class="banner bad">등록할 수 있는 행이 없습니다.</div>';
   h += '<div class="kpis">' + kpi('기간', dLabel(st.dates[0] || 0) + '<br>~ ' + dLabel(st.dates[st.dates.length - 1] || 0), st.dates.length + '일') +
