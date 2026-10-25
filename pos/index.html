@@ -87,6 +87,14 @@ h1, h2, h3, .btn, .kpi .v, .brand-t, .pill, .page-title { font-family: var(--fon
 .brand-t { font-size: 20px; font-weight: 700; }
 .sub, .muted { color: var(--ink2); font-size: .87em; }
 .userbox { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.top-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* 새로고침: 브랜드 색 동그라미 + 흰 화살표, 누르면 한 바퀴 돎 */
+.refresh-btn { flex: none; width: 38px; height: 38px; border-radius: 50%; border: 0; padding: 0; background: var(--s1); color: #fff; display: inline-grid; place-items: center; cursor: pointer; box-shadow: 0 2px 6px rgba(16, 24, 40, .16); }
+.refresh-btn:hover { filter: brightness(1.08); }
+.refresh-btn:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+.refresh-btn svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.refresh-btn.spin svg { animation: refresh-spin .6s ease; }
+@keyframes refresh-spin { to { transform: rotate(360deg); } }
 .chip { background: var(--chip); color: var(--chip-ink); border-radius: 999px; padding: 4px 12px; font-size: .85em; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .page-title { text-align: center; font-size: 28px; margin: 18px 0 6px; letter-spacing: -.5px; }
 .alert-line { text-align: center; color: var(--alert); font-weight: 700; margin: 0 0 16px; font-size: .97em; }
@@ -443,7 +451,7 @@ dialog.doc h3 { margin: 18px 0 6px; font-size: 1em; }
 dialog.doc p, dialog.doc li { color: var(--ink2); margin: 4px 0; }
 dialog.doc ul { padding-left: 20px; margin: 4px 0; }
 @media (max-width: 560px) { .page-title { font-size: 22px; } .card { padding: 14px; } }
-@media print { .prefs, .toolbar, .tabsbar, .topbar .userbox, .secnav, .site-foot { display: none !important; } .topbar, .sticky-head { position: static; } }
+@media print { .prefs, .toolbar, .tabsbar, .topbar .userbox, #pageRefresh, .secnav, .site-foot { display: none !important; } .topbar, .sticky-head { position: static; } }
 </style>
 </head>
 <body>
@@ -453,7 +461,10 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
       <img class="logo" src="icon.svg" alt="" width="40" height="40">
       <span class="brand-txt"><span class="brand-t">매출 현황</span><span class="sub" id="status">🔒 로그인 전</span></span>
     </button>
-    <div class="userbox hide" id="userbox"><span class="chip" id="userChip"></span><button class="btn ghost sm" id="logoutBtn">로그아웃</button></div>
+    <div class="top-right">
+      <button class="refresh-btn" id="pageRefresh" title="새로고침" aria-label="새로고침"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
+      <div class="userbox hide" id="userbox"><span class="chip" id="userChip"></span><button class="btn ghost sm" id="logoutBtn">로그아웃</button></div>
+    </div>
   </header>
 
   <!-- 로딩 -->
@@ -494,7 +505,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
         <h1 class="page-title" id="homeTitle">매출 현황</h1>
         <div class="toolbar">
           <select id="homeMonth" aria-label="월 선택"></select>
-          <button class="btn dark" id="homeRefresh">새로고침</button>
+          <button class="refresh-btn" id="homeRefresh" title="새로고침" aria-label="새로고침"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
           <button class="btn ghost" id="homePrint">인쇄</button>
         </div>
       </div>
@@ -513,7 +524,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
           <h1 class="page-title">관리자 대시보드</h1>
         </div>
         <div class="toolbar">
-          <button class="btn dark" id="adminRefresh">새로고침</button>
+          <button class="refresh-btn" id="adminRefresh" title="새로고침" aria-label="새로고침"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
           <button class="btn ghost" id="copyAdminLink" title="관리자 페이지 주소 복사 (…/pos/#admin)">🔗 관리자 주소</button>
         </div>
       </div>
@@ -1481,6 +1492,8 @@ function show(v) {
   // 로그인·승인 전에는 로그인 카드 말고 아무것도 보이지 않게
   $('prefsBar').classList.toggle('hide', !(v === 'home' || v === 'admin'));
   $('adminBtn').classList.toggle('hide', !(v === 'home' && S.role === 'admin'));
+  // 홈·관리자 화면은 제목 줄에 새로고침이 있어서 위쪽 버튼은 그 밖의 화면에서만
+  $('pageRefresh').classList.toggle('hide', v === 'home' || v === 'admin');
   window.scrollTo(0, 0);
   measureHead();
   if (v === 'admin') bumpIdle();
@@ -1494,6 +1507,8 @@ $('loginBtn').addEventListener('click', async () => {
     $('loginMsg').classList.remove('hide');
   }
 });
+$('pageRefresh').addEventListener('click', () => location.reload());
+document.querySelectorAll('.refresh-btn').forEach(b => b.addEventListener('click', () => { b.classList.remove('spin'); void b.offsetWidth; b.classList.add('spin'); }));
 $('logoutBtn').addEventListener('click', async () => { invalidate(); S.role = null; await signOut(auth); });
 $('copyUid').addEventListener('click', () => { if (navigator.clipboard) navigator.clipboard.writeText(S.user ? S.user.uid : '').then(() => toast('UID를 복사했습니다')); });
 $('recheckBtn').addEventListener('click', () => { if (S.user) routeUser(S.user); });
@@ -4119,7 +4134,7 @@ function syncAmt(id) {
   const n = Number($('tN').value) || 0, o = Number($('tO').value) || 0, t = Number($('tTotal').value) || 0;
   sum.textContent = (n || o) ? '내판 + 외판 = ' + (krw(n + o) || '0원') + (t && n + o !== t ? ' (목표 합계와 ' + krw(Math.abs(t - n - o)) + ' 차이)' : '') : '';
 }
-document.querySelectorAll('.amt-chips').forEach(box => {
+document.querySelectorAll('.amt-chips[data-for]').forEach(box => {
   const id = box.dataset.for, inp = $(id);
   box.innerHTML = AMT_STEPS.map(([v, l]) => '<button type="button" data-v="' + v + '">' + l + '</button>').join('') + '<button type="button" data-v="0" class="clr">지우기</button>';
   box.querySelectorAll('button').forEach(b => b.addEventListener('click', e => {
