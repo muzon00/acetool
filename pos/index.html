@@ -2683,6 +2683,11 @@ function detectKind(aoa) {
   const top = aoa.slice(0, 40).map(r => (r || []).map(hnorm));
   const has = (...ns) => top.some(l => ns.every(n => l.includes(n)));
   const txt = aoa.slice(0, 10).map(r => (r || []).join(' ')).join(' ');
+  // 본사 파일의 Export 시트 (전 지점 원자료) 먼저
+  const h0 = (aoa[0] || []).map(hnorm);
+  if (h0.includes('YearMonthNo') && h0.includes('실매출') && h0.includes('거래건') && h0.some(c => c.startsWith('고객등급'))) return 'mixraw';
+  if (h0.includes('YearMonthNo') && h0.includes('실매출') && h0.includes('PB구분2')) return 'pbraw';
+  if (h0.includes('상품코드') && h0.includes('상품명') && h0.includes('지점') && h0.includes('실매출')) return 'pbtop';
   if (/PB\s*실적/.test(txt) || has('PB실매출')) return 'pb';
   if (/매출\s*유형/.test(txt) || top.some(l => l.some(c => /^[ㄴ└]?관계사$/.test(c)))) return 'mix';
   if (has('영업일자', '판매번호') && top.some(l => l.some(c => ['시공일자', '시공상태', '시공PKG'].concat(CONS_CATS).includes(c)))) return 'cons';
@@ -2771,17 +2776,20 @@ async function readSheets(f) {
   return wb.SheetNames.map(n => X.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: '' }));
 }
 // 파일 하나 → 저장할 일감 { kind, info, save() } (저장 화면 없이 바로 저장할 수 있게)
+// 분석 보고서 양식(핵심지표 목표설정) 파일인지: 올릴 자료가 아니라 다운로드 탭에서 만드는 파일
+const isReportForm = sheets => sheets.some(aoa => { const t = aoa.slice(0, 8).map(r => (r || []).join(' ')).join(' '); return /해결사/.test(t) && /목표/.test(t); });
+const UP_FORM = '분석 보고서 양식 파일이라 올리지 않아도 됩니다 (관리자 › 다운로드 › 분석 보고서에서 만듭니다)';
 function makeJobs(sheets, name) {
   const found = sheets.map(aoa => ({ aoa, kind: detectKind(aoa) })).filter(x => x.kind);
-  if (!found.length) return [{ name, error: '어떤 자료인지 알아보지 못했습니다' }];
-  const refs = found.filter(x => x.kind === 'mix' || x.kind === 'pb');
-  if (refs.length) return refs.map(x => {
-    const p = x.kind === 'mix' ? parseMix(x.aoa) : parsePB(x.aoa);
-    if (p.error) return { name, kind: x.kind, error: p.error };
-    p.kind = x.kind; if (!p.store) p.store = '일산';
-    const ms = Object.keys(p.months).map(Number).sort((a, b) => a - b);
-    return { name, kind: x.kind, info: p.store + ' · ' + ymLabel(ms[0]) + ' ~ ' + (ms[ms.length - 1] % 100) + '월' + (p.basis ? ' · ' + mdLabel(p.basis) + ' 기준' : ''), save: async () => { await saveRef(p, name); return '저장'; } };
-  });
+  if (!found.length) return [{ name, error: isReportForm(sheets) ? UP_FORM : '어떤 자료인지 알아보지 못했습니다' }];
+  const refs = found.filter(x => /^(mix|pb)/.test(x.kind));
+  if (refs.length) {
+    const { list, errs } = refParseAll(refs);
+    if (!list.length) return [{ name, kind: (errs[0] || {}).kind || 'mix', error: (errs[0] || {}).error || '자료를 찾지 못했습니다' }];
+    const ms = list.flatMap(p => Object.keys(p.months).map(Number)).sort((a, b) => a - b), fam = [...new Set(list.map(p => p.kind))];
+    const info = fam.map(k => (k === 'mix' ? '매출유형' : 'PB') + ' ' + list.filter(p => p.kind === k).map(p => p.store).join('·')).join(' / ') + ' · ' + ymLabel(ms[0]) + ' ~ ' + (ms[ms.length - 1] % 100) + '월' + (list[0].basis ? ' · ' + mdLabel(list[0].basis) + ' 기준' : '');
+    return [{ name, kind: fam[0], info, save: async () => { await saveRefs(list, name); return list.length + '개 저장'; } }];
+  }
   const { aoa, kind } = found[0];
   if (kind === 'sales') {
     const p = aggregateRows(aoa); if (p.error) return [{ name, kind, error: p.error }];
@@ -2863,8 +2871,8 @@ async function readFile(f) {
 }
 function handleSheets(sheets, name) {
   const found = sheets.map(aoa => ({ aoa, kind: detectKind(aoa) })).filter(x => x.kind);
-  if (!found.length) { $('preview').innerHTML = '<div class="banner bad">' + UP_NONE + '</div>'; return; }
-  const refs = found.filter(x => x.kind === 'mix' || x.kind === 'pb');
+  if (!found.length) { $('preview').innerHTML = isReportForm(sheets) ? '<div class="banner warn">' + UP_FORM + '</div>' : '<div class="banner bad">' + UP_NONE + '</div>'; return; }
+  const refs = found.filter(x => /^(mix|pb)/.test(x.kind));
   if (refs.length) { handleRef(refs, name); return; }
   const { aoa, kind } = found[0];
   $('arDateRow').classList.toggle('hide', kind !== 'ar');
@@ -3490,9 +3498,18 @@ function refBasis(aoa) {
 function refMonthCols(row) { const o = {}; (row || []).forEach((v, k) => { const m = /^(20\d{2})(0[1-9]|1[0-2])/.exec(String(v).trim()); if (m) o[k] = Number(m[1] + m[2]); }); return o; }
 const refHead = (aoa, from, test) => { for (let i = from; i < aoa.length; i++) if (Object.keys(refMonthCols(aoa[i])).length >= 3 && (!test || test(aoa[i]))) return i; return -1; };
 const refLabelCol = (row, re) => { const k = (row || []).findIndex(v => re.test(hnorm(v))); return k < 0 ? 0 : k; };
+// 표 이름 칸(예: "실매출")을 먼저 찾고, 그 바로 위에서 가장 가까운 월 머리글 줄을 씀 (숨은 보조 줄 · "구분" 칸이 둘인 표 대비)
+function refAnchor(aoa, re) {
+  for (let i = 0; i < aoa.length; i++) {
+    const k = (aoa[i] || []).findIndex(v => re.test(hnorm(v)));
+    if (k < 0) continue;
+    for (let h = i - 1; h >= 0 && h >= i - 6; h--) if (Object.keys(refMonthCols(aoa[h])).length >= 3) return { hi: h, lc: k, row: i };
+  }
+  return null;
+}
 function parseMix(aoa) {
-  const hi = refHead(aoa, 0); if (hi < 0) return { error: '월(202601 같은) 머리글 줄을 찾지 못했습니다.' };
-  const mc = refMonthCols(aoa[hi]), lc = refLabelCol(aoa[hi], /^구분$/), months = {};
+  const an = refAnchor(aoa, /^실매출$/); if (!an) return { error: '"실매출" 줄과 월(202601 같은) 머리글을 찾지 못했습니다.' };
+  const hi = an.hi, mc = refMonthCols(aoa[hi]), lc = an.lc, months = {};
   let sec = null;
   for (let i = hi + 1; i < aoa.length; i++) {
     const r = aoa[i] || [], L = hnorm(r[lc]); if (!L) continue;
@@ -3509,8 +3526,8 @@ function parseMix(aoa) {
   return { kind: 'mix', store: refStore(aoa), basis: refBasis(aoa), months };
 }
 function parsePB(aoa) {
-  const hi = refHead(aoa, 0, r => r.some(v => hnorm(v) === '구분')); if (hi < 0) return { error: '월(202601 같은) 머리글 줄을 찾지 못했습니다.' };
-  const mc = refMonthCols(aoa[hi]), lc = refLabelCol(aoa[hi], /^구분$/), months = {};
+  const an = refAnchor(aoa, /^전체실매출$/); if (!an) return { error: '"전체 실매출" 줄과 월(202601 같은) 머리글을 찾지 못했습니다.' };
+  const hi = an.hi, mc = refMonthCols(aoa[hi]), lc = an.lc, months = {};
   const MAP = { '전체실매출': ['tot', 's'], '전체매총이익': ['tot', 'g'], '전체매출이익': ['tot', 'g'], 'PB실매출': ['pb', 's'], 'PB매총이익': ['pb', 'g'], 'PB매출이익': ['pb', 'g'] };
   let i = hi + 1;
   for (; i < aoa.length; i++) {
@@ -3544,21 +3561,108 @@ function parsePB(aoa) {
   if (!Object.keys(months).length) return { error: '전체 실매출 · PB 실매출 줄을 찾지 못했습니다.' };
   return { kind: 'pb', store: refStore(aoa), basis: refBasis(aoa), months, cats, top };
 }
+// 본사 Export 시트 (전 지점 원자료) → 지점별로 나눔. 지점 코드: 요약 시트 표와 같음
+const REF_CODE = { P932: '금천', P933: '용산', P936: '일산', P937: '퇴계원', P93G: '강남' };
+const rawCols = aoa => { const h = (aoa[0] || []).map(hnorm), c = n => h.indexOf(n), cs = re => h.findIndex(x => re.test(x)); return { c, cs }; };
+// 매출 유형 Export: 거래건 · 실매출 · 매총이익 × 지점 · 관계사여부 · 고객등급 · 월 · 구분 → 유형별 + 등급별(VIP Master 등)
+function parseMixRaw(aoa) {
+  const { c, cs } = rawCols(aoa), K = { n: c('거래건'), s: c('실매출'), g: cs(/^매총이익/), br: c('지점'), aff: c('관계사여부'), gr: cs(/^고객등급/), ym: c('YearMonthNo'), t: c('구분') };
+  if ([K.n, K.s, K.g, K.br, K.ym, K.t].some(x => x < 0)) return [];
+  const out = {};
+  for (let i = 1; i < aoa.length; i++) {
+    const r = aoa[i] || [], st = REF_CODE[String(r[K.br]).trim()], ym = Number(String(r[K.ym]).slice(0, 6));
+    if (!st || !(ym > 200000)) continue;
+    const p = out[st] = out[st] || { kind: 'mix', raw: true, store: st, basis: 0, months: {} };
+    const m = p.months[ym] = p.months[ym] || { s: {}, g: {}, n: {}, gr: {} };
+    const n = toNum(r[K.n]), s = toNum(r[K.s]), g = toNum(r[K.g]);
+    const type = String(r[K.aff]).trim() === 'Y' ? 'aff' : /B2B/i.test(r[K.t]) ? 'b2b' : 'pos';
+    ['tot', type].forEach(k => { m.s[k] = (m.s[k] || 0) + s; m.g[k] = (m.g[k] || 0) + g; m.n[k] = (m.n[k] || 0) + n; });
+    const gn = cleanText(K.gr >= 0 ? r[K.gr] : '', 20).replace(/[.$#\[\]\/]/g, '') || '기타';
+    const G = m.gr[gn] = m.gr[gn] || { n: 0, s: 0, g: 0 }; G.n += n; G.s += s; G.g += g;
+  }
+  const rnd = o => Object.keys(o).forEach(k => { o[k] = Math.round(o[k]); });
+  Object.values(out).forEach(p => Object.values(p.months).forEach(m => { rnd(m.s); rnd(m.g); rnd(m.n); Object.values(m.gr).forEach(rnd); }));
+  return Object.values(out);
+}
+// PB Export: 판매수량 · 실매출 · 매총이익 × 대분류 · PB구분2 · 지점 · 월 → 전체 / PB(PB_ · PL_) 실적, PB 카테고리별
+function parsePbRaw(aoa) {
+  const { c, cs } = rawCols(aoa), K = { s: c('실매출'), g: cs(/^매총이익/), cat: c('대분류'), pb: c('PB구분2'), br: c('지점'), ym: c('YearMonthNo') };
+  if ([K.s, K.g, K.pb, K.br, K.ym].some(x => x < 0)) return [];
+  const out = {};
+  for (let i = 1; i < aoa.length; i++) {
+    const r = aoa[i] || [], st = REF_CODE[String(r[K.br]).trim()], ym = Number(String(r[K.ym]).slice(0, 6));
+    if (!st || !(ym > 200000)) continue;
+    const p = out[st] = out[st] || { kind: 'pb', raw: true, store: st, basis: 0, months: {}, cats: {}, top: [] };
+    const m = p.months[ym] = p.months[ym] || { tot: { s: 0, g: 0 }, pb: { s: 0, g: 0 } };
+    const s = toNum(r[K.s]), g = toNum(r[K.g]), isPb = /^(PB|PL)/i.test(String(r[K.pb]).trim());
+    m.tot.s += s; m.tot.g += g;
+    if (isPb) {
+      m.pb.s += s; m.pb.g += g;
+      const cat = cleanText(K.cat >= 0 ? r[K.cat] : '', 30) || '기타';
+      const o = p.cats[cat] = p.cats[cat] || {}; o[ym] = (o[ym] || 0) + s;
+    }
+  }
+  Object.values(out).forEach(p => {
+    Object.values(p.months).forEach(m => { ['tot', 'pb'].forEach(k => { m[k].s = Math.round(m[k].s); m[k].g = Math.round(m[k].g); }); });
+    Object.values(p.cats).forEach(o => Object.keys(o).forEach(k => { o[k] = Math.round(o[k]); }));
+  });
+  return Object.values(out);
+}
+// 상품별집계: 지점별 실매출 상위 50개
+function parsePbTop(aoa) {
+  const { c } = rawCols(aoa), K = { br: c('지점'), cat: c('대분류'), code: c('상품코드'), name: c('상품명'), first: c('최초입고일'), q: c('판매수량'), s: c('실매출'), g: c('매총이익') };
+  const by = {};
+  for (let i = 1; i < aoa.length; i++) {
+    const r = aoa[i] || [], st = REF_CODE[String(r[K.br]).trim()]; if (!st) continue;
+    (by[st] = by[st] || []).push({ cat: cleanText(r[K.cat], 30), code: cleanText(r[K.code], 20), name: cleanText(r[K.name], 80), first: K.first >= 0 ? toDateInt(r[K.first]) : 0, q: Math.round(toNum(r[K.q])), s: Math.round(toNum(r[K.s])), g: Math.round(toNum(r[K.g])) });
+  }
+  Object.keys(by).forEach(st => { by[st] = by[st].sort((a, b) => b.s - a.s).slice(0, 50).map((x, i) => Object.assign({ rank: i + 1 }, x)); });
+  return by;
+}
+// 파일 하나의 시트들 → 저장할 참고자료 목록. Export(전 지점)가 있으면 그것을, 없으면 요약 시트(선택된 지점 하나)를 씀
+function refParseAll(found) {
+  const basisOf = k => { const x = found.find(f => f.kind === k); return x ? refBasis(x.aoa) : 0; };
+  const list = [], errs = [];
+  ['mix', 'pb'].forEach(fam => {
+    const raw = found.filter(f => f.kind === fam + 'raw');
+    if (raw.length) {
+      const ps = raw.flatMap(f => fam === 'mix' ? parseMixRaw(f.aoa) : parsePbRaw(f.aoa)), basis = basisOf(fam);
+      if (fam === 'pb') { const tops = found.filter(f => f.kind === 'pbtop').map(f => parsePbTop(f.aoa)); ps.forEach(p => { tops.forEach(t => { if (t[p.store]) p.top = t[p.store]; }); }); }
+      ps.forEach(p => { p.basis = basis; list.push(p); });
+      if (!ps.length) errs.push({ kind: fam, error: 'Export 시트에서 지점(P932 등) 자료를 찾지 못했습니다' });
+      return;
+    }
+    found.filter(f => f.kind === fam).forEach(f => {
+      const p = fam === 'mix' ? parseMix(f.aoa) : parsePB(f.aoa);
+      if (p.error) errs.push({ kind: fam, error: p.error }); else { p.kind = fam; list.push(p); }
+    });
+  });
+  return { list, errs };
+}
 function refId(p) { const ys = Object.keys(p.months).map(Number).sort(); return p.kind + '_' + Math.floor((ys[0] || p.basis * 100) / 100) + '_' + (p.store || '미지정'); }
+// 참고자료 미리보기: 지점별 한 줄 요약 (Export면 전 지점, 요약 시트면 선택된 지점 하나 · 지점 바꾸기 가능)
+function refSummaryRow(p) {
+  const ms = Object.keys(p.months).map(Number).sort((a, b) => a - b), per = ms.length ? (ms[0] % 100) + '~' + (ms[ms.length - 1] % 100) + '월' : '-';
+  if (p.kind === 'mix') {
+    const sm = (sec, k) => ms.reduce((t, ym) => t + ((p.months[ym][sec] || {})[k] || 0), 0), T = sm('s', 'tot') || 1;
+    const gr = k => ms.reduce((t, ym) => t + (((p.months[ym].gr || {})[k] || {}).s || 0), 0), hasGr = ms.some(ym => p.months[ym].gr);
+    return [esc(p.store), per, won(sm('s', 'tot')), pct(sm('s', 'pos') / T, 0) + ' · ' + pct(sm('s', 'b2b') / T, 0) + ' · ' + pct(sm('s', 'aff') / T, 0), pct(sm('g', 'tot') / T), hasGr ? eok(gr('VIPMASTER')) + ' · ' + eok(gr('MASTER')) : '-'];
+  }
+  const sm = (a, k) => ms.reduce((t, ym) => t + ((p.months[ym][a] || {})[k] || 0), 0);
+  return [esc(p.store), per, won(sm('tot', 's')), won(sm('pb', 's')), pct(sm('pb', 's') / (sm('tot', 's') || 1)), Object.keys(p.cats || {}).length + '개 · ' + (p.top || []).length + '개'];
+}
 function handleRef(sheets, name) {
-  const list = sheets.map(x => Object.assign(x.kind === 'mix' ? parseMix(x.aoa) : parsePB(x.aoa), { kind: x.kind }));
-  const ok = list.filter(p => !p.error);
-  let h = sheets.map(x => kindBanner(x.kind, name)).filter((v, i, a) => a.indexOf(v) === i).join('');
-  list.filter(p => p.error).forEach(p => { h += '<div class="banner bad">' + UP_KINDS[p.kind].name + ': ' + esc(p.error) + '</div>'; });
-  ok.forEach((p, n) => {
-    const ms = Object.keys(p.months).map(Number).sort((a, b) => a - b);
-    h += '<div class="card"><h2>' + UP_KINDS[p.kind].icon + ' ' + UP_KINDS[p.kind].name + '</h2>' +
-      '<div class="row" style="margin-bottom:8px"><label>지점<select data-rs="' + n + '">' + REF_STORES.map(s => '<option' + (s === p.store ? ' selected' : '') + '>' + s + '</option>').join('') + '</select></label>' +
-      '<span class="muted">' + (p.store ? '파일의 지점 선택 칸에서 "' + p.store + '"을(를) 읽었습니다' : '⚠️ 지점을 찾지 못했습니다. 골라 주세요') + (p.basis ? ' · ' + dLabel(p.basis) + ' 기준' : '') + '</span></div>';
-    if (p.kind === 'mix') h += table(['월', '실매출', '관계사', '일반 B2B', '일반 내판', '매총이익', '매총율'], ms.map(ym => { const s = p.months[ym].s, g = p.months[ym].g; return [ymLabel(ym), won(s.tot || 0), won(s.aff || 0), won(s.b2b || 0), won(s.pos || 0), won(g.tot || 0), s.tot ? pct((g.tot || 0) / s.tot) : '-']; }));
-    else h += table(['월', '전체 실매출', 'PB 실매출', 'PB 비중', 'PB 매총율'], ms.map(ym => { const x = p.months[ym]; return [ymLabel(ym), won(x.tot.s || 0), won(x.pb.s || 0), x.tot.s ? pct((x.pb.s || 0) / x.tot.s) : '-', x.pb.s ? pct((x.pb.g || 0) / x.pb.s) : '-']; })) +
-      '<p class="muted">카테고리 ' + Object.keys(p.cats).length + '개 · 잘 팔리는 상품 ' + p.top.length + '개도 함께 저장합니다.</p>';
-    h += '</div>';
+  const { list: ok, errs } = refParseAll(sheets);
+  let h = [...new Set(sheets.map(x => x.kind.replace(/raw|top/, '')))].map(k => kindBanner(k, name)).join('');
+  errs.forEach(p => { h += '<div class="banner bad">' + UP_KINDS[p.kind].name + ': ' + esc(p.error) + '</div>'; });
+  ['mix', 'pb'].forEach(fam => {
+    const ps = ok.filter(p => p.kind === fam); if (!ps.length) return;
+    const raw = ps.some(p => p.raw), basis = ps[0].basis;
+    h += '<div class="card"><h2>' + UP_KINDS[fam].icon + ' ' + UP_KINDS[fam].name + '</h2><p class="muted" style="margin-top:0">' +
+      (raw ? 'Export 시트(원자료)에서 <b>' + ps.length + '개 지점</b>을 모두 읽었습니다.' : '요약 시트의 "지점 선택" 칸에 있는 지점 하나만 들어 있습니다. 다른 지점이면 바꿔 주세요.') + (basis ? ' · ' + dLabel(basis) + ' 기준' : '') +
+      (fam === 'mix' && raw ? ' 등급별(VIP Master · Master 등) 거래건·실매출도 함께 저장해 분석 보고서 Master 양식에 씁니다. 고객 이름이 든 시트는 저장하지 않습니다.' : '') + '</p>' +
+      (raw ? '' : ps.map(p => '<div class="row" style="margin-bottom:8px"><label>지점<select data-rs="' + ok.indexOf(p) + '">' + REF_STORES.map(s => '<option' + (s === p.store ? ' selected' : '') + '>' + s + '</option>').join('') + '</select></label></div>').join('')) +
+      table(fam === 'mix' ? ['지점', '기간', '실매출', '내판 · B2B · 관계사', '매총율', 'VIP Master · Master 실매출'] : ['지점', '기간', '전체 실매출', 'PB 실매출', 'PB 비중', '카테고리 · 상위 상품'], ps.map(refSummaryRow)) + '</div>';
   });
   if (ok.length) h += '<div class="card"><button class="btn primary" id="refSave">저장 (' + ok.length + '개)</button> <span class="muted" id="refMsg">같은 지점·연도 자료가 있으면 새 내용으로 교체됩니다.</span></div>';
   $('preview').innerHTML = h;
@@ -3566,20 +3670,26 @@ function handleRef(sheets, name) {
   if (ok.length) $('refSave').addEventListener('click', async function () {
     this.disabled = true; $('refMsg').textContent = '저장 중…';
     try {
-      for (const p of ok) await saveRef(p, name);
+      await saveRefs(ok, name);
       S.logs = null;
-      $('preview').innerHTML = '<div class="card"><div class="banner ok"><b>본사 참고자료 저장 완료</b><br>' + ok.map(p => UP_KINDS[p.kind].name + ' · ' + p.store).join('<br>') + '</div><button class="btn primary" id="goRef">홈에서 보기</button></div>';
+      $('preview').innerHTML = '<div class="card"><div class="banner ok"><b>본사 참고자료 저장 완료</b><br>' + ['mix', 'pb'].filter(k => ok.some(p => p.kind === k)).map(k => UP_KINDS[k].name + ' · ' + ok.filter(p => p.kind === k).map(p => p.store).join(', ')).join('<br>') + '</div><button class="btn primary" id="goRef">홈에서 보기</button></div>';
       $('goRef').addEventListener('click', () => goHomeSec(0, '본사 참고자료'));
       fileIn.value = ''; $('upText').value = ''; renderDataStatus();
     } catch (e) { this.disabled = false; $('refMsg').textContent = '저장 실패: ' + errMsg(e); }
   });
 }
-async function saveRef(p, name) {
-  if (!p.store) p.store = '일산';
-  const ms = Object.keys(p.months).map(Number).sort((a, b) => a - b);
-  await setDoc(doc(db, C.ref, refId(p)), Object.assign({ file: cleanText(name, 120), at: serverTimestamp(), by: S.user.email || '' }, p));
-  // 등록 이력의 파일 이름은 원래 파일 이름 그대로 (같은 파일을 다시 올리면 목록에서 한 줄로 묶임)
-  await addDoc(collection(db, C.logs), { at: serverTimestamp(), by: S.user.email || '', file: '[참고] ' + cleanText(name, 110), from: ms[0] * 100 + 1, to: p.basis || ms[ms.length - 1] * 100 + 1, usedRows: ms.length, fileNet: 0, savedNet: 0, match: true, ref: p.kind + ' ' + p.store });
+// 파일 하나에서 나온 참고자료(지점 × 종류)를 모두 저장하고, 등록 이력은 파일당 한 줄 (같은 파일을 다시 올리면 목록에서 한 줄로 묶임)
+async function saveRefs(list, name) {
+  const all = [];
+  for (const p of list) {
+    if (!p.store) p.store = '일산';
+    if (JSON.stringify(p).length > 900000) throw new Error(p.store + ' 자료가 너무 큽니다(문서 1MB 제한).');
+    await setDoc(doc(db, C.ref, refId(p)), Object.assign({ file: cleanText(name, 120), at: serverTimestamp(), by: S.user.email || '' }, p));
+    Object.keys(p.months).forEach(ym => all.push(Number(ym)));
+  }
+  all.sort((a, b) => a - b);
+  const basis = Math.max(0, ...list.map(p => p.basis || 0));
+  await addDoc(collection(db, C.logs), { at: serverTimestamp(), by: S.user.email || '', file: '[참고] ' + cleanText(name, 110), from: all[0] * 100 + 1, to: basis || all[all.length - 1] * 100 + 1, usedRows: list.length, fileNet: 0, savedNet: 0, match: true, ref: [...new Set(list.map(p => p.kind + ' ' + p.store))].join(', ').slice(0, 200) });
   S.ref = null;
 }
 async function loadRef(force) {
@@ -3607,6 +3717,15 @@ function renderRef(el) {
       kpi('유형별 매총율', '내판 ' + pct(mr('pos')), 'B2B ' + pct(mr('b2b')) + ' · 관계사 ' + pct(mr('aff'))) + '</div>' +
       '<div class="legend"><span><i style="background:' + COL.pos + '"></i>일반 내판 (POS)</span><span><i style="background:' + COL.b2b + '"></i>일반 B2B</span><span><i style="background:' + COL.aff + '"></i>관계사</span></div>' +
       '<div class="stks">' + ms.map(ym => { const s = mix.months[ym].s; return '<div class="stk-r"><span>' + (ym % 100) + '월</span>' + seg([[s.pos || 0, COL.pos], [s.b2b || 0, COL.b2b], [s.aff || 0, COL.aff]], s.tot || 1) + '<b>' + eok(s.tot || 0) + '</b></div>'; }).join('') + '</div>' +
+      (() => {
+        // 고객등급별 (본사 Export를 올렸을 때만)
+        const gs = {}; ms.forEach(ym => Object.entries(mix.months[ym].gr || {}).forEach(([g, x]) => { const o = gs[g] = gs[g] || { n: 0, s: 0, g: 0 }; o.n += x.n; o.s += x.s; o.g += x.g; }));
+        const rows = Object.entries(gs).sort((a, b) => b[1].s - a[1].s); if (!rows.length) return '';
+        return '<details open><summary>고객등급별 (' + ms.length + '개월 누계)</summary>' + table(['등급', '거래건', '월평균 거래건', '실매출', '비중', '객단가', '매총율'], rows.map(([g, x]) => {
+          const B = s => /^(VIP)?MASTER$/.test(g) ? '<b>' + s + '</b>' : s;
+          return [B(esc(g)), x.n.toLocaleString('ko-KR'), Math.round(x.n / ms.length).toLocaleString('ko-KR'), won(x.s), pct(x.s / (T || 1)), x.n ? won(x.s / x.n) : '-', x.s ? pct(x.g / x.s) : '-'];
+        })) + '</details>';
+      })() +
       '<details><summary>표로 보기</summary>' + table(['월', '실매출', '내판', 'B2B', '관계사', '매총이익', '매총율', '내판 매총율', 'B2B 매총율', '관계사 매총율'], ms.map(ym => {
         const s = mix.months[ym].s, g = mix.months[ym].g, rt = k => s[k] ? pct((g[k] || 0) / s[k]) : '-';
         return [ymLabel(ym), won(s.tot || 0), won(s.pos || 0), won(s.b2b || 0), won(s.aff || 0), won(g.tot || 0), rt('tot'), rt('pos'), rt('b2b'), rt('aff')];
@@ -3707,7 +3826,18 @@ async function rpData(q) {
   });
   // 현시점 월평균 거래건: 기준월까지 최근 3개월 평균
   const dealAvg = dealM.map(o => { const ks = Object.keys(o).map(Number).filter(ym => ym <= basisYm).sort((a, b) => b - a).slice(0, 3); return ks.length ? { v: Math.round(mean(ks.map(k => o[k]))), n: ks.length } : null; });
-  const dealAct = dealM.map(o => ms.map(ym => ym <= ymOf(now) && o[ym] !== undefined ? o[ym] : null));
+  let dealAct = dealM.map(o => ms.map(ym => ym <= ymOf(now) && o[ym] !== undefined ? o[ym] : null));
+  // 본사 참고자료(매출 유형별 Export)의 고객등급별 실적이 있으면: 기준월까지 그해 월평균 VIP Master · Master 거래건 · 실매출
+  try { await loadRef(); } catch (e) { }
+  const grade = RP_STORES.map(x => {
+    const mix = refPick('mix', x.s); if (!mix) return null;
+    const ks = Object.keys(mix.months).map(Number).filter(ym => ym <= basisYm && Math.floor(ym / 100) === Math.floor(basisYm / 100) && mix.months[ym].gr).sort((a, b) => a - b);
+    if (!ks.length) return null;
+    const avg = (g, f) => Math.round(mean(ks.map(ym => ((mix.months[ym].gr[g] || {})[f]) || 0)));
+    const act = ms.map(ym => { const m = mix.months[ym]; return m && m.gr ? ((m.gr.VIPMASTER || {}).n || 0) + ((m.gr.MASTER || {}).n || 0) : null; });
+    return { vipN: avg('VIPMASTER', 'n'), mstN: avg('MASTER', 'n'), vipS: avg('VIPMASTER', 's'), mstS: avg('MASTER', 's'), from: ks[0], to: ks[ks.length - 1], act, basis: mix.basis };
+  });
+  dealAct = dealAct.map((a, i) => grade[i] ? grade[i].act.map((v, k) => v !== null ? v : a[k]) : a);
   // 설치 실적 (일산점 시공 자료)
   try { await loadCons(); } catch (e) { }
   const cc = consCfg(), inst = Object.fromEntries(RP_LINES.map(l => [l.k, { cnt: z3(0), sales: z3(0), gp: z3(0) }]));
@@ -3720,7 +3850,7 @@ async function rpData(q) {
     const k = RP_PRI.find(k => RP_LINES.find(l => l.k === k).cats.some(c => (r.cats || []).includes(c))); if (!k) return;
     inst[k].cnt[i]++; inst[k].sales[i] += r.net || 0; inst[k].gp[i] += r.mar || 0;
   });
-  return { ms, basis, memD, members, dealAvg, dealAct, inst, hasCons: !!(S.cons && S.cons.length), consMax, now };
+  return { ms, basis, memD, members, dealAvg, dealAct, grade, inst, hasCons: !!(S.cons && S.cons.length), consMax, now };
 }
 // 다운로드 전 확인: 비어 있는 목표 · 실적
 function rpCheck(ver) {
@@ -3731,7 +3861,7 @@ function rpCheck(ver) {
     master: any(d.master.cust) || any(d.master.aov),
     inst: RP_LINES.some(l => any(d.inst[l.k].cnt) || any(d.inst[l.k].sales)),
     hp: any(d.hp.sales),
-    masterAct: d.master.vipSales > 0 || d.master.mstSales > 0,
+    masterAct: d.master.vipSales > 0 || d.master.mstSales > 0 || (S.ref || []).some(x => x.kind === 'mix' && x.store === '일산' && Object.values(x.months || {}).some(m => m.gr)),
     hpMiss
   };
 }
@@ -3765,7 +3895,7 @@ function rpStatus() {
   const c = rpCheck($('rpVer').value), ms = rpMonths(S.rp.q), ml = ym => ym % 100 + '월';
   const it = (ok, t) => '<span class="' + (ok ? '' : 'bad') + '">' + (ok ? '✅ ' : '⚠️ ') + t + '</span>';
   $('rpStatus').innerHTML = it(c.master, 'Master 목표') + it(c.inst, '설치 목표') + it(c.hp, 'HP 목표') +
-    it(c.masterAct, 'Master 실매출 ' + (c.masterAct ? '입력됨' : '(나중에 업로드 · 지금은 비움)')) +
+    it(c.masterAct, 'Master 거래건·실매출 ' + (c.masterAct ? '있음' : '(본사 "매출 유형별" 파일을 올리면 채워짐)')) +
     ($('rpVer').value === 'B' ? it(!c.hpMiss.length, 'HP 실적' + (c.hpMiss.length ? ' 없음: ' + c.hpMiss.map(ml).join('·') : ' ' + ms.filter(ym => ym <= ymOf(todayInt())).map(ml).join('·'))) : '');
 }
 // 내려받기: HP 실적이 비어 있으면 먼저 묻기
@@ -3958,13 +4088,16 @@ function rpMaster(wb, data, ver) {
     const r = R0 + i, me = i === RP_ME, m = data.members[i];
     put(r, 1, i + 1); put(r, 2, s.n, { al: { horizontal: 'left' }, font: { bold: me } }); put(r, 3, d.boss[i] || '');
     put(r, 4, '=IF(COUNT(E' + r + ':F' + r + '),SUM(E' + r + ':F' + r + '),"")', { fmt: FMT.man }); put(r, 5, m.vip, { fmt: FMT.man }); put(r, 6, m.mst, { fmt: FMT.man });
-    const md = me && (d.master.vipDeal || d.master.mstDeal);
-    put(r, 7, md ? '=SUM(H' + r + ':I' + r + ')' : data.dealAvg[i] ? data.dealAvg[i].v : null, { fmt: FMT.gun });
-    put(r, 8, me && d.master.vipDeal ? d.master.vipDeal : null, { fmt: FMT.gun }); put(r, 9, me && d.master.mstDeal ? d.master.mstDeal : null, { fmt: FMT.gun });
-    [[10, 13, 7], [11, 14, 8], [12, 15, 9]].forEach(([c, sc, dc]) => put(r, c, '=IFERROR(' + XL(sc) + r + '/' + XL(dc) + r + ',"")', { fmt: FMT.won }));
-    const msales = me && (d.master.vipSales || d.master.mstSales);
-    put(r, 13, msales ? '=SUM(N' + r + ':O' + r + ')' : null, { fmt: FMT.won });
-    put(r, 14, me && d.master.vipSales ? d.master.vipSales : null, { fmt: FMT.won }); put(r, 15, me && d.master.mstSales ? d.master.mstSales : null, { fmt: FMT.won });
+    // 거래건 · 실매출: 본사 등급별 자료 → (없으면) 일산점 직접 입력 → (거래건 합계만) 멤버쉽 문자 판매건수
+    const gr = data.grade[i], man = me && (d.master.vipDeal || d.master.mstDeal || d.master.vipSales || d.master.mstSales);
+    const vN = gr ? gr.vipN : man ? d.master.vipDeal : null, mN = gr ? gr.mstN : man ? d.master.mstDeal : null;
+    const vS = gr ? gr.vipS : man ? d.master.vipSales : null, mS = gr ? gr.mstS : man ? d.master.mstSales : null;
+    const split = gr || man;
+    put(r, 7, split ? '=SUM(H' + r + ':I' + r + ')' : data.dealAvg[i] ? data.dealAvg[i].v : null, { fmt: FMT.gun });
+    put(r, 8, split ? vN || 0 : null, { fmt: FMT.gun }); put(r, 9, split ? mN || 0 : null, { fmt: FMT.gun });
+    [[10, 13, 7], [11, 14, 8], [12, 15, 9]].forEach(([c, sc, dc]) => put(r, c, split ? '=IFERROR(' + XL(sc) + r + '/' + XL(dc) + r + ',"")' : null, { fmt: FMT.won }));
+    put(r, 13, split ? '=SUM(N' + r + ':O' + r + ')' : null, { fmt: FMT.won });
+    put(r, 14, split ? vS || 0 : null, { fmt: FMT.won }); put(r, 15, split ? mS || 0 : null, { fmt: FMT.won });
     for (let k = 0; k < 3; k++) {
       put(r, 16 + k, me && d.master.cust[k] ? d.master.cust[k] : null, { fill: RPF.yellow, fmt: FMT.man });
       put(r, 19 + k, me && d.master.aov[k] ? d.master.aov[k] : null, { fill: RPF.yellow, fmt: FMT.won });
@@ -3990,7 +4123,8 @@ function rpMaster(wb, data, ver) {
   grid(1, 1, RN, last);
   const notes = [
     '· 회원수: 멤버쉽 문자 ' + (data.memD ? mdLabel(data.memD) + ' 기준' : '없음 (멤버쉽 문자를 올리면 채워집니다)'),
-    '· 거래건: ' + (d.master.vipDeal || d.master.mstDeal ? '관리자 입력값' : '멤버쉽 문자의 VIP+MASTER 판매건수 월평균(' + (data.dealAvg[RP_ME] ? data.dealAvg[RP_ME].n + '개월' : '자료 없음') + ') · 등급별 구분은 실적 자료를 올리면 채워집니다'),
+    '· 거래건 · 실매출: ' + (data.grade.some(Boolean) ? '본사 자료(매출 유형별 Export)의 고객등급별 ' + (data.grade.find(Boolean).from % 100) + '~' + (data.grade.find(Boolean).to % 100) + '월 월평균' + (data.grade[RP_ME] ? '' : ' (일산점은 자료 없음)')
+      : d.master.vipDeal || d.master.mstDeal ? '관리자 입력값' : '멤버쉽 문자의 VIP+MASTER 판매건수 월평균(' + (data.dealAvg[RP_ME] ? data.dealAvg[RP_ME].n + '개월' : '자료 없음') + ') · 본사 "매출 유형별" 파일을 올리면 등급별로 채워집니다'),
     '· 객단가 = 실매출 ÷ 거래건, 마스터 매출목표 = 객수 목표 × 객단가 목표 (수식) · 노란 칸 = 목표 입력 칸'
   ];
   notes.forEach((t, k) => put(RN + 2 + k, 2, t, { al: { horizontal: 'left', wrapText: false }, font: { color: { argb: 'FF595959' } } }));
