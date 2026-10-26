@@ -2423,6 +2423,8 @@ function dayTotal(dd) { const v = ((S.daily || {})[ymOf(dd)] || {})[dayOf(dd)]; 
 function chg(a, b) { if (b === null || b === undefined || !b) return null; return a / b - 1; }
 function chgTxt(r) { return r === null ? '-' : (r >= 0 ? '+' : '−') + Math.abs(r * 100).toFixed(1) + '%'; }
 // 보기 권한도 볼 수 있는 부분(일별 합계만 사용)
+// 브리핑 문장 속 금액은 끝에 '원'까지 (예: 1.23억원, 450만원)
+const eokW = n => eok(n) + '원';
 function briefBase(sum, date) {
   const ym = ymOf(date), md = (S.daily || {})[ym] || {}, x = md[dayOf(date)];
   if (!x) return null;
@@ -2434,19 +2436,19 @@ function briefBase(sum, date) {
   const rank = vals.indexOf(tot) + 1, avg = vals.length ? mean(vals) : 0;
   const pts = [];
   const dow = DOWK[dowOf(date)];
-  if (pd !== null) pts.push({ t: chg(tot, pd) >= 0 ? 'up' : 'down', s: '전일 대비 ' + chgTxt(chg(tot, pd)) + ' (' + eok(pd) + ')' });
-  if (pw !== null) pts.push({ t: chg(tot, pw) >= 0 ? 'up' : 'down', s: '전주 같은 ' + dow + '요일 대비 ' + chgTxt(chg(tot, pw)) + ' (' + eok(pw) + ')' });
+  if (pd !== null) pts.push({ t: chg(tot, pd) >= 0 ? 'up' : 'down', s: '전일 대비 ' + chgTxt(chg(tot, pd)) + ' (' + eokW(pd) + ')' });
+  if (pw !== null) pts.push({ t: chg(tot, pw) >= 0 ? 'up' : 'down', s: '전주 같은 ' + dow + '요일 대비 ' + chgTxt(chg(tot, pw)) + ' (' + eokW(pw) + ')' });
   const lyD = dayTotal(date - 10000);
-  if (lyD !== null) pts.push({ t: chg(tot, lyD) >= 0 ? 'up' : 'down', s: '전년 같은 날(' + (Math.floor(date / 10000) - 1) + '년 ' + mdLabel(date) + ') 대비 ' + chgTxt(chg(tot, lyD)) + ' (' + eok(lyD) + ')' });
-  if (swAvg !== null && sw.length >= 3) pts.push({ t: tot >= swAvg ? 'up' : 'down', s: '최근 ' + sw.length + '주 ' + dow + '요일 평균 ' + eok(swAvg) + ' 대비 ' + chgTxt(chg(tot, swAvg)) });
-  if (vals.length >= 3) pts.push({ t: rank <= 3 ? 'up' : rank > vals.length - 3 ? 'down' : 'info', s: '이번 달 ' + vals.length + '일 중 ' + rank + '번째로 높은 날 (이달 일평균 ' + eok(avg) + ')' });
+  if (lyD !== null) pts.push({ t: chg(tot, lyD) >= 0 ? 'up' : 'down', s: '전년 같은 날(' + (Math.floor(date / 10000) - 1) + '년 ' + mdLabel(date) + ') 대비 ' + chgTxt(chg(tot, lyD)) + ' (' + eokW(lyD) + ')' });
+  if (swAvg !== null && sw.length >= 3) pts.push({ t: tot >= swAvg ? 'up' : 'down', s: '최근 ' + sw.length + '주 ' + dow + '요일 평균 ' + eokW(swAvg) + ' 대비 ' + chgTxt(chg(tot, swAvg)) });
+  if (vals.length >= 3) pts.push({ t: rank <= 3 ? 'up' : rank > vals.length - 3 ? 'down' : 'info', s: '이번 달 ' + vals.length + '일 중 ' + rank + '번째로 높은 날 (이달 일평균 ' + eokW(avg) + ')' });
   if (tot && o / tot >= 0.5) pts.push({ t: 'info', s: '외판 비중 ' + pct(o / tot, 0) + ' — 외판 큰 건이 매출을 끌어올린 날' });
   if (sum && sum.ym === ym && sum.last === date && sum.target) {
     const gap = sum.target - sum.cum.total;
-    if (gap > 0) pts.push({ t: 'warn', s: '목표까지 ' + won(gap) + ' 부족 · 남은 영업일 ' + sum.remainDays + '일 · 하루 ' + (sum.needPerDay ? won(sum.needPerDay) : '-') + ' 필요 (지금 일평균 ' + eok(sum.avgPerDay) + ')' });
+    if (gap > 0) pts.push({ t: 'warn', s: '목표까지 ' + won(gap) + ' 부족 · 남은 영업일 ' + sum.remainDays + '일 · 하루 ' + (sum.needPerDay ? won(sum.needPerDay) : '-') + ' 필요 (지금 일평균 ' + eokW(sum.avgPerDay) + ')' });
     else pts.push({ t: 'up', s: '이번 달 목표 달성! 목표보다 ' + won(-gap) + ' 더 팔았습니다' });
     const fb = sum.forecast && sum.forecast['기본'];
-    if (fb && fb.rate !== null) pts.push({ t: fb.rate >= 1 ? 'up' : 'warn', s: '지금 흐름이면 ' + eok(fb.total) + '로 마감 예상 (목표의 ' + pct(fb.rate) + ')' });
+    if (fb && fb.rate !== null) pts.push({ t: fb.rate >= 1 ? 'up' : 'warn', s: '지금 흐름이면 ' + eokW(fb.total) + '로 마감 예상 (목표의 ' + pct(fb.rate) + ')' });
   }
   return { date, n, o, tot, pts };
 }
@@ -2465,12 +2467,12 @@ function briefDetail(date) {
   const cu = {};
   rows.filter(r => r.g === 'o').forEach(r => { const k = r.c || '(거래처 미기재)'; if (!cu[k]) cu[k] = { v: 0, m: r.m || '' }; cu[k].v += Number(r.n) || 0; });
   const top = Object.keys(cu).filter(k => cu[k].v > 0).sort((a, b) => cu[b].v - cu[a].v).slice(0, 3);
-  if (top.length) pts.push({ t: 'info', s: '외판 상위: ' + top.map(k => esc(k) + ' ' + eok(cu[k].v) + (cu[k].m ? '(' + esc(cu[k].m) + ')' : '')).join(', ') });
+  if (top.length) pts.push({ t: 'info', s: '외판 상위: ' + top.map(k => esc(k) + ' ' + eokW(cu[k].v) + (cu[k].m ? '(' + esc(cu[k].m) + ')' : '')).join(', ') });
   // 반품·취소 (음수)
   const neg = {};
   rows.forEach(r => { const v = Number(r.n) || 0; if (v < 0) { const k = r.g === 'o' ? (r.c || '외판') : '내판 ' + (r.k || ''); neg[k] = (neg[k] || 0) + v; } });
   const negK = Object.keys(neg).sort((a, b) => neg[a] - neg[b]);
-  if (negK.length) pts.push({ t: 'warn', s: '반품·취소 ' + won(negK.reduce((s, k) => s + neg[k], 0)) + ': ' + negK.slice(0, 3).map(k => esc(k) + ' ' + eok(neg[k])).join(', ') });
+  if (negK.length) pts.push({ t: 'warn', s: '반품·취소 ' + won(negK.reduce((s, k) => s + neg[k], 0)) + ': ' + negK.slice(0, 3).map(k => esc(k) + ' ' + eokW(neg[k])).join(', ') });
   // 내판 대분류: 최근 28일 평균보다 크게 늘거나 준 것
   const cat = {}, base = {};
   rows.filter(r => r.g === 'n').forEach(r => { const k = r.k || '(미분류)'; cat[k] = (cat[k] || 0) + (Number(r.n) || 0); });
@@ -2483,13 +2485,13 @@ function briefDetail(date) {
   if (days >= 7) {
     const moves = Object.keys(Object.assign({}, cat, base)).map(k => { const a = cat[k] || 0, b = (base[k] || 0) / days; return { k, a, b, d: a - b }; })
       .filter(x => Math.abs(x.d) >= 300000 && (x.b <= 0 || x.a / x.b >= 1.8 || x.a / x.b <= 0.4)).sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 3);
-    moves.forEach(x => pts.push({ t: x.d > 0 ? 'up' : 'down', s: '내판 ' + esc(x.k) + ' ' + eok(x.a) + ' — 최근 평균 ' + eok(x.b) + ' 대비 ' + (x.d > 0 ? '크게 늘어남' : '크게 줄어듦') }));
+    moves.forEach(x => pts.push({ t: x.d > 0 ? 'up' : 'down', s: '내판 ' + esc(x.k) + ' ' + eokW(x.a) + ' — 최근 평균 ' + eokW(x.b) + ' 대비 ' + (x.d > 0 ? '크게 늘어남' : '크게 줄어듦') }));
   }
   // 마진이 마이너스인 대분류
   const cm = {};
   rows.forEach(r => { const k = (r.g === 'n' ? '내판 ' : '외판 ') + (r.k || '(미분류)'); cm[k] = (cm[k] || 0) + (Number(r.r) || 0); });
   const negM = Object.keys(cm).filter(k => cm[k] < -50000).sort((a, b) => cm[a] - cm[b]).slice(0, 3);
-  if (negM.length) pts.push({ t: 'warn', s: '마진 마이너스: ' + negM.map(k => esc(k) + ' ' + eok(cm[k])).join(', ') + ' — 원가·단가 확인 필요' });
+  if (negM.length) pts.push({ t: 'warn', s: '마진 마이너스: ' + negM.map(k => esc(k) + ' ' + eokW(cm[k])).join(', ') + ' — 원가·단가 확인 필요' });
   return pts;
 }
 const BRIEF_ICON = { up: '▲', down: '▼', warn: '⚠️', info: '•' };
@@ -2503,15 +2505,15 @@ function briefWeek(sum, last) {
   const c = rangeTotal(cur), p = rangeTotal(prev), l = rangeTotal(ly);
   if (!c.has) return null;
   const pts = [];
-  if (p.has) pts.push({ t: upDown(c.tot, p.tot), s: '지난주(' + mdLabel(prev[0]) + '~' + mdLabel(prev[6]) + ') 대비 ' + chgTxt(chg(c.tot, p.tot)) + ' (' + eok(p.tot) + ')' });
-  if (l.has) pts.push({ t: upDown(c.tot, l.tot), s: '작년 같은 주 대비 ' + chgTxt(chg(c.tot, l.tot)) + ' (' + eok(l.tot) + ')' });
+  if (p.has) pts.push({ t: upDown(c.tot, p.tot), s: '지난주(' + mdLabel(prev[0]) + '~' + mdLabel(prev[6]) + ') 대비 ' + chgTxt(chg(c.tot, p.tot)) + ' (' + eokW(p.tot) + ')' });
+  if (l.has) pts.push({ t: upDown(c.tot, l.tot), s: '작년 같은 주 대비 ' + chgTxt(chg(c.tot, l.tot)) + ' (' + eokW(l.tot) + ')' });
   const days = cur.map(dd => ({ dd, v: dayTotal(dd) })).filter(x => x.v !== null);
   if (days.length) {
     const hi = days.reduce((a, b) => b.v > a.v ? b : a), lo = days.reduce((a, b) => b.v < a.v ? b : a);
-    pts.push({ t: 'info', s: '최고 ' + mdLabel(hi.dd) + '(' + DOWK[dowOf(hi.dd)] + ') ' + eok(hi.v) + ' · 최저 ' + mdLabel(lo.dd) + '(' + DOWK[dowOf(lo.dd)] + ') ' + eok(lo.v) });
+    pts.push({ t: 'info', s: '최고 ' + mdLabel(hi.dd) + '(' + DOWK[dowOf(hi.dd)] + ') ' + eokW(hi.v) + ' · 최저 ' + mdLabel(lo.dd) + '(' + DOWK[dowOf(lo.dd)] + ') ' + eokW(lo.v) });
     const wk = days.filter(x => dowOf(x.dd) % 6 === 0).reduce((s, x) => s + x.v, 0);
-    pts.push({ t: 'info', s: '하루 평균 ' + eok(c.tot / days.length) + (sum && sum.avgPerDay ? ' (이달 일평균 ' + eok(sum.avgPerDay) + ' 대비 ' + chgTxt(chg(c.tot / days.length, sum.avgPerDay)) + ')' : '') });
-    if (wk) pts.push({ t: 'info', s: '주말(토·일) 매출 ' + eok(wk) + ' · 주간의 ' + pct(wk / (c.tot || 1), 0) });
+    pts.push({ t: 'info', s: '하루 평균 ' + eokW(c.tot / days.length) + (sum && sum.avgPerDay ? ' (이달 일평균 ' + eokW(sum.avgPerDay) + ' 대비 ' + chgTxt(chg(c.tot / days.length, sum.avgPerDay)) + ')' : '') });
+    if (wk) pts.push({ t: 'info', s: '주말(토·일) 매출 ' + eokW(wk) + ' · 주간의 ' + pct(wk / (c.tot || 1), 0) });
   }
   if (c.tot) pts.push({ t: c.o / c.tot >= 0.5 ? 'info' : 'info', s: '외판 비중 ' + pct(c.o / c.tot, 0) + (p.tot ? ' (지난주 ' + pct(p.o / p.tot, 0) + ')' : '') });
   return { date: last, n: c.n, o: c.o, tot: c.tot, pts, cur, prev };
@@ -2519,22 +2521,22 @@ function briefWeek(sum, last) {
 function briefMonth(sum) {
   if (!sum || !sum.last) return null;
   const pts = [], d = sum;
-  if (d.prev.same) pts.push({ t: upDown(d.cum.total, d.prev.same), s: '전월 같은 기간 대비 ' + chgTxt(chg(d.cum.total, d.prev.same)) + ' (' + eok(d.prev.same) + ')' });
-  if (d.ly && d.ly.has && d.ly.same) pts.push({ t: upDown(d.cum.total, d.ly.same), s: '전년 같은 기간 대비 ' + chgTxt(chg(d.cum.total, d.ly.same)) + ' (' + eok(d.ly.same) + ')' });
+  if (d.prev.same) pts.push({ t: upDown(d.cum.total, d.prev.same), s: '전월 같은 기간 대비 ' + chgTxt(chg(d.cum.total, d.prev.same)) + ' (' + eokW(d.prev.same) + ')' });
+  if (d.ly && d.ly.has && d.ly.same) pts.push({ t: upDown(d.cum.total, d.ly.same), s: '전년 같은 기간 대비 ' + chgTxt(chg(d.cum.total, d.ly.same)) + ' (' + eokW(d.ly.same) + ')' });
   if (d.target) {
-    pts.push({ t: d.achieve >= d.elapsed ? 'up' : 'warn', s: '달성률 ' + pct(d.achieve) + ' · 시간 경과 ' + pct(d.elapsed) + ' → 목표선보다 ' + (d.achieve >= d.elapsed ? eok(d.cum.total - d.expectedCum) + ' 앞섬' : eok(d.expectedCum - d.cum.total) + ' 부족') });
+    pts.push({ t: d.achieve >= d.elapsed ? 'up' : 'warn', s: '달성률 ' + pct(d.achieve) + ' · 시간 경과 ' + pct(d.elapsed) + ' → 목표선보다 ' + (d.achieve >= d.elapsed ? eokW(d.cum.total - d.expectedCum) + ' 앞섬' : eokW(d.expectedCum - d.cum.total) + ' 부족') });
     const gap = d.target - d.cum.total;
-    pts.push({ t: gap > 0 ? 'warn' : 'up', s: gap > 0 ? '목표까지 ' + eok(gap) + ' · 남은 영업일 ' + d.remainDays + '일 · 하루 ' + (d.needPerDay ? eok(d.needPerDay) : '-') + ' 필요' : '목표 달성 (+' + eok(-gap) + ')' });
+    pts.push({ t: gap > 0 ? 'warn' : 'up', s: gap > 0 ? '목표까지 ' + eokW(gap) + ' · 남은 영업일 ' + d.remainDays + '일 · 하루 ' + (d.needPerDay ? eokW(d.needPerDay) : '-') + ' 필요' : '목표 달성 (+' + eokW(-gap) + ')' });
   }
   const fb = d.forecast && d.forecast['기본'];
-  if (fb) pts.push({ t: fb.rate === null || fb.rate >= 1 ? 'up' : 'warn', s: '예상 마감 ' + eok(fb.total) + (fb.rate !== null ? ' (목표의 ' + pct(fb.rate) + ')' : '') + ' · 보수 ' + (d.forecast['보수'] ? eok(d.forecast['보수'].total) : '-') + ' / 낙관 ' + (d.forecast['낙관'] ? eok(d.forecast['낙관'].total) : '-') });
+  if (fb) pts.push({ t: fb.rate === null || fb.rate >= 1 ? 'up' : 'warn', s: '예상 마감 ' + eokW(fb.total) + (fb.rate !== null ? ' (목표의 ' + pct(fb.rate) + ')' : '') + ' · 보수 ' + (d.forecast['보수'] ? eokW(d.forecast['보수'].total) : '-') + ' / 낙관 ' + (d.forecast['낙관'] ? eokW(d.forecast['낙관'].total) : '-') });
   const has = d.daily.filter(x => x.has);
   if (has.length) {
     const hi = has.reduce((a, b) => (b.n + b.o) > (a.n + a.o) ? b : a);
-    pts.push({ t: 'info', s: '최고일 ' + (d.ym % 100) + '/' + hi.day + '(' + DOWK[dowOf(d.ym * 100 + hi.day)] + ') ' + eok(hi.n + hi.o) });
+    pts.push({ t: 'info', s: '최고일 ' + (d.ym % 100) + '/' + hi.day + '(' + DOWK[dowOf(d.ym * 100 + hi.day)] + ') ' + eokW(hi.n + hi.o) });
     const wk = has.filter(x => dowOf(d.ym * 100 + x.day) % 6 === 0), wd = has.filter(x => dowOf(d.ym * 100 + x.day) % 6 !== 0);
     const av = a => a.length ? a.reduce((s, x) => s + x.n + x.o, 0) / a.length : 0;
-    if (wk.length && wd.length) pts.push({ t: 'info', s: '평일 평균 ' + eok(av(wd)) + ' · 주말 평균 ' + eok(av(wk)) + ' (주말이 ' + chgTxt(chg(av(wk), av(wd))) + ')' });
+    if (wk.length && wd.length) pts.push({ t: 'info', s: '평일 평균 ' + eokW(av(wd)) + ' · 주말 평균 ' + eokW(av(wk)) + ' (주말이 ' + chgTxt(chg(av(wk), av(wd))) + ')' });
   }
   if (d.cum.total) pts.push({ t: 'info', s: '외판 비중 ' + pct(d.cum.o / d.cum.total, 0) });
   const from = d.ym * 100 + 1, prevFrom = addMonths(d.ym, -1) * 100 + 1, prevTo = addMonths(d.ym, -1) * 100 + Math.min(d.lastDay, dimOf(addMonths(d.ym, -1)));
@@ -2554,13 +2556,13 @@ function detAgg(dates) {
 function briefDetailRange(cur, prev, label) {
   if (!S.detail) return [];
   const c = detAgg(cur), p = detAgg(prev), pts = [];
-  if (c.net) pts.push({ t: p.net && c.mar / c.net < p.mar / p.net - 0.02 ? 'warn' : 'info', s: '마진 ' + eok(c.mar) + ' · 마진율 ' + pct(c.mar / c.net) + (p.net ? ' (' + label + ' ' + pct(p.mar / p.net) + ')' : '') });
+  if (c.net) pts.push({ t: p.net && c.mar / c.net < p.mar / p.net - 0.02 ? 'warn' : 'info', s: '마진 ' + eokW(c.mar) + ' · 마진율 ' + pct(c.mar / c.net) + (p.net ? ' (' + label + ' ' + pct(p.mar / p.net) + ')' : '') });
   const top = Object.keys(c.cu).sort((x, y) => c.cu[y] - c.cu[x]).slice(0, 3);
-  if (top.length) pts.push({ t: 'info', s: '외판 상위: ' + top.map(k => esc(k) + ' ' + eok(c.cu[k])).join(', ') });
-  if (c.neg) pts.push({ t: 'warn', s: '반품·취소 합계 ' + eok(c.neg) + (p.neg ? ' (' + label + ' ' + eok(p.neg) + ')' : '') });
+  if (top.length) pts.push({ t: 'info', s: '외판 상위: ' + top.map(k => esc(k) + ' ' + eokW(c.cu[k])).join(', ') });
+  if (c.neg) pts.push({ t: 'warn', s: '반품·취소 합계 ' + eokW(c.neg) + (p.neg ? ' (' + label + ' ' + eokW(p.neg) + ')' : '') });
   const moves = Object.keys(Object.assign({}, c.cat, p.cat)).map(k => ({ k, a: c.cat[k] || 0, b: p.cat[k] || 0 })).map(x => Object.assign(x, { d: x.a - x.b }))
     .filter(x => Math.abs(x.d) >= 1000000 && (x.b <= 0 || Math.abs(x.d / x.b) >= 0.3)).sort((x, y) => Math.abs(y.d) - Math.abs(x.d)).slice(0, 3);
-  moves.forEach(x => pts.push({ t: x.d > 0 ? 'up' : 'down', s: esc(x.k) + ' ' + eok(x.a) + ' — ' + label + ' ' + eok(x.b) + ' 대비 ' + (x.d > 0 ? '+' : '−') + eok(Math.abs(x.d)) }));
+  moves.forEach(x => pts.push({ t: x.d > 0 ? 'up' : 'down', s: esc(x.k) + ' ' + eokW(x.a) + ' — ' + label + ' ' + eokW(x.b) + ' 대비 ' + (x.d > 0 ? '+' : '−') + eokW(Math.abs(x.d)) }));
   return pts;
 }
 // 일별·주간·월별을 칩으로 바꿔 보는 브리핑 카드 (칸 길이는 그대로)
@@ -2575,7 +2577,7 @@ function briefCard(d, admin) {
   const sel = modes.some(m => m.k === S.briefMode) ? S.briefMode : 'day';
   return '<div class="card brief" id="homeBrief" data-sec="AI 브리핑"><div class="brief-h"><h2>✨ AI 브리핑</h2><div class="chips">' +
     modes.map(m => '<button data-bm="' + m.k + '"' + (m.k === sel ? ' class="on"' : '') + '>' + m.l + '</button>').join('') + '</div></div>' +
-    modes.map(m => '<div class="bm' + (m.k === sel ? '' : ' hide') + '" data-bmv="' + m.k + '"><div class="brief-tot"><b>' + won(m.b.tot) + '</b><span class="muted">내판 ' + eok(m.b.n) + ' · 외판 ' + eok(m.b.o) + (m.k === 'week' ? ' · 7일 합계' : m.k === 'mon' ? ' · ' + (d.ym % 100) + '월 누적' : '') + '</span></div>' +
+    modes.map(m => '<div class="bm' + (m.k === sel ? '' : ' hide') + '" data-bmv="' + m.k + '"><div class="brief-tot"><b>' + won(m.b.tot) + '</b><span class="muted">내판 ' + eokW(m.b.n) + ' · 외판 ' + eokW(m.b.o) + (m.k === 'week' ? ' · 7일 합계' : m.k === 'mon' ? ' · ' + (d.ym % 100) + '월 누적' : '') + '</span></div>' +
       '<ul class="brief-l">' + m.b.pts.concat(m.x).map(p => '<li class="' + p.t + '"><span class="ic">' + BRIEF_ICON[p.t] + '</span><span>' + p.s + '</span></li>').join('') + '</ul></div>').join('') + '</div>';
 }
 document.addEventListener('click', e => {
@@ -2590,7 +2592,7 @@ function briefHtml(b, extra, title, controls, id) {
   if (!b) return '';
   const all = b.pts.concat(extra || []);
   return '<div class="card brief"' + (id ? ' id="' + id + '"' : '') + ' data-sec="AI 브리핑"><div class="brief-h"><h2>' + (title || '✨ ' + mdLabel(b.date) + '(' + DOWK[dowOf(b.date)] + ') AI 브리핑') + '</h2>' + (controls || '') + '</div>' +
-    '<div class="brief-tot"><b>' + won(b.tot) + '</b><span class="muted">내판 ' + eok(b.n) + ' · 외판 ' + eok(b.o) + '</span></div>' +
+    '<div class="brief-tot"><b>' + won(b.tot) + '</b><span class="muted">내판 ' + eokW(b.n) + ' · 외판 ' + eokW(b.o) + '</span></div>' +
     '<ul class="brief-l">' + all.map(p => '<li class="' + p.t + '"><span class="ic">' + BRIEF_ICON[p.t] + '</span><span>' + p.s + '</span></li>').join('') + '</ul></div>';
 }
 
