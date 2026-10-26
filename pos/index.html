@@ -4416,7 +4416,7 @@ async function loadMembers() {
     : '<p class="muted">대기 중인 요청이 없습니다. 직원이 acetool.site/pos 에서 로그인하면 여기에 나타납니다.</p>';
   h += '</div><div class="card"><h2>사용자 ' + rl.length + '명</h2>' + table(['이름', '이메일', '권한', ''], rl.map(r => {
     const me = S.user && r.uid === S.user.uid;
-    // sch_admin = 근무표 비밀번호 전용 계정 (매출 현황에는 못 들어옴, 권한 바꾸기 버튼 없음)
+    // sch_admin = 근무표 관리자 계정 (매출 현황에는 못 들어옴, 권한 바꾸기 버튼 없음)
     if (r.role === 'sch_admin') return [esc(r.name || '근무표 관리자'), esc(r.email || '-'), '<span class="tag">근무표 전용</span>', ''];
     return [esc(r.name || '-') + (me ? ' <span class="tag">나</span>' : ''), esc(r.email || '-'), '<span class="tag' + (r.role === 'admin' ? ' admin' : '') + '">' + (r.role === 'admin' ? '관리자' : '보기') + '</span>',
       me ? '' : '<button class="btn ghost sm" data-set="' + esc(r.uid) + '" data-role="' + (r.role === 'admin' ? 'viewer' : 'admin') + '">' + (r.role === 'admin' ? '보기로 변경' : '관리자로 변경') + '</button> <button class="btn danger sm" data-rm="' + esc(r.uid) + '">삭제</button>'];

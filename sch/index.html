@@ -190,7 +190,7 @@ dialog.doc .db { padding: 12px 18px 18px; }
 .rt td { padding: 4px; white-space: normal; }
 .rt td.act { white-space: nowrap; }
 .err { color: var(--bad-ink); font-size: .88em; margin-top: 8px; }
-/* 관리자 비밀번호 (숫자 4자리) */
+/* 관리자 비밀번호 (숫자 6자리) */
 dialog.doc.pin { width: min(340px, calc(100% - 24px)); text-align: center; }
 .pin-dots { display: flex; justify-content: center; gap: 14px; margin: 14px 0 6px; }
 .pin-dots i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line); }
@@ -331,8 +331,8 @@ body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .
 <dialog class="doc pin" id="dlgPin">
   <div class="db">
     <h2 id="pinTitle" style="margin:6px 0 0">관리자 비밀번호</h2>
-    <div class="muted" id="pinSub">숫자 4자리를 눌러 주세요</div>
-    <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
+    <div class="muted" id="pinSub">숫자 6자리를 눌러 주세요</div>
+    <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="err" id="pinErr" style="min-height:1.3em"></div>
     <div class="pin-pad" id="pinPad">
       <button class="btn ghost" data-n="1">1</button><button class="btn ghost" data-n="2">2</button><button class="btn ghost" data-n="3">3</button>
@@ -376,10 +376,11 @@ const app = initializeApp({
   appId: '1:961124023870:web:8753a14fa706f34255db6f'
 }, 'sch');
 const auth = getAuth(app), db = getFirestore(app);
-// 관리자 모드는 숫자 4자리 비밀번호로 들어감. 비밀번호는 근무표 전용 계정(이메일/비밀번호 계정)의 암호가 되어 서버에서 확인됨
+// 관리자 모드는 숫자 6자리 비밀번호로 들어감. 비밀번호는 아래 관리자 계정(이메일/비밀번호 계정)의 암호 그대로이고 서버에서 확인됨
 // 이 계정은 pos_roles 권한이 'sch_admin'이라 근무표만 관리하고 매출 현황에는 들어갈 수 없음
-const ADMIN_EMAIL = 'sch-admin@acetool.site';
-const pinPw = pin => 'ace-sch-' + pin;  // Firebase 암호는 6자 이상이어야 해서 앞에 붙임 (초기 비밀번호 1212 → ace-sch-1212)
+const ADMIN_EMAIL = 'muzon00@naver.com';
+const PIN_LEN = 6;
+const pinPw = pin => pin;
 
 /* 저장 구조 (모두 sch_ 로 시작해 매출 자료와 섞이지 않음)
    sch_schedule/{YYYY-MM-DD}  → { 직원id: 상태 }
@@ -387,7 +388,7 @@ const pinPw = pin => 'ace-sch-' + pin;  // Firebase 암호는 6자 이상이어�
    sch_settings/quotas        → { 'YYYY-MM': 기준 휴무일 }
    sch_settings/holidays      → { 'YYYY-MM-DD': 이름 }   (이름 '' = 기본 공휴일 끔)
    sch_meta/lastChange, sch_logs, sch_backups
-   직원은 로그인 없이 "내 이름"만 골라 사용 (이 기기에 기억). 관리자 모드만 비밀번호 4자리(근무표 전용 계정) + pos_roles 'sch_admin' */
+   직원은 로그인 없이 "내 이름"만 골라 사용 (이 기기에 기억). 관리자 모드만 비밀번호 6자리(근무표 관리자 계정) + pos_roles 'sch_admin' */
 const C = { sched: 'sch_schedule', set: 'sch_settings', meta:'sch_meta', logs: 'sch_logs', backups: 'sch_backups', roles: 'pos_roles', requests: 'pos_requests' };
 const STORE_NAME = '일산점';
 const XLSX_URL = 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
@@ -835,7 +836,7 @@ async function downloadXlsx() {
 }
 
 /* ===================== 로그인 · 실시간 동기화 ===================== */
-// 직원: 로그인 없이 바로 근무표. 관리자: 관리자 모드 버튼에서 비밀번호 4자리 → pos_roles 근무표 관리자 확인
+// 직원: 로그인 없이 바로 근무표. 관리자: 관리자 모드 버튼에서 비밀번호 6자리 → pos_roles 근무표 관리자 확인
 $('logoutBtn').addEventListener('click', () => signOut(auth));
 function stopLive() { S.unsub.forEach(f => { try { f(); } catch (e) { } }); S.unsub = []; }
 async function isAdmin(user) {
@@ -921,7 +922,7 @@ function bumpIdle() {
   idleT = setTimeout(() => { if (S.page === 'admin') { setPage('home'); toast('20분 동안 사용이 없어 관리자 모드를 닫았습니다'); } }, 20 * 60 * 1000);
 }
 ['click', 'keydown', 'touchstart', 'scroll'].forEach(ev => document.addEventListener(ev, bumpIdle, { passive: true }));
-/* 비밀번호 4자리 입력창: onPin(pin)이 오류 문구를 돌려주면 다시 입력, 없으면 닫힘 */
+/* 비밀번호 6자리 입력창: onPin(pin)이 오류 문구를 돌려주면 다시 입력, 없으면 닫힘 */
 const PIN_LOCK_KEY = 'sch.pinLock';
 let pinBuf = '', pinCb = null, pinBusy = false;
 function drawPin() { $('pinDots').querySelectorAll('i').forEach((d, i) => d.classList.toggle('on', i < pinBuf.length)); }
@@ -934,14 +935,14 @@ async function pinKey(k) {
   if (pinBusy) return;
   if (k === 'cancel') { $('dlgPin').close(); return; }
   if (k === 'del') { pinBuf = pinBuf.slice(0, -1); drawPin(); return; }
-  if (pinBuf.length >= 4) return;
+  if (pinBuf.length >= PIN_LEN) return;
   pinBuf += k; drawPin(); $('pinErr').textContent = '';
-  if (pinBuf.length < 4) return;
+  if (pinBuf.length < PIN_LEN) return;
   pinBusy = true;
   const err = await pinCb(pinBuf);
   pinBusy = false;
   if (err) { pinBuf = ''; drawPin(); $('pinErr').textContent = err; }
-  else if ($('dlgPin').open && pinBuf.length === 4) $('dlgPin').close();
+  else if ($('dlgPin').open && pinBuf.length === PIN_LEN) $('dlgPin').close();
 }
 $('pinPad').querySelectorAll('button').forEach(b => b.addEventListener('click', () => pinKey(b.dataset.n || b.dataset.k)));
 $('dlgPin').addEventListener('keydown', e => {
@@ -965,7 +966,7 @@ function pinOk() { try { localStorage.removeItem(PIN_LOCK_KEY); } catch (e) { } 
 // 관리자 모드 들어가기 (버튼 · 관리자 주소 모두 여기로). 이미 들어와 있던 기기면 바로, 아니면 비밀번호
 async function enterAdmin() {
   if (S.user && await isAdmin(S.user)) { S.admin = true; S.role = 'admin'; ensureRoster(); setStatus(); setPage('admin'); return; }
-  openPin('관리자 비밀번호', '숫자 4자리를 눌러 주세요', async pin => {
+  openPin('관리자 비밀번호', '숫자 6자리를 눌러 주세요', async pin => {
     const wait = pinLocked();
     if (wait) return '여러 번 틀려서 잠겼어요. ' + wait + '초 뒤에 다시 해 주세요';
     let user;
@@ -987,7 +988,7 @@ async function enterAdmin() {
 }
 $('pinChangeBtn').addEventListener('click', () => {
   if (!S.admin || !auth.currentUser) return;
-  openPin('새 비밀번호', '새로 쓸 숫자 4자리를 눌러 주세요', async first => {
+  openPin('새 비밀번호', '새로 쓸 숫자 6자리를 눌러 주세요', async first => {
     openPin('새 비밀번호 확인', '한 번 더 눌러 주세요', async pin => {
       if (pin !== first) return '처음 누른 번호와 달라요. 다시 눌러 주세요';
       try { await updatePassword(auth.currentUser, pinPw(pin)); }
