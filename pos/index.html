@@ -4481,7 +4481,9 @@ function memParse(aoa) {
   const hi = aoa.findIndex(r => r && r.map(hnorm).includes('고객번호') && r.map(hnorm).includes('고객등급'));
   if (hi < 0) return { error: '머리글(고객번호 · 고객명 · 고객등급)을 찾지 못했습니다' };
   const h = aoa[hi].map(hnorm), ci = f => h.findIndex(f);
-  const K = { no: ci(c => c === '고객번호'), name: ci(c => c.startsWith('고객명')), gr: ci(c => c === '고객등급'), n: ci(c => c.startsWith('거래')), s: ci(c => c.startsWith('실매출')), br: ci(c => c.startsWith('지점')), aff: ci(c => c.startsWith('관계사')) };
+  const K = { no: ci(c => c === '고객번호'), name: ci(c => c.startsWith('고객명')), gr: ci(c => c === '고객등급'), n: ci(c => c.startsWith('거래')), s: ci(c => c.startsWith('실매출')), br: ci(c => c.startsWith('지점')), aff: ci(c => c.startsWith('관계사')),
+    // 소속(가입) 지점 열이 있으면 "일산점 소속만 보기"에 씀 (가입지점 · 소속지점 · 등록지점 · 관리지점 · 주거래지점 등)
+    home: ci(c => /^(가입|소속|등록|관리|주거래|회원)(지점|점포|매장)/.test(c)) };
   if (K.name < 0) return { error: '고객명 열을 찾지 못했습니다' };
   // 제목 줄의 "26년 … (1/1~10/21)" → 기간
   const title = aoa.slice(0, hi).map(r => (r || []).join(' ')).join(' ');
@@ -4499,15 +4501,16 @@ function memParse(aoa) {
     // 같은 고객번호가 여러 줄이면 한 사람으로 합침 (거래건·실매출 더함)
     if (no && byNo[no]) { const m = byNo[no]; m.n += n; m.s += s; m.aff = m.aff || aff; dup++; return; }
     const m = { no, name, gr, n, s, aff };
+    if (K.home >= 0) { const hv = String(v('home') === null || v('home') === undefined ? '' : v('home')).trim(); m.home = hv === 'P936' || /일산/.test(hv); }
     if (no) byNo[no] = m;
     list.push(m);
   });
   if (!list.length) return { error: '일산점 회원 줄이 없습니다' };
   list.sort((a, b) => b.s - a.s);
-  return { list, period, other, dup };
+  return { list, period, other, dup, hasHome: K.home >= 0 };
 }
 const memCount = list => { const c = {}; list.forEach(m => { c[m.gr] = (c[m.gr] || 0) + 1; }); return c; };
-const memInfo = p => { const c = memCount(p.list); return Object.keys(c).sort().reverse().map(g => GR_LABEL(g) + ' ' + c[g] + '명').join(' · ') + (p.period ? ' · ' + p.period : ''); };
+const memInfo = p => { const c = memCount(p.list); return Object.keys(c).sort().reverse().map(g => GR_LABEL(g) + ' ' + c[g] + '명').join(' · ') + (p.hasHome ? ' (일산점 소속 ' + p.list.filter(m => m.home).length + '명)' : '') + (p.period ? ' · ' + p.period : ''); };
 async function saveMembers(p, name) {
   await setDoc(doc(db, C.members, 'ilsan'), { list: p.list, period: p.period || '', file: cleanText(name, 120), at: serverTimestamp(), by: S.user.email || '' });
   S.members = null;
@@ -4529,21 +4532,26 @@ function memPreview(p, name) {
   });
 }
 // 관리자 › 회원 명단
-let memFilter = { gr: '', q: '' };
+let memFilter = { gr: '', q: '', home: false };
 async function loadMembersList() {
   const el = $('a-vip');
   el.innerHTML = '<div class="card muted">불러오는 중…</div>';
   try { if (!S.members) { const s = await getDoc(doc(db, C.members, 'ilsan')); S.members = s.exists() ? s.data() : { list: [] }; } }
   catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
-  const M = S.members, list = M.list || [];
-  if (!list.length) { el.innerHTML = '<div class="card"><h2>👑 Master 이상 회원 명단</h2><p class="muted" style="margin:0">아직 올린 명단이 없습니다. 업로드 탭에 본사 "일산점 Master 이상 등급 구매 실적" 엑셀을 올려 주세요.</p></div>'; return; }
+  const M = S.members, all = M.list || [], hasHome = all.some(m => m.home !== undefined);
+  if (!hasHome) memFilter.home = false;
+  const list = memFilter.home ? all.filter(m => m.home) : all;
+  if (!all.length) { el.innerHTML = '<div class="card"><h2>👑 Master 이상 회원 명단</h2><p class="muted" style="margin:0">아직 올린 명단이 없습니다. 업로드 탭에 본사 "일산점 Master 이상 등급 구매 실적" 엑셀을 올려 주세요.</p></div>'; return; }
   const c = memCount(list), sum = k => list.reduce((s, m) => s + (m[k] || 0), 0);
   // 멤버쉽 문자의 회원수(전체 회원)와 비교: 이 명단은 구매 이력이 있는 고객만
   const sm = S.sum && S.sum.sms && S.sum.sms.member.length ? S.sum.sms.member[S.sum.sms.member.length - 1] : null;
   const smsN = k => sm && sm[k] !== undefined && sm[k] !== null ? '멤버쉽 문자 ' + mdLabel(sm.d) + ' 기준 ' + Number(sm[k]).toLocaleString('ko-KR') + '명' : '';
-  let h = '<div class="card"><h2>👑 Master 이상 회원 명단</h2><p class="muted" style="margin-top:0">' + (M.period ? esc(M.period) + ' 구매 실적 · ' : '') + '현재 등급 기준, 그 기간에 <b>일산점에서 구매한</b> 고객이에요 (다른 지점 소속 회원 포함). 멤버쉽 문자는 일산점 <b>소속</b> 회원 수라 숫자가 다를 수 있어요' + (M.at && M.at.toDate ? ' · ' + whenTxt(M.at) + ' 올림' : '') + '</p>' +
+  let h = '<div class="card"><h2>👑 Master 이상 회원 명단</h2><p class="muted" style="margin-top:0">' + (M.period ? esc(M.period) + ' 구매 실적 · ' : '') + (memFilter.home ? '현재 등급 기준 <b>일산점 소속</b> 회원 중 그 기간에 구매한 고객이에요' : '현재 등급 기준, 그 기간에 <b>일산점에서 구매한</b> 고객이에요 (다른 지점 소속 회원 포함). 멤버쉽 문자는 일산점 <b>소속</b> 회원 수라 숫자가 다를 수 있어요') + (M.at && M.at.toDate ? ' · ' + whenTxt(M.at) + ' 올림' : '') + '</p>' +
     '<div class="kpis">' + kpi('VIP MASTER', (c.VIPMASTER || 0) + '명', smsN('VIP MASTER 회원')) + kpi('MASTER', (c.MASTER || 0) + '명', smsN('MASTER 회원')) +
-    kpi('거래건 합계', sum('n').toLocaleString('ko-KR') + '건', '') + kpi('실매출 합계', won(sum('s')), '1인 평균 ' + eok(sum('s') / list.length) + '원') + '</div>' +
+    kpi('거래건 합계', sum('n').toLocaleString('ko-KR') + '건', '') + kpi('실매출 합계', won(sum('s')), '1인 평균 ' + eok(sum('s') / (list.length || 1)) + '원') + '</div>' +
+    // 범위: 일산점에서 구매한 고객 전체 / 일산점 소속만 (소속 지점 열이 든 명단일 때만)
+    '<div class="row" style="align-items:center;margin-bottom:8px">' + (hasHome ? '<div class="tr-seg" id="memHome"><button type="button" data-h="0"' + (memFilter.home ? '' : ' class="on"') + '>구매 고객 전체 ' + all.length + '</button><button type="button" data-h="1"' + (memFilter.home ? ' class="on"' : '') + '>일산점 소속만 ' + all.filter(m => m.home).length + '</button></div>'
+      : '<span class="muted" title="본사에 가입(소속) 지점 열이 든 명단을 받아 올리면 생겨요">일산점 소속만 보기: 소속 지점 열이 있는 명단을 올리면 켜져요</span>') + '</div>' +
     '<div class="row" style="align-items:center;margin-bottom:8px"><div class="tr-seg" id="memGr">' + [['', '전체 ' + list.length]].concat(Object.keys(c).sort().reverse().map(g => [g, GR_LABEL(g) + ' ' + c[g]])).map(([g, l]) => '<button type="button" data-g="' + g + '"' + (memFilter.gr === g ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div>' +
     '<input type="text" id="memQ" placeholder="고객명 · 고객번호 검색" value="' + esc(memFilter.q) + '" style="flex:1;min-width:180px"></div>' +
     '<div class="scroll"><table id="memTbl"></table></div></div>';
@@ -4557,6 +4565,7 @@ async function loadMembersList() {
   };
   $('memGr').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { memFilter.gr = b.dataset.g; $('memGr').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); draw(); }));
   $('memQ').addEventListener('input', () => { memFilter.q = $('memQ').value; draw(); });
+  if ($('memHome')) $('memHome').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { memFilter.home = b.dataset.h === '1'; memFilter.gr = ''; loadMembersList(); }));
   draw();
 }
 
