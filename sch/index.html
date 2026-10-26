@@ -332,6 +332,7 @@ body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .
   <div class="db">
     <h2 id="pinTitle" style="margin:6px 0 0">관리자 비밀번호</h2>
     <div class="muted" id="pinSub">숫자 6자리를 눌러 주세요</div>
+    <input type="text" id="pinEmail" inputmode="email" autocomplete="username" placeholder="관리자 이메일" style="width:100%;margin-top:12px;text-align:center">
     <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="err" id="pinErr" style="min-height:1.3em"></div>
     <div class="pin-pad" id="pinPad">
@@ -376,9 +377,8 @@ const app = initializeApp({
   appId: '1:961124023870:web:8753a14fa706f34255db6f'
 }, 'sch');
 const auth = getAuth(app), db = getFirestore(app);
-// 관리자 모드는 숫자 6자리 비밀번호로 들어감. 비밀번호는 아래 관리자 계정(이메일/비밀번호 계정)의 암호 그대로이고 서버에서 확인됨
-// 이 계정은 pos_roles 권한이 'sch_admin'이라 근무표만 관리하고 매출 현황에는 들어갈 수 없음
-const ADMIN_EMAIL = 'muzon00@naver.com';
+// 관리자 모드는 이메일 + 숫자 6자리 비밀번호로 들어감 (매출 현황과 같은 계정). 서버에서 확인하고 pos_roles가 admin/sch_admin이어야 함
+const ADMIN_EMAIL_KEY = 'sch.adminEmail';  // 이메일은 이 기기에 기억
 const PIN_LEN = 6;
 const pinPw = pin => pin;
 
@@ -388,7 +388,7 @@ const pinPw = pin => pin;
    sch_settings/quotas        → { 'YYYY-MM': 기준 휴무일 }
    sch_settings/holidays      → { 'YYYY-MM-DD': 이름 }   (이름 '' = 기본 공휴일 끔)
    sch_meta/lastChange, sch_logs, sch_backups
-   직원은 로그인 없이 "내 이름"만 골라 사용 (이 기기에 기억). 관리자 모드만 비밀번호 6자리(근무표 관리자 계정) + pos_roles 'sch_admin' */
+   직원은 로그인 없이 "내 이름"만 골라 사용 (이 기기에 기억). 관리자 모드만 이메일 + 비밀번호 6자리 + pos_roles 'sch_admin' */
 const C = { sched: 'sch_schedule', set: 'sch_settings', meta:'sch_meta', logs: 'sch_logs', backups: 'sch_backups', roles: 'pos_roles', requests: 'pos_requests' };
 const STORE_NAME = '일산점';
 const XLSX_URL = 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
@@ -851,7 +851,7 @@ async function downloadXlsx() {
 }
 
 /* ===================== 로그인 · 실시간 동기화 ===================== */
-// 직원: 로그인 없이 바로 근무표. 관리자: 관리자 모드 버튼에서 비밀번호 6자리 → pos_roles 근무표 관리자 확인
+// 직원: 로그인 없이 바로 근무표. 관리자: 관리자 모드 버튼에서 이메일 + 비밀번호 6자리 → pos_roles 근무표 관리자 확인
 $('logoutBtn').addEventListener('click', () => signOut(auth));
 function stopLive() { S.unsub.forEach(f => { try { f(); } catch (e) { } }); S.unsub = []; }
 async function isAdmin(user) {
@@ -862,7 +862,7 @@ onAuthStateChanged(auth, async user => {
   S.user = user;
   S.admin = user ? await isAdmin(user) : false;
   S.role = S.admin ? 'admin' : null;
-  $('userChip').textContent = user ? (user.email === ADMIN_EMAIL ? '근무표 관리자' : user.email || '') : '';
+  $('userChip').textContent = user ? (user.email || '') : '';
   $('userbox').classList.toggle('hide', !user);
   S.authReady = true;
   if (!S.admin && S.page === 'admin') setPage('home');
@@ -941,10 +941,14 @@ function bumpIdle() {
 const PIN_LOCK_KEY = 'sch.pinLock';
 let pinBuf = '', pinCb = null, pinBusy = false;
 function drawPin() { $('pinDots').querySelectorAll('i').forEach((d, i) => d.classList.toggle('on', i < pinBuf.length)); }
-function openPin(title, sub, onPin) {
+function openPin(title, sub, onPin, withEmail) {
   pinBuf = ''; pinCb = onPin; pinBusy = false;
+  $('pinEmail').classList.toggle('hide', !withEmail);
+  if (withEmail && !$('pinEmail').value) { try { $('pinEmail').value = localStorage.getItem(ADMIN_EMAIL_KEY) || ''; } catch (e) { } }
   $('pinTitle').textContent = title; $('pinSub').textContent = sub; $('pinErr').textContent = '';
   drawPin(); if (!$('dlgPin').open) $('dlgPin').showModal();
+  // 이메일이 비어 있으면 이메일 칸, 아니면 키패드에 초점 (키보드 숫자가 이메일 칸으로 들어가지 않게)
+  (withEmail && !$('pinEmail').value ? $('pinEmail') : $('pinPad').querySelector('[data-n="1"]')).focus();
 }
 async function pinKey(k) {
   if (pinBusy) return;
@@ -961,6 +965,7 @@ async function pinKey(k) {
 }
 $('pinPad').querySelectorAll('button').forEach(b => b.addEventListener('click', () => pinKey(b.dataset.n || b.dataset.k)));
 $('dlgPin').addEventListener('keydown', e => {
+  if (e.target === $('pinEmail')) return;  // 이메일 칸에서 치는 글자는 그대로
   if (/^[0-9]$/.test(e.key)) pinKey(e.key);
   else if (e.key === 'Backspace') pinKey('del');
   else return;
@@ -984,22 +989,24 @@ async function enterAdmin() {
   openPin('관리자 비밀번호', '숫자 6자리를 눌러 주세요', async pin => {
     const wait = pinLocked();
     if (wait) return '여러 번 틀려서 잠겼어요. ' + wait + '초 뒤에 다시 해 주세요';
+    const email = $('pinEmail').value.trim();
+    if (!email) return '관리자 이메일을 먼저 입력해 주세요';
     let user;
-    try { user = (await signInWithEmailAndPassword(auth, ADMIN_EMAIL, pinPw(pin))).user; }
+    try { user = (await signInWithEmailAndPassword(auth, email, pinPw(pin))).user; try { localStorage.setItem(ADMIN_EMAIL_KEY, email); } catch (e) { } }
     catch (e) {
       const c = (e && e.code) || '';
       if (c.includes('too-many-requests')) return '시도가 너무 많아요. 잠시 뒤에 다시 해 주세요';
       if (c.includes('network')) return '인터넷 연결을 확인해 주세요';
-      if (c.includes('invalid-credential') || c.includes('wrong-password') || c.includes('user-not-found') || c.includes('invalid-login')) { pinFail(); return '비밀번호가 틀렸습니다'; }
+      if (c.includes('invalid-credential') || c.includes('wrong-password') || c.includes('user-not-found') || c.includes('invalid-login') || c.includes('invalid-email')) { pinFail(); return '이메일 또는 비밀번호가 틀렸습니다'; }
       return '로그인 실패: ' + errMsg(e);
     }
     pinOk();
     // 들어갈 때마다 서버에서 다시 확인
     S.admin = await isAdmin(user); S.role = S.admin ? 'admin' : null;
-    if (!S.admin) { await signOut(auth); return '근무표 관리자 권한이 설정되지 않은 계정입니다'; }
+    if (!S.admin) { await signOut(auth); return '관리자 권한이 설정되지 않은 계정입니다'; }
     ensureRoster(); setStatus(); setPage('admin');
     return '';
-  });
+  }, true);
 }
 $('pinChangeBtn').addEventListener('click', () => {
   if (!S.admin || !auth.currentUser) return;

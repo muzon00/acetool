@@ -482,9 +482,13 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
   <section id="v-login" class="hide">
     <div class="card login">
       <h1>매출 현황</h1>
-      <p class="muted">허용된 구글 계정으로만 볼 수 있습니다.</p>
-      <button class="btn primary lg" id="loginBtn">Google 계정으로 로그인</button>
-      <p class="muted" style="margin-top:16px">처음 로그인하면 관리자에게 승인 요청이 전달됩니다.<br>공용 PC에서는 사용 후 꼭 로그아웃해 주세요.</p>
+      <p class="muted">관리자 계정으로만 볼 수 있습니다.</p>
+      <form id="loginForm" style="display:grid;gap:10px;max-width:320px;margin:16px auto 0;text-align:left" autocomplete="on">
+        <label>이메일<input type="text" id="loginEmail" inputmode="email" autocomplete="username" placeholder="example@naver.com" style="width:100%"></label>
+        <label>비밀번호 (숫자 6자리)<input type="password" id="loginPw" inputmode="numeric" maxlength="6" autocomplete="current-password" style="width:100%"></label>
+        <button class="btn primary lg" id="loginBtn" type="submit">로그인</button>
+      </form>
+      <p class="muted" style="margin-top:16px">공용 PC에서는 사용 후 꼭 로그아웃해 주세요.</p>
       <div id="loginMsg" class="banner bad hide" style="margin-top:12px"></div>
     </div>
   </section>
@@ -718,9 +722,8 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
         </ul>
         <h3>직원에게 홈 화면 보여주기</h3>
         <ol>
-          <li>직원이 acetool.site/pos 에서 본인 구글 계정으로 로그인합니다. ("승인 대기 중" 화면이 나옵니다)</li>
-          <li>권한 관리 탭에서 요청을 확인하고 "보기 권한"으로 승인합니다.</li>
-          <li>직원(보기 권한)은 홈 화면만 볼 수 있습니다. 담당자·거래처·마진 정보와 업로드·다운로드는 관리자만 가능합니다. (서버 규칙으로 막혀 있어 화면을 조작해도 볼 수 없습니다)</li>
+          <li>매출 현황은 관리자 계정(이메일 + 숫자 6자리 비밀번호)으로만 들어올 수 있습니다. 홈 화면도 관리자만 볼 수 있습니다.</li>
+          <li>관리자 계정은 Firebase 콘솔 › Authentication에서 만들고, Firestore pos_roles에 그 UID로 role: "admin"을 넣어 줍니다.</li>
         </ol>
         <h3>보안 수칙</h3>
         <ul>
@@ -880,7 +883,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
   getFirestore, doc, getDoc, getDocFromServer, getDocs, setDoc, deleteDoc, addDoc, collection,
   runTransaction, writeBatch, serverTimestamp, query, orderBy, limit, increment, where
@@ -898,8 +901,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app); // 오프라인 캐시는 켜지 않음(공용 PC에 데이터가 남지 않도록)
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({ prompt: 'select_account' });
 
 const C = { daily: 'pos_daily', detail: 'pos_detail', targets: 'pos_targets', sms: 'pos_sms', config: 'pos_config', logs: 'pos_logs', roles: 'pos_roles', requests: 'pos_requests', stats: 'pos_stats', cons: 'pos_cons', consSum: 'pos_cons_sum', plans: 'pos_plans', planSum: 'pos_plan_sum', ar: 'pos_ar', events: 'pos_events', my: 'pos_my', report: 'pos_report', ref: 'pos_ref' };
 const SITE_URL = 'https://acetool.site/pos/';
@@ -1518,14 +1519,22 @@ function show(v) {
   measureHead();
   if (v === 'admin') bumpIdle();
 }
-$('loginBtn').addEventListener('click', async () => {
-  $('loginMsg').classList.add('hide');
-  try { await signInWithPopup(auth, provider); }
+// 로그인: 이메일 + 숫자 6자리 비밀번호 (근무표 관리자와 같은 계정). 이메일은 이 기기에 기억
+const LOGIN_EMAIL_KEY = 'pos.loginEmail';
+try { $('loginEmail').value = localStorage.getItem(LOGIN_EMAIL_KEY) || ''; } catch (e) { }
+function loginMsg(t) { $('loginMsg').textContent = t; $('loginMsg').classList.toggle('hide', !t); }
+$('loginForm').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const email = $('loginEmail').value.trim(), pw = $('loginPw').value;
+  if (!email) return loginMsg('이메일을 입력해 주세요.');
+  if (!/^\d{6}$/.test(pw)) return loginMsg('비밀번호는 숫자 6자리입니다.');
+  loginMsg(''); $('loginBtn').disabled = true;
+  try { await signInWithEmailAndPassword(auth, email, pw); try { localStorage.setItem(LOGIN_EMAIL_KEY, email); } catch (e) { } $('loginPw').value = ''; }
   catch (e) {
-    if (e && e.code === 'auth/popup-closed-by-user') return;
-    $('loginMsg').textContent = e && e.code === 'auth/unauthorized-domain' ? '이 주소는 Firebase 승인 도메인에 등록되지 않았습니다.' : '로그인 실패: ' + errMsg(e);
-    $('loginMsg').classList.remove('hide');
-  }
+    const c = (e && e.code) || '';
+    loginMsg(c.includes('invalid-credential') || c.includes('wrong-password') || c.includes('user-not-found') || c.includes('invalid-email') ? '이메일 또는 비밀번호가 틀렸습니다.'
+      : c.includes('too-many-requests') ? '시도가 너무 많아요. 잠시 뒤에 다시 해 주세요.' : '로그인 실패: ' + errMsg(e));
+  } finally { $('loginBtn').disabled = false; }
 });
 $('pageRefresh').addEventListener('click', () => location.reload());
 document.querySelectorAll('.refresh-btn').forEach(b => b.addEventListener('click', () => { b.classList.remove('spin'); void b.offsetWidth; b.classList.add('spin'); }));
@@ -1538,7 +1547,7 @@ async function routeUser(user) {
   let role = null;
   try { const r = await getDoc(doc(db, C.roles, user.uid)); role = r.exists() ? r.data().role : null; }
   catch (e) { role = null; }
-  if (role === 'admin' || role === 'viewer') {
+  if (role === 'admin') {  // 매출 현황은 관리자만
     S.role = role;
     countVisit(user);
     if (wantAdmin()) { enterAdmin(hashTab() || S.adminTab); return; } // 관리자 주소로 들어오면 바로 관리자 페이지
@@ -1546,18 +1555,10 @@ async function routeUser(user) {
     loadHome(S.ym);
     return;
   }
+  // 관리자가 아니면 들어갈 수 없음 (근무표 전용 계정 등)
   S.role = null;
-  $('pendEmail').textContent = user.email || '';
-  $('pendUid').textContent = user.uid;
-  $('pendMsg').textContent = '승인 요청을 보내는 중…';
-  show('pending');
-  setStatus('승인 대기 중');
-  try {
-    await setDoc(doc(db, C.requests, user.uid), { email: user.email || '', name: cleanText(user.displayName || '', 100), at: serverTimestamp() });
-    $('pendMsg').textContent = '승인 요청을 보냈습니다. 관리자가 승인한 뒤 "다시 확인"을 눌러 주세요.';
-  } catch (e) {
-    $('pendMsg').textContent = '요청을 보내지 못했습니다. 첫 관리자라면 사용 안내대로 Firebase 콘솔에서 이 UID를 관리자로 등록해 주세요. (' + errMsg(e) + ')';
-  }
+  await signOut(auth);
+  loginMsg('매출 현황은 관리자 계정만 볼 수 있습니다.');
 }
 /* 접속 수: 승인된 계정이 이 브라우저에서 하루 처음 열 때 1번만 셈 (누가 접속했는지는 저장하지 않음) */
 async function countVisit(user) {
