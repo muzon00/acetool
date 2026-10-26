@@ -2195,34 +2195,19 @@ function renderHome(d) {
   h += '<div class="card" data-sec="누적 매출"><h2>누적 매출 추이</h2><div class="legend"><span><i class="line" style="border-color:var(--s1)"></i>이번 달 누적</span>' +
     (hasPrev ? '<span><i class="line" style="border-color:var(--ink3)"></i>전월 누적</span>' : '') +
     (d.target ? '<span><i class="dot" style="border-color:var(--ink2)"></i>목표 진행선</span>' : '') + (fb ? '<span><i class="dash" style="border-color:var(--s1)"></i>예상(기본)</span>' : '') + '</div><div id="chCum">' + ch1.html + '</div></div>';
+  // 시간별 매출 · 지점 비교 · 본사 참고자료는 홈에서 뺌 (필요 없음)
   const sm = d.sms;
-  if (sm.hourlyDates.length) {
-    h += '<div class="card" data-sec="시간별"><h2>시간별 누적 매출 (문자 · 일산점)</h2><div class="row" style="margin-bottom:6px"><label>날짜<select id="hourSel">' +
-      sm.hourlyDates.slice().reverse().map(x => '<option value="' + x + '">' + mdLabel(x) + '</option>').join('') + '</select></label></div>' +
-      '<div class="legend" id="hourLegend"></div><div id="chHour"></div><p class="muted" style="margin:6px 0 0">문자 금액은 VAT ' + (sm.vat === 'incl' ? '포함으로 보고 ÷1.1 환산' : '별도(환산 없음)') + '했습니다.</p></div>';
-  }
-  h += branchCard(br);
   h += pbCard(sm, S.smsCache[d.ym] || [], d.ym);
   h += memberCard(sm, S.smsCache[d.ym] || []);
   const wu = (S.settings && S.settings.workUrl) || 'https://acetool.site/sch/'; // 같은 사이트의 일산점 근무표가 기본
   h += '<div class="card work" data-sec="근무표"><div><h2>📅 근무표</h2><p class="muted" style="margin:0">매장 근무표 관리 웹앱으로 이동합니다. 새 창으로 열려요.</p></div>' +
     (wu ? '<a class="btn primary" href="' + esc(wu) + '" target="_blank" rel="noopener noreferrer">근무표 열기 ↗</a>'
       : '<span class="btn ghost" aria-disabled="true">주소 준비 중' + (S.role === 'admin' ? ' · 목표·설정에서 입력' : '') + '</span>') + '</div>';
-  if (S.role === 'admin') h += '<div id="hDetail" data-sec="상세 분석"><div class="card muted">상세 분석 불러오는 중…</div></div><div id="hCons" data-sec="시공 분석"><div class="card muted">시공 분석 불러오는 중…</div></div><div id="hAr" data-sec="채권"><div class="card muted">채권 불러오는 중…</div></div><div id="hRef" data-sec="본사 참고자료"><div class="card muted">본사 참고자료 불러오는 중…</div></div>';
+  if (S.role === 'admin') h += '<div id="hDetail" data-sec="상세 분석"><div class="card muted">상세 분석 불러오는 중…</div></div><div id="hCons" data-sec="시공 분석"><div class="card muted">시공 분석 불러오는 중…</div></div><div id="hAr" data-sec="채권"><div class="card muted">채권 불러오는 중…</div></div>';
   $('homeBody').innerHTML = h;
   buildSecNav('homeBody', 'homeNav');
   ch1.bind(); ch2.bind(); bindCal();
   if (S.role === 'admin') homeAdminParts(d);
-  const sl = $('hourSel');
-  if (sl) {
-    const draw = () => {
-      const c = chartHourly(sm, Number(sl.value));
-      $('chHour').innerHTML = c.html;
-      $('hourLegend').innerHTML = '<span><i class="line" style="border-color:var(--s1)"></i>' + mdLabel(Number(sl.value)) + '</span>' + (c.cmpDate ? '<span><i class="dash" style="border-color:var(--ink3)"></i>' + mdLabel(c.cmpDate) + ' (비교)</span>' : '');
-      bindBars('#chHour');
-    };
-    sl.onchange = draw; draw();
-  }
 }
 
 /* 창 크기가 바뀌면 차트를 다시 그림 */
@@ -2275,10 +2260,6 @@ async function homeAdminParts(d) {
     if (S.sum !== d || !$('hAr')) return;
     renderAr($('hAr'));
   } catch (e) { if ($('hAr')) $('hAr').innerHTML = '<div class="banner bad">채권: ' + esc(errMsg(e)) + '</div>'; }
-  try {
-    await loadRef();
-    if (S.sum === d && $('hRef')) renderRef($('hRef'));
-  } catch (e) { if ($('hRef')) $('hRef').innerHTML = '<div class="banner bad">본사 참고자료: ' + esc(errMsg(e)) + '</div>'; }
   if (S.sum === d && $('dataStrip')) $('dataStrip').outerHTML = dataStrip(); // 시공·채권까지 반영
 }
 
@@ -3836,8 +3817,7 @@ function handleRef(sheets, name) {
     try {
       await saveRefs(ok, name);
       S.logs = null;
-      $('preview').innerHTML = '<div class="card"><div class="banner ok"><b>본사 참고자료 저장 완료</b><br>' + ['mix', 'pb'].filter(k => ok.some(p => p.kind === k)).map(k => UP_KINDS[k].name + ' · ' + ok.filter(p => p.kind === k).map(p => p.store).join(', ')).join('<br>') + '</div><button class="btn primary" id="goRef">홈에서 보기</button></div>';
-      $('goRef').addEventListener('click', () => goHomeSec(0, '본사 참고자료'));
+      $('preview').innerHTML = '<div class="card"><div class="banner ok"><b>본사 참고자료 저장 완료</b><br>' + ['mix', 'pb'].filter(k => ok.some(p => p.kind === k)).map(k => UP_KINDS[k].name + ' · ' + ok.filter(p => p.kind === k).map(p => p.store).join(', ')).join('<br>') + '</div></div>';
       fileIn.value = ''; $('upText').value = ''; renderDataStatus();
     } catch (e) { this.disabled = false; $('refMsg').textContent = '저장 실패: ' + errMsg(e); }
   });
