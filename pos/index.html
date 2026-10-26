@@ -591,6 +591,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
         <button class="pill" data-tab="download">다운로드</button>
         <button class="pill" data-tab="settings">목표·설정</button>
         <button class="pill" data-tab="tree">매출 구조</button>
+        <button class="pill" data-tab="vip">회원 명단</button>
         <button class="pill" data-tab="members">권한 관리</button>
         <button class="pill" data-tab="help">사용 안내</button>
       </nav>
@@ -741,6 +742,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
       </div>
     </div>
 
+    <div id="a-vip" class="hide"></div>
     <div id="a-members" class="hide"></div>
 
     <div id="a-help" class="hide">
@@ -982,7 +984,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app); // 오프라인 캐시는 켜지 않음(공용 PC에 데이터가 남지 않도록)
 
-const C = { daily: 'pos_daily', detail: 'pos_detail', targets: 'pos_targets', sms: 'pos_sms', config: 'pos_config', logs: 'pos_logs', roles: 'pos_roles', requests: 'pos_requests', stats: 'pos_stats', cons: 'pos_cons', consSum: 'pos_cons_sum', plans: 'pos_plans', planSum: 'pos_plan_sum', ar: 'pos_ar', events: 'pos_events', my: 'pos_my', report: 'pos_report', ref: 'pos_ref' };
+const C = { daily: 'pos_daily', detail: 'pos_detail', targets: 'pos_targets', sms: 'pos_sms', config: 'pos_config', logs: 'pos_logs', roles: 'pos_roles', requests: 'pos_requests', stats: 'pos_stats', cons: 'pos_cons', consSum: 'pos_cons_sum', plans: 'pos_plans', planSum: 'pos_plan_sum', ar: 'pos_ar', events: 'pos_events', my: 'pos_my', report: 'pos_report', ref: 'pos_ref', members: 'pos_members' };
 const SITE_URL = 'https://acetool.site/pos/';
 const XLSX_URL = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
 const XLSX_SRI = 'sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT';
@@ -1375,7 +1377,7 @@ function buildDetail(detail, ym, lastDay) {
 /* ===================== Firestore 읽기/쓰기 ===================== */
 // https 주소만 허용 (javascript: 같은 위험한 링크 차단)
 function safeUrl(u) { try { const x = new URL(String(u || '').trim()); return x.protocol === 'https:' ? x.href : ''; } catch (e) { return ''; } }
-function invalidate() { S.daily = null; S.targets = null; S.settings = null; S.smsCache = {}; S.detail = null; S.cons = null; S.consSum = null; S.plans = null; S.planSum = null; S.ar = null; S.ev = null; S.ref = null; }
+function invalidate() { S.daily = null; S.targets = null; S.settings = null; S.smsCache = {}; S.detail = null; S.cons = null; S.consSum = null; S.plans = null; S.planSum = null; S.ar = null; S.ev = null; S.ref = null; S.members = null; }
 async function loadBase(force) {
   if (S.daily && S.targets && S.settings && !force) return;
   const [dSnap, tSnap, cSnap] = await Promise.all([getDocs(collection(db, C.daily)), getDocs(collection(db, C.targets)), getDoc(doc(db, C.config, 'settings'))]);
@@ -2314,7 +2316,7 @@ window.addEventListener('resize', () => {
 
 /* ===================== 관리자: 탭 ===================== */
 document.querySelectorAll('#adminTabs .pill').forEach(b => b.addEventListener('click', () => showAdminTab(b.dataset.tab)));
-const ATABS = ['upload', 'plans', 'download', 'settings', 'tree', 'members', 'help'];
+const ATABS = ['upload', 'plans', 'download', 'settings', 'tree', 'vip', 'members', 'help'];
 function showAdminTab(t) {
   if (!ATABS.includes(t)) t = 'upload';
   S.adminTab = t;
@@ -2325,6 +2327,7 @@ function showAdminTab(t) {
   if (t === 'plans') loadPlansTab();
   if (t === 'settings') loadSettings();
   if (t === 'tree') loadTree();
+  if (t === 'vip') loadMembersList();
   if (t === 'members') loadMembers();
   if (t === 'upload') renderDataStatus();
 }
@@ -2810,6 +2813,7 @@ const UP_KINDS = {
   cons: { icon: '🛁', name: '시공 내역', desc: '같은 판매번호는 새 내용으로 교체됩니다. 비고·상담결과 같은 메모 칸과 배송·이동번호는 저장하지 않습니다.' },
   ar: { icon: '💳', name: '채권연령 관리', desc: '기준일별로 저장해 지난번과 비교합니다. 사업자등록번호는 저장하지 않습니다.' },
   mix: { icon: '📚', name: '본사 참고자료 · 매출 유형별 비중 및 추이', desc: '관계사 · 일반 B2B · 일반 내판의 월별 실매출·매총이익을 저장합니다. 같은 지점·연도를 다시 올리면 교체됩니다.' },
+  members: { icon: '👑', name: 'Master 이상 회원 명단', desc: '일산점 VIP MASTER · MASTER 고객의 고객번호·이름·등급·거래건·실매출만 저장해 관리자 › 회원 명단에서 봅니다. 새로 올리면 명단 전체가 교체됩니다.' },
   pb: { icon: '🏷️', name: '본사 참고자료 · 점포별 PB 실적', desc: '전체·PB 월별 실적, PB 카테고리별 매출, 잘 팔리는 PB 상품 상위 50개를 저장합니다. 같은 지점·연도를 다시 올리면 교체됩니다.' }
 };
 function detectKind(aoa) {
@@ -2820,6 +2824,7 @@ function detectKind(aoa) {
   const h0 = (aoa[0] || []).map(hnorm);
   if (h0.includes('YearMonthNo') && h0.includes('실매출') && h0.includes('거래건') && h0.some(c => c.startsWith('고객등급'))) return 'mixraw';
   if (h0.includes('YearMonthNo') && h0.includes('실매출') && h0.includes('PB구분2')) return 'pbraw';
+  if (has('고객번호', '고객등급') && top.some(l => l.some(c => c.startsWith('고객명')))) return 'members';  // Master 이상 회원 명단
   if (h0.includes('상품코드') && h0.includes('상품명') && h0.includes('지점') && h0.includes('실매출')) return 'pbtop';
   if (/PB\s*실적/.test(txt) || has('PB실매출')) return 'pb';
   if (/매출\s*유형/.test(txt) || top.some(l => l.some(c => /^[ㄴ└]?관계사$/.test(c)))) return 'mix';
@@ -3004,6 +3009,13 @@ async function streamSales(f, onProgress) {
 const isReportForm = sheets => sheets.some(aoa => { const t = aoa.slice(0, 8).map(r => (r || []).join(' ')).join(' '); return /해결사/.test(t) && /목표/.test(t); });
 const UP_FORM = '분석 보고서 양식 파일이라 올리지 않아도 됩니다 (관리자 › 다운로드 › 분석 보고서에서 만듭니다)';
 function makeJobs(sheets, name) {
+  // 회원 명단 시트는 따로 일감으로 (같은 파일의 다른 시트도 계속 처리)
+  const memS = sheets.filter(a => detectKind(a) === 'members');
+  if (memS.length) {
+    const mj = memS.map(a => { const p = memParse(a); return p.error ? { name, kind: 'members', error: p.error } : { name, kind: 'members', info: memInfo(p), save: async () => { await saveMembers(p, name); return p.list.length + '명 저장'; } }; });
+    const others = sheets.filter(a => !memS.includes(a));
+    return others.some(a => detectKind(a)) ? mj.concat(makeJobs(others, name)) : mj;
+  }
   const found = sheets.map(aoa => ({ aoa, kind: detectKind(aoa) })).filter(x => x.kind);
   if (!found.length) return [{ name, error: isReportForm(sheets) ? UP_FORM : '어떤 자료인지 알아보지 못했습니다' }];
   const refs = found.filter(x => /^(mix|pb)/.test(x.kind));
@@ -3110,6 +3122,13 @@ async function readFile(f) {
   } catch (e) { $('preview').innerHTML = '<div class="banner bad">파일을 읽지 못했습니다: ' + esc(errMsg(e)) + '</div>'; }
 }
 function handleSheets(sheets, name) {
+  const memS = sheets.find(a => detectKind(a) === 'members');
+  if (memS) {
+    const others = sheets.filter(a => a !== memS && detectKind(a));
+    if (others.length) handleSheets(others, name); else $('preview').innerHTML = '';
+    memPreview(memParse(memS), name);
+    return;
+  }
   const found = sheets.map(aoa => ({ aoa, kind: detectKind(aoa) })).filter(x => x.kind);
   if (!found.length) { $('preview').innerHTML = isReportForm(sheets) ? '<div class="banner warn">' + UP_FORM + '</div>' : '<div class="banner bad">' + UP_NONE + '</div>'; return; }
   const refs = found.filter(x => /^(mix|pb)/.test(x.kind));
@@ -4454,6 +4473,87 @@ document.querySelectorAll('.amt-chips[data-for]').forEach(box => {
   }));
   inp.addEventListener('input', () => syncAmt(id));
 });
+/* ===================== Master 이상 회원 명단 (관리자만) =====================
+   본사 "일산점 Master 이상 등급 구매 실적" 시트 → pos_members/ilsan 문서 하나에 통째로 교체 저장
+   저장하는 열: 고객번호 · 고객명 · 등급 · 거래건 · 실매출 · 관계사여부 (그 밖의 열은 저장하지 않음) */
+const GR_LABEL = g => g === 'VIPMASTER' ? 'VIP MASTER' : g;
+function memParse(aoa) {
+  const hi = aoa.findIndex(r => r && r.map(hnorm).includes('고객번호') && r.map(hnorm).includes('고객등급'));
+  if (hi < 0) return { error: '머리글(고객번호 · 고객명 · 고객등급)을 찾지 못했습니다' };
+  const h = aoa[hi].map(hnorm), ci = f => h.findIndex(f);
+  const K = { no: ci(c => c === '고객번호'), name: ci(c => c.startsWith('고객명')), gr: ci(c => c === '고객등급'), n: ci(c => c.startsWith('거래')), s: ci(c => c.startsWith('실매출')), br: ci(c => c.startsWith('지점')), aff: ci(c => c.startsWith('관계사')) };
+  if (K.name < 0) return { error: '고객명 열을 찾지 못했습니다' };
+  // 제목 줄의 "26년 … (1/1~10/21)" → 기간
+  const title = aoa.slice(0, hi).map(r => (r || []).join(' ')).join(' ');
+  const pm = /(\d{2,4})\s*년[^()]*\(\s*(\d{1,2}\/\d{1,2})\s*~\s*(\d{1,2}\/\d{1,2})\s*\)/.exec(title);
+  const period = pm ? (pm[1].length === 2 ? '20' + pm[1] : pm[1]) + '년 ' + pm[2] + ' ~ ' + pm[3] : '';
+  const list = []; let other = 0;
+  aoa.slice(hi + 1).forEach(r => {
+    if (!r) return;
+    const v = k => (K[k] < 0 ? '' : r[K[k]]);
+    const name = cleanText(v('name'), 80), gr = hnorm(v('gr')).toUpperCase();
+    if (!name || !gr) return;
+    const br = String(v('br') === null || v('br') === undefined ? '' : v('br')).trim();
+    if (br && br !== 'P936' && !/일산/.test(br)) { other++; return; }  // 다른 지점 줄은 뺌
+    list.push({ no: cleanText(v('no'), 30), name, gr, n: Math.round(toNum(v('n'))), s: Math.round(toNum(v('s'))), aff: /^Y/i.test(String(v('aff') || '').trim()) });
+  });
+  if (!list.length) return { error: '일산점 회원 줄이 없습니다' };
+  list.sort((a, b) => b.s - a.s);
+  return { list, period, other };
+}
+const memCount = list => { const c = {}; list.forEach(m => { c[m.gr] = (c[m.gr] || 0) + 1; }); return c; };
+const memInfo = p => { const c = memCount(p.list); return Object.keys(c).sort().reverse().map(g => GR_LABEL(g) + ' ' + c[g] + '명').join(' · ') + (p.period ? ' · ' + p.period : ''); };
+async function saveMembers(p, name) {
+  await setDoc(doc(db, C.members, 'ilsan'), { list: p.list, period: p.period || '', file: cleanText(name, 120), at: serverTimestamp(), by: S.user.email || '' });
+  S.members = null;
+}
+// 업로드(파일 하나) 미리보기: 기존 미리보기 맨 위에 붙임
+function memPreview(p, name) {
+  const box = document.createElement('div');
+  if (p.error) { box.innerHTML = '<div class="banner bad">👑 회원 명단: ' + esc(p.error) + '</div>'; $('preview').prepend(box); return; }
+  box.innerHTML = kindBanner('members', name) + '<div class="card"><h2>👑 Master 이상 회원 명단 · ' + esc(memInfo(p)) + '</h2>' +
+    (p.other ? '<div class="banner warn">다른 지점 줄 ' + p.other + '개는 빼고 일산점만 저장합니다.</div>' : '') +
+    '<p class="muted" style="margin-top:0">실매출 상위: ' + p.list.slice(0, 5).map(m => esc(m.name) + ' ' + eok(m.s) + '원').join(', ') + '</p>' +
+    '<div class="row"><button class="btn primary" id="memSave">회원 명단 저장 (' + p.list.length + '명, 기존 명단 교체)</button><span class="muted" id="memMsg"></span></div></div>';
+  $('preview').prepend(box);
+  $('memSave').addEventListener('click', async () => {
+    $('memSave').disabled = true; $('memMsg').textContent = '저장 중…';
+    try { await saveMembers(p, name); $('memMsg').textContent = '저장했습니다. 관리자 › 회원 명단에서 볼 수 있어요.'; }
+    catch (e) { $('memMsg').textContent = '저장 실패: ' + errMsg(e); $('memSave').disabled = false; }
+  });
+}
+// 관리자 › 회원 명단
+let memFilter = { gr: '', q: '' };
+async function loadMembersList() {
+  const el = $('a-vip');
+  el.innerHTML = '<div class="card muted">불러오는 중…</div>';
+  try { if (!S.members) { const s = await getDoc(doc(db, C.members, 'ilsan')); S.members = s.exists() ? s.data() : { list: [] }; } }
+  catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
+  const M = S.members, list = M.list || [];
+  if (!list.length) { el.innerHTML = '<div class="card"><h2>👑 Master 이상 회원 명단</h2><p class="muted" style="margin:0">아직 올린 명단이 없습니다. 업로드 탭에 본사 "일산점 Master 이상 등급 구매 실적" 엑셀을 올려 주세요.</p></div>'; return; }
+  const c = memCount(list), sum = k => list.reduce((s, m) => s + (m[k] || 0), 0);
+  // 멤버쉽 문자의 회원수(전체 회원)와 비교: 이 명단은 구매 이력이 있는 고객만
+  const sm = S.sum && S.sum.sms && S.sum.sms.member.length ? S.sum.sms.member[S.sum.sms.member.length - 1] : null;
+  const smsN = k => sm && sm[k] !== undefined && sm[k] !== null ? '멤버쉽 문자 ' + mdLabel(sm.d) + ' 기준 ' + Number(sm[k]).toLocaleString('ko-KR') + '명' : '';
+  let h = '<div class="card"><h2>👑 Master 이상 회원 명단</h2><p class="muted" style="margin-top:0">' + (M.period ? esc(M.period) + ' 구매 실적 · ' : '') + '현재 등급 기준, 그 기간에 구매 이력이 있는 고객만 들어 있어요' + (M.at && M.at.toDate ? ' · ' + whenTxt(M.at) + ' 올림' : '') + '</p>' +
+    '<div class="kpis">' + kpi('VIP MASTER', (c.VIPMASTER || 0) + '명', smsN('VIP MASTER 회원')) + kpi('MASTER', (c.MASTER || 0) + '명', smsN('MASTER 회원')) +
+    kpi('거래건 합계', sum('n').toLocaleString('ko-KR') + '건', '') + kpi('실매출 합계', won(sum('s')), '1인 평균 ' + eok(sum('s') / list.length) + '원') + '</div>' +
+    '<div class="row" style="align-items:center;margin-bottom:8px"><div class="tr-seg" id="memGr">' + [['', '전체 ' + list.length]].concat(Object.keys(c).sort().reverse().map(g => [g, GR_LABEL(g) + ' ' + c[g]])).map(([g, l]) => '<button type="button" data-g="' + g + '"' + (memFilter.gr === g ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div>' +
+    '<input type="text" id="memQ" placeholder="고객명 · 고객번호 검색" value="' + esc(memFilter.q) + '" style="flex:1;min-width:180px"></div>' +
+    '<div class="scroll"><table id="memTbl"></table></div></div>';
+  el.innerHTML = h;
+  const draw = () => {
+    const q = memFilter.q.trim().toLowerCase();
+    const rows = list.filter(m => (!memFilter.gr || m.gr === memFilter.gr) && (!q || m.name.toLowerCase().includes(q) || String(m.no).includes(q)));
+    $('memTbl').innerHTML = '<tr><th>#</th><th>등급</th><th class="l">고객명</th><th>고객번호</th><th>거래건</th><th>실매출</th><th>객단가</th><th>관계사</th></tr>' +
+      (rows.length ? rows.map((m, i) => '<tr><td>' + (i + 1) + '</td><td><span class="tag' + (m.gr === 'VIPMASTER' ? ' admin' : '') + '">' + esc(GR_LABEL(m.gr)) + '</span></td><td class="l">' + esc(m.name) + '</td><td class="muted">' + esc(m.no) + '</td><td>' + m.n.toLocaleString('ko-KR') + '</td><td>' + won(m.s) + '</td><td>' + (m.n ? won(m.s / m.n) : '-') + '</td><td>' + (m.aff ? 'Y' : '') + '</td></tr>').join('')
+        : '<tr><td colspan="8" class="muted">찾는 고객이 없습니다.</td></tr>');
+  };
+  $('memGr').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { memFilter.gr = b.dataset.g; $('memGr').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); draw(); }));
+  $('memQ').addEventListener('input', () => { memFilter.q = $('memQ').value; draw(); });
+  draw();
+}
+
 /* ===================== 매출 구조 (관리자만) =====================
    목표 → 내판 / 외판 → 항목 → 세부 항목 … 단계 제한 없이 가지를 내림. 왼쪽(목표)에서 오른쪽으로 뻗는 그림, 누른 칸만 오른쪽에서 고침
    저장: pos_config/tree 문서. 월별은 'YYYYMM', 연간 계획은 'Y2027' 같은 필드 → { root: { name, amt, memo, key, children: [...] } } */
