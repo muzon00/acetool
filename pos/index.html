@@ -4487,7 +4487,7 @@ function memParse(aoa) {
   const title = aoa.slice(0, hi).map(r => (r || []).join(' ')).join(' ');
   const pm = /(\d{2,4})\s*년[^()]*\(\s*(\d{1,2}\/\d{1,2})\s*~\s*(\d{1,2}\/\d{1,2})\s*\)/.exec(title);
   const period = pm ? (pm[1].length === 2 ? '20' + pm[1] : pm[1]) + '년 ' + pm[2] + ' ~ ' + pm[3] : '';
-  const list = []; let other = 0;
+  const list = [], byNo = {}; let other = 0, dup = 0;
   aoa.slice(hi + 1).forEach(r => {
     if (!r) return;
     const v = k => (K[k] < 0 ? '' : r[K[k]]);
@@ -4495,11 +4495,16 @@ function memParse(aoa) {
     if (!name || !gr) return;
     const br = String(v('br') === null || v('br') === undefined ? '' : v('br')).trim();
     if (br && br !== 'P936' && !/일산/.test(br)) { other++; return; }  // 다른 지점 줄은 뺌
-    list.push({ no: cleanText(v('no'), 30), name, gr, n: Math.round(toNum(v('n'))), s: Math.round(toNum(v('s'))), aff: /^Y/i.test(String(v('aff') || '').trim()) });
+    const no = cleanText(v('no'), 30), n = Math.round(toNum(v('n'))), s = Math.round(toNum(v('s'))), aff = /^Y/i.test(String(v('aff') || '').trim());
+    // 같은 고객번호가 여러 줄이면 한 사람으로 합침 (거래건·실매출 더함)
+    if (no && byNo[no]) { const m = byNo[no]; m.n += n; m.s += s; m.aff = m.aff || aff; dup++; return; }
+    const m = { no, name, gr, n, s, aff };
+    if (no) byNo[no] = m;
+    list.push(m);
   });
   if (!list.length) return { error: '일산점 회원 줄이 없습니다' };
   list.sort((a, b) => b.s - a.s);
-  return { list, period, other };
+  return { list, period, other, dup };
 }
 const memCount = list => { const c = {}; list.forEach(m => { c[m.gr] = (c[m.gr] || 0) + 1; }); return c; };
 const memInfo = p => { const c = memCount(p.list); return Object.keys(c).sort().reverse().map(g => GR_LABEL(g) + ' ' + c[g] + '명').join(' · ') + (p.period ? ' · ' + p.period : ''); };
@@ -4513,6 +4518,7 @@ function memPreview(p, name) {
   if (p.error) { box.innerHTML = '<div class="banner bad">👑 회원 명단: ' + esc(p.error) + '</div>'; $('preview').prepend(box); return; }
   box.innerHTML = kindBanner('members', name) + '<div class="card"><h2>👑 Master 이상 회원 명단 · ' + esc(memInfo(p)) + '</h2>' +
     (p.other ? '<div class="banner warn">다른 지점 줄 ' + p.other + '개는 빼고 일산점만 저장합니다.</div>' : '') +
+    (p.dup ? '<div class="banner warn">같은 고객번호가 여러 줄인 ' + p.dup + '줄은 한 사람으로 합쳤습니다.</div>' : '') +
     '<p class="muted" style="margin-top:0">실매출 상위: ' + p.list.slice(0, 5).map(m => esc(m.name) + ' ' + eok(m.s) + '원').join(', ') + '</p>' +
     '<div class="row"><button class="btn primary" id="memSave">회원 명단 저장 (' + p.list.length + '명, 기존 명단 교체)</button><span class="muted" id="memMsg"></span></div></div>';
   $('preview').prepend(box);
@@ -4535,7 +4541,7 @@ async function loadMembersList() {
   // 멤버쉽 문자의 회원수(전체 회원)와 비교: 이 명단은 구매 이력이 있는 고객만
   const sm = S.sum && S.sum.sms && S.sum.sms.member.length ? S.sum.sms.member[S.sum.sms.member.length - 1] : null;
   const smsN = k => sm && sm[k] !== undefined && sm[k] !== null ? '멤버쉽 문자 ' + mdLabel(sm.d) + ' 기준 ' + Number(sm[k]).toLocaleString('ko-KR') + '명' : '';
-  let h = '<div class="card"><h2>👑 Master 이상 회원 명단</h2><p class="muted" style="margin-top:0">' + (M.period ? esc(M.period) + ' 구매 실적 · ' : '') + '현재 등급 기준, 그 기간에 구매 이력이 있는 고객만 들어 있어요' + (M.at && M.at.toDate ? ' · ' + whenTxt(M.at) + ' 올림' : '') + '</p>' +
+  let h = '<div class="card"><h2>👑 Master 이상 회원 명단</h2><p class="muted" style="margin-top:0">' + (M.period ? esc(M.period) + ' 구매 실적 · ' : '') + '현재 등급 기준, 그 기간에 <b>일산점에서 구매한</b> 고객이에요 (다른 지점 소속 회원 포함). 멤버쉽 문자는 일산점 <b>소속</b> 회원 수라 숫자가 다를 수 있어요' + (M.at && M.at.toDate ? ' · ' + whenTxt(M.at) + ' 올림' : '') + '</p>' +
     '<div class="kpis">' + kpi('VIP MASTER', (c.VIPMASTER || 0) + '명', smsN('VIP MASTER 회원')) + kpi('MASTER', (c.MASTER || 0) + '명', smsN('MASTER 회원')) +
     kpi('거래건 합계', sum('n').toLocaleString('ko-KR') + '건', '') + kpi('실매출 합계', won(sum('s')), '1인 평균 ' + eok(sum('s') / list.length) + '원') + '</div>' +
     '<div class="row" style="align-items:center;margin-bottom:8px"><div class="tr-seg" id="memGr">' + [['', '전체 ' + list.length]].concat(Object.keys(c).sort().reverse().map(g => [g, GR_LABEL(g) + ' ' + c[g]])).map(([g, l]) => '<button type="button" data-g="' + g + '"' + (memFilter.gr === g ? ' class="on"' : '') + '>' + l + '</button>').join('') + '</div>' +
