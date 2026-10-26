@@ -329,6 +329,19 @@ details > summary.up-h { cursor: pointer; margin: 6px 0; font-weight: 700; }
 .mcol b { font-size: 10px; color: var(--ink); }
 .mcol i { display: block; width: 70%; background: var(--s1); border-radius: 3px 3px 0 0; }
 #upFileBox + #upPasteBox, #upPasteBox + #upFileBox { border-top: 1px dashed var(--line); margin-top: 18px; }
+.tr-node { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; background: var(--surface); display: grid; gap: 6px; }
+.tr-node.root { max-width: 360px; margin: 6px auto 0; border: 2px solid var(--s1); text-align: center; }
+.tr-node.head { border: 2px solid var(--line); }
+.tr-node input[type=number], .tr-node input[type=text] { width: 100%; }
+.tr-stem { width: 2px; height: 18px; background: var(--line); margin: 0 auto; }
+.tr-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; border-top: 2px solid var(--line); padding-top: 16px; }
+@media (max-width: 760px) { .tr-groups { grid-template-columns: 1fr; } }
+.tr-items { margin-left: 14px; padding: 10px 0 10px 14px; border-left: 2px solid var(--line); display: grid; gap: 8px; }
+.tr-item { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; }
+.tr-read { min-height: 1.1em; font-size: .9em; font-weight: 700; color: var(--chip-ink); }
+.tr-memo { font-size: .88em; }
+.tr-diff { font-size: .86em; color: var(--ink2); }
+.tr-diff .ok { color: var(--ok-ink); font-weight: 700; } .tr-diff .bad { color: var(--bad-ink); font-weight: 700; }
 .sec-title { font-size: 18px; margin: 26px 2px 12px; display: flex; align-items: center; gap: 8px; }
 .data-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 12px; font-size: .84em; }
 .data-strip .ds-t { font-weight: 700; color: var(--ink2); margin-right: 2px; }
@@ -545,6 +558,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
         <button class="pill" data-tab="plans">예정 매출</button>
         <button class="pill" data-tab="download">다운로드</button>
         <button class="pill" data-tab="settings">목표·설정</button>
+        <button class="pill" data-tab="tree">매출 구조</button>
         <button class="pill" data-tab="members">권한 관리</button>
         <button class="pill" data-tab="help">사용 안내</button>
       </nav>
@@ -658,6 +672,19 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
         <p class="muted">영업하지 않는 날을 한 줄에 하나씩 YYYY-MM-DD 형식으로 적으세요. 남은 영업일 계산과 누락일 점검에서 제외됩니다.</p>
         <textarea id="hol" rows="6" placeholder="2026-12-25"></textarea>
         <div style="margin-top:8px"><button class="btn primary" id="hSave">저장</button> <span id="hMsg" class="muted"></span></div>
+      </div>
+    </div>
+
+    <div id="a-tree" class="hide">
+      <div class="card">
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <h2 style="margin:0">매출 구조</h2>
+          <div class="row" style="align-items:end"><label>연월<input type="month" id="trYm"></label><button class="btn ghost sm" id="trCopy">지난달 구조 가져오기</button></div>
+        </div>
+        <p class="muted">목표를 내판·외판으로 나누고, 각각을 항목으로 나눠 적습니다. 항목은 자유롭게 추가·삭제할 수 있어요. 관리자 화면에서만 보이고 홈에는 나오지 않습니다. 금액은 VAT 별도 기준입니다.</p>
+        <div id="trBody"></div>
+        <label style="display:block;margin-top:14px"><input type="checkbox" id="trSync"> 목표·내판·외판 금액을 "월 목표"(홈 목표 진행)에도 똑같이 저장</label>
+        <div class="row" style="margin-top:10px;align-items:center"><button class="btn primary" id="trSave">저장</button><span id="trMsg" class="muted"></span></div>
       </div>
     </div>
 
@@ -2221,7 +2248,7 @@ window.addEventListener('resize', () => {
 
 /* ===================== 관리자: 탭 ===================== */
 document.querySelectorAll('#adminTabs .pill').forEach(b => b.addEventListener('click', () => showAdminTab(b.dataset.tab)));
-const ATABS = ['upload', 'plans', 'download', 'settings', 'members', 'help'];
+const ATABS = ['upload', 'plans', 'download', 'settings', 'tree', 'members', 'help'];
 function showAdminTab(t) {
   if (!ATABS.includes(t)) t = 'upload';
   S.adminTab = t;
@@ -2231,6 +2258,7 @@ function showAdminTab(t) {
   if (t === 'download') renderDownloads();
   if (t === 'plans') loadPlansTab();
   if (t === 'settings') loadSettings();
+  if (t === 'tree') loadTree();
   if (t === 'members') loadMembers();
   if (t === 'upload') renderDataStatus();
 }
@@ -4334,6 +4362,112 @@ document.querySelectorAll('input[name=smsVat]').forEach(r => r.addEventListener(
   try { await setDoc(doc(db, C.config, 'settings'), { smsVat: r.value === 'excl' ? 'excl' : 'incl' }, { merge: true }); $('vMsg').textContent = '저장했습니다.'; invalidate(); }
   catch (e) { $('vMsg').textContent = '저장 실패: ' + errMsg(e); }
 }));
+/* ===================== 매출 구조 (관리자만) =====================
+   목표 → 내판 / 외판 → 항목(이름·금액·메모, 자유롭게 추가·삭제). 월별로 pos_config/tree 문서의 'YYYYMM' 필드에 저장 */
+const TREE_DEFAULT = [
+  { key: 'n', name: '내판', items: ['인테리어', 'PB 매출', 'POS 매장결제'] },
+  { key: 'o', name: '외판', items: ['P팀', '관계사', '점B2B'] }
+];
+let TR = null;  // 지금 편집 중인 달의 구조
+const trYm = () => { const v = $('trYm').value; return v ? Number(v.replace('-', '')) : 0; };
+const prevYm = ym => (ym % 100 === 1 ? (Math.floor(ym / 100) - 1) * 100 + 12 : ym - 1);
+function trBlank(ym) {
+  const t = (S.targets && S.targets[ym]) || {};  // 월 목표가 있으면 금액을 미리 채움
+  return { target: t.total || null, groups: TREE_DEFAULT.map(g => ({ key: g.key, name: g.name, amt: t[g.key] || null, items: g.items.map(n => ({ name: n, amt: null, memo: '' })) })) };
+}
+async function loadTree() {
+  $('trMsg').textContent = '';
+  try {
+    await loadBase();
+    const snap = await getDoc(doc(db, C.config, 'tree'));
+    S.tree = snap.exists() ? snap.data() : {};
+  } catch (e) { $('trBody').innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
+  if (!$('trYm').value) { const td = todayInt(); $('trYm').value = Math.floor(td / 10000) + '-' + String(Math.floor(td / 100) % 100).padStart(2, '0'); }
+  openTreeMonth();
+}
+function openTreeMonth() {
+  const ym = trYm(); if (!ym) return;
+  const saved = S.tree && S.tree[String(ym)];
+  TR = saved ? JSON.parse(JSON.stringify(saved)) : trBlank(ym);
+  $('trMsg').textContent = saved ? '' : ymLabel(ym) + ' 구조는 아직 저장 전입니다. 기본 항목으로 시작해요.';
+  drawTree();
+}
+const trAmt = (path, v) => '<input type="number" inputmode="numeric" min="0" step="10000" data-p="' + path + '" data-f="amt" value="' + (v ?? '') + '" placeholder="금액(원)"><span class="tr-read" data-r="' + path + '"></span>';
+function drawTree() {
+  let h = '<div class="tr-node root"><b>🎯 목표</b>' + trAmt('t', TR.target) + '<div class="tr-diff" id="trRootDiff"></div></div><div class="tr-stem"></div><div class="tr-groups">';
+  TR.groups.forEach((g, gi) => {
+    h += '<div class="tr-group"><div class="tr-node head"><b>' + esc(g.name) + '</b>' + trAmt('g' + gi, g.amt) + '<div class="tr-diff" id="trDiff' + gi + '"></div></div><div class="tr-items">';
+    g.items.forEach((it, ii) => {
+      const p = 'g' + gi + 'i' + ii;
+      h += '<div class="tr-node item"><div class="tr-item"><input type="text" data-p="' + p + '" data-f="name" value="' + esc(it.name) + '" placeholder="항목 이름" maxlength="30">' +
+        '<button class="btn ghost sm" data-rm="' + gi + ':' + ii + '" title="이 항목 삭제">삭제</button></div>' + trAmt(p, it.amt) +
+        '<input type="text" class="tr-memo" data-p="' + p + '" data-f="memo" value="' + esc(it.memo || '') + '" placeholder="메모 (예: 시공 전후, 부족 시 점B2B 플랜 A·B)" maxlength="80"></div>';
+    });
+    h += '<button class="btn ghost sm" data-add="' + gi + '">+ ' + esc(g.name) + ' 항목 추가</button></div></div>';
+  });
+  $('trBody').innerHTML = h + '</div>';
+  $('trBody').querySelectorAll('input[data-p]').forEach(inp => inp.addEventListener('input', () => { trSet(inp.dataset.p, inp.dataset.f, inp.value); trCalc(); }));
+  $('trBody').querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => { TR.groups[Number(b.dataset.add)].items.push({ name: '', amt: null, memo: '' }); drawTree(); }));
+  $('trBody').querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => {
+    const [gi, ii] = b.dataset.rm.split(':').map(Number), it = TR.groups[gi].items[ii];
+    if ((it.name || it.amt) && !confirm((it.name || '이름 없는 항목') + ' 항목을 삭제할까요?')) return;
+    TR.groups[gi].items.splice(ii, 1); drawTree();
+  }));
+  trCalc();
+}
+function trSet(p, f, v) {
+  const num = v === '' ? null : Math.max(0, Math.round(Number(v) || 0));
+  if (p === 't') { TR.target = num; return; }
+  const m = /^g(\d+)(?:i(\d+))?$/.exec(p), g = TR.groups[Number(m[1])];
+  if (m[2] === undefined) { g.amt = num; return; }
+  const it = g.items[Number(m[2])];
+  it[f] = f === 'amt' ? num : v;
+}
+// 금액 읽기("1억 7,400만원")와 합계 확인: 내판+외판 ↔ 목표, 항목 합계 ↔ 내판/외판
+function trCalc() {
+  $('trBody').querySelectorAll('[data-r]').forEach(sp => {
+    const inp = $('trBody').querySelector('input[data-p="' + sp.dataset.r + '"][data-f="amt"]');
+    sp.textContent = krw(inp.value);
+  });
+  const diff = (label, sum, base) => {
+    if (!sum) return '';
+    const d = (base || 0) - sum;
+    return label + ' ' + krw(sum) + (base ? (d === 0 ? ' <span class="ok">· 딱 맞음</span>' : ' <span class="bad">· ' + (d > 0 ? krw(d) + ' 부족' : krw(-d) + ' 초과') + '</span>') : '');
+  };
+  $('trRootDiff').innerHTML = diff('내판 + 외판', TR.groups.reduce((s, g) => s + (g.amt || 0), 0), TR.target);
+  TR.groups.forEach((g, gi) => { $('trDiff' + gi).innerHTML = diff('항목 합계', g.items.reduce((s, it) => s + (it.amt || 0), 0), g.amt); });
+}
+$('trYm').addEventListener('change', openTreeMonth);
+$('trCopy').addEventListener('click', () => {
+  const ym = trYm(), p = prevYm(ym), src = S.tree && S.tree[String(p)];
+  if (!src) { $('trMsg').textContent = ymLabel(p) + '에 저장된 구조가 없습니다.'; return; }
+  TR = JSON.parse(JSON.stringify(src)); drawTree();
+  $('trMsg').textContent = ymLabel(p) + ' 구조를 가져왔습니다. 금액을 고친 뒤 저장해 주세요.';
+});
+$('trSave').addEventListener('click', async () => {
+  const ym = trYm();
+  if (!ym) { $('trMsg').textContent = '연월을 골라 주세요.'; return; }
+  // 이름도 금액도 없는 빈 항목은 빼고 저장
+  const clean = {
+    target: TR.target || null,
+    groups: TR.groups.map(g => ({ key: g.key, name: g.name, amt: g.amt || null,
+      items: g.items.filter(it => cleanText(it.name, 30) || it.amt).map(it => ({ name: cleanText(it.name, 30) || '(이름 없음)', amt: it.amt || null, memo: cleanText(it.memo, 80) })) })),
+    updatedAt: Date.now()
+  };
+  try {
+    await setDoc(doc(db, C.config, 'tree'), { [String(ym)]: clean }, { merge: true });
+    S.tree = Object.assign(S.tree || {}, { [String(ym)]: clean });
+    let msg = ymLabel(ym) + ' 매출 구조를 저장했습니다.';
+    if ($('trSync').checked && clean.target) {
+      const n = clean.groups.find(g => g.key === 'n'), o = clean.groups.find(g => g.key === 'o');
+      await setDoc(doc(db, C.targets, String(ym)), { total: clean.target, n: n ? n.amt : null, o: o ? o.amt : null, updatedAt: serverTimestamp() });
+      invalidate(); msg += ' 월 목표에도 반영했습니다.';
+    }
+    TR = JSON.parse(JSON.stringify(clean)); drawTree();
+    $('trMsg').textContent = msg;
+  } catch (e) { $('trMsg').textContent = '저장 실패: ' + errMsg(e); }
+});
+
 /* 금액 입력 도우미: +1억 / +5천만 / +1천만 / +100만 칩과 "3억 5,000만원" 읽기 */
 function krw(n) {
   n = Math.round(Number(n) || 0); if (!n) return '';
