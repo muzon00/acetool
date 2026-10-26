@@ -329,19 +329,42 @@ details > summary.up-h { cursor: pointer; margin: 6px 0; font-weight: 700; }
 .mcol b { font-size: 10px; color: var(--ink); }
 .mcol i { display: block; width: 70%; background: var(--s1); border-radius: 3px 3px 0 0; }
 #upFileBox + #upPasteBox, #upPasteBox + #upFileBox { border-top: 1px dashed var(--line); margin-top: 18px; }
-.tr-node { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; background: var(--surface); display: grid; gap: 6px; }
-.tr-node.root { max-width: 360px; margin: 6px auto 0; border: 2px solid var(--s1); text-align: center; }
-.tr-node.head { border: 2px solid var(--line); }
-.tr-node input[type=number], .tr-node input[type=text] { width: 100%; }
-.tr-stem { width: 2px; height: 18px; background: var(--line); margin: 0 auto; }
-.tr-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; border-top: 2px solid var(--line); padding-top: 16px; }
-@media (max-width: 760px) { .tr-groups { grid-template-columns: 1fr; } }
-.tr-items { margin-left: 14px; padding: 10px 0 10px 14px; border-left: 2px solid var(--line); display: grid; gap: 8px; }
-.tr-item { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; }
-.tr-read { min-height: 1.1em; font-size: .9em; font-weight: 700; color: var(--chip-ink); }
-.tr-memo { font-size: .88em; }
-.tr-diff { font-size: .86em; color: var(--ink2); }
-.tr-diff .ok { color: var(--ok-ink); font-weight: 700; } .tr-diff .bad { color: var(--bad-ink); font-weight: 700; }
+.tr-seg { display: inline-flex; background: var(--bg); border-radius: 10px; padding: 3px; }
+.tr-seg button { border: 0; background: transparent; color: var(--ink2); font: inherit; font-weight: 600; font-size: .9em; padding: 5px 12px; border-radius: 8px; cursor: pointer; }
+.tr-seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
+.tr-grid { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 18px; align-items: start; }
+@media (max-width: 820px) { .tr-grid { grid-template-columns: 1fr; } }
+.tr-svg { overflow-x: auto; min-width: 0; }
+.tr-svg svg { display: block; width: 100%; height: auto; }
+.tr-svg .trl path { fill: none; stroke: var(--line); stroke-width: 2; }
+.tr-svg .trn { cursor: pointer; outline: none; }
+.tr-svg .trn rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+.tr-svg .trn text { text-anchor: middle; font-family: inherit; }
+.tr-svg .trn .l { font-size: 11px; fill: var(--ink2); font-weight: 600; }
+.tr-svg .trn .v { font-size: 13px; fill: var(--ink); font-weight: 800; }
+.tr-svg .trn.root rect { fill: var(--ink); stroke: var(--ink); }
+.tr-svg .trn.root .l, .tr-svg .trn.root .v { fill: var(--surface); }
+.tr-svg .trn.root .v { font-size: 16px; }
+.tr-svg .trn.grp .v { font-size: 14px; }
+.tr-svg .trn.grp.in rect { fill: color-mix(in srgb, var(--s1) 12%, var(--surface)); stroke: var(--s1); }
+.tr-svg .trn.grp.in .l { fill: var(--s1); }
+.tr-svg .trn.grp.out rect { fill: color-mix(in srgb, var(--s2) 12%, var(--surface)); stroke: var(--s2); }
+.tr-svg .trn.grp.out .l { fill: var(--s2); }
+.tr-svg .trn.memo .l { text-decoration: underline dotted; }
+.tr-svg .trn:hover rect, .tr-svg .trn:focus-visible rect { stroke: var(--s1); }
+.tr-svg .trn.sel rect { stroke: var(--s1); stroke-width: 3; }
+.tr-svg .trn.root.sel rect { stroke: var(--s1); }
+.tr-svg .diff { font-size: 11px; font-weight: 700; text-anchor: middle; }
+.tr-svg .diff.ok { fill: var(--ok-ink); } .tr-svg .diff.bad { fill: var(--bad-ink); }
+.tr-svg .tradd { cursor: pointer; outline: none; }
+.tr-svg .tradd text { font-size: 12px; font-weight: 700; text-anchor: middle; }
+.tr-svg .tradd.in text { fill: var(--s1); } .tr-svg .tradd.out text { fill: var(--s2); }
+.tr-svg .tradd:focus-visible text, .tr-svg .tradd:hover text { text-decoration: underline; }
+.tr-edit { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px; display: grid; gap: 10px; }
+.tr-edit input { width: 100%; }
+.tr-edit #trAmt { font-size: 1.1em; font-weight: 700; }
+.tr-path { font-size: .88em; color: var(--ink2); font-weight: 600; }
+.tr-read { min-height: 1.2em; font-weight: 700; color: var(--chip-ink); }
 .sec-title { font-size: 18px; margin: 26px 2px 12px; display: flex; align-items: center; gap: 8px; }
 .data-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 12px; font-size: .84em; }
 .data-strip .ds-t { font-weight: 700; color: var(--ink2); margin-right: 2px; }
@@ -678,12 +701,28 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
     <div id="a-tree" class="hide">
       <div class="card">
         <div class="row" style="justify-content:space-between;align-items:center">
-          <h2 style="margin:0">매출 구조</h2>
-          <div class="row" style="align-items:end"><label>연월<input type="month" id="trYm"></label><button class="btn ghost sm" id="trCopy">지난달 구조 가져오기</button></div>
+          <h2 style="margin:0" id="trTitle">매출 구조</h2>
+          <div class="row" style="align-items:center">
+            <div class="tr-seg" id="trModes"><button type="button" class="on" data-mode="month">월별</button><button type="button" data-mode="year">연간 계획</button></div>
+            <label id="trYmBox">연월<input type="month" id="trYm"></label>
+            <label id="trYearBox" class="hide">연도<select id="trYear"></select></label>
+            <button class="btn ghost sm" id="trCopy">지난달 구조 가져오기</button>
+          </div>
         </div>
-        <p class="muted">목표를 내판·외판으로 나누고, 각각을 항목으로 나눠 적습니다. 항목은 자유롭게 추가·삭제할 수 있어요. 관리자 화면에서만 보이고 홈에는 나오지 않습니다. 금액은 VAT 별도 기준입니다.</p>
-        <div id="trBody"></div>
-        <label style="display:block;margin-top:14px"><input type="checkbox" id="trSync"> 목표·내판·외판 금액을 "월 목표"(홈 목표 진행)에도 똑같이 저장</label>
+        <p class="muted" style="margin:8px 0 12px">칸을 누르면 오른쪽에서 금액·이름·메모를 고칩니다. 항목은 "+ 항목"으로 늘리고 편집칸의 "항목 삭제"로 지워요. 관리자 화면에서만 보이고 금액은 VAT 별도 기준입니다.</p>
+        <div class="tr-grid">
+          <div class="tr-svg" id="trSvg"></div>
+          <aside class="tr-edit">
+            <div class="tr-path" id="trPath">선택한 칸 · 목표</div>
+            <input type="text" id="trName" class="hide" maxlength="30" placeholder="항목 이름">
+            <input type="number" id="trAmt" inputmode="numeric" min="0" step="10000" placeholder="금액(원)">
+            <div class="tr-read" id="trAmtRead"></div>
+            <div class="amt-chips" id="trChips"></div>
+            <input type="text" id="trMemo" class="hide" maxlength="80" placeholder="메모 (예: 시공 전후, 부족 시 점B2B 플랜 A·B)">
+            <button class="btn danger sm hide" id="trDel">항목 삭제</button>
+          </aside>
+        </div>
+        <label id="trSyncRow" style="display:block;margin-top:14px"><input type="checkbox" id="trSync"> 목표·내판·외판 금액을 "월 목표"(홈 목표 진행)에도 똑같이 저장</label>
         <div class="row" style="margin-top:10px;align-items:center"><button class="btn primary" id="trSave">저장</button><span id="trMsg" class="muted"></span></div>
       </div>
     </div>
@@ -4362,112 +4401,6 @@ document.querySelectorAll('input[name=smsVat]').forEach(r => r.addEventListener(
   try { await setDoc(doc(db, C.config, 'settings'), { smsVat: r.value === 'excl' ? 'excl' : 'incl' }, { merge: true }); $('vMsg').textContent = '저장했습니다.'; invalidate(); }
   catch (e) { $('vMsg').textContent = '저장 실패: ' + errMsg(e); }
 }));
-/* ===================== 매출 구조 (관리자만) =====================
-   목표 → 내판 / 외판 → 항목(이름·금액·메모, 자유롭게 추가·삭제). 월별로 pos_config/tree 문서의 'YYYYMM' 필드에 저장 */
-const TREE_DEFAULT = [
-  { key: 'n', name: '내판', items: ['인테리어', 'PB 매출', 'POS 매장결제'] },
-  { key: 'o', name: '외판', items: ['P팀', '관계사', '점B2B'] }
-];
-let TR = null;  // 지금 편집 중인 달의 구조
-const trYm = () => { const v = $('trYm').value; return v ? Number(v.replace('-', '')) : 0; };
-const prevYm = ym => (ym % 100 === 1 ? (Math.floor(ym / 100) - 1) * 100 + 12 : ym - 1);
-function trBlank(ym) {
-  const t = (S.targets && S.targets[ym]) || {};  // 월 목표가 있으면 금액을 미리 채움
-  return { target: t.total || null, groups: TREE_DEFAULT.map(g => ({ key: g.key, name: g.name, amt: t[g.key] || null, items: g.items.map(n => ({ name: n, amt: null, memo: '' })) })) };
-}
-async function loadTree() {
-  $('trMsg').textContent = '';
-  try {
-    await loadBase();
-    const snap = await getDoc(doc(db, C.config, 'tree'));
-    S.tree = snap.exists() ? snap.data() : {};
-  } catch (e) { $('trBody').innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
-  if (!$('trYm').value) { const td = todayInt(); $('trYm').value = Math.floor(td / 10000) + '-' + String(Math.floor(td / 100) % 100).padStart(2, '0'); }
-  openTreeMonth();
-}
-function openTreeMonth() {
-  const ym = trYm(); if (!ym) return;
-  const saved = S.tree && S.tree[String(ym)];
-  TR = saved ? JSON.parse(JSON.stringify(saved)) : trBlank(ym);
-  $('trMsg').textContent = saved ? '' : ymLabel(ym) + ' 구조는 아직 저장 전입니다. 기본 항목으로 시작해요.';
-  drawTree();
-}
-const trAmt = (path, v) => '<input type="number" inputmode="numeric" min="0" step="10000" data-p="' + path + '" data-f="amt" value="' + (v ?? '') + '" placeholder="금액(원)"><span class="tr-read" data-r="' + path + '"></span>';
-function drawTree() {
-  let h = '<div class="tr-node root"><b>🎯 목표</b>' + trAmt('t', TR.target) + '<div class="tr-diff" id="trRootDiff"></div></div><div class="tr-stem"></div><div class="tr-groups">';
-  TR.groups.forEach((g, gi) => {
-    h += '<div class="tr-group"><div class="tr-node head"><b>' + esc(g.name) + '</b>' + trAmt('g' + gi, g.amt) + '<div class="tr-diff" id="trDiff' + gi + '"></div></div><div class="tr-items">';
-    g.items.forEach((it, ii) => {
-      const p = 'g' + gi + 'i' + ii;
-      h += '<div class="tr-node item"><div class="tr-item"><input type="text" data-p="' + p + '" data-f="name" value="' + esc(it.name) + '" placeholder="항목 이름" maxlength="30">' +
-        '<button class="btn ghost sm" data-rm="' + gi + ':' + ii + '" title="이 항목 삭제">삭제</button></div>' + trAmt(p, it.amt) +
-        '<input type="text" class="tr-memo" data-p="' + p + '" data-f="memo" value="' + esc(it.memo || '') + '" placeholder="메모 (예: 시공 전후, 부족 시 점B2B 플랜 A·B)" maxlength="80"></div>';
-    });
-    h += '<button class="btn ghost sm" data-add="' + gi + '">+ ' + esc(g.name) + ' 항목 추가</button></div></div>';
-  });
-  $('trBody').innerHTML = h + '</div>';
-  $('trBody').querySelectorAll('input[data-p]').forEach(inp => inp.addEventListener('input', () => { trSet(inp.dataset.p, inp.dataset.f, inp.value); trCalc(); }));
-  $('trBody').querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => { TR.groups[Number(b.dataset.add)].items.push({ name: '', amt: null, memo: '' }); drawTree(); }));
-  $('trBody').querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => {
-    const [gi, ii] = b.dataset.rm.split(':').map(Number), it = TR.groups[gi].items[ii];
-    if ((it.name || it.amt) && !confirm((it.name || '이름 없는 항목') + ' 항목을 삭제할까요?')) return;
-    TR.groups[gi].items.splice(ii, 1); drawTree();
-  }));
-  trCalc();
-}
-function trSet(p, f, v) {
-  const num = v === '' ? null : Math.max(0, Math.round(Number(v) || 0));
-  if (p === 't') { TR.target = num; return; }
-  const m = /^g(\d+)(?:i(\d+))?$/.exec(p), g = TR.groups[Number(m[1])];
-  if (m[2] === undefined) { g.amt = num; return; }
-  const it = g.items[Number(m[2])];
-  it[f] = f === 'amt' ? num : v;
-}
-// 금액 읽기("1억 7,400만원")와 합계 확인: 내판+외판 ↔ 목표, 항목 합계 ↔ 내판/외판
-function trCalc() {
-  $('trBody').querySelectorAll('[data-r]').forEach(sp => {
-    const inp = $('trBody').querySelector('input[data-p="' + sp.dataset.r + '"][data-f="amt"]');
-    sp.textContent = krw(inp.value);
-  });
-  const diff = (label, sum, base) => {
-    if (!sum) return '';
-    const d = (base || 0) - sum;
-    return label + ' ' + krw(sum) + (base ? (d === 0 ? ' <span class="ok">· 딱 맞음</span>' : ' <span class="bad">· ' + (d > 0 ? krw(d) + ' 부족' : krw(-d) + ' 초과') + '</span>') : '');
-  };
-  $('trRootDiff').innerHTML = diff('내판 + 외판', TR.groups.reduce((s, g) => s + (g.amt || 0), 0), TR.target);
-  TR.groups.forEach((g, gi) => { $('trDiff' + gi).innerHTML = diff('항목 합계', g.items.reduce((s, it) => s + (it.amt || 0), 0), g.amt); });
-}
-$('trYm').addEventListener('change', openTreeMonth);
-$('trCopy').addEventListener('click', () => {
-  const ym = trYm(), p = prevYm(ym), src = S.tree && S.tree[String(p)];
-  if (!src) { $('trMsg').textContent = ymLabel(p) + '에 저장된 구조가 없습니다.'; return; }
-  TR = JSON.parse(JSON.stringify(src)); drawTree();
-  $('trMsg').textContent = ymLabel(p) + ' 구조를 가져왔습니다. 금액을 고친 뒤 저장해 주세요.';
-});
-$('trSave').addEventListener('click', async () => {
-  const ym = trYm();
-  if (!ym) { $('trMsg').textContent = '연월을 골라 주세요.'; return; }
-  // 이름도 금액도 없는 빈 항목은 빼고 저장
-  const clean = {
-    target: TR.target || null,
-    groups: TR.groups.map(g => ({ key: g.key, name: g.name, amt: g.amt || null,
-      items: g.items.filter(it => cleanText(it.name, 30) || it.amt).map(it => ({ name: cleanText(it.name, 30) || '(이름 없음)', amt: it.amt || null, memo: cleanText(it.memo, 80) })) })),
-    updatedAt: Date.now()
-  };
-  try {
-    await setDoc(doc(db, C.config, 'tree'), { [String(ym)]: clean }, { merge: true });
-    S.tree = Object.assign(S.tree || {}, { [String(ym)]: clean });
-    let msg = ymLabel(ym) + ' 매출 구조를 저장했습니다.';
-    if ($('trSync').checked && clean.target) {
-      const n = clean.groups.find(g => g.key === 'n'), o = clean.groups.find(g => g.key === 'o');
-      await setDoc(doc(db, C.targets, String(ym)), { total: clean.target, n: n ? n.amt : null, o: o ? o.amt : null, updatedAt: serverTimestamp() });
-      invalidate(); msg += ' 월 목표에도 반영했습니다.';
-    }
-    TR = JSON.parse(JSON.stringify(clean)); drawTree();
-    $('trMsg').textContent = msg;
-  } catch (e) { $('trMsg').textContent = '저장 실패: ' + errMsg(e); }
-});
-
 /* 금액 입력 도우미: +1억 / +5천만 / +1천만 / +100만 칩과 "3억 5,000만원" 읽기 */
 function krw(n) {
   n = Math.round(Number(n) || 0); if (!n) return '';
@@ -4491,6 +4424,179 @@ document.querySelectorAll('.amt-chips[data-for]').forEach(box => {
     syncAmt(id);
   }));
   inp.addEventListener('input', () => syncAmt(id));
+});
+/* ===================== 매출 구조 (관리자만) =====================
+   목표 → 내판 / 외판 → 항목(이름·금액·메모, 자유롭게 추가·삭제)을 가지 그림으로 보여 주고, 누른 칸만 오른쪽에서 고침
+   저장: pos_config/tree 문서. 월별은 'YYYYMM', 연간 계획은 'Y2027' 같은 필드 */
+const TREE_DEFAULT = [
+  { key: 'n', name: '내판', items: ['인테리어', 'PB 매출', 'POS 매장결제'] },
+  { key: 'o', name: '외판', items: ['P팀', '관계사', '점B2B'] }
+];
+let TR = null, trSel = 't', trMode = 'month';  // 편집 중인 구조 / 선택한 칸('t' 목표, 'g0' 내판, 'g0i1' 항목) / 'month' · 'year'
+const trYm = () => { const v = $('trYm').value; return v ? Number(v.replace('-', '')) : 0; };
+const trKey = () => trMode === 'year' ? 'Y' + $('trYear').value : (trYm() ? String(trYm()) : '');
+const trLabel = k => k.startsWith('Y') ? k.slice(1) + '년 연간' : ymLabel(Number(k));
+const trPrevKey = k => k.startsWith('Y') ? 'Y' + (Number(k.slice(1)) - 1) : String(Number(k) % 100 === 1 ? (Math.floor(Number(k) / 100) - 1) * 100 + 12 : Number(k) - 1);
+// 그림 안 짧은 금액: 1억 7,400만 / 3,100만
+function shortWon(n) {
+  if (!n) return '-';
+  const e = Math.floor(n / 1e8), m = Math.round((n % 1e8) / 1e4);
+  return e ? e + '억' + (m ? ' ' + m.toLocaleString('ko-KR') + '만' : '') : m ? m.toLocaleString('ko-KR') + '만' : Math.round(n).toLocaleString('ko-KR') + '원';
+}
+function trBlank(k) {
+  const t = (!k.startsWith('Y') && S.targets && S.targets[Number(k)]) || {};  // 월 목표가 있으면 금액을 미리 채움
+  return { target: t.total || null, groups: TREE_DEFAULT.map(g => ({ key: g.key, name: g.name, amt: t[g.key] || null, items: g.items.map(n => ({ name: n, amt: null, memo: '' })) })) };
+}
+async function loadTree() {
+  $('trMsg').textContent = '';
+  try {
+    await loadBase();
+    const snap = await getDoc(doc(db, C.config, 'tree'));
+    S.tree = snap.exists() ? snap.data() : {};
+  } catch (e) { $('trSvg').innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
+  const td = todayInt();
+  if (!$('trYm').value) $('trYm').value = Math.floor(td / 10000) + '-' + String(Math.floor(td / 100) % 100).padStart(2, '0');
+  if (!$('trYear').options.length) for (let y = Math.floor(td / 10000) - 1; y <= Math.floor(td / 10000) + 3; y++) $('trYear').add(new Option(y + '년', y, false, y === Math.floor(td / 10000) + 1));
+  openTree();
+}
+function openTree() {
+  const k = trKey(); if (!k) return;
+  const saved = S.tree && S.tree[k];
+  TR = saved ? JSON.parse(JSON.stringify(saved)) : trBlank(k);
+  trSel = 't';
+  $('trTitle').textContent = trLabel(k) + ' 매출 구조';
+  $('trMsg').textContent = saved ? '' : trLabel(k) + ' 구조는 아직 저장 전입니다. 기본 항목으로 시작해요.';
+  $('trCopy').textContent = trMode === 'year' ? '작년 구조 가져오기' : '지난달 구조 가져오기';
+  $('trSyncRow').classList.toggle('hide', trMode === 'year');
+  drawTree(); drawEdit();
+}
+const trNode = p => { if (p === 't') return null; const m = /^g(\d+)(?:i(\d+))?$/.exec(p); const g = TR.groups[Number(m[1])]; return m[2] === undefined ? g : g.items[Number(m[2])]; };
+const trSum = arr => arr.reduce((s, x) => s + (x.amt || 0), 0);
+function trDiff(sum, base) {
+  if (!sum || !base) return null;
+  const d = base - sum;
+  return d === 0 ? { ok: true, t: '항목 합계 딱 맞음' } : { ok: false, t: '항목 합계 ' + shortWon(Math.abs(d)) + (d > 0 ? ' 부족' : ' 초과') };
+}
+const cut = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+// 가지 그림: 항목 수에 맞춰 폭이 늘어남 (항목 칸 104 + 간격 10)
+function drawTree() {
+  const IW = 104, GAP = 10, GG = 34, Y0 = 14, Y1 = 112, Y2 = 216;
+  const widths = TR.groups.map(g => Math.max(g.items.length, 1) * (IW + GAP) - GAP);
+  const W = Math.max(widths.reduce((a, b) => a + b, 0) + GG * (TR.groups.length - 1) + 20, 420), H = 330;
+  let x = (W - (widths.reduce((a, b) => a + b, 0) + GG * (TR.groups.length - 1))) / 2, lines = '', nodes = '';
+  const rootX = W / 2;
+  const node = (p, cx, y, w, h, cls, label, amt, big) => {
+    const n = trNode(p);
+    return '<g class="trn ' + cls + (trSel === p ? ' sel' : '') + '" data-p="' + p + '" tabindex="0" role="button" aria-label="' + esc(label + ' ' + shortWon(amt)) + '">' +
+      '<title>' + esc(label + (n && n.memo ? ' · ' + n.memo : '')) + '</title>' +
+      '<rect x="' + (cx - w / 2) + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="' + (cls === 'root' ? h / 2 : 12) + '"/>' +
+      '<text class="l" x="' + cx + '" y="' + (y + h / 2 - (big ? 4 : 3)) + '">' + esc(label) + '</text>' +
+      '<text class="v" x="' + cx + '" y="' + (y + h / 2 + (big ? 15 : 13)) + '">' + esc(shortWon(amt)) + '</text></g>';
+  };
+  TR.groups.forEach((g, gi) => {
+    const gw = widths[gi], gx = x + gw / 2, tone = g.key === 'o' ? 'out' : 'in';
+    lines += '<path d="M' + rootX + ' ' + (Y0 + 52) + ' C' + rootX + ' ' + (Y0 + 82) + ' ' + gx + ' ' + (Y1 - 30) + ' ' + gx + ' ' + Y1 + '"/>';
+    nodes += node('g' + gi, gx, Y1, 140, 46, 'grp ' + tone, g.name, g.amt);
+    g.items.forEach((it, ii) => {
+      const ix = x + ii * (IW + GAP) + IW / 2;
+      lines += '<path d="M' + gx + ' ' + (Y1 + 46) + ' C' + gx + ' ' + (Y1 + 76) + ' ' + ix + ' ' + (Y2 - 30) + ' ' + ix + ' ' + Y2 + '"/>';
+      nodes += node('g' + gi + 'i' + ii, ix, Y2, IW, 46, 'item ' + tone + (it.memo ? ' memo' : ''), cut(it.name || '(이름 없음)', 8), it.amt);
+    });
+    const df = trDiff(trSum(g.items), g.amt);
+    if (df) nodes += '<text class="diff ' + (df.ok ? 'ok' : 'bad') + '" x="' + gx + '" y="' + (Y2 + 72) + '">' + df.t + '</text>';
+    nodes += '<g class="tradd ' + tone + '" data-add="' + gi + '" tabindex="0" role="button"><text x="' + gx + '" y="' + (Y2 + 102) + '">+ ' + esc(g.name) + ' 항목</text></g>';
+    x += gw + GG;
+  });
+  const rd = trDiff(trSum(TR.groups), TR.target);
+  nodes = node('t', rootX, Y0, 180, 52, 'root', '🎯 목표', TR.target, true) + nodes;
+  if (rd) nodes += '<text class="diff ' + (rd.ok ? 'ok' : 'bad') + '" x="' + (rootX + 104) + '" y="' + (Y0 + 31) + '" style="text-anchor:start">' + rd.t.replace('항목 합계', '내판+외판') + '</text>';
+  $('trSvg').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="min-width:' + Math.min(W, 1400) + 'px" role="img" aria-label="매출 구조 가지 그림"><g class="trl">' + lines + '</g>' + nodes + '</svg>';
+  $('trSvg').querySelectorAll('.trn').forEach(n => {
+    const pick = () => { trSel = n.dataset.p; drawTree(); drawEdit(); };
+    n.addEventListener('click', pick); n.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+  });
+  $('trSvg').querySelectorAll('.tradd').forEach(b => {
+    const add = () => { const gi = Number(b.dataset.add); TR.groups[gi].items.push({ name: '', amt: null, memo: '' }); trSel = 'g' + gi + 'i' + (TR.groups[gi].items.length - 1); drawTree(); drawEdit(); $('trName').focus(); };
+    b.addEventListener('click', add); b.addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
+  });
+}
+// 오른쪽 편집칸: 선택한 칸 하나만
+function drawEdit() {
+  const isItem = /i\d+$/.test(trSel), n = trNode(trSel);
+  const gi = trSel === 't' ? -1 : Number(/^g(\d+)/.exec(trSel)[1]);
+  $('trPath').textContent = trSel === 't' ? '선택한 칸 · 목표' : isItem ? '선택한 칸 · ' + TR.groups[gi].name + ' › 항목' : '선택한 칸 · ' + TR.groups[gi].name;
+  $('trName').classList.toggle('hide', !isItem); $('trMemo').classList.toggle('hide', !isItem); $('trDel').classList.toggle('hide', !isItem);
+  $('trName').value = isItem ? n.name : '';
+  $('trMemo').value = isItem ? (n.memo || '') : '';
+  const amt = trSel === 't' ? TR.target : n.amt;
+  $('trAmt').value = amt ?? '';
+  trRead();
+}
+function trRead() {
+  const amt = Number($('trAmt').value) || 0, isItem = /i\d+$/.test(trSel);
+  let share = '';
+  if (trSel !== 't') {
+    const gi = Number(/^g(\d+)/.exec(trSel)[1]), base = isItem ? TR.groups[gi].amt : TR.target;
+    if (amt && base) share = ' · ' + (isItem ? TR.groups[gi].name : '목표') + '의 ' + Math.round(amt / base * 100) + '%';
+  }
+  $('trAmtRead').textContent = (krw(amt) || '금액 없음') + share;
+}
+function trSetAmt(v) {
+  const num = v === '' ? null : Math.max(0, Math.round(Number(v) || 0));
+  if (trSel === 't') TR.target = num; else trNode(trSel).amt = num;
+  trRead(); drawTree();
+}
+$('trAmt').addEventListener('input', () => trSetAmt($('trAmt').value));
+$('trName').addEventListener('input', () => { trNode(trSel).name = $('trName').value; drawTree(); });
+$('trMemo').addEventListener('input', () => { trNode(trSel).memo = $('trMemo').value; drawTree(); });
+$('trChips').innerHTML = AMT_STEPS.map(([v, l]) => '<button type="button" data-v="' + v + '">' + l + '</button>').join('') + '<button type="button" data-v="0" class="clr">지우기</button>';
+$('trChips').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+  const v = Number(b.dataset.v), cur = Number($('trAmt').value) || 0;
+  $('trAmt').value = v ? cur + v : ''; trSetAmt($('trAmt').value);
+}));
+$('trDel').addEventListener('click', () => {
+  const m = /^g(\d+)i(\d+)$/.exec(trSel); if (!m) return;
+  const g = TR.groups[Number(m[1])], it = g.items[Number(m[2])];
+  if ((it.name || it.amt) && !confirm((it.name || '이름 없는 항목') + ' 항목을 삭제할까요?')) return;
+  g.items.splice(Number(m[2]), 1); trSel = 'g' + m[1]; drawTree(); drawEdit();
+});
+document.querySelectorAll('#trModes [data-mode]').forEach(b => b.addEventListener('click', () => {
+  trMode = b.dataset.mode;
+  document.querySelectorAll('#trModes [data-mode]').forEach(x => x.classList.toggle('on', x === b));
+  $('trYmBox').classList.toggle('hide', trMode !== 'month'); $('trYearBox').classList.toggle('hide', trMode !== 'year');
+  openTree();
+}));
+$('trYm').addEventListener('change', openTree);
+$('trYear').addEventListener('change', openTree);
+$('trCopy').addEventListener('click', () => {
+  const p = trPrevKey(trKey()), src = S.tree && S.tree[p];
+  if (!src) { $('trMsg').textContent = trLabel(p) + '에 저장된 구조가 없습니다.'; return; }
+  TR = JSON.parse(JSON.stringify(src)); trSel = 't'; drawTree(); drawEdit();
+  $('trMsg').textContent = trLabel(p) + ' 구조를 가져왔습니다. 금액을 고친 뒤 저장해 주세요.';
+});
+$('trSave').addEventListener('click', async () => {
+  const k = trKey();
+  if (!k) { $('trMsg').textContent = '연월을 골라 주세요.'; return; }
+  // 이름도 금액도 없는 빈 항목은 빼고 저장
+  const clean = {
+    target: TR.target || null,
+    groups: TR.groups.map(g => ({ key: g.key, name: g.name, amt: g.amt || null,
+      items: g.items.filter(it => cleanText(it.name, 30) || it.amt).map(it => ({ name: cleanText(it.name, 30) || '(이름 없음)', amt: it.amt || null, memo: cleanText(it.memo, 80) })) })),
+    updatedAt: Date.now()
+  };
+  try {
+    await setDoc(doc(db, C.config, 'tree'), { [k]: clean }, { merge: true });
+    S.tree = Object.assign(S.tree || {}, { [k]: clean });
+    let msg = trLabel(k) + ' 매출 구조를 저장했습니다.';
+    if (trMode === 'month' && $('trSync').checked && clean.target) {
+      const n = clean.groups.find(g => g.key === 'n'), o = clean.groups.find(g => g.key === 'o');
+      await setDoc(doc(db, C.targets, k), { total: clean.target, n: n ? n.amt : null, o: o ? o.amt : null, updatedAt: serverTimestamp() });
+      invalidate(); msg += ' 월 목표에도 반영했습니다.';
+    }
+    TR = JSON.parse(JSON.stringify(clean)); if (!trNode(trSel) && trSel !== 't') trSel = 't';
+    drawTree(); drawEdit();
+    $('trMsg').textContent = msg;
+  } catch (e) { $('trMsg').textContent = '저장 실패: ' + errMsg(e); }
 });
 $('wSave').addEventListener('click', async () => {
   const raw = $('wUrl').value.trim(), u = safeUrl(raw);
