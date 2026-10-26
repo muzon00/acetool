@@ -384,6 +384,8 @@ details > summary.up-h { cursor: pointer; margin: 6px 0; font-weight: 700; }
 .brief-tot b { font-size: 22px; }
 .brief-l { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; }
 .brief-l li { display: flex; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); font-size: .84em; line-height: 1.45; }
+/* 줄바꿈은 띄어쓰기에서만 → '734만원'이 '734 / 만원'으로 갈라지지 않게 (아주 긴 단어만 예외로 끊음) */
+.brief-l li, .brief-tot { word-break: keep-all; overflow-wrap: anywhere; }
 .brief-l li:nth-child(-n+2) { border-top: 0; }
 .brief-tot b { font-size: 20px; }
 .tag.free { background: var(--ok-bg); color: var(--ok-ink); font-size: .62em; font-weight: 700; vertical-align: 2px; }
