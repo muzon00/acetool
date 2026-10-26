@@ -539,12 +539,21 @@ function renderSummary(y, m) {
   const q = quotaFor(y, m);
   $('quotaSel').value = q;
   $('sumBody').innerHTML = membersForMonth(y, m).map(e => {
-    let used = 0; for (let d = 1; d <= dim(y, m); d++) if (status(dateKey(y, m, d), e) === '휴무') used++;
+    // 재직 기간(입사~퇴사) 안의 날만 셈. 퇴사 후에 남아 있는 휴무 표시는 세지 않음
+    let used = 0, days = 0, leave = 0;
+    for (let d = 1; d <= dim(y, m); d++) {
+      const ds = dateKey(y, m, d);
+      if (!isActiveOn(e, ds)) continue;
+      days++; const s = status(ds, e);
+      if (s === '휴무') used++; else if (s === '육아휴직') leave++;
+    }
+    const row = (u, r, st) => '<tr><td class="l"><b>' + esc(e.name) + '</b></td><td>' + u + '</td><td>' + r + '</td><td>' + st + '</td></tr>';
+    // 그달 재직일이 모두 육아휴직이면 휴무 계산 없이 육휴중
+    if (days && leave === days) return row('-', '-', '<span class="muted">육휴중</span>');
+    // 이 달에 퇴사하면 잔여 대신 퇴사일 표시 (퇴사 다음 날부터 근무표·근무인원에서 빠짐)
+    if (e.end && e.end.startsWith(ymKey(y, m))) return row(used, '-', '<span class="muted">' + Number(e.end.slice(5, 7)) + '/' + Number(e.end.slice(8)) + ' 퇴사</span>');
     const rem = q - used, st = rem < 0 ? '<span class="over">초과 ' + (-rem) + '</span>' : rem === 0 ? '<span class="done">완료</span>' : '<span class="muted">-</span>';
-    // 이 달에 퇴사하면 상태 칸에 퇴사일 표시 (퇴사 다음 날부터 근무표·근무인원에서 빠짐)
-    const left = e.end && e.end.startsWith(ymKey(y, m)) ? '<span class="muted">' + Number(e.end.slice(5, 7)) + '/' + Number(e.end.slice(8)) + ' 퇴사</span>' : '';
-    if (left) return '<tr><td class="l"><b>' + esc(e.name) + '</b></td><td>' + used + '</td><td>' + rem + '</td><td>' + left + '</td></tr>';
-    return '<tr><td class="l"><b>' + esc(e.name) + '</b></td><td>' + used + '</td><td>' + rem + '</td><td>' + st + '</td></tr>';
+    return row(used, rem, st);
   }).join('');
 }
 function renderWarn(y, m) {
