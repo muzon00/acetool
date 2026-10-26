@@ -213,6 +213,8 @@ svg text.wk { fill: var(--ink); font-weight: 700; }
 .gsub { display: grid; grid-template-columns: 36px 1fr auto; gap: 8px; align-items: center; font-size: .86em; color: var(--ink2); margin-top: 8px; }
 .gsub-t { height: 8px; background: var(--grid); border-radius: 4px; overflow: hidden; }
 .gsub-t i { display: block; height: 100%; border-radius: 4px; }
+.gpay { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0 0 10px; font-size: .9em; word-break: keep-all; }
+.gpay b { font-variant-numeric: tabular-nums; }
 .gfacts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
 .gfacts div { background: var(--surface2); border-radius: var(--radius-sm); padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .gfacts b { font-size: .98em; overflow-wrap: anywhere; }
@@ -1072,7 +1074,8 @@ function salesAgg(headRow) {
   const isMine = r => (brK === undefined || !r[brK] || String(r[brK]).trim() === 'P936') && (brN === undefined || !r[brN] || /일산/.test(r[brN]));
 
   const map = {}, order = [];
-  const st = { rowsRead: 0, usedRows: 0, totalNet: 0, byG: { '내판': 0, '외판': 0 }, unknown: {}, badDate: 0, dateSet: {}, adjusted: 0, other: 0 };
+  const st = { rowsRead: 0, usedRows: 0, totalNet: 0, byG: { '내판': 0, '외판': 0 }, unknown: {}, badDate: 0, dateSet: {}, adjusted: 0, other: 0, payByDay: {} };
+  const hasPay = !aggMode && col['결제금액'] !== undefined;  // POS 원본이면 날짜별 총결제금액(VAT 포함)도 모음
   const get = (r, name) => { const k = col[name]; return k === undefined ? '' : r[k]; };
   const add = r => {
     if (!r || !r.length) return;
@@ -1093,6 +1096,7 @@ function salesAgg(headRow) {
       const tax = toNum(get(r, '과세결제금액')), non = toNum(get(r, '비과세결제금액')), pay = toNum(get(r, '결제금액'));
       net = tax + non;
       if (net === 0 && pay !== 0) { net = Math.round(pay / 1.1); st.adjusted++; }
+      if (hasPay) st.payByDay[d] = (st.payByDay[d] || 0) + pay;
       mar = toNum(get(r, '마진금액'));
       mgr = g === '외판' ? (cleanText(get(r, '담당자'), 40) || '(미지정)') : '';
       cust = g === '외판' ? (cleanText(get(r, '고객명'), 80) || '(거래처 미기재)') : '';
@@ -1107,7 +1111,7 @@ function salesAgg(headRow) {
   const done = () => {
     const rows = order.map(k => map[k]);
     const dates = Object.keys(st.dateSet).map(Number).sort((a, b) => a - b);
-    return { rows, stats: { rowsRead: st.rowsRead, usedRows: st.usedRows, totalNet: st.totalNet, byG: st.byG, unknown: st.unknown, badDate: st.badDate, dates, adjusted: st.adjusted, other: st.other, mode: aggMode ? '백업/집계 CSV' : 'POS 원본' } };
+    return { rows, stats: { rowsRead: st.rowsRead, usedRows: st.usedRows, totalNet: st.totalNet, byG: st.byG, unknown: st.unknown, badDate: st.badDate, dates, adjusted: st.adjusted, other: st.other, payByDay: hasPay ? st.payByDay : null, mode: aggMode ? '백업/집계 CSV' : 'POS 원본' } };
   };
   return { add, done };
 }
@@ -1239,13 +1243,14 @@ function buildSummary(daily, targets, holidays, ym, today, sms, smsVat) {
   const months = Object.keys(daily).map(Number).filter(m => Object.keys(daily[m] || {}).length).sort((a, b) => a - b);
   if (!ym) ym = months.length ? months[months.length - 1] : ymOf(today);
   const dim = dimOf(ym), md = daily[ym] || {};
-  const days = [], cum = { n: 0, o: 0 };
+  const days = [], cum = { n: 0, o: 0, p: 0, pDays: 0 };
   let lastDay = 0;
   for (let d = 1; d <= dim; d++) {
     const x = md[d], has = !!x;
     const n = has ? Number(x.n) || 0 : 0, o = has ? Number(x.o) || 0 : 0;
     days.push({ day: d, n, o, has });
     if (has) { cum.n += n; cum.o += o; lastDay = d; }
+    if (has && x.p !== undefined && x.p !== null) { cum.p += Number(x.p) || 0; cum.pDays++; }  // 총결제금액(VAT 포함)이 저장된 날만
   }
   cum.total = cum.n + cum.o;
   const last = lastDay ? ym * 100 + lastDay : 0;
@@ -1428,6 +1433,9 @@ async function registerParsed(p) {
         let n = 0, o = 0;
         det[day].forEach(x => { if (x.g === 'n') n += x.n; else o += x.n; });
         sum[day] = { n, o };
+        // 총결제금액(VAT 포함): POS 원본 파일일 때만 있음
+        const pay = p.stats.payByDay && p.stats.payByDay[Number(ym) * 100 + Number(day)];
+        if (pay !== undefined && pay !== null) sum[day].p = Math.round(pay);
       });
       if (JSON.stringify(det).length > 900000) throw new Error(ymLabel(Number(ym)) + ' 데이터가 너무 큽니다(문서 1MB 제한). 관리자에게 문의해 주세요.');
       tx.set(dRef, { ym: Number(ym), days: det, updatedAt: serverTimestamp() });
@@ -2001,9 +2009,16 @@ window.addEventListener('scroll', () => { cancelAnimationFrame(spyRaf); spyRaf =
 window.addEventListener('resize', measureHead);
 
 /* ===================== 목표 진행 (원형 게이지 + 내판/외판 막대) ===================== */
+// 누적 순매출(VAT 별도) 옆에 총결제금액(VAT 포함). 결제금액이 저장되지 않은 날이 있으면 그 사실도 알림
+function payLine(d) {
+  if (!d.cum.pDays) return '<div class="gpay"><span>누적 순매출(VAT 별도) <b>' + won(d.cum.total) + '</b></span><span class="muted">총결제금액은 POS 파일을 다시 올리면 나와요</span></div>';
+  const all = d.cum.pDays >= d.daysWithData;
+  return '<div class="gpay"><span>누적 순매출(VAT 별도) <b>' + won(d.cum.total) + '</b></span><span>총결제금액(VAT 포함) <b>' + won(d.cum.p) + '</b></span>' +
+    (all ? '' : '<span class="muted">' + d.daysWithData + '일 중 ' + d.cum.pDays + '일치만 · 나머지 날은 POS 파일을 다시 올리면 채워져요</span>') + '</div>';
+}
 function goalCard(d) {
   if (!d.target) return '<div class="card" data-sec="목표"><h2>목표 진행</h2><p class="muted" style="margin:0">' + ymLabel(d.ym) + ' 목표가 아직 없습니다. ' +
-    (S.role === 'admin' ? '관리자 모드 › 목표·설정에서 월 목표 금액을 입력하면 달성률 게이지와 진행 막대가 여기에 나타납니다.' : '관리자가 월 목표를 입력하면 진행률이 표시됩니다.') + '</p></div>';
+    (S.role === 'admin' ? '관리자 모드 › 목표·설정에서 월 목표 금액을 입력하면 달성률 게이지와 진행 막대가 여기에 나타납니다.' : '관리자가 월 목표를 입력하면 진행률이 표시됩니다.') + '</p>' + (d.last ? '<div style="margin-top:10px">' + payLine(d) + '</div>' : '') + '</div>';
   const R = 62, C = 2 * Math.PI * R, a = Math.max(0, Math.min(1, d.achieve)), el = Math.max(0, Math.min(1, d.elapsed));
   const ang = el * 2 * Math.PI - Math.PI / 2, tx = 80 + Math.cos(ang) * R, ty = 80 + Math.sin(ang) * R;
   const ahead = d.achieve >= d.elapsed;
@@ -2050,7 +2065,7 @@ function goalCard(d) {
   }
   return '<div class="card" data-sec="목표"><h2>목표 진행 · ' + won(T) + '</h2><div class="goal">' + ring +
     '<div class="goal-r"><p class="muted" style="margin:0 0 8px">' + (ahead ? '오늘까지 목표선보다 <b>' + eok(d.cum.total - T * d.elapsed) + ' 앞서</b> 있어요' : '오늘까지 목표선보다 <b>' + eok(T * d.elapsed - d.cum.total) + ' 부족</b>해요') + ' (시간 경과 ' + pct(d.elapsed) + ')</p>' +
-    bar + sub + '<div class="gfacts">' + facts.map(f => '<div><span class="muted">' + f[0] + '</span><b' + (f[2] || '') + '>' + f[1] + '</b></div>').join('') + '</div></div></div></div>';
+    payLine(d) + bar + sub + '<div class="gfacts">' + facts.map(f => '<div><span class="muted">' + f[0] + '</span><b' + (f[2] || '') + '>' + f[1] + '</b></div>').join('') + '</div></div></div></div>';
 }
 
 /* ===================== 달력 ===================== */
