@@ -541,6 +541,9 @@ function renderSummary(y, m) {
   $('sumBody').innerHTML = membersForMonth(y, m).map(e => {
     let used = 0; for (let d = 1; d <= dim(y, m); d++) if (status(dateKey(y, m, d), e) === '휴무') used++;
     const rem = q - used, st = rem < 0 ? '<span class="over">초과 ' + (-rem) + '</span>' : rem === 0 ? '<span class="done">완료</span>' : '<span class="muted">-</span>';
+    // 이 달에 퇴사하면 상태 칸에 퇴사일 표시 (퇴사 다음 날부터 근무표·근무인원에서 빠짐)
+    const left = e.end && e.end.startsWith(ymKey(y, m)) ? '<span class="muted">' + Number(e.end.slice(5, 7)) + '/' + Number(e.end.slice(8)) + ' 퇴사</span>' : '';
+    if (left) return '<tr><td class="l"><b>' + esc(e.name) + '</b></td><td>' + used + '</td><td>' + rem + '</td><td>' + left + '</td></tr>';
     return '<tr><td class="l"><b>' + esc(e.name) + '</b></td><td>' + used + '</td><td>' + rem + '</td><td>' + st + '</td></tr>';
   }).join('');
 }
@@ -622,6 +625,8 @@ function buildModel(y, m) {
   return { year: y, month: m, quota: quotaFor(y, m), storeName: STORE_NAME, days, groups, total: groups.reduce((s, g) => s + g.rows.length, 0) };
 }
 function presentCount(rows, i) { return rows.filter(r => i + 1 >= r.from && i + 1 <= r.to && !ABSENT.includes(r.codes[i])).length; }
+// 그날 재직 중인 인원 (입사 전·퇴사 후 제외) → 총원 대비 % 의 분모
+function activeCount(rows, i) { return rows.filter(r => i + 1 >= r.from && i + 1 <= r.to).length; }
 function renderXl(y, m) {
   const md = buildModel(y, m), N = md.days.length;
   let h = '<tr><th colspan="' + (N + 6) + '" style="text-align:left;border:0;font-size:15px">■ ' + y + '년 ' + m + '월 근무 계획</th></tr>' +
@@ -646,7 +651,7 @@ function renderXl(y, m) {
   });
   const all = md.groups.flatMap(g => g.rows);
   h += '<tr><td class="grp" rowspan="2">근무인원</td><td class="grp" colspan="2">계</td>' + md.days.map((x, i) => '<td class="sum">' + presentCount(all, i) + '명</td>').join('') + '<td colspan="3" rowspan="2" style="background:#d9d9d9"></td></tr>';
-  h += '<tr><td colspan="2" class="rate">총원 대비</td>' + md.days.map((x, i) => '<td class="rate">' + (md.total ? Math.round(presentCount(all, i) / md.total * 100) : 0) + '%</td>').join('') + '</tr>';
+  h += '<tr><td colspan="2" class="rate">총원 대비</td>' + md.days.map((x, i) => '<td class="rate">' + (activeCount(all, i) ? Math.round(presentCount(all, i) / activeCount(all, i) * 100) : 0) + '%</td>').join('') + '</tr>';
   $('xlTable').innerHTML = h;
 }
 
@@ -776,7 +781,8 @@ function buildWorkbook(ExcelJS, md) {
       return typeof f === 'number' ? String(f) : '(' + f + ')';
     });
     put(R_SUM, D1 + i, { formula: parts.join('+') || '0' }, { font: { size: 8, bold: true }, numFmt: '0"명"', fill: SUMY });
-    put(R_RATE, D1 + i, { formula: 'IF($B$2=0,0,' + col + R_SUM + '/$B$2)' }, { font: { size: 7 }, numFmt: '0%' });
+    const act = activeCount(md.groups.flatMap(g => g.rows), i);  // 그날 재직 인원으로 나눔 (퇴사 후 제외)
+    put(R_RATE, D1 + i, { formula: act ? col + R_SUM + '/' + act : '0' }, { font: { size: 7 }, numFmt: '0%' });
   }
   put(R_SUM, C_HOL, null, { fill: LGREY }); merge(R_SUM, C_HOL, R_RATE, C_SIGN);
   ws.getRow(R_SUM).height = 17; ws.getRow(R_RATE).height = 15;
