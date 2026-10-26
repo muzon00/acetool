@@ -105,6 +105,14 @@ select, input[type=text], input[type=date], input[type=number] { background: var
 .me-pick select { font-weight: 700; }
 .me-pick.need select { outline: 2px solid var(--accent); outline-offset: 1px; }
 .alert-line { text-align: center; color: var(--alert); font-weight: 700; margin: 0 0 12px; font-size: .93em; }
+/* 새로고침: 브랜드 색 동그라미 + 흰 화살표, 누르면 한 바퀴 돎 (pos와 같은 모양) */
+.refresh-btn { flex: none; width: 38px; height: 38px; border-radius: 50%; border: 0; padding: 0; background: var(--s1); color: #fff; display: inline-grid; place-items: center; cursor: pointer; box-shadow: 0 2px 6px rgba(16, 24, 40, .16); }
+.refresh-btn:hover { filter: brightness(1.08); }
+.refresh-btn:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+.refresh-btn svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.refresh-btn.spin svg { animation: refresh-spin .6s ease; }
+@keyframes refresh-spin { to { transform: rotate(360deg); } }
+.admin-gate { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; text-align: center; }
 .adminbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; margin-bottom: 14px; }
 
 /* 달력 */
@@ -182,6 +190,13 @@ dialog.doc .db { padding: 12px 18px 18px; }
 .rt td { padding: 4px; white-space: normal; }
 .rt td.act { white-space: nowrap; }
 .err { color: var(--bad-ink); font-size: .88em; margin-top: 8px; }
+/* 관리자 비밀번호 (숫자 4자리) */
+dialog.doc.pin { width: min(340px, calc(100% - 24px)); text-align: center; }
+.pin-dots { display: flex; justify-content: center; gap: 14px; margin: 14px 0 6px; }
+.pin-dots i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line); }
+.pin-dots i.on { background: var(--accent); border-color: var(--accent); }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.pin-pad .btn { padding: 16px 0; font-size: 1.25em; }
 
 #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-size: .92em; z-index: 50; display: none; max-width: calc(100% - 32px); text-align: center; }
 .fab-bar { position: fixed; right: 20px; bottom: 20px; z-index: 40; display: flex; gap: 8px; }
@@ -239,7 +254,7 @@ body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .
         <div class="toolbar">
           <select id="ySel" aria-label="연도"></select>
           <select id="mSel" aria-label="월"></select>
-          <button class="btn dark" id="refreshBtn">새로고침</button>
+          <button class="refresh-btn" id="refreshBtn" title="새로고침" aria-label="새로고침"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
           <button class="btn ghost" id="viewBtn">엑셀 양식으로 보기</button>
           <button class="btn excel" id="xlsxBtn">엑셀(.xlsx) 다운로드</button>
           <button class="btn ghost" id="printBtn">인쇄</button>
@@ -252,11 +267,14 @@ body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .
       </div>
     </div>
 
+    <div class="banner warn admin-gate hide" id="adminGate">🔒 관리자 페이지 주소입니다. 관리자 비밀번호를 누르면 근무 배정 화면이 열려요. <button class="btn primary sm" id="adminGateBtn">비밀번호 입력</button></div>
     <div class="alert-line" id="warn"></div>
     <div class="adminbar hide" id="adminBar">
       <button class="btn ghost sm" id="rosterBtn">👥 직원 관리</button>
       <button class="btn ghost sm" id="holBtn">📅 공휴일 관리</button>
       <button class="btn ghost sm" id="logBtn">📝 변경 기록</button>
+      <button class="btn ghost sm" id="pinChangeBtn">🔑 비밀번호 변경</button>
+      <button class="btn ghost sm" id="copyAdminLink" title="관리자 페이지 주소 복사 (…/sch/#admin)">🔗 관리자 주소</button>
       <button class="btn danger sm" id="resetBtn">이번 달 초기화</button>
     </div>
 
@@ -309,6 +327,22 @@ body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .
   <div class="db"><div style="overflow-x:auto"><table><thead><tr><th class="l">시각</th><th class="l">변경한 사람</th><th class="l">대상</th><th>근무일</th><th class="l">내용</th></tr></thead><tbody id="logBody"></tbody></table></div></div>
 </dialog>
 
+<!-- 관리자 비밀번호 -->
+<dialog class="doc pin" id="dlgPin">
+  <div class="db">
+    <h2 id="pinTitle" style="margin:6px 0 0">관리자 비밀번호</h2>
+    <div class="muted" id="pinSub">숫자 4자리를 눌러 주세요</div>
+    <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
+    <div class="err" id="pinErr" style="min-height:1.3em"></div>
+    <div class="pin-pad" id="pinPad">
+      <button class="btn ghost" data-n="1">1</button><button class="btn ghost" data-n="2">2</button><button class="btn ghost" data-n="3">3</button>
+      <button class="btn ghost" data-n="4">4</button><button class="btn ghost" data-n="5">5</button><button class="btn ghost" data-n="6">6</button>
+      <button class="btn ghost" data-n="7">7</button><button class="btn ghost" data-n="8">8</button><button class="btn ghost" data-n="9">9</button>
+      <button class="btn ghost" data-k="cancel" style="font-size:.95em">취소</button><button class="btn ghost" data-n="0">0</button><button class="btn ghost" data-k="del" style="font-size:.95em">⌫</button>
+    </div>
+  </div>
+</dialog>
+
 <div class="fab-bar"><a class="fab" href="../pos/">📊 매출 현황</a><button class="fab admin-btn hide" id="adminFab">🔒 관리자 모드</button></div>
 <div id="toast" role="status"></div>
 
@@ -326,12 +360,13 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getAuth, signInWithEmailAndPassword, updatePassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, deleteDoc, onSnapshot, writeBatch, query, orderBy, limit, serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-// 매출 현황(pos)과 같은 Firebase 프로젝트 · 같은 로그인 · 같은 권한(pos_roles)
+// 매출 현황(pos)과 같은 Firebase 프로젝트 · 같은 권한 문서(pos_roles). 로그인은 따로:
+// 앱 이름을 'sch'로 따로 두어 매출 현황의 구글 로그인과 섞이지 않음 (여기서 로그아웃해도 매출 현황은 그대로)
 const app = initializeApp({
   apiKey: 'AIzaSyCIL_n5H8sYTEWb4jhISM5yS_6y_ci5Rnk',
   authDomain: 'acetool-923f6.firebaseapp.com',
@@ -339,9 +374,12 @@ const app = initializeApp({
   storageBucket: 'acetool-923f6.firebasestorage.app',
   messagingSenderId: '961124023870',
   appId: '1:961124023870:web:8753a14fa706f34255db6f'
-});
+}, 'sch');
 const auth = getAuth(app), db = getFirestore(app);
-const provider = new GoogleAuthProvider(); provider.setCustomParameters({ prompt: 'select_account' });
+// 관리자 모드는 숫자 4자리 비밀번호로 들어감. 비밀번호는 근무표 전용 계정(이메일/비밀번호 계정)의 암호가 되어 서버에서 확인됨
+// 이 계정은 pos_roles 권한이 'sch_admin'이라 근무표만 관리하고 매출 현황에는 들어갈 수 없음
+const ADMIN_EMAIL = 'sch-admin@acetool.site';
+const pinPw = pin => 'ace-sch-' + pin;  // Firebase 암호는 6자 이상이어야 해서 앞에 붙임 (초기 비밀번호 1212 → ace-sch-1212)
 
 /* 저장 구조 (모두 sch_ 로 시작해 매출 자료와 섞이지 않음)
    sch_schedule/{YYYY-MM-DD}  → { 직원id: 상태 }
@@ -349,7 +387,7 @@ const provider = new GoogleAuthProvider(); provider.setCustomParameters({ prompt
    sch_settings/quotas        → { 'YYYY-MM': 기준 휴무일 }
    sch_settings/holidays      → { 'YYYY-MM-DD': 이름 }   (이름 '' = 기본 공휴일 끔)
    sch_meta/lastChange, sch_logs, sch_backups
-   직원은 로그인 없이 "내 이름"만 골라 사용 (이 기기에 기억). 관리자 모드만 구글 로그인 + pos_roles 관리자 */
+   직원은 로그인 없이 "내 이름"만 골라 사용 (이 기기에 기억). 관리자 모드만 비밀번호 4자리(근무표 전용 계정) + pos_roles 'sch_admin' */
 const C = { sched: 'sch_schedule', set: 'sch_settings', meta:'sch_meta', logs: 'sch_logs', backups: 'sch_backups', roles: 'pos_roles', requests: 'pos_requests' };
 const STORE_NAME = '일산점';
 const XLSX_URL = 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
@@ -387,7 +425,7 @@ const variableHolidays = {
 };
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 
-const S = { user: null, role: null, admin: false, mode: 'employee', page: 'home', view: 'cal', roster: DEFAULT_ROSTER.map(m => ({ ...m })), rosterExists: false, rosterLoaded: false,
+const S = { user: null, role: null, admin: false, authReady: false, mode: 'employee', page: 'home', view: 'cal', roster: DEFAULT_ROSTER.map(m => ({ ...m })), rosterExists: false, rosterLoaded: false,
   sched: {}, quotas: {}, hols: {}, myId: '', unsub: [], lastTs: 0, firstMeta: true };
 const clientId = 'c_' + Math.random().toString(36).slice(2);
 const $ = id => document.getElementById(id);
@@ -468,6 +506,7 @@ function renderAll() {
   $('adminBar').classList.toggle('hide', !(S.admin && adminPage));
   $('backBtn').classList.toggle('hide', !adminPage);
   $('adminFab').classList.toggle('hide', adminPage);
+  $('adminGate').classList.toggle('hide', !(S.authReady && wantAdmin() && !adminPage));
   document.body.classList.toggle('admin-page', adminPage);
   $('quotaSel').disabled = !S.admin;
   $('quotaHint').textContent = S.admin ? '직접 고를 수 있어요 (8~15일)' : '관리자만 바꿀 수 있습니다';
@@ -796,21 +835,24 @@ async function downloadXlsx() {
 }
 
 /* ===================== 로그인 · 실시간 동기화 ===================== */
-// 직원: 로그인 없이 바로 근무표. 관리자: 관리자 모드 버튼에서 구글 로그인 → pos_roles 관리자 확인
+// 직원: 로그인 없이 바로 근무표. 관리자: 관리자 모드 버튼에서 비밀번호 4자리 → pos_roles 근무표 관리자 확인
 $('logoutBtn').addEventListener('click', () => signOut(auth));
 function stopLive() { S.unsub.forEach(f => { try { f(); } catch (e) { } }); S.unsub = []; }
 async function isAdmin(user) {
-  try { const r = await getDoc(doc(db, C.roles, user.uid)); return r.exists() && r.data().role === 'admin'; } catch (e) { return false; }
+  try { const r = await getDoc(doc(db, C.roles, user.uid)); return r.exists() && ['sch_admin', 'admin'].includes(r.data().role); } catch (e) { return false; }
 }
 function setStatus() { $('status').textContent = '실시간 동기화 중' + (S.admin ? ' · 관리자' : ''); }
 onAuthStateChanged(auth, async user => {
   S.user = user;
   S.admin = user ? await isAdmin(user) : false;
   S.role = S.admin ? 'admin' : null;
-  $('userChip').textContent = user ? user.email || '' : '';
+  $('userChip').textContent = user ? (user.email === ADMIN_EMAIL ? '근무표 관리자' : user.email || '') : '';
   $('userbox').classList.toggle('hide', !user);
+  S.authReady = true;
   if (!S.admin && S.page === 'admin') setPage('home');
-  ensureRoster(); setStatus(); renderAll();
+  ensureRoster(); setStatus();
+  if (S.admin && wantAdmin() && S.page !== 'admin') setPage('admin'); // 관리자 주소로 들어오면 바로 관리자 화면
+  else renderAll();
 });
 show('main'); startLive(); setStatus();
 // 관리자 첫 로그인 때 기본 명단 저장 (서버 규칙이 이 명단의 ids로 직원 칸을 확인)
@@ -851,6 +893,7 @@ function startLive() {
 $('ySel').addEventListener('change', renderAll);
 $('mSel').addEventListener('change', renderAll);
 $('refreshBtn').addEventListener('click', () => { stopLive(); startLive(); toast('새로 불러왔습니다'); });
+document.querySelectorAll('.refresh-btn').forEach(b => b.addEventListener('click', () => { b.classList.remove('spin'); void b.offsetWidth; b.classList.add('spin'); }));
 $('printBtn').addEventListener('click', () => window.print());
 $('xlsxBtn').addEventListener('click', downloadXlsx);
 $('viewBtn').addEventListener('click', () => {
@@ -860,11 +903,17 @@ $('viewBtn').addEventListener('click', () => {
   renderAll();
 });
 // 관리자 모드 = 별도 화면 (근무 배정 + 관리 도구). 들어갈 때 서버에서 권한을 다시 확인하고, 20분 쓰지 않으면 근무표로 돌아감
+// 주소: 관리자 페이지 = …/sch/#admin. 새로고침해도 관리자 화면으로 다시 들어감
+const ADMIN_URL = 'https://acetool.site/sch/#admin';
+const wantAdmin = () => /^#admin\b/.test(location.hash);
+function setHash(h) { if (location.hash !== h) history.replaceState(null, '', h || location.pathname + location.search); }
 let idleT = null;
 function setPage(p) {
   S.page = p; S.mode = p === 'admin' ? 'manager' : 'employee';
+  setHash(p === 'admin' ? '#admin' : '');
   window.scrollTo(0, 0); renderAll();
   if (p === 'admin') bumpIdle();
+  else if (S.user) signOut(auth);  // 근무표로 돌아가면 로그아웃 → 다음에 들어올 때 다시 비밀번호
 }
 function bumpIdle() {
   if (S.page !== 'admin') return;
@@ -872,16 +921,96 @@ function bumpIdle() {
   idleT = setTimeout(() => { if (S.page === 'admin') { setPage('home'); toast('20분 동안 사용이 없어 관리자 모드를 닫았습니다'); } }, 20 * 60 * 1000);
 }
 ['click', 'keydown', 'touchstart', 'scroll'].forEach(ev => document.addEventListener(ev, bumpIdle, { passive: true }));
-$('adminFab').addEventListener('click', async () => {
-  let user = S.user;
-  if (!user) {
-    try { user = (await signInWithPopup(auth, provider)).user; }
-    catch (e) { if (!(e && e.code === 'auth/popup-closed-by-user')) toast('로그인 실패: ' + errMsg(e)); return; }
-  }
-  // 들어갈 때마다 서버에서 다시 확인
-  S.admin = await isAdmin(user); S.role = S.admin ? 'admin' : null;
-  if (!S.admin) { toast('관리자 권한이 없는 계정입니다'); await signOut(auth); return; }
-  ensureRoster(); setStatus(); setPage('admin');
+/* 비밀번호 4자리 입력창: onPin(pin)이 오류 문구를 돌려주면 다시 입력, 없으면 닫힘 */
+const PIN_LOCK_KEY = 'sch.pinLock';
+let pinBuf = '', pinCb = null, pinBusy = false;
+function drawPin() { $('pinDots').querySelectorAll('i').forEach((d, i) => d.classList.toggle('on', i < pinBuf.length)); }
+function openPin(title, sub, onPin) {
+  pinBuf = ''; pinCb = onPin; pinBusy = false;
+  $('pinTitle').textContent = title; $('pinSub').textContent = sub; $('pinErr').textContent = '';
+  drawPin(); if (!$('dlgPin').open) $('dlgPin').showModal();
+}
+async function pinKey(k) {
+  if (pinBusy) return;
+  if (k === 'cancel') { $('dlgPin').close(); return; }
+  if (k === 'del') { pinBuf = pinBuf.slice(0, -1); drawPin(); return; }
+  if (pinBuf.length >= 4) return;
+  pinBuf += k; drawPin(); $('pinErr').textContent = '';
+  if (pinBuf.length < 4) return;
+  pinBusy = true;
+  const err = await pinCb(pinBuf);
+  pinBusy = false;
+  if (err) { pinBuf = ''; drawPin(); $('pinErr').textContent = err; }
+  else if ($('dlgPin').open && pinBuf.length === 4) $('dlgPin').close();
+}
+$('pinPad').querySelectorAll('button').forEach(b => b.addEventListener('click', () => pinKey(b.dataset.n || b.dataset.k)));
+$('dlgPin').addEventListener('keydown', e => {
+  if (/^[0-9]$/.test(e.key)) pinKey(e.key);
+  else if (e.key === 'Backspace') pinKey('del');
+  else return;
+  e.preventDefault();
+});
+$('dlgPin').addEventListener('click', e => { if (e.target === $('dlgPin')) $('dlgPin').close(); });
+
+// 5번 틀리면 이 기기에서 1분 동안 잠금 (서버도 반복 시도를 막음)
+function pinLocked() { try { const l = JSON.parse(localStorage.getItem(PIN_LOCK_KEY) || '{}'); return l.until && l.until > Date.now() ? Math.ceil((l.until - Date.now()) / 1000) : 0; } catch (e) { return 0; } }
+function pinFail() {
+  try {
+    const l = JSON.parse(localStorage.getItem(PIN_LOCK_KEY) || '{}'), n = (l.n || 0) + 1;
+    localStorage.setItem(PIN_LOCK_KEY, JSON.stringify(n >= 5 ? { n: 0, until: Date.now() + 60 * 1000 } : { n }));
+  } catch (e) { }
+}
+function pinOk() { try { localStorage.removeItem(PIN_LOCK_KEY); } catch (e) { } }
+
+// 관리자 모드 들어가기 (버튼 · 관리자 주소 모두 여기로). 이미 들어와 있던 기기면 바로, 아니면 비밀번호
+async function enterAdmin() {
+  if (S.user && await isAdmin(S.user)) { S.admin = true; S.role = 'admin'; ensureRoster(); setStatus(); setPage('admin'); return; }
+  openPin('관리자 비밀번호', '숫자 4자리를 눌러 주세요', async pin => {
+    const wait = pinLocked();
+    if (wait) return '여러 번 틀려서 잠겼어요. ' + wait + '초 뒤에 다시 해 주세요';
+    let user;
+    try { user = (await signInWithEmailAndPassword(auth, ADMIN_EMAIL, pinPw(pin))).user; }
+    catch (e) {
+      const c = (e && e.code) || '';
+      if (c.includes('too-many-requests')) return '시도가 너무 많아요. 잠시 뒤에 다시 해 주세요';
+      if (c.includes('network')) return '인터넷 연결을 확인해 주세요';
+      if (c.includes('invalid-credential') || c.includes('wrong-password') || c.includes('user-not-found') || c.includes('invalid-login')) { pinFail(); return '비밀번호가 틀렸습니다'; }
+      return '로그인 실패: ' + errMsg(e);
+    }
+    pinOk();
+    // 들어갈 때마다 서버에서 다시 확인
+    S.admin = await isAdmin(user); S.role = S.admin ? 'admin' : null;
+    if (!S.admin) { await signOut(auth); return '근무표 관리자 권한이 설정되지 않은 계정입니다'; }
+    ensureRoster(); setStatus(); setPage('admin');
+    return '';
+  });
+}
+$('pinChangeBtn').addEventListener('click', () => {
+  if (!S.admin || !auth.currentUser) return;
+  openPin('새 비밀번호', '새로 쓸 숫자 4자리를 눌러 주세요', async first => {
+    openPin('새 비밀번호 확인', '한 번 더 눌러 주세요', async pin => {
+      if (pin !== first) return '처음 누른 번호와 달라요. 다시 눌러 주세요';
+      try { await updatePassword(auth.currentUser, pinPw(pin)); }
+      catch (e) {
+        if (((e && e.code) || '').includes('requires-recent-login')) return '보안을 위해 관리자 모드를 나갔다가 다시 들어와서 바꿔 주세요';
+        return '변경 실패: ' + errMsg(e);
+      }
+      toast('관리자 비밀번호를 바꿨습니다');
+      return '';
+    });
+    return '';
+  });
+});
+$('adminFab').addEventListener('click', enterAdmin);
+$('adminGateBtn').addEventListener('click', enterAdmin);
+// 주소창에서 #admin을 붙이거나 지우면 화면도 따라감 (로그인 전이면 비밀번호 안내만 보여 줌)
+window.addEventListener('hashchange', () => {
+  if (wantAdmin() && S.page !== 'admin') { if (S.admin) enterAdmin(); else renderAll(); }
+  else if (!wantAdmin() && S.page === 'admin') setPage('home');
+});
+$('copyAdminLink').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(ADMIN_URL); toast('관리자 페이지 주소를 복사했습니다 · ' + ADMIN_URL); }
+  catch (e) { toast('관리자 페이지 주소: ' + ADMIN_URL); }
 });
 $('meSel').addEventListener('change', () => {
   S.myId = $('meSel').value;
