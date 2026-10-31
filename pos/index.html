@@ -541,6 +541,25 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .tp-opts span { font-size: .85em; color: var(--ink3); }
 @media (max-width: 640px) { .tp-opts { grid-template-columns: 1fr; } }
 #printArea { display: none; }
+/* 월마감 체크리스트 */
+.mc-bar { height: 10px; border-radius: 5px; background: var(--grid); overflow: hidden; margin: 8px 0 4px; }
+.mc-bar i { display: block; height: 100%; background: var(--ok-ink); border-radius: 5px; }
+.mc-li { display: flex; align-items: center; gap: 10px; padding: 10px 2px; border-top: 1px solid var(--line); }
+.mc-li:first-child { border-top: 0; }
+.mc-li > input[type=checkbox] { width: 22px; height: 22px; flex: none; margin: 0; cursor: pointer; }
+.mc-li .mc-n { flex: none; width: 22px; text-align: right; color: var(--ink3); font-size: .85em; }
+.mc-li .mc-b { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.mc-li button.mc-t { text-align: left; border: 0; background: transparent; padding: 2px 4px; margin: -2px -4px; font: inherit; font-size: 1.02em; color: var(--ink); cursor: text; border-radius: 6px; word-break: break-all; }
+.mc-li button.mc-t:hover { background: var(--surface2); }
+.mc-li.done button.mc-t { color: var(--ink3); text-decoration: line-through; }
+.mc-li small { color: var(--ink3); font-size: .8em; }
+.mc-li input.mc-ed { width: 100%; font-size: 1em; padding: 6px 8px; border: 1.5px solid var(--s1); }
+.mc-li input.mc-memo { width: 100%; font-size: .88em; padding: 5px 8px; }
+.mc-acts { display: flex; gap: 2px; flex: none; }
+.mc-acts button { border: 0; background: transparent; color: var(--ink3); width: 34px; height: 34px; border-radius: 8px; cursor: pointer; font-size: 1em; }
+.mc-acts button:hover { background: var(--surface2); color: var(--ink); }
+.mc-acts button.del:hover { color: var(--bad-ink); }
+@media (max-width: 640px) { .mc-acts button { width: 30px; } .mc-li .mc-n { display: none; } }
 /* 카톡으로 등록: 정리된 줄 */
 .tk-tbl { width: 100%; border-collapse: collapse; }
 .tk-tbl td { padding: 5px 4px; border-top: 1px solid var(--line); vertical-align: middle; }
@@ -736,6 +755,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
         <button class="pill on" data-tab="upload">업로드</button>
         <button class="pill" data-tab="eval">월별 평가·원인</button>
         <button class="pill" data-tab="sga">판관비·BEP</button>
+        <button class="pill" data-tab="close">월마감 체크</button>
         <button class="pill" data-tab="plans">예정 매출</button>
         <button class="pill" data-tab="download">다운로드</button>
         <button class="pill" data-tab="settings">목표·설정</button>
@@ -894,6 +914,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
 
     <div id="a-eval" class="hide"></div>
     <div id="a-sga" class="hide"></div>
+    <div id="a-close" class="hide"></div>
     <div id="a-vip" class="hide"></div>
     <div id="a-members" class="hide"></div>
 
@@ -937,6 +958,11 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
           <li>달마다 <b>목표 달성 · 전년 같은 달 대비 · 최근 흐름 대비 · 마진율</b>로 점수(S~D 등급)를 매깁니다. 진행 중인 달은 예상 마감과 같은 기간끼리 비교합니다.</li>
           <li><b>원인 분석</b>: 고른 달을 전월 / 전년 같은 달 / 직전 3개월 평균과 견줘, 매출이 늘고 준 까닭을 영업일 구성 · 내판 하루 매출력 · 외판 하루 매출력으로 나누고 대분류·담당자·거래처·마진·반품 변화를 짚어 줍니다.</li>
           <li>맨 아래 월별 평가표의 줄을 누르면 그 달로 바뀝니다.</li>
+        </ul>
+        <h3>월마감 체크</h3>
+        <ul>
+          <li>매달 마감 때 꼭 확인할 일을 한 번 적어 두면, 모든 달에 같은 체크리스트가 생겨요. 항목 글자를 누르면 바로 고치고, ↑↓로 순서를 바꾸고, "한꺼번에 편집"에서 여러 줄을 한 번에 고칠 수 있어요.</li>
+          <li>체크와 📝 메모는 달마다 따로 저장되고, 언제 누가 체크했는지 남아요. 이번 달 10일까지는 지난달 마감이 먼저 열려요.</li>
         </ul>
         <h3>판관비·BEP</h3>
         <ul>
@@ -1159,7 +1185,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-10-31p';
+var BUILD = '2026-10-31q';
 (function () {
   var busy = false;
   function typing() {
@@ -1205,7 +1231,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app); // 오프라인 캐시는 켜지 않음(공용 PC에 데이터가 남지 않도록)
 
-const C = { daily: 'pos_daily', detail: 'pos_detail', targets: 'pos_targets', sms: 'pos_sms', config: 'pos_config', logs: 'pos_logs', roles: 'pos_roles', requests: 'pos_requests', stats: 'pos_stats', cons: 'pos_cons', consSum: 'pos_cons_sum', plans: 'pos_plans', planSum: 'pos_plan_sum', ar: 'pos_ar', events: 'pos_events', my: 'pos_my', report: 'pos_report', ref: 'pos_ref', members: 'pos_members', sga: 'pos_sga', todo: 'pos_todo' };
+const C = { daily: 'pos_daily', detail: 'pos_detail', targets: 'pos_targets', sms: 'pos_sms', config: 'pos_config', logs: 'pos_logs', roles: 'pos_roles', requests: 'pos_requests', stats: 'pos_stats', cons: 'pos_cons', consSum: 'pos_cons_sum', plans: 'pos_plans', planSum: 'pos_plan_sum', ar: 'pos_ar', events: 'pos_events', my: 'pos_my', report: 'pos_report', ref: 'pos_ref', members: 'pos_members', sga: 'pos_sga', todo: 'pos_todo', close: 'pos_close' };
 const SITE_URL = 'https://acetool.site/pos/';
 const XLSX_URL = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
 const XLSX_SRI = 'sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT';
@@ -1619,7 +1645,7 @@ function buildDetail(detail, ym, lastDay) {
 /* ===================== Firestore 읽기/쓰기 ===================== */
 // https 주소만 허용 (javascript: 같은 위험한 링크 차단)
 function safeUrl(u) { try { const x = new URL(String(u || '').trim()); return x.protocol === 'https:' ? x.href : ''; } catch (e) { return ''; } }
-function invalidate() { S.daily = null; S.targets = null; S.settings = null; S.smsCache = {}; S.detail = null; S.cons = null; S.consSum = null; S.plans = null; S.planSum = null; S.ar = null; S.ev = null; S.ref = null; S.members = null; S.sga = null; }
+function invalidate() { S.daily = null; S.targets = null; S.settings = null; S.smsCache = {}; S.detail = null; S.cons = null; S.consSum = null; S.plans = null; S.planSum = null; S.ar = null; S.ev = null; S.ref = null; S.members = null; S.sga = null; S.close = null; }
 async function loadBase(force) {
   if (S.daily && S.targets && S.settings && !force) return;
   const [dSnap, tSnap, cSnap] = await Promise.all([getDocs(collection(db, C.daily)), getDocs(collection(db, C.targets)), getDoc(doc(db, C.config, 'settings'))]);
@@ -2691,7 +2717,7 @@ window.addEventListener('resize', () => {
 
 /* ===================== 관리자: 탭 ===================== */
 document.querySelectorAll('#adminTabs .pill').forEach(b => b.addEventListener('click', () => showAdminTab(b.dataset.tab)));
-const ATABS = ['upload', 'eval', 'sga', 'plans', 'download', 'settings', 'tree', 'vip', 'members', 'help'];
+const ATABS = ['upload', 'eval', 'sga', 'close', 'plans', 'download', 'settings', 'tree', 'vip', 'members', 'help'];
 function showAdminTab(t) {
   if (!ATABS.includes(t)) t = 'upload';
   S.adminTab = t;
@@ -2704,6 +2730,7 @@ function showAdminTab(t) {
   if (t === 'tree') loadTree();
   if (t === 'eval') loadEval();
   if (t === 'sga') loadSga();
+  if (t === 'close') loadClose();
   if (t === 'vip') loadMembersList();
   if (t === 'members') loadMembers();
   if (t === 'upload') renderDataStatus();
@@ -5374,6 +5401,126 @@ $('tdSave').addEventListener('click', async () => {
     toast(recs.length + '개 할 일을 등록했습니다');
   } catch (e) { toast('등록 실패: ' + errMsg(e)); tdSumUpdate(); }
 });
+
+/* ===================== 월마감 체크리스트 (관리자만) =====================
+   항목(template)은 한 번 적어 두면 매달 같은 목록으로 체크. 달마다 체크·메모는 따로 저장
+   pos_close/template = { items: [{ id, t }] } · pos_close/{YYYYMM} = { checks: { id: { done, at, by, memo } } } */
+const MC = { ym: 0, bulk: false };
+async function loadClose() {
+  const el = $('a-close');
+  if (!S.close) el.innerHTML = '<div class="card muted">불러오는 중…</div>';
+  try {
+    if (!S.close) {
+      const snap = await getDocs(collection(db, C.close)); S.close = { items: [], months: {} };
+      snap.forEach(x => { if (x.id === 'template') S.close.items = (x.data().items || []).filter(i => i && i.id && i.t); else S.close.months[Number(x.id)] = x.data().checks || {}; });
+    }
+  } catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
+  renderClose();
+}
+const mcId = () => 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+async function mcSaveItems(items) {
+  const clean = items.map(i => ({ id: i.id, t: cleanText(i.t, 120) })).filter(i => i.t);
+  await setDoc(doc(db, C.close, 'template'), { items: clean, at: serverTimestamp(), by: S.user.email || '' });
+  S.close.items = clean;
+}
+function renderClose() {
+  const el = $('a-close'), cur = ymOf(todayInt());
+  // 기본: 이번 달 10일까지는 지난달 마감, 그 뒤에는 이번 달
+  if (!MC.ym) MC.ym = todayInt() % 100 <= 10 ? addMonths(cur, -1) : cur;
+  const ym = MC.ym, items = S.close.items, chk = S.close.months[ym] || {};
+  const months = []; for (let k = -12; k <= 1; k++) months.push(addMonths(cur, k));
+  if (!months.includes(ym)) months.push(ym);
+  const done = items.filter(i => (chk[i.id] || {}).done).length, all = items.length;
+  let h = '<div class="card"><div class="bk-h"><h2>✅ ' + ymLabel(ym) + ' 월마감 체크</h2><select id="mcYm" aria-label="마감할 달">' +
+    months.sort((a, b) => b - a).map(m => '<option value="' + m + '"' + (m === ym ? ' selected' : '') + '>' + ymLabel(m) + (S.close.months[m] ? ' · ' + items.filter(i => (S.close.months[m][i.id] || {}).done).length + '/' + all : '') + '</option>').join('') + '</select></div>';
+  if (all) h += '<div style="display:flex;align-items:baseline;gap:10px"><b style="font-size:1.25em">' + done + ' / ' + all + '</b><span class="muted">' + (done === all ? '🎉 이 달 마감 체크를 모두 마쳤어요' : '남은 항목 ' + (all - done) + '개') + '</span></div><div class="mc-bar"><i style="width:' + (all ? done / all * 100 : 0).toFixed(1) + '%"></i></div>';
+  if (!MC.bulk) {
+    h += '<div id="mcList">' + (all ? items.map((it, i) => {
+      const c = chk[it.id] || {};
+      return '<div class="mc-li' + (c.done ? ' done' : '') + '" data-id="' + esc(it.id) + '"><span class="mc-n">' + (i + 1) + '</span><input type="checkbox" data-chk' + (c.done ? ' checked' : '') + ' aria-label="체크">' +
+        '<div class="mc-b"><button type="button" class="mc-t" data-edit title="눌러서 고치기">' + esc(it.t) + '</button>' +
+        (c.done && c.at ? '<small>' + esc(c.at) + ' 체크' + (c.by ? ' · ' + esc(String(c.by).split('@')[0]) : '') + '</small>' : '') +
+        (c.memo ? '<small>📝 ' + esc(c.memo) + '</small>' : '') + '</div>' +
+        '<span class="mc-acts"><button type="button" data-memo title="이 달 메모" aria-label="메모">📝</button><button type="button" data-mv="-1" title="위로" aria-label="위로"' + (i ? '' : ' disabled') + '>↑</button><button type="button" data-mv="1" title="아래로" aria-label="아래로"' + (i < all - 1 ? '' : ' disabled') + '>↓</button><button type="button" class="del" data-del title="항목 삭제" aria-label="삭제">✕</button></span></div>';
+    }).join('') : '<p class="muted">아직 항목이 없어요. 아래에 매달 마감 때 꼭 확인할 일을 적어 주세요. (예: POS 매출 마감 문자와 대조, 판관비 파일 올리기, 재고 실사 결과 확인)</p>') + '</div>' +
+      '<div class="row" style="margin-top:12px;align-items:center"><input type="text" id="mcNew" maxlength="120" placeholder="새 항목 (Enter로 추가)" style="flex:1;min-width:200px"><button class="btn primary" id="mcAdd" type="button">+ 추가</button><button class="btn ghost" id="mcBulk" type="button">✏️ 한꺼번에 편집</button></div>';
+  } else {
+    h += '<p class="muted" style="margin:6px 0">한 줄에 한 항목이에요. 순서를 바꾸려면 줄을 옮기고, 지우려면 줄을 지우세요. 글자를 조금 고친 항목은 체크 기록이 그대로 남아요.</p>' +
+      '<textarea id="mcText" style="min-height:260px;font-size:1em;line-height:1.8">' + esc(items.map(i => i.t).join('\n')) + '</textarea>' +
+      '<div class="row" style="margin-top:10px;justify-content:flex-end"><button class="btn ghost" id="mcCancel" type="button">취소</button><button class="btn primary" id="mcBulkSave" type="button">저장</button></div>';
+  }
+  h += '<p class="muted" style="margin:12px 0 0;font-size:.88em">항목은 모든 달에 똑같이 쓰여요. 체크와 📝 메모는 달마다 따로 저장돼요.</p></div>';
+  el.innerHTML = h;
+  $('mcYm').addEventListener('change', e => { MC.ym = Number(e.target.value); renderClose(); });
+  if (MC.bulk) {
+    $('mcCancel').addEventListener('click', () => { MC.bulk = false; renderClose(); });
+    $('mcBulkSave').addEventListener('click', async () => {
+      // 같은 글자(띄어쓰기 무시)는 원래 항목 id를 이어받아 체크 기록 유지, 나머지는 줄 순서대로 기존 id를 이어받음
+      const lines = $('mcText').value.split('\n').map(x => cleanText(x.replace(/^\s*(\d+[.)]|[-•·*])\s*/, ''), 120)).filter(Boolean);
+      const norm = t => t.replace(/\s/g, ''), old = items.slice(), used = new Set();
+      const next = lines.map(t => { const m = old.find(i => !used.has(i.id) && norm(i.t) === norm(t)); if (m) { used.add(m.id); return { id: m.id, t }; } return { id: '', t }; });
+      next.forEach((n, i) => { if (n.id) return; const o = old[i]; n.id = o && !used.has(o.id) && !lines.some(l => norm(l) === norm(o.t)) ? (used.add(o.id), o.id) : mcId(); });
+      try { await mcSaveItems(next); MC.bulk = false; renderClose(); toast('항목 ' + next.length + '개를 저장했습니다'); }
+      catch (e) { toast('저장 실패: ' + errMsg(e)); }
+    });
+    return;
+  }
+  const add = async () => {
+    const t = cleanText($('mcNew').value, 120); if (!t) { $('mcNew').focus(); return; }
+    try { await mcSaveItems(items.concat([{ id: mcId(), t }])); renderClose(); const n = $('mcNew'); if (n) n.focus(); }
+    catch (e) { toast('추가 실패: ' + errMsg(e)); }
+  };
+  $('mcAdd').addEventListener('click', add);
+  $('mcNew').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+  $('mcBulk').addEventListener('click', () => { MC.bulk = true; renderClose(); });
+  const setChk = async (id, patch) => {
+    const prev = Object.assign({}, chk[id] || {}), v = Object.assign({}, prev, patch);
+    S.close.months[ym] = Object.assign({}, chk, { [id]: v }); renderClose();
+    try { await setDoc(doc(db, C.close, String(ym)), { checks: { [id]: v } }, { merge: true }); }
+    catch (e) { S.close.months[ym] = Object.assign({}, S.close.months[ym], { [id]: prev }); renderClose(); toast('저장 실패: ' + errMsg(e)); }
+  };
+  el.querySelectorAll('.mc-li').forEach(li => {
+    const id = li.dataset.id, idx = items.findIndex(i => i.id === id);
+    li.querySelector('[data-chk]').addEventListener('change', e => {
+      const t = todayInt(), now = new Date();
+      setChk(id, e.target.checked ? { done: true, at: mdLabel(t) + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'), by: S.user.email || '' } : { done: false, at: '', by: '' });
+    });
+    li.querySelector('[data-edit]').addEventListener('click', () => {
+      const b = li.querySelector('[data-edit]'), inp = document.createElement('input');
+      inp.type = 'text'; inp.className = 'mc-ed'; inp.maxLength = 120; inp.value = items[idx].t; inp.setAttribute('aria-label', '항목 고치기');
+      b.replaceWith(inp); inp.focus(); inp.select();
+      let fin = false;
+      const finish = async ok => {
+        if (fin) return; fin = true;
+        const v = cleanText(inp.value, 120);
+        if (!ok || !v || v === items[idx].t) { renderClose(); return; }
+        try { await mcSaveItems(items.map(i => i.id === id ? { id, t: v } : i)); } catch (err) { toast('고치기 실패: ' + errMsg(err)); }
+        renderClose();
+      };
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); finish(true); } else if (e.key === 'Escape') finish(false); });
+      inp.addEventListener('blur', () => finish(true));
+    });
+    li.querySelector('[data-memo]').addEventListener('click', () => {
+      if (li.querySelector('.mc-memo')) return;
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.className = 'mc-memo'; inp.maxLength = 200; inp.placeholder = ymLabel(ym) + ' 메모 (Enter 저장)'; inp.value = (chk[id] || {}).memo || '';
+      li.querySelector('.mc-b').appendChild(inp); inp.focus();
+      let fin = false;
+      const finish = ok => { if (fin) return; fin = true; const v = cleanText(inp.value, 200); if (!ok || v === ((chk[id] || {}).memo || '')) { renderClose(); return; } setChk(id, { memo: v }); };
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); finish(true); } else if (e.key === 'Escape') finish(false); });
+      inp.addEventListener('blur', () => finish(true));
+    });
+    li.querySelectorAll('[data-mv]').forEach(b => b.addEventListener('click', async () => {
+      const j = idx + Number(b.dataset.mv); if (j < 0 || j >= items.length) return;
+      const next = items.slice(); [next[idx], next[j]] = [next[j], next[idx]];
+      try { await mcSaveItems(next); renderClose(); } catch (e) { toast('순서 바꾸기 실패: ' + errMsg(e)); }
+    }));
+    li.querySelector('[data-del]').addEventListener('click', async () => {
+      if (!confirm('"' + items[idx].t + '" 항목을 지울까요?\n(모든 달의 체크리스트에서 빠집니다)')) return;
+      try { await mcSaveItems(items.filter(i => i.id !== id)); renderClose(); } catch (e) { toast('삭제 실패: ' + errMsg(e)); }
+    });
+  });
+}
 
 /* ===================== 판관비 · 점포 BEP (관리자만) =====================
    달마다 판관비를 올리거나(엑셀·CSV) 직접 적어 두면, 그달 마진(매출총이익)과 견줘 손익분기점(BEP)을 넘었는지 봄
