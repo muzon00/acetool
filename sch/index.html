@@ -372,6 +372,29 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
     if (f === 'neat' || f === 'round') document.documentElement.dataset.font = f;
   } catch (e) { }
 })();
+// 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
+// (고칠 때마다 BUILD 값을 바꿔 주세요)
+const BUILD = '2026-10-31b';
+(function () {
+  let busy = false;
+  async function check() {
+    if (busy || document.visibilityState !== 'visible') return;
+    busy = true;
+    try {
+      const t = await (await fetch(location.pathname + '?b=' + Date.now(), { cache: 'no-store' })).text();
+      const m = t.match(/const BUILD = '([^']+)'/);
+      // 같은 버전으로는 한 번만 새로고침 (서버 반영이 늦을 때 왔다 갔다 하지 않게)
+      if (m && m[1] !== BUILD && sessionStorage.getItem('sch.reloadTo') !== m[1]) {
+        sessionStorage.setItem('sch.reloadTo', m[1]);
+        location.replace(location.pathname + '?v=' + m[1] + location.hash);
+      }
+    } catch (e) { }
+    busy = false;
+  }
+  check();
+  document.addEventListener('visibilitychange', check);
+  setInterval(check, 30 * 60 * 1000);
+})();
 </script>
 
 <script type="module">
