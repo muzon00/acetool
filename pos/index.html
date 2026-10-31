@@ -1159,7 +1159,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-10-31o';
+var BUILD = '2026-10-31p';
 (function () {
   var busy = false;
   function typing() {
@@ -2329,9 +2329,12 @@ function table(head, rows) {
   return '<div class="scroll"><table><tr>' + head.map(h => '<th>' + h + '</th>').join('') + '</tr>' +
     rows.map(r => '<tr>' + r.map(c => '<td>' + c + '</td>').join('') + '</tr>').join('') + '</table></div>';
 }
+// 고를 수 있는 달: 자료가 있는 달 + 이번 달 · 다음 달 + 목표를 넣어 둔 달 (자료 없는 앞으로의 달은 "(예정)")
 function fillMonthSel(sel, d) {
-  const set = {}; d.months.forEach(m => { set[m] = 1; }); set[d.ym] = 1;
-  sel.innerHTML = Object.keys(set).map(Number).sort((a, b) => b - a).map(m => '<option value="' + m + '"' + (m === d.ym ? ' selected' : '') + '>' + ymLabel(m) + '</option>').join('');
+  const cur = ymOf(todayInt()), set = {};
+  d.months.forEach(m => { set[m] = 1; }); set[d.ym] = 1; set[cur] = 1; set[addMonths(cur, 1)] = 1;
+  Object.keys(S.targets || {}).forEach(m => { if (Number(m) >= 200001) set[Number(m)] = 1; });
+  sel.innerHTML = Object.keys(set).map(Number).sort((a, b) => b - a).map(m => '<option value="' + m + '"' + (m === d.ym ? ' selected' : '') + '>' + ymLabel(m) + (m > cur && !d.months.includes(m) ? ' (예정)' : '') + '</option>').join('');
 }
 function alerts(d) {
   const a = [];
@@ -2438,7 +2441,7 @@ function goalCard(d) {
     sub = row('내판', d.cum.n, d.targetN, 'var(--s1)') + row('외판', d.cum.o, d.targetO, 'var(--s2)');
   }
   return '<div class="card" data-sec="목표"><h2>목표 진행 · ' + won(T) + '</h2><div class="goal">' + ring +
-    '<div class="goal-r"><p class="muted" style="margin:0 0 8px">' + (ahead ? '오늘까지 목표선보다 <b>' + eok(d.cum.total - T * d.elapsed) + ' 앞서</b> 있어요' : '오늘까지 목표선보다 <b>' + eok(T * d.elapsed - d.cum.total) + ' 부족</b>해요') + ' (시간 경과 ' + pct(d.elapsed) + ')</p>' +
+    '<div class="goal-r"><p class="muted" style="margin:0 0 8px">' + (!d.lastDay ? '아직 이 달 매출 자료가 없어요 · 목표와 하루 필요 금액을 미리 보는 화면이에요' : ahead ? '오늘까지 목표선보다 <b>' + eok(d.cum.total - T * d.elapsed) + ' 앞서</b> 있어요' : '오늘까지 목표선보다 <b>' + eok(T * d.elapsed - d.cum.total) + ' 부족</b>해요') + (d.lastDay ? ' (시간 경과 ' + pct(d.elapsed) + ')' : '') + '</p>' +
     payLine(d) + bar + sub + '<div class="gfacts">' + facts.map(f => '<div><span class="muted">' + f[0] + '</span><b' + (f[2] || '') + '>' + f[1] + '</b></div>').join('') + '</div></div></div></div>';
 }
 
