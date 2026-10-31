@@ -1158,7 +1158,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-10-31m';
+var BUILD = '2026-10-31n';
 (function () {
   var busy = false;
   function typing() {
@@ -3508,7 +3508,7 @@ async function doRegister() {
       const sum = await summaryFor(lastYm);
       brief = briefHtml(briefBase(sum, lastD), briefDetail(lastD), '📋 ' + mdLabel(lastD) + '(' + DOWK[dowOf(lastD)] + ') 주요 내용 · 특이 사항');
     } catch (e) { brief = ''; }
-    $('preview').innerHTML = '<div class="card"><div class="banner ' + (ok ? 'ok' : 'bad') + '"><b>' + (ok ? '등록 완료 · 검산 일치' : '검산 불일치 — 다시 올려 주세요') + '</b><br>올린 파일 합계 ' + won(v.fileNet) + '<br>저장된 합계 ' + won(v.savedNet) + (ok ? '<br>날짜별 검산: ' + p.stats.dates.length + '일 모두 상세 자료·일별 합계가 1원까지 일치' : '<br>' + v.bad.slice(0, 10).map(esc).join('<br>')) + '<br>같은 날짜의 기존 데이터 ' + r.removed.toLocaleString('ko-KR') + '행을 교체했습니다' + (matched ? '<br>예정 매출 ' + matched + '건이 POS에 잡혀 자동 완료됐습니다' : '') + '</div>' +
+    $('preview').innerHTML = '<div class="card"><div class="banner ' + (ok ? 'ok' : 'bad') + '"><b>' + (ok ? '등록 완료 · 검산 일치' : '검산 불일치 — 다시 올려 주세요') + '</b><br>올린 파일 합계 ' + won(v.fileNet) + '<br>저장된 합계 ' + won(v.savedNet) + (Math.round(v.fileNet) !== v.savedNet ? ' <small>(파일 금액에 소수점이 있어 줄마다 원 단위로 반올림한 차이 ' + won(v.savedNet - Math.round(v.fileNet)) + ')</small>' : '') + (ok ? '<br>날짜별 검산: ' + p.stats.dates.length + '일 모두 상세 자료·일별 합계가 1원까지 일치' : '<br>' + v.bad.slice(0, 10).map(esc).join('<br>')) + '<br>같은 날짜의 기존 데이터 ' + r.removed.toLocaleString('ko-KR') + '행을 교체했습니다' + (matched ? '<br>예정 매출 ' + matched + '건이 POS에 잡혀 자동 완료됐습니다' : '') + '</div>' +
       '<button class="btn primary" id="goAnalysis">홈에서 상세 분석 보기</button></div>' + brief;
     $('goAnalysis').addEventListener('click', () => goHomeSec(lastYm, '상세 분석'));
     S.parsed = null; fileIn.value = ''; $('upText').value = ''; S.logs = null; renderDataStatus();
