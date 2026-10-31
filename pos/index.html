@@ -521,7 +521,13 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .td-p.off { opacity: .6; }
 .td-p h3 { margin: 0 0 6px; font-size: 1.05em; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .td-p h3 .muted { font-weight: 400; font-size: .85em; margin-left: auto; }
-.td-li { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-top: 1px dashed var(--line); font-size: 1em; cursor: pointer; }
+.td-li { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-top: 1px dashed var(--line); font-size: 1em; }
+.td-li[draggable=true] { cursor: grab; }
+.td-li.dragging { opacity: .35; }
+.td-p.drop-hot { outline: 2px dashed var(--s1); outline-offset: 2px; background: var(--chip); }
+.td-li button.t { flex: 1; min-width: 0; text-align: left; border: 0; background: transparent; padding: 0; font: inherit; color: inherit; cursor: text; word-break: break-all; border-radius: 4px; }
+.td-li button.t:hover { background: var(--surface2); text-decoration: underline dotted var(--ink3); }
+.td-li input.ed { flex: 1; min-width: 0; width: auto; height: auto; margin: -3px 0; padding: 3px 6px; font: inherit; border: 1.5px solid var(--s1); border-radius: 6px; cursor: text; }
 .td-li:first-of-type { border-top: 0; }
 .td-li input { margin-top: 2px; width: 20px; height: 20px; flex: none; cursor: pointer; }
 .td-new { padding: 11px 20px; font-size: 1em; font-weight: 700; }
@@ -567,11 +573,10 @@ dialog.doc.td-dlg { width: min(880px, calc(100% - 20px)); }
 .td-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .td-foot .btn { min-height: 46px; padding: 0 24px; font-weight: 700; }
 @media (max-width: 640px) { .td-kinds { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.td-li span.t { flex: 1; min-width: 0; word-break: break-all; }
-.td-li.done span.t { text-decoration: line-through; color: var(--ink3); }
+.td-li.done button.t { text-decoration: line-through; color: var(--ink3); }
 .td-li .tag { font-size: .72em; flex: none; }
-.td-li button { border: 0; background: transparent; color: var(--ink3); cursor: pointer; font-size: 1em; padding: 0 2px; flex: none; }
-.td-li button:hover { color: var(--bad-ink); }
+.td-li button.del { border: 0; background: transparent; color: var(--ink3); cursor: pointer; font-size: 1em; padding: 0 2px; flex: none; }
+.td-li button.del:hover { color: var(--bad-ink); }
 .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .8em; background: var(--chip); color: var(--chip-ink); }
 .tag.admin { background: var(--ok-bg); color: var(--ok-ink); }
 .site-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 4px 6px; font-size: .82em; color: var(--ink2); }
@@ -1110,7 +1115,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-10-31g';
+var BUILD = '2026-10-31h';
 (function () {
   var busy = false;
   function typing() {
@@ -4785,12 +4790,13 @@ function renderTodo() {
   const list = who => tasks.filter(t => t.who === who).sort((a, b) => (Object.keys(TD_KINDS).indexOf(a.kind) - Object.keys(TD_KINDS).indexOf(b.kind)) || (a.s - b.s));
   const item = t => {
     const k = tdKey(t, d), done = !!(t.done || {})[k], late = t.kind === 'day' && t.s < d;
-    return '<label class="td-li' + (done ? ' done' : '') + '"><input type="checkbox" data-id="' + t.id + '" data-k="' + k + '"' + (done ? ' checked' : '') + '><span class="t">' + esc(t.t) + '</span>' +
-      '<span class="tag">' + (late ? '밀림 ' + mdLabel(t.s) : TD_KINDS[t.kind]) + '</span><button type="button" data-del="' + t.id + '" title="삭제" aria-label="삭제">✕</button></label>';
+    return '<div class="td-li' + (done ? ' done' : '') + '" draggable="true" data-task="' + t.id + '"><input type="checkbox" data-id="' + t.id + '" data-k="' + k + '"' + (done ? ' checked' : '') + ' aria-label="다 했음">' +
+      '<button type="button" class="t" data-edit="' + t.id + '" title="눌러서 고치기 · 끌어서 다른 사람에게">' + esc(t.t) + '</button>' +
+      '<span class="tag">' + (late ? '밀림 ' + mdLabel(t.s) : TD_KINDS[t.kind]) + '</span><button type="button" class="del" data-del="' + t.id + '" title="삭제" aria-label="삭제">✕</button></div>';
   };
   const block = (who, title, sub, cls) => {
     const ts = list(who), n = ts.filter(t => (t.done || {})[tdKey(t, d)]).length;
-    return '<div class="td-p' + (cls ? ' ' + cls : '') + '"><h3>' + title + (sub ? ' <span class="tag">' + esc(sub) + '</span>' : '') + '<span class="muted">' + (ts.length ? n + '/' + ts.length : '') + '</span></h3>' +
+    return '<div class="td-p' + (cls ? ' ' + cls : '') + '" data-who="' + esc(who) + '"><h3>' + title + (sub ? ' <span class="tag">' + esc(sub) + '</span>' : '') + '<span class="muted">' + (ts.length ? n + '/' + ts.length : '') + '</span></h3>' +
       (ts.length ? ts.map(item).join('') : '<p class="muted" style="margin:0;font-size:.88em">할 일이 없습니다</p>') + '</div>';
   };
   const known = new Set(['all'].concat(staff.map(m => m.id)));
@@ -4816,6 +4822,42 @@ function renderTodo() {
     const k = c.dataset.k, v = c.checked; t.done = Object.assign({}, t.done, { [k]: v }); renderTodo();
     try { await setDoc(doc(db, C.todo, t.id), { done: { [k]: v } }, { merge: true }); }
     catch (e) { t.done[k] = !v; renderTodo(); toast('저장 실패: ' + errMsg(e)); }
+  }));
+  // 끌어서 다른 사람(또는 전체) 카드에 놓으면 담당 변경
+  let dragId = '';
+  box.querySelectorAll('.td-li[data-task]').forEach(li => {
+    li.addEventListener('dragstart', e => { dragId = li.dataset.task; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', dragId); } catch (x) { } li.classList.add('dragging'); });
+    li.addEventListener('dragend', () => { li.classList.remove('dragging'); box.querySelectorAll('.td-p.drop-hot').forEach(p => p.classList.remove('drop-hot')); });
+  });
+  box.querySelectorAll('.td-p[data-who]').forEach(p => {
+    p.addEventListener('dragover', e => { if (!dragId) return; e.preventDefault(); e.dataTransfer.dropEffect = 'move'; p.classList.add('drop-hot'); });
+    p.addEventListener('dragleave', e => { if (!p.contains(e.relatedTarget)) p.classList.remove('drop-hot'); });
+    p.addEventListener('drop', async e => {
+      e.preventDefault(); p.classList.remove('drop-hot');
+      const t = TD.tasks.find(x => x.id === dragId), to = p.dataset.who; dragId = '';
+      if (!t || t.who === to) return;
+      const from = t.who; t.who = to; renderTodo();
+      try { await setDoc(doc(db, C.todo, t.id), { who: to }, { merge: true }); toast('"' + t.t + '" → ' + (to === 'all' ? '전체' : ((TD.roster || []).find(m => m.id === to) || {}).name || '')); }
+      catch (err) { t.who = from; renderTodo(); toast('옮기기 실패: ' + errMsg(err)); }
+    });
+  });
+  // 할 일 글자를 누르면 그 자리에서 고치기 (Enter 저장 · Esc 취소)
+  box.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => {
+    const t = TD.tasks.find(x => x.id === b.dataset.edit); if (!t) return;
+    const li = b.closest('.td-li'); li.draggable = false;
+    const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'ed'; inp.maxLength = 60; inp.value = t.t; inp.setAttribute('aria-label', '할 일 고치기');
+    b.replaceWith(inp); inp.focus(); inp.select();
+    let fin = false;
+    const finish = async ok => {
+      if (fin) return; fin = true;
+      const v = cleanText(inp.value, 60);
+      if (!ok || !v || v === t.t) { renderTodo(); return; }
+      const old = t.t; t.t = v; renderTodo();
+      try { await setDoc(doc(db, C.todo, t.id), { t: v }, { merge: true }); }
+      catch (err) { t.t = old; renderTodo(); toast('고치기 실패: ' + errMsg(err)); }
+    };
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); finish(true); } else if (e.key === 'Escape') finish(false); });
+    inp.addEventListener('blur', () => finish(true));
   }));
   box.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async e => {
     e.preventDefault();
