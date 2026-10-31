@@ -2051,10 +2051,12 @@ window.addEventListener('resize', measureHead);
 
 /* ===================== 목표 진행 (원형 게이지 + 내판/외판 막대) ===================== */
 // 누적 순매출(VAT 별도) 옆에 총결제금액(VAT 포함). 결제금액이 저장되지 않은 날이 있으면 그 사실도 알림
+// 현재 마진·마진율 칸(.gmar)은 비워 두고, 관리자 상세 자료를 불러온 뒤 homeAdminParts에서 채움
+const GMAR = '<span class="gmar hide"></span>';
 function payLine(d) {
-  if (!d.cum.pDays) return '<div class="gpay"><span>누적 순매출(VAT 별도) <b>' + won(d.cum.total) + '</b></span><span class="muted">총결제금액은 POS 파일을 다시 올리면 나와요</span></div>';
+  if (!d.cum.pDays) return '<div class="gpay"><span>누적 순매출(VAT 별도) <b>' + won(d.cum.total) + '</b></span>' + GMAR + '<span class="muted">총결제금액은 POS 파일을 다시 올리면 나와요</span></div>';
   const all = d.cum.pDays >= d.daysWithData;
-  return '<div class="gpay"><span>누적 순매출(VAT 별도) <b>' + won(d.cum.total) + '</b></span><span>총결제금액(VAT 포함) <b>' + won(d.cum.p) + '</b></span>' +
+  return '<div class="gpay"><span>누적 순매출(VAT 별도) <b>' + won(d.cum.total) + '</b></span>' + GMAR + '<span>총결제금액(VAT 포함) <b>' + won(d.cum.p) + '</b></span>' +
     (all ? '' : '<span class="muted">' + d.daysWithData + '일 중 ' + d.cum.pDays + '일치만 · 나머지 날은 POS 파일을 다시 올리면 채워져요</span>') + '</div>';
 }
 function goalCard(d) {
@@ -2384,7 +2386,11 @@ async function homeAdminParts(d) {
   try {
     await loadDetail();
     if (S.sum !== d || !$('hDetail')) return;
-    renderAnalysis(d, buildDetail(S.detail, d.ym, d.lastDay), $('hDetail'));
+    const det = buildDetail(S.detail, d.ym, d.lastDay);
+    renderAnalysis(d, det, $('hDetail'));
+    // 목표 진행 칸: 현재 마진 금액 · 마진율 (상세 자료의 순매출 기준)
+    const marT = det.mar.n + det.mar.o, netT = det.net.n + det.net.o, gm = document.querySelector('#homeBody .gmar');
+    if (gm && netT) { gm.innerHTML = '현재 마진 <b>' + won(marT) + '</b> · 마진율 <b>' + pct(marT / netT) + '</b>'; gm.classList.remove('hide'); }
     if (d.last && $('homeBrief')) $('homeBrief').outerHTML = briefCard(d, true);
   } catch (e) { if ($('hDetail')) $('hDetail').innerHTML = '<div class="banner bad">상세 분석: ' + esc(errMsg(e)) + '</div>'; }
   try {
