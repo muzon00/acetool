@@ -1002,7 +1002,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-10-31a';
+var BUILD = '2026-10-31b';
 (function () {
   var busy = false;
   function typing() {
@@ -4865,8 +4865,8 @@ function renderEval() {
   }
   h += '</div>';
   h += eaCauseHtml(ym);
-  h += '<div class="card"><h2>🗓️ 월별 평가표</h2><p class="muted" style="margin-top:0">줄을 누르면 그 달의 평가와 원인 분석을 위에서 봅니다.</p><div class="scroll"><table id="eaTbl"><tr><th>월</th><th>매출</th><th>목표 달성</th><th>전월 대비</th><th>전년 대비</th><th>마진율</th><th>점수</th><th>등급</th></tr>' +
-    all.map(x => '<tr data-ym="' + x.ym + '"' + (x.ym === ym ? ' class="on"' : '') + '><td>' + ymLabel(x.ym) + (x.live ? ' <span class="tag">진행 중</span>' : '') + '</td><td>' + won(x.cur.tot) + '</td><td>' + (x.goal === null ? '-' : pct(x.goal) + (x.live ? ' (예상)' : '')) + '</td><td>' + chgTxt(x.prevChg) + '</td><td>' + chgTxt(x.lyChg) + '</td><td>' + (x.rate === null ? '-' : pct(x.rate)) + '</td><td>' + (x.score === null ? '-' : Math.round(x.score)) + '</td><td>' + (x.grade ? eaBadge(x.grade) + ' ' + EA_GL[x.grade] : '-') + '</td></tr>').join('') + '</table></div>' +
+  h += '<div class="card"><h2>🗓️ 월별 평가표</h2><p class="muted" style="margin-top:0">줄을 누르면 그 달의 평가와 원인 분석을 위에서 봅니다.</p><div class="scroll"><table id="eaTbl"><tr><th>월</th><th>매출</th><th>목표 달성</th><th>전월 대비</th><th>전년 대비</th><th>마진</th><th>마진율</th><th>점수</th><th>등급</th></tr>' +
+    all.map(x => '<tr data-ym="' + x.ym + '"' + (x.ym === ym ? ' class="on"' : '') + '><td>' + ymLabel(x.ym) + (x.live ? ' <span class="tag">진행 중</span>' : '') + '</td><td>' + won(x.cur.tot) + '</td><td>' + (x.goal === null ? '-' : pct(x.goal) + (x.live ? ' (예상)' : '')) + '</td><td>' + chgTxt(x.prevChg) + '</td><td>' + chgTxt(x.lyChg) + '</td><td>' + (x.cur.det ? won(x.cur.mar.n + x.cur.mar.o) : '-') + '</td><td>' + (x.rate === null ? '-' : pct(x.rate)) + '</td><td>' + (x.score === null ? '-' : Math.round(x.score)) + '</td><td>' + (x.grade ? eaBadge(x.grade) + ' ' + EA_GL[x.grade] : '-') + '</td></tr>').join('') + '</table></div>' +
     '<details style="margin-top:10px"><summary>평가 기준</summary><ul class="muted">' +
     '<li>점수 = 목표 달성(40%) · 전년 같은 달 대비(25%) · 최근 흐름 대비(20%) · 마진율(15%)을 각각 100점으로 바꿔 가중 평균합니다. 자료가 없는 항목은 빼고 나머지로 계산해요.</li>' +
     '<li>목표 달성: 100% = 75점, 110% 이상 = 100점, 70% 이하 = 0점. 진행 중인 달은 예상 마감(기본 시나리오) 기준입니다.</li>' +
