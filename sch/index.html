@@ -134,6 +134,7 @@ select, input[type=text], input[type=date], input[type=number] { background: var
 .emp.locked { cursor: default; opacity: .55; }
 .emp.locked:hover { border-color: transparent; }
 .emp b { font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.emp b small { font-weight: 500; font-size: .86em; color: var(--ink2); }
 .emp i { font-style: normal; font-weight: 700; font-size: .92em; white-space: nowrap; }
 .st-조출 { background: #fff1bf; color: #7a5200; } .st-조출 b { color: #5c3d00; }
 .st-마감 { background: var(--chip); color: var(--chip-ink); }
@@ -374,7 +375,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-10-31b';
+const BUILD = '2026-10-31c';
 (function () {
   let busy = false;
   async function check() {
@@ -505,6 +506,7 @@ function membersForMonth(y, m) {
 }
 const status = (ds, m) => (S.sched[ds] && S.sched[ds][m.id]) || '';
 const me = () => S.roster.find(m => m.id === S.myId) || null;
+const tName = m => (m.title ? m.title + ' ' : '') + m.name;  // 직책 + 이름 (과장 김종현)
 function quotaFor(y, m) {
   const v = S.quotas[ymKey(y, m)];
   if (v !== undefined && v !== null && v !== '') return Number(v);
@@ -532,7 +534,7 @@ function renderAll() {
   const mine = me();
   $('meChip').innerHTML = adminPage || S.admin || mine ? '아무 칸이나 누르면 근무·휴무를 고를 수 있어요'
     : '👈 내 이름을 골라 두면 변경 기록에 이름이 남아요';
-  const sel = $('meSel'), opts = '<option value="">선택</option>' + membersForMonth(y, m).map(x => '<option value="' + esc(x.id) + '">' + esc(x.name) + '</option>').join('');
+  const sel = $('meSel'), opts = '<option value="">선택</option>' + membersForMonth(y, m).map(x => '<option value="' + esc(x.id) + '">' + esc(tName(x)) + '</option>').join('');
   if (sel.dataset.opts !== opts) { sel.innerHTML = opts; sel.dataset.opts = opts; }
   sel.value = mine ? mine.id : '';
   $('mePick').classList.toggle('hide', adminPage || S.admin);
@@ -560,7 +562,7 @@ function renderCalendar(y, m) {
       if (!isActiveOn(e, ds)) return;
       const s = status(ds, e), cls = ['emp', stClass(s)];
       if (!S.admin && e.id === S.myId) cls.push('mine');
-      h += '<div class="' + cls.join(' ') + '" data-ds="' + ds + '" data-id="' + esc(e.id) + '"><b>' + esc(e.name) + '</b><i>' + esc(s ? (s === '조출' ? '07~17' : s === '마감' ? '10~20' : s) : '') + '</i></div>';
+      h += '<div class="' + cls.join(' ') + '" data-ds="' + ds + '" data-id="' + esc(e.id) + '"><b>' + (e.title ? '<small>' + esc(e.title) + '</small> ' : '') + esc(e.name) + '</b><i>' + esc(s ? (s === '조출' ? '07~17' : s === '마감' ? '10~20' : s) : '') + '</i></div>';
     });
     h += '</div></div>';
   }
@@ -580,7 +582,7 @@ function renderSummary(y, m) {
       days++; const s = status(ds, e);
       if (s === '휴무') used++; else if (s === '육아휴직') leave++;
     }
-    const row = (u, r, st) => '<tr><td class="l"><b>' + esc(e.name) + '</b></td><td>' + u + '</td><td>' + r + '</td><td>' + st + '</td></tr>';
+    const row = (u, r, st) => '<tr><td class="l"><b>' + esc(tName(e)) + '</b></td><td>' + u + '</td><td>' + r + '</td><td>' + st + '</td></tr>';
     // 그달 재직일이 모두 육아휴직이면 휴무 계산 없이 육휴중
     if (days && leave === days) return row('-', '-', '<span class="muted">육휴중</span>');
     // 이 달에 퇴사하면 잔여 대신 퇴사일 표시 (퇴사 다음 날부터 근무표·근무인원에서 빠짐)
@@ -614,7 +616,7 @@ $('grid').addEventListener('click', e => {
 });
 function openPick(ds, mem) {
   const cur = status(ds, mem), d = new Date(ds + 'T00:00:00');
-  $('pickTitle').textContent = mem.name;
+  $('pickTitle').textContent = tName(mem);
   $('pickSub').textContent = (d.getMonth() + 1) + '월 ' + d.getDate() + '일 (' + DOW[d.getDay()] + ')';
   $('pickPad').innerHTML = STATES.concat(['']).map(s => '<button class="btn ghost' + (s === cur ? ' on' : '') + '" data-s="' + esc(s) + '">' + esc(s || '지우기') + '</button>').join('');
   $('pickPad').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { $('dlgPick').close(); setState(ds, mem, b.dataset.s); }));
@@ -1068,7 +1070,7 @@ $('meSel').addEventListener('change', () => {
   S.myId = $('meSel').value;
   try { S.myId ? localStorage.setItem(WHO_KEY, S.myId) : localStorage.removeItem(WHO_KEY); } catch (e) { }
   renderAll();
-  if (S.myId) toast((me() || {}).name + ' 님으로 설정했어요 (이 기기에 기억)');
+  if (S.myId) toast(tName(me() || { name: '' }) + ' 님으로 설정했어요 (이 기기에 기억)');
 });
 $('backBtn').addEventListener('click', () => setPage('home'));
 $('quotaSel').addEventListener('change', async () => {
