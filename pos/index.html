@@ -575,6 +575,9 @@ dialog.doc.td-dlg { width: min(880px, calc(100% - 20px)); }
 @media (max-width: 640px) { .td-kinds { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .td-li.done button.t { text-decoration: line-through; color: var(--ink3); }
 .td-li .tag { font-size: .72em; flex: none; }
+.td-li button.tk-kind { border: 0; font-family: inherit; cursor: pointer; white-space: nowrap; }
+.td-li button.tk-kind:hover { background: var(--s1); color: #fff; }
+.td-li select.ed-k { flex: none; font-size: .85em; padding: 2px 4px; min-height: 0; height: auto; width: auto; margin: -2px 0; }
 .td-li button.del { border: 0; background: transparent; color: var(--ink3); cursor: pointer; font-size: 1em; padding: 0 2px; flex: none; }
 .td-li button.del:hover { color: var(--bad-ink); }
 .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .8em; background: var(--chip); color: var(--chip-ink); }
@@ -1115,7 +1118,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-10-31h';
+var BUILD = '2026-10-31i';
 (function () {
   var busy = false;
   function typing() {
@@ -4792,7 +4795,7 @@ function renderTodo() {
     const k = tdKey(t, d), done = !!(t.done || {})[k], late = t.kind === 'day' && t.s < d;
     return '<div class="td-li' + (done ? ' done' : '') + '" draggable="true" data-task="' + t.id + '"><input type="checkbox" data-id="' + t.id + '" data-k="' + k + '"' + (done ? ' checked' : '') + ' aria-label="다 했음">' +
       '<button type="button" class="t" data-edit="' + t.id + '" title="눌러서 고치기 · 끌어서 다른 사람에게">' + esc(t.t) + '</button>' +
-      '<span class="tag">' + (late ? '밀림 ' + mdLabel(t.s) : TD_KINDS[t.kind]) + '</span><button type="button" class="del" data-del="' + t.id + '" title="삭제" aria-label="삭제">✕</button></div>';
+      '<button type="button" class="tag tk-kind" data-kind="' + t.id + '" title="눌러서 기간 바꾸기">' + (late ? '밀림 ' + mdLabel(t.s) : TD_KINDS[t.kind]) + ' ▾</button><button type="button" class="del" data-del="' + t.id + '" title="삭제" aria-label="삭제">✕</button></div>';
   };
   const block = (who, title, sub, cls) => {
     const ts = list(who), n = ts.filter(t => (t.done || {})[tdKey(t, d)]).length;
@@ -4858,6 +4861,25 @@ function renderTodo() {
     };
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); finish(true); } else if (e.key === 'Escape') finish(false); });
     inp.addEventListener('blur', () => finish(true));
+  }));
+  // 기간 표시를 누르면 기간 바꾸기 (그날 · 이번 주 · 이번 달 · 계속)
+  box.querySelectorAll('[data-kind]').forEach(b => b.addEventListener('click', () => {
+    const t = TD.tasks.find(x => x.id === b.dataset.kind); if (!t) return;
+    b.closest('.td-li').draggable = false;
+    const sel = document.createElement('select'); sel.className = 'ed-k'; sel.setAttribute('aria-label', '기간');
+    sel.innerHTML = Object.keys(TD_KINDS).map(k => '<option value="' + k + '"' + (t.kind === k ? ' selected' : '') + '>' + TD_KINDS[k] + '</option>').join('');
+    b.replaceWith(sel); sel.focus();
+    let fin = false;
+    const finish = async () => {
+      if (fin) return; fin = true;
+      const v = sel.value; if (v === t.kind || !TD_KINDS[v]) { renderTodo(); return; }
+      const old = t.kind; t.kind = v; renderTodo();
+      try { await setDoc(doc(db, C.todo, t.id), { kind: v }, { merge: true }); toast('"' + t.t + '" 기간 → ' + TD_KINDS[v]); }
+      catch (err) { t.kind = old; renderTodo(); toast('기간 바꾸기 실패: ' + errMsg(err)); }
+    };
+    sel.addEventListener('change', finish);
+    sel.addEventListener('blur', finish);
+    sel.addEventListener('keydown', e => { if (e.key === 'Escape') { fin = true; renderTodo(); } });
   }));
   box.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async e => {
     e.preventDefault();
