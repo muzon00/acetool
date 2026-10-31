@@ -1158,7 +1158,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-10-31l';
+var BUILD = '2026-10-31m';
 (function () {
   var busy = false;
   function typing() {
@@ -1253,6 +1253,20 @@ function toNum(v) {
   const n = Number(String(v).replace(/[,\s]/g, ''));
   return isFinite(n) ? n : 0;
 }
+// 금액 엄격 읽기: 숫자로 확실히 읽히는 값만 받음. 빈칸·"-" = 0, "(1,234)"·"1,234-" = 음수, "1,234원"·"₩1,234" 허용.
+// 그 밖에 읽을 수 없는 값은 NaN (조용히 0으로 바꾸지 않음 → 등록을 막고 줄을 알려 줌)
+function numStrict(v) {
+  if (typeof v === 'number') return isFinite(v) ? v : NaN;
+  if (v === null || v === undefined) return 0;
+  let t = String(v).replace(/[\s,]/g, '').replace(/^₩|원$/g, '');
+  if (t === '' || t === '-') return 0;
+  let neg = false;
+  if (/^\(.*\)$/.test(t)) { neg = true; t = t.slice(1, -1); }
+  if (/^[0-9.]+-$/.test(t)) { neg = !neg; t = t.slice(0, -1); }
+  if (!/^[-+]?(\d+\.?\d*|\.\d+)$/.test(t)) return NaN;
+  const n = Number(t);
+  return isFinite(n) ? (neg ? -n : n) : NaN;
+}
 function toDateInt(v) {
   if (v === null || v === undefined || v === '') return 0;
   if (v instanceof Date) return v.getFullYear() * 10000 + (v.getMonth() + 1) * 100 + v.getDate();
@@ -1296,7 +1310,7 @@ function salesAgg(headRow) {
   const isMine = r => (brK === undefined || !r[brK] || String(r[brK]).trim() === 'P936') && (brN === undefined || !r[brN] || /일산/.test(r[brN]));
 
   const map = {}, order = [];
-  const st = { rowsRead: 0, usedRows: 0, totalNet: 0, byG: { '내판': 0, '외판': 0 }, unknown: {}, badDate: 0, dateSet: {}, adjusted: 0, other: 0, payByDay: {} };
+  const st = { rowsRead: 0, usedRows: 0, totalNet: 0, byG: { '내판': 0, '외판': 0 }, unknown: {}, badDate: 0, dateSet: {}, adjusted: 0, other: 0, payByDay: {}, badNum: 0, badSamples: [] };
   const hasPay = !aggMode && col['결제금액'] !== undefined;  // POS 원본이면 날짜별 총결제금액(VAT 포함)도 모음
   const get = (r, name) => { const k = col[name]; return k === undefined ? '' : r[k]; };
   const add = r => {
@@ -1311,18 +1325,25 @@ function salesAgg(headRow) {
     const g = mapG(gRaw);
     if (!g) { const uk = cleanText(gRaw, 30); st.unknown[uk] = (st.unknown[uk] || 0) + 1; return; }
     let net, mar, mgr, cust, cat;
+    // 금액 칸은 엄격하게: 읽을 수 없는 값이 있으면 그 줄은 넣지 않고 기록 (등록 자체를 막음)
+    const bad = [], num = name => { const raw = get(r, name), v = numStrict(raw); if (Number.isNaN(v)) { bad.push(name + ' "' + cleanText(raw, 20) + '"'); return 0; } return v; };
     if (aggMode) {
-      net = toNum(get(r, '순매출')); mar = toNum(get(r, '마진'));
+      net = num('순매출'); mar = num('마진');
       mgr = cleanText(get(r, '담당자'), 40); cust = cleanText(get(r, '거래처'), 80); cat = cleanText(get(r, '대분류'), 40);
     } else {
-      const tax = toNum(get(r, '과세결제금액')), non = toNum(get(r, '비과세결제금액')), pay = toNum(get(r, '결제금액'));
+      const tax = num('과세결제금액'), non = num('비과세결제금액'), pay = num('결제금액');
       net = tax + non;
       if (net === 0 && pay !== 0) { net = Math.round(pay / 1.1); st.adjusted++; }
-      if (hasPay) st.payByDay[d] = (st.payByDay[d] || 0) + pay;
-      mar = toNum(get(r, '마진금액'));
+      if (hasPay && !bad.length) st.payByDay[d] = (st.payByDay[d] || 0) + pay;
+      mar = num('마진금액');
       mgr = g === '외판' ? (cleanText(get(r, '담당자'), 40) || '(미지정)') : '';
       cust = g === '외판' ? (cleanText(get(r, '고객명'), 80) || '(거래처 미기재)') : '';
       cat = cleanText(get(r, '대분류'), 40) || '(미분류)';
+    }
+    if (bad.length) {
+      st.badNum++;
+      if (st.badSamples.length < 8) st.badSamples.push(dLabel(d) + ' · 데이터 ' + st.rowsRead.toLocaleString('ko-KR') + '번째 줄: ' + bad.join(', '));
+      return;
     }
     const key = d + '|' + g + '|' + mgr + '|' + cust + '|' + cat;
     let o = map[key];
@@ -1333,7 +1354,7 @@ function salesAgg(headRow) {
   const done = () => {
     const rows = order.map(k => map[k]);
     const dates = Object.keys(st.dateSet).map(Number).sort((a, b) => a - b);
-    return { rows, stats: { rowsRead: st.rowsRead, usedRows: st.usedRows, totalNet: st.totalNet, byG: st.byG, unknown: st.unknown, badDate: st.badDate, dates, adjusted: st.adjusted, other: st.other, payByDay: hasPay ? st.payByDay : null, mode: aggMode ? '백업/집계 CSV' : 'POS 원본' } };
+    return { rows, stats: { rowsRead: st.rowsRead, usedRows: st.usedRows, totalNet: st.totalNet, byG: st.byG, unknown: st.unknown, badDate: st.badDate, dates, adjusted: st.adjusted, other: st.other, badNum: st.badNum, badSamples: st.badSamples, payByDay: hasPay ? st.payByDay : null, mode: aggMode ? '백업/집계 CSV' : 'POS 원본' } };
   };
   return { add, done };
 }
@@ -1631,7 +1652,9 @@ async function summaryFor(ym, force) {
 // 저장 진행 상황 글자 (여러 파일 한꺼번에 올릴 때는 칸이 없을 수 있음)
 function regMsg(t) { const el = $('regMsg'); if (el) el.textContent = t; }
 async function registerParsed(p) {
-  const byYm = {};
+  if (p.stats.badNum) throw new Error('금액을 숫자로 읽을 수 없는 줄이 ' + p.stats.badNum + '개 있어 등록하지 않았습니다');
+  const byYm = {}, want = {};  // want: 날짜별로 저장해야 할 금액 (줄마다 반올림한 값의 합) — 검산 기준
+  p.rows.forEach(r => { const w = want[r[0]] || (want[r[0]] = { n: 0, o: 0 }); w[r[1] === '내판' ? 'n' : 'o'] += Math.round(r[5]); });
   p.rows.forEach(r => {
     const ym = ymOf(r[0]), d = dayOf(r[0]);
     if (!byYm[ym]) byYm[ym] = {};
@@ -1665,21 +1688,31 @@ async function registerParsed(p) {
       return rm;
     });
   }
-  // 검산: 서버에서 다시 읽어 합계 비교
+  // 검산: 서버에서 상세 자료와 일별 합계를 다시 읽어, 날짜마다 내판·외판이 1원까지 같은지 확인
   const dateSet = {}; p.stats.dates.forEach(d => { dateSet[d] = 1; });
-  let saved = 0;
+  let saved = 0; const bad = [];
   for (const ym of yms) {
-    const s = await getDocFromServer(doc(db, C.detail, ym));
-    const days = s.exists() ? s.data().days || {} : {};
-    Object.keys(days).forEach(day => { if (dateSet[Number(ym) * 100 + Number(day)]) days[day].forEach(x => { saved += Number(x.n) || 0; }); });
+    const [s, sd] = await Promise.all([getDocFromServer(doc(db, C.detail, ym)), getDocFromServer(doc(db, C.daily, ym))]);
+    const days = s.exists() ? s.data().days || {} : {}, sums = sd.exists() ? sd.data().days || {} : {};
+    Object.keys(byYm[ym]).forEach(day => {
+      const d = Number(ym) * 100 + Number(day), w = want[d] || { n: 0, o: 0 }, got = { n: 0, o: 0 };
+      (days[day] || []).forEach(x => { got[x.g === 'o' ? 'o' : 'n'] += Number(x.n) || 0; });
+      saved += got.n + got.o;
+      const sm = sums[day] || {};
+      if (got.n !== w.n || got.o !== w.o) bad.push(dLabel(d) + ' 상세 자료 ' + won(got.n + got.o) + ' ≠ 파일 ' + won(w.n + w.o));
+      if (Number(sm.n) !== w.n || Number(sm.o) !== w.o) bad.push(dLabel(d) + ' 일별 합계 ' + won((Number(sm.n) || 0) + (Number(sm.o) || 0)) + ' ≠ 파일 ' + won(w.n + w.o));
+    });
   }
-  const match = Math.abs(saved - p.stats.totalNet) < 1;
+  // 파일 원래 합계와 저장 합계: 줄마다 원 단위로 반올림하므로 차이는 반올림 몫(줄 수 × 0.5원) 안이어야 함
+  const roundTol = Math.max(1, p.rows.length * 0.5);
+  if (Math.abs(saved - p.stats.totalNet) > roundTol) bad.push('전체 합계 차이 ' + won(saved - p.stats.totalNet) + ' (반올림 허용 ' + won(roundTol) + ' 초과)');
+  const match = !bad.length;
   const dates = p.stats.dates;
   await addDoc(collection(db, C.logs), {
     at: serverTimestamp(), by: S.user.email || '', file: cleanText(p.name, 120), from: dates[0] || 0, to: dates[dates.length - 1] || 0,
-    usedRows: p.stats.usedRows, fileNet: p.stats.totalNet, savedNet: saved, match
+    usedRows: p.stats.usedRows, fileNet: p.stats.totalNet, savedNet: saved, match, bad: bad.slice(0, 20)
   });
-  return { removed, verify: { fileNet: p.stats.totalNet, savedNet: saved, match } };
+  return { removed, verify: { fileNet: p.stats.totalNet, savedNet: saved, match, bad } };
 }
 
 async function registerSmsRecords(records) {
@@ -1803,8 +1836,79 @@ async function renderDataStatus() {
   ];
   el.innerHTML = '<div class="card"><h2>📦 자료 현황 · 언제, 어디까지 올렸나</h2>' + table(['자료', '들어 있는 기간', '마지막 업로드', '올린 사람', '파일'],
     rows.map(([k, range, l]) => [k, range, l ? whenTxt(l.at) : '-', l ? esc(String(l.by || '').split('@')[0]) : '-', l ? esc(String(l.file || '').replace(/^\[[^\]]+\]\s*/, '')) + (l.from ? ' <small class="muted">(' + mdLabel(l.from) + (l.to && l.to !== l.from ? '~' + mdLabel(l.to) : '') + ')</small>' : '') : '-'])) +
-    '<p class="muted" style="margin:8px 0 0">"들어 있는 기간"은 지금 저장된 자료 기준, "파일" 옆 괄호는 그 업로드에 들어 있던 날짜입니다. 전체 이력은 다운로드 › 등록 이력 CSV에서 볼 수 있어요.</p></div>';
+    '<p class="muted" style="margin:8px 0 0">"들어 있는 기간"은 지금 저장된 자료 기준, "파일" 옆 괄호는 그 업로드에 들어 있던 날짜입니다. 전체 이력은 다운로드 › 등록 이력 CSV에서 볼 수 있어요.</p></div>' +
+    '<div class="card" id="intCard"><div class="bk-h"><h2>🔍 숫자 점검</h2><button class="btn primary" id="intBtn" type="button">전체 점검 실행</button></div>' +
+    '<p class="muted" style="margin:0">저장된 모든 달을 1원 단위로 맞춰 봅니다: 일별 합계 ↔ 상세 자료, 마감 문자 ↔ POS, 빠진 날, 마이너스·이상한 값, 마진율, 목표 합계, 결제금액(VAT 포함) 비율, 같은 내용이 두 날에 저장된 경우.</p><div id="intOut"></div></div>';
+  $('intBtn').addEventListener('click', async () => {
+    $('intBtn').disabled = true; $('intOut').innerHTML = '<p class="muted">점검 중…</p>';
+    try { await loadBase(true); await loadDetail(true); $('intOut').innerHTML = intHtml(checkIntegrity()); }
+    catch (e) { $('intOut').innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; }
+    $('intBtn').disabled = false;
+  });
   renderFiles();
+}
+
+/* ===================== 숫자 점검 (관리자): 저장된 자료끼리 1원 단위로 맞춰 봄 =====================
+   bad = 숫자가 틀렸을 가능성이 큼 · warn = 확인 필요 · info = 참고 */
+function checkIntegrity() {
+  const out = [], add = (lv, ym, d, msg) => out.push({ lv, ym, d, msg });
+  const daily = S.daily || {}, detail = S.detail || {}, hol = {}; (S.settings.holidays || []).forEach(h => { hol[h] = 1; });
+  const isInt = v => typeof v === 'number' && isFinite(v) && Math.round(v) === v;
+  const months = [...new Set(Object.keys(daily).concat(Object.keys(detail)).map(Number))].sort((a, b) => a - b);
+  let checkedDays = 0;
+  months.forEach(ym => {
+    const md = daily[ym] || {}, dd = detail[ym] || {}, keys = [...new Set(Object.keys(md).concat(Object.keys(dd)))].map(Number).sort((a, b) => a - b);
+    let mN = 0, mR = 0, rGtN = 0;
+    const sig = {};
+    keys.forEach(day => {
+      const d = ym * 100 + day, x = md[day], rows = dd[day];
+      checkedDays++;
+      if (!x) { add('bad', ym, d, '상세 자료는 있는데 일별 합계가 없음 (홈 화면에 이 날 매출이 빠짐)'); }
+      else if (!isInt(x.n) || !isInt(x.o)) add('bad', ym, d, '일별 합계가 정수 원 단위가 아님 (내판 ' + x.n + ', 외판 ' + x.o + ')');
+      if (!rows) { if (x && (Number(x.n) || Number(x.o))) add('warn', ym, d, '일별 합계만 있고 상세 자료가 없음 (마진·담당자 분석에서 빠짐)'); }
+      else {
+        const s2 = { n: 0, o: 0 };
+        rows.forEach(r => { const v = Number(r.n), m = Number(r.r); if (!isInt(v) || !isInt(m)) add('bad', ym, d, '상세 자료에 정수가 아닌 금액 (' + esc(String(r.n)) + ' / ' + esc(String(r.r)) + ')'); s2[r.g === 'o' ? 'o' : 'n'] += v || 0; mN += v || 0; mR += m || 0; if (v > 0 && m > v) rGtN++; });
+        if (x && (s2.n !== Number(x.n) || s2.o !== Number(x.o))) add('bad', ym, d, '일별 합계 ' + won((Number(x.n) || 0) + (Number(x.o) || 0)) + ' ≠ 상세 합계 ' + won(s2.n + s2.o) + ' (내판 차이 ' + won((Number(x.n) || 0) - s2.n) + ', 외판 차이 ' + won((Number(x.o) || 0) - s2.o) + ')');
+        const k = JSON.stringify(rows);
+        if (rows.length >= 3) { if (sig[k]) add('warn', ym, d, mdLabel(sig[k]) + '과 상세 내용이 완전히 같음 — 같은 파일을 다른 날짜로 올렸는지 확인'); else sig[k] = d; }
+      }
+      if (x) {
+        const t = (Number(x.n) || 0) + (Number(x.o) || 0);
+        if (t < 0) add('warn', ym, d, '하루 합계가 마이너스 ' + won(t) + ' (반품만 있는 날인지 확인)');
+        if (x.p !== undefined && x.p !== null && t > 0) { const q = Number(x.p) / t; if (q < 0.95 || q > 1.105) add('warn', ym, d, '결제금액(VAT 포함) ÷ 순매출 = ' + q.toFixed(3) + ' (보통 1.0~1.1)'); }
+      }
+    });
+    // 빠진 날: 그달 첫 자료일 ~ 마지막 자료일 사이에서 휴무일이 아닌데 자료가 없는 날
+    const have = Object.keys(md).map(Number);
+    if (have.length) { const lo = Math.min(...have), hi = Math.max(...have), miss = []; for (let day = lo; day <= hi; day++) if (!md[day] && !hol[ym * 100 + day]) miss.push(day); if (miss.length) add('warn', ym, 0, '자료가 없는 날 ' + miss.length + '일: ' + miss.map(x => (ym % 100) + '/' + x).join(', ') + ' (휴무일이면 목표·설정에서 휴무일로 지정)'); }
+    if (mN > 0) { const rate = mR / mN; if (rate < 0 || rate > 0.6) add('warn', ym, 0, '마진율 ' + pct(rate) + ' — 범위(0~60%)를 벗어남, 마진 열 확인'); }
+    if (rGtN) add('warn', ym, 0, '마진이 매출보다 큰 줄 ' + rGtN + '개 (마진 열이 잘못 읽혔을 수 있음)');
+    // 목표: 내판 + 외판 = 전체
+    const tg = (S.targets || {})[ym];
+    if (tg && tg.total && tg.n !== null && tg.o !== null && Number(tg.n) + Number(tg.o) !== Number(tg.total)) add('warn', ym, 0, '목표: 내판 ' + won(tg.n) + ' + 외판 ' + won(tg.o) + ' ≠ 전체 ' + won(tg.total));
+    // 마감 문자 ↔ POS (VAT 별도 기준)
+    const sms = S.smsCache[ym];
+    if (sms && sms.length) {
+      const days = []; for (let day = 1; day <= dimOf(ym); day++) { const x = md[day]; days.push({ day, n: x ? Number(x.n) || 0 : 0, o: x ? Number(x.o) || 0 : 0, has: !!x }); }
+      buildSms(sms, S.settings.smsVat, ym, days).close.forEach(c => {
+        if (c.diff === null) return;
+        const tol = Math.max(1000, Math.abs(c.pos) * 0.001);
+        if (Math.abs(c.diff) > tol) add(Math.abs(c.diff) > Math.max(10000, Math.abs(c.pos) * 0.01) ? 'bad' : 'warn', ym, c.d, '마감 문자 ' + won(c.day.vEx) + ' ↔ POS ' + won(c.pos) + ' (차이 ' + won(c.diff) + ')');
+      });
+    }
+  });
+  return { list: out, months: months.length, days: checkedDays };
+}
+function intHtml(r) {
+  const L = { bad: ['🔴', '틀렸을 가능성 큼'], warn: ['🟡', '확인 필요'], info: ['⚪', '참고'] }, ord = { bad: 0, warn: 1, info: 2 };
+  const n = k => r.list.filter(x => x.lv === k).length;
+  if (!r.list.length) return '<div class="banner ok" style="margin-top:10px"><b>✅ 문제 없음</b> · ' + r.months + '개월 ' + r.days.toLocaleString('ko-KR') + '일을 1원 단위로 맞춰 봤어요.</div>';
+  const list = r.list.slice().sort((a, b) => ord[a.lv] - ord[b.lv] || a.ym - b.ym || a.d - b.d);
+  return '<div class="banner ' + (n('bad') ? 'bad' : 'warn') + '" style="margin-top:10px"><b>' + r.months + '개월 ' + r.days.toLocaleString('ko-KR') + '일 점검</b> · 🔴 ' + n('bad') + '건 · 🟡 ' + n('warn') + '건</div>' +
+    table(['', '달', '날짜', '내용'], list.slice(0, 300).map(x => [L[x.lv][0], ymLabel(x.ym), x.d ? mdLabel(x.d) : '-', x.msg])) +
+    (list.length > 300 ? '<p class="muted">…외 ' + (list.length - 300) + '건</p>' : '') +
+    '<p class="muted" style="margin:8px 0 0">🔴는 같은 날짜의 POS 파일을 다시 올리면 대부분 바로잡혀요 (날짜 단위로 덮어씀).</p>';
 }
 
 /* ===================== 화면 전환 / 로그인 ===================== */
@@ -3373,12 +3477,13 @@ function handleSheets(sheets, name) {
 function renderPreview() {
   const p = S.parsed, st = p.stats;
   let h = '<div class="card"><h2>미리보기 · ' + esc(p.name) + '</h2>';
-  const unk = Object.keys(st.unknown), blocked = !st.usedRows;
+  const unk = Object.keys(st.unknown), blocked = !st.usedRows || st.badNum > 0;
+  if (st.badNum) h += '<div class="banner bad"><b>금액을 숫자로 읽을 수 없는 줄 ' + st.badNum.toLocaleString('ko-KR') + '개 — 등록을 막았습니다.</b> 숫자가 틀리게 저장되지 않도록, 원본 파일의 해당 칸을 확인해 주세요.<br>' + st.badSamples.map(esc).join('<br>') + (st.badNum > st.badSamples.length ? '<br>…외 ' + (st.badNum - st.badSamples.length) + '줄' : '') + '</div>';
   if (unk.length) h += '<div class="banner bad">구분 값을 알 수 없는 행이 있어 제외됩니다: ' + unk.map(u => esc(u || '(빈칸)') + ' ' + st.unknown[u] + '행').join(', ') + '. 구분은 "일반"(내판)과 "B2B"(외판)만 인식합니다.</div>';
   if (st.badDate) h += '<div class="banner warn">날짜를 읽지 못한 행 ' + st.badDate + '개는 제외됩니다.</div>';
   if (st.other) h += '<div class="banner warn">다른 지점 줄 ' + st.other.toLocaleString('ko-KR') + '개는 빼고 일산점만 등록합니다.</div>';
   if (st.adjusted) h += '<div class="banner warn">과세/비과세 금액이 모두 0인 반품·취소 ' + st.adjusted + '행은 결제금액÷1.1로 VAT 별도 금액을 계산했습니다.</div>';
-  if (blocked) h += '<div class="banner bad">등록할 수 있는 행이 없습니다.</div>';
+  if (!st.usedRows) h += '<div class="banner bad">등록할 수 있는 행이 없습니다.</div>';
   h += '<div class="kpis">' + kpi('기간', dLabel(st.dates[0] || 0) + '<br>~ ' + dLabel(st.dates[st.dates.length - 1] || 0), st.dates.length + '일') +
     kpi('읽은 행', st.usedRows.toLocaleString('ko-KR'), esc(st.mode) + ' 형식') +
     kpi('내판 합계', won(st.byG['내판']), '') + kpi('외판 합계', won(st.byG['외판']), '') + kpi('전체 순매출', won(st.totalNet), 'VAT 별도', true) + '</div>';
@@ -3403,7 +3508,7 @@ async function doRegister() {
       const sum = await summaryFor(lastYm);
       brief = briefHtml(briefBase(sum, lastD), briefDetail(lastD), '📋 ' + mdLabel(lastD) + '(' + DOWK[dowOf(lastD)] + ') 주요 내용 · 특이 사항');
     } catch (e) { brief = ''; }
-    $('preview').innerHTML = '<div class="card"><div class="banner ' + (ok ? 'ok' : 'bad') + '"><b>' + (ok ? '등록 완료 · 검산 일치' : '검산 불일치 — 다시 올려 주세요') + '</b><br>올린 파일 합계 ' + won(v.fileNet) + '<br>저장된 합계 ' + won(v.savedNet) + '<br>같은 날짜의 기존 데이터 ' + r.removed.toLocaleString('ko-KR') + '행을 교체했습니다' + (matched ? '<br>예정 매출 ' + matched + '건이 POS에 잡혀 자동 완료됐습니다' : '') + '</div>' +
+    $('preview').innerHTML = '<div class="card"><div class="banner ' + (ok ? 'ok' : 'bad') + '"><b>' + (ok ? '등록 완료 · 검산 일치' : '검산 불일치 — 다시 올려 주세요') + '</b><br>올린 파일 합계 ' + won(v.fileNet) + '<br>저장된 합계 ' + won(v.savedNet) + (ok ? '<br>날짜별 검산: ' + p.stats.dates.length + '일 모두 상세 자료·일별 합계가 1원까지 일치' : '<br>' + v.bad.slice(0, 10).map(esc).join('<br>')) + '<br>같은 날짜의 기존 데이터 ' + r.removed.toLocaleString('ko-KR') + '행을 교체했습니다' + (matched ? '<br>예정 매출 ' + matched + '건이 POS에 잡혀 자동 완료됐습니다' : '') + '</div>' +
       '<button class="btn primary" id="goAnalysis">홈에서 상세 분석 보기</button></div>' + brief;
     $('goAnalysis').addEventListener('click', () => goHomeSec(lastYm, '상세 분석'));
     S.parsed = null; fileIn.value = ''; $('upText').value = ''; S.logs = null; renderDataStatus();
