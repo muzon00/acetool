@@ -535,6 +535,15 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .tp-opts span { font-size: .85em; color: var(--ink3); }
 @media (max-width: 640px) { .tp-opts { grid-template-columns: 1fr; } }
 #printArea { display: none; }
+/* 카톡으로 등록: 정리된 줄 */
+.tk-tbl { width: 100%; border-collapse: collapse; }
+.tk-tbl td { padding: 5px 4px; border-top: 1px solid var(--line); vertical-align: middle; }
+.tk-tbl tr:first-child td { border-top: 0; }
+.tk-tbl select { min-height: 40px; }
+.tk-tbl input[type=text] { width: 100%; min-width: 0; min-height: 40px; box-sizing: border-box; }
+.tk-tbl tr.no td { background: var(--warn-bg); }
+.tk-tbl .x { border: 0; background: transparent; color: var(--ink3); cursor: pointer; font-size: 1.05em; width: 36px; height: 36px; }
+.tk-tbl .x:hover { color: var(--bad-ink); }
 @media print {
   body.tp-printing > *:not(#printArea) { display: none !important; }
   body.tp-printing #printArea { display: block !important; }
@@ -987,6 +996,16 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
     <div class="td-foot"><span class="muted" id="tdSum"></span><span style="flex:1"></span><button class="btn ghost" id="tdCancel" type="button">취소</button><button class="btn primary" id="tdSave" type="button">등록</button></div>
   </div>
 </dialog>
+<dialog class="doc td-dlg" id="dlgTdKakao" aria-labelledby="tkT">
+  <div class="dh"><h2 id="tkT">카톡으로 등록 <span class="muted" id="tkDate" style="font-size:.7em;font-weight:400"></span></h2><button class="btn ghost sm" data-close>닫기</button></div>
+  <div class="db">
+    <div><label class="lb" for="tkRaw" style="display:block">받은 카톡을 그대로 붙여넣기<small>이름이 적힌 대로 담당이 정해져요</small></label>
+      <textarea id="tkRaw" maxlength="8000" style="min-height:150px" placeholder="예)&#10;[전체] 매장 오픈 점검 매일&#10;[종훈] 창고 정리, 배관 입고 검수&#10;동현: 샘플북 정리 이번주&#10;&#10;김도현&#10;- 건축자재 적재 정리&#10;- 마감 청소 매일"></textarea>
+      <div class="row" style="margin-top:6px;align-items:center"><button class="btn ghost sm" id="tkPaste" type="button">📋 복사한 카톡 붙여넣기</button><span class="muted" id="tkFix" style="font-size:.88em"></span></div></div>
+    <div><p class="lb">정리된 할 일<small>담당·기간을 바꾸거나 ✕로 뺄 수 있어요</small></p><div class="scroll"><table class="tk-tbl"><tbody id="tkRows"></tbody></table></div></div>
+    <div class="td-foot"><span class="muted" id="tkSum"></span><span style="flex:1"></span><button class="btn ghost" id="tkCancel" type="button">취소</button><button class="btn primary" id="tkSave" type="button">등록</button></div>
+  </div>
+</dialog>
 <dialog class="doc" id="dlgTdPrint" aria-labelledby="tpT">
   <div class="dh"><h2 id="tpT">TO DO 인쇄 <span class="muted" id="tpDate" style="font-size:.7em;font-weight:400"></span></h2><button class="btn ghost sm" data-close>닫기</button></div>
   <div class="db" style="display:flex;flex-direction:column;gap:14px;padding-top:14px">
@@ -1091,7 +1110,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-10-31f';
+var BUILD = '2026-10-31g';
 (function () {
   var busy = false;
   function typing() {
@@ -4780,7 +4799,7 @@ function renderTodo() {
   TD.view = { d, tasks, on: on.map(m => ({ id: m.id, name: m.name, group: m.group || '', hrs: hrs(st(m)) })), off: off.map(m => ({ name: m.name, st: st(m) })) };
   let h = '<div class="td-h"><h2>✅ TO DO · ' + (Math.floor(d / 100) % 100) + '월 ' + (d % 100) + '일 (' + DOWK[dowOf(d)] + ')' + (d === today ? ' <span class="tag">오늘</span>' : '') + '</h2>' +
     '<span class="td-nav"><button class="btn ghost sm" data-go="-1" aria-label="전날">◀</button><button class="btn ghost sm" data-go="0">오늘</button><button class="btn ghost sm" data-go="1" aria-label="다음 날">▶</button></span>' +
-    '<button class="btn ghost td-new" id="tdPrint" type="button" style="margin-left:0">🖨️ 인쇄</button><button class="btn primary td-new" id="tdNew" type="button" style="margin-left:0">+ 할 일 쓰기</button></div>';
+    '<button class="btn ghost td-new" id="tdPrint" type="button" style="margin-left:0">🖨️ 인쇄</button><button class="btn ghost td-new" id="tdKakao" type="button" style="margin-left:0">💬 카톡으로 등록</button><button class="btn primary td-new" id="tdNew" type="button" style="margin-left:0">+ 할 일 쓰기</button></div>';
   h += '<p class="td-who">👷 출근 ' + on.length + '명: ' + (on.length ? on.map(m => '<b>' + esc(m.name) + '</b> ' + esc(hrs(st(m)))).join(' · ') : '-') +
     (off.length ? '<br>🏖️ 쉬는 사람: ' + off.map(m => esc(m.name) + ' (' + esc(st(m)) + ')').join(' · ') : '') +
     (!TD.roster.length ? '<br><span class="muted">근무표 직원 명단을 읽지 못했습니다.</span>' : '') + '</p>';
@@ -4791,6 +4810,7 @@ function renderTodo() {
   box.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { const g = Number(b.dataset.go); TD.date = g ? addDaysInt(TD.date, g) : todayInt(); loadTodo(); }));
   $('tdNew').addEventListener('click', openTodoDlg);
   $('tdPrint').addEventListener('click', openTdPrint);
+  $('tdKakao').addEventListener('click', openTdKakao);
   box.querySelectorAll('input[data-id]').forEach(c => c.addEventListener('change', async () => {
     const t = TD.tasks.find(x => x.id === c.dataset.id); if (!t) return;
     const k = c.dataset.k, v = c.checked; t.done = Object.assign({}, t.done, { [k]: v }); renderTodo();
@@ -4804,6 +4824,127 @@ function renderTodo() {
     catch (err) { toast('삭제 실패: ' + errMsg(err)); }
   }));
 }
+
+/* 카톡으로 등록: 김선재 님이 정해 보낸 "누가 무엇을" 그대로 읽어 담당 배정
+   [종훈] 창고 정리 / 종훈: … / 종훈 - … / 이름만 있는 줄 다음의 목록 / [전체]·모두·공통 → 전체
+   쉼표·/ 로 나누고, 매일·이번주·이번달 → 기간, 카톡 복사 머리말(보낸 사람·시간·날짜 줄)은 지움 */
+const TK = { rows: [] };
+const TK_ALL = /^(전체|모두|공통|다같이|다 같이|전원|all)$/i;
+function tkNames() {
+  const map = [];
+  (TD.roster || []).filter(m => m.group !== '캐셔' && m.name).forEach(m => {
+    const n = m.name.replace(/\s/g, '');
+    map.push([n, m.id]);
+    if (n.length === 3) map.push([n.slice(1), m.id]);  // 성 뺀 이름 (선재, 종훈)
+  });
+  return map.sort((a, b) => b[0].length - a[0].length);
+}
+function tkWho(tok, names) {
+  const t = String(tok || '').replace(/\s/g, '').replace(/(대리|과장|계장|사원|주임|점장|팀장|매니저)?(님|씨)?$/, '');
+  if (!t) return null;
+  if (TK_ALL.test(t)) return 'all';
+  const f = names.find(([n]) => n === t);
+  return f ? f[1] : null;
+}
+function tkKind(s) {
+  if (/매\s*일|날마다|계속|항상|매번/.test(s)) return 'always';
+  if (/이번\s*주|금주|주중|주\s*내|이주\s*안/.test(s)) return 'week';
+  if (/이번\s*달|금월|월\s*중|이달|한\s*달\s*안/.test(s)) return 'month';
+  return '';
+}
+const TK_KIND_WORDS = /\(?\s*(매\s*일\s*매\s*일|매\s*일|날마다|계속|항상|이번\s*주\s*(안에|중|까지|내)?|금주|주중|이번\s*달\s*(안에|중|까지|내)?|금월|이달\s*(안에|중|까지)?)\s*\)?/g;
+function tkClean(t) {
+  return t.replace(TK_KIND_WORDS, ' ').replace(/^[\s\-–—•·*▶▷►✔✓☐□■◆○●→>:]+/, '').replace(/^\d+\s*[.)]\s*/, '')
+    .replace(/[!！~?？.。]+$/g, '').replace(/[ㅋㅎㅠㅜ]{2,}/g, '').replace(/\s+/g, ' ').trim().slice(0, 60);
+}
+function tkParse(text) {
+  const names = tkNames(), out = [], seen = new Set(); let cur = null, lines = 0, dup = 0;
+  String(text || '').split(/\r?\n/).forEach(raw => {
+    let ln = raw.trim();
+    if (!ln) { cur = null; return; }  // 빈 줄 = 묶음 끝
+    // 카톡 복사 머리말: [보낸사람] [오전 9:12] / 2026. 10. 31. 오전 9:12, 보낸사람 : / 날짜 줄
+    ln = ln.replace(/^\[[^\]]+\]\s*\[(오전|오후|AM|PM)\s*\d{1,2}:\d{2}\]\s*/i, '').replace(/^\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\.?\s*(오전|오후)?\s*\d{1,2}:\d{2},?\s*[^:]{1,20}\s:\s*/, '');
+    if (/^-{3,}.*-{3,}$/.test(ln) || /^\d{4}년\s*\d{1,2}월\s*\d{1,2}일\s*\S*요일$/.test(ln)) return;
+    ln = ln.replace(/^[\s\-–—•·*▶▷►✔✓☐□■◆○●→>]+/, '').replace(/^\d+\s*[.)]\s*/, '').trim();
+    if (!ln) return;
+    lines++;
+    // 줄 맨 앞의 이름: [이름] / 이름: / 이름 - / 이름) / @이름 / "이름 할일"
+    let who = null, rest = ln, m;
+    if ((m = /^[\[【(]\s*([^\]】)]{1,12})\s*[\]】)]\s*[:：\-]?\s*(.*)$/.exec(ln)) && (who = tkWho(m[1], names))) rest = m[2];
+    else if ((m = /^@?([가-힣A-Za-z ]{1,12}?)\s*(?:[:：]|\s-\s|-|\))\s*(.*)$/.exec(ln)) && (who = tkWho(m[1], names))) rest = m[2];
+    else if ((m = /^@?(\S+)\s+(.+)$/.exec(ln)) && (who = tkWho(m[1], names))) rest = m[2];
+    else if ((who = tkWho(ln.replace(/[:：\-\]\[)]/g, ''), names))) rest = '';
+    if (who && !rest.trim()) { cur = who; return; }  // 이름만 있는 줄 → 아래 줄들의 담당 (빈 줄까지)
+    if (who) cur = null;
+    // 담당 없는 인사말·안내 줄은 뺌
+    if (!who && !cur && /(습니다|세요|해요|합니다|드립니다|감사|수고|부탁)[\s!.~^ㅎㅋ]*$/.test(rest)) return;
+    const lineKind = tkKind(rest);
+    rest.split(/\s*[,，、/]\s*|\s+·\s+/).forEach(part => {
+      const t = tkClean(part); if (!t || t.length < 2) return;
+      const k = tkKind(part) || lineKind || 'day', who2 = who || cur || '';
+      const key = who2 + '|' + t.replace(/\s/g, '');
+      if (seen.has(key)) { dup++; return; }
+      seen.add(key); out.push({ who: who2, t, kind: k });
+    });
+  });
+  return { rows: out, lines, dup };
+}
+function openTdKakao() {
+  if (!TD.roster) return;
+  const d = TD.date; $('tkDate').textContent = (Math.floor(d / 100) % 100) + '월 ' + (d % 100) + '일 (' + DOWK[dowOf(d)] + ') 기준';
+  $('tkRaw').value = ''; TK.rows = []; tkDraw(); $('tkFix').textContent = '';
+  $('dlgTdKakao').showModal(); setTimeout(() => $('tkRaw').focus(), 50);
+}
+function tkRun() {
+  const p = tkParse($('tkRaw').value); TK.rows = p.rows;
+  const named = p.rows.filter(r => r.who).length, kinds = p.rows.filter(r => r.kind !== 'day').length;
+  $('tkFix').textContent = p.rows.length ? p.lines + '줄 → 할 일 ' + p.rows.length + '개 · 이름 찾음 ' + named + '개' + (kinds ? ' · 기간 알아냄 ' + kinds + '개' : '') + (p.dup ? ' · 중복 ' + p.dup + '개 합침' : '') : '';
+  tkDraw();
+}
+function tkDraw() {
+  const staff = (TD.roster || []).filter(m => m.group !== '캐셔'), ds = dLabel(TD.date), sc = TD.sched[ds] || {};
+  const opts = sel => '<option value=""' + (sel ? '' : ' selected') + '>담당 고르기</option><option value="all"' + (sel === 'all' ? ' selected' : '') + '>전체 (모두)</option>' +
+    staff.map(m => '<option value="' + esc(m.id) + '"' + (sel === m.id ? ' selected' : '') + '>' + esc(m.name) + (TD_OFF.includes(sc[m.id]) ? ' (' + esc(sc[m.id]) + ')' : '') + '</option>').join('');
+  $('tkRows').innerHTML = TK.rows.map((r, i) => '<tr data-i="' + i + '"' + (r.who ? '' : ' class="no"') + '><td style="width:150px"><select data-f="who" aria-label="담당">' + opts(r.who) + '</select></td>' +
+    '<td><input type="text" data-f="t" maxlength="60" value="' + esc(r.t) + '" aria-label="할 일"></td><td style="width:120px"><select data-f="kind" aria-label="기간">' + Object.keys(TD_KINDS).map(k => '<option value="' + k + '"' + (r.kind === k ? ' selected' : '') + '>' + TD_KINDS[k] + '</option>').join('') + '</select></td>' +
+    '<td style="width:40px"><button type="button" class="x" data-rm aria-label="빼기">✕</button></td></tr>').join('') ||
+    '<tr><td class="muted">위에 카톡을 붙여 넣으면 여기에 정리돼요.</td></tr>';
+  $('tkRows').querySelectorAll('tr[data-i]').forEach(tr => {
+    const i = Number(tr.dataset.i);
+    tr.querySelectorAll('[data-f]').forEach(el => el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', () => {
+      TK.rows[i][el.dataset.f] = el.dataset.f === 't' ? el.value : el.value;
+      if (el.dataset.f === 'who') tr.classList.toggle('no', !el.value);
+      tkSum();
+    }));
+    tr.querySelector('[data-rm]').addEventListener('click', () => { TK.rows.splice(i, 1); tkDraw(); });
+  });
+  tkSum();
+}
+function tkSum() {
+  const ok = TK.rows.filter(r => r.who && cleanText(r.t, 60)), no = TK.rows.length - ok.length;
+  const per = {}; ok.forEach(r => { const n = r.who === 'all' ? '전체' : ((TD.roster || []).find(m => m.id === r.who) || {}).name || '?'; per[n] = (per[n] || 0) + 1; });
+  $('tkSum').textContent = !TK.rows.length ? '' : Object.keys(per).map(n => n + ' ' + per[n]).join(' · ') + (no ? ' · ⚠️ 담당 없는 ' + no + '개는 등록 안 됨' : '');
+  $('tkSave').textContent = ok.length ? ok.length + '개 등록' : '등록'; $('tkSave').disabled = !ok.length;
+}
+let tkT = null;
+$('tkRaw').addEventListener('input', () => { clearTimeout(tkT); tkT = setTimeout(tkRun, 250); });
+$('tkPaste').addEventListener('click', async () => {
+  try { const t = await navigator.clipboard.readText(); if (t) { $('tkRaw').value = t; tkRun(); } else toast('복사한 내용이 없습니다'); }
+  catch (e) { toast('붙여넣기 권한이 없어요. 칸을 길게 눌러(또는 Ctrl+V) 붙여 넣어 주세요'); $('tkRaw').focus(); }
+});
+$('tkCancel').addEventListener('click', () => $('dlgTdKakao').close());
+$('tkSave').addEventListener('click', async () => {
+  const ok = TK.rows.map(r => Object.assign({}, r, { t: cleanText(r.t, 60) })).filter(r => r.who && r.t);
+  if (!ok.length) return;
+  $('tkSave').disabled = true; $('tkSave').textContent = '등록 중…';
+  const recs = ok.map(r => ({ who: r.who, t: r.t, kind: r.kind, s: TD.date, e: 0, done: {}, at: serverTimestamp(), by: S.user.email || '' }));
+  try {
+    const b = writeBatch(db), refs = recs.map(r => { const ref = doc(collection(db, C.todo)); b.set(ref, r); return ref; });
+    await b.commit();
+    refs.forEach((ref, i) => TD.tasks.push(Object.assign({ id: ref.id }, recs[i])));
+    $('dlgTdKakao').close(); renderTodo(); toast(recs.length + '개 할 일을 등록했습니다');
+  } catch (e) { toast('등록 실패: ' + errMsg(e)); tkSum(); }
+});
 
 /* TO DO 인쇄: 1 한 장에 모두 · 2 사람마다 한 장 · 3 한 장에 4명(잘라서) — 매출 숫자는 넣지 않음
    같은 내용으로 바로 인쇄하거나, 다른 PC에서 열어 인쇄할 HTML 파일로 내려받음 */
