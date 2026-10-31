@@ -511,6 +511,26 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .help h3 { margin-top: 20px; }
 .help ol, .help ul { padding-left: 20px; margin: 6px 0; }
 .help li { margin: 4px 0; }
+/* TO DO: 근무표의 그날 근무자별 체크리스트 */
+.td-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.td-h h2 { margin: 0; }
+.td-nav { display: inline-flex; gap: 4px; }
+.td-who { font-size: .9em; color: var(--ink2); margin: 0 0 10px; line-height: 1.7; }
+.td-add { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.td-add input[type=text] { flex: 1 1 180px; min-width: 0; }
+.td-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.td-p { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; background: var(--surface); }
+.td-p.off { opacity: .6; }
+.td-p h3 { margin: 0 0 6px; font-size: 1em; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.td-p h3 .muted { font-weight: 400; font-size: .85em; margin-left: auto; }
+.td-li { display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; border-top: 1px dashed var(--line); font-size: .93em; }
+.td-li:first-of-type { border-top: 0; }
+.td-li input { margin-top: 3px; width: 18px; height: 18px; flex: none; cursor: pointer; }
+.td-li span.t { flex: 1; min-width: 0; word-break: break-all; }
+.td-li.done span.t { text-decoration: line-through; color: var(--ink3); }
+.td-li .tag { font-size: .72em; flex: none; }
+.td-li button { border: 0; background: transparent; color: var(--ink3); cursor: pointer; font-size: 1em; padding: 0 2px; flex: none; }
+.td-li button:hover { color: var(--bad-ink); }
 .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .8em; background: var(--chip); color: var(--chip-ink); }
 .tag.admin { background: var(--ok-bg); color: var(--ok-ink); }
 .site-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 4px 6px; font-size: .82em; color: var(--ink2); }
@@ -1017,7 +1037,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-10-31c';
+var BUILD = '2026-10-31d';
 (function () {
   var busy = false;
   function typing() {
@@ -1063,7 +1083,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app); // 오프라인 캐시는 켜지 않음(공용 PC에 데이터가 남지 않도록)
 
-const C = { daily: 'pos_daily', detail: 'pos_detail', targets: 'pos_targets', sms: 'pos_sms', config: 'pos_config', logs: 'pos_logs', roles: 'pos_roles', requests: 'pos_requests', stats: 'pos_stats', cons: 'pos_cons', consSum: 'pos_cons_sum', plans: 'pos_plans', planSum: 'pos_plan_sum', ar: 'pos_ar', events: 'pos_events', my: 'pos_my', report: 'pos_report', ref: 'pos_ref', members: 'pos_members', sga: 'pos_sga' };
+const C = { daily: 'pos_daily', detail: 'pos_detail', targets: 'pos_targets', sms: 'pos_sms', config: 'pos_config', logs: 'pos_logs', roles: 'pos_roles', requests: 'pos_requests', stats: 'pos_stats', cons: 'pos_cons', consSum: 'pos_cons_sum', plans: 'pos_plans', planSum: 'pos_plan_sum', ar: 'pos_ar', events: 'pos_events', my: 'pos_my', report: 'pos_report', ref: 'pos_ref', members: 'pos_members', sga: 'pos_sga', todo: 'pos_todo' };
 const SITE_URL = 'https://acetool.site/pos/';
 const XLSX_URL = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
 const XLSX_SRI = 'sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT';
@@ -2359,8 +2379,8 @@ function renderHome(d) {
     k += kpi((cc.scope === 'bath' ? '욕실 시공' : '시공') + ' (' + m + '월)', n + '건 / ' + cc.T + '건', '달성 ' + pct(n / cc.T, 0) + ' · 작년 같은 달 ' + ly + '건');
   }
   h += dataStrip(); // 자료가 어디까지 들어 있는지
-  h += goalCard(d); // 목표 진행이 맨 위 첫 칩, 그다음 달력 · AI 브리핑 · 요약
-  h += calCard(d);
+  h += goalCard(d); // 목표 진행이 맨 위 첫 칩, 그다음 TO DO · AI 브리핑 · 요약
+  h += '<div class="card" data-sec="TO DO" id="todoCard"><p class="muted" style="margin:0">TO DO 불러오는 중…</p></div>';
   h += briefCard(d, false);
   h += '<div class="kpis" data-sec="요약">' + k + '</div>';
   const cw = chartW('homeBody'); S.chartW = cw;
@@ -2382,7 +2402,7 @@ function renderHome(d) {
   if (S.role === 'admin') h += '<div id="hDetail" data-sec="상세 분석"><div class="card muted">상세 분석 불러오는 중…</div></div><div id="hCons" data-sec="시공 분석"><div class="card muted">시공 분석 불러오는 중…</div></div><div id="hAr" data-sec="채권"><div class="card muted">채권 불러오는 중…</div></div>';
   $('homeBody').innerHTML = h;
   buildSecNav('homeBody', 'homeNav');
-  ch1.bind(); ch2.bind(); bindCal();
+  ch1.bind(); ch2.bind(); loadTodo();
   if (S.role === 'admin') homeAdminParts(d);
 }
 
@@ -4654,6 +4674,87 @@ async function loadMembersList() {
   $('memQ').addEventListener('input', () => { memFilter.q = $('memQ').value; draw(); });
   if ($('memHome')) $('memHome').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { memFilter.home = b.dataset.h === '1'; memFilter.gr = ''; loadMembersList(); }));
   draw();
+}
+
+/* ===================== TO DO (홈, 관리자) =====================
+   근무표(sch)의 직원 명단·그날 근무 상태를 읽어 근무자별 체크리스트를 보여 줌 (캐셔는 뺌)
+   할 일 기간: 그날 / 이번 주(월~일) / 이번 달 / 계속(매일 체크) — 체크는 기간마다 따로 저장 */
+const TD_KINDS = { day: '그날', week: '이번 주', month: '이번 달', always: '계속 · 매일' };
+const TD_OFF = ['휴무', '연차', '경조', '예비군', '시험', '교육', '육아휴직'];  // 근무표에서 출근하지 않는 상태
+const TD = { date: 0, roster: null, sched: {}, tasks: null };
+const tdDash = dLabel;  // 근무표 문서 이름 (YYYY-MM-DD)
+const tdMon = d => addDaysInt(d, -((dowOf(d) + 6) % 7));  // 그 주 월요일
+const tdKey = (t, d) => t.kind === 'week' ? 'w' + tdMon(d) : t.kind === 'month' ? 'm' + Math.floor(d / 100) : t.kind === 'always' ? 'd' + d : 'd' + t.s;
+function tdShow(t, d) {
+  if (t.kind === 'day') return t.s === d || (d === todayInt() && t.s < d && t.s >= addDaysInt(d, -14) && !(t.done || {})['d' + t.s]);  // 못 한 일은 2주까지 오늘로 넘어옴
+  if (t.kind === 'week') return tdMon(t.s) === tdMon(d);
+  if (t.kind === 'month') return Math.floor(t.s / 100) === Math.floor(d / 100);
+  return t.s <= d && (!t.e || d <= t.e);
+}
+async function loadTodo(force) {
+  if (!TD.date) TD.date = todayInt();
+  try {
+    const ds = tdDash(TD.date);
+    if (!TD.roster || force) { const r = await getDoc(doc(db, 'sch_settings', 'roster')); TD.roster = r.exists() ? r.data().members || [] : []; }
+    if (!(ds in TD.sched) || force) { const x = await getDoc(doc(db, 'sch_schedule', ds)); TD.sched[ds] = x.exists() ? x.data() : {}; }
+    if (!TD.tasks || force) { const snap = await getDocs(collection(db, C.todo)); TD.tasks = []; snap.forEach(x => TD.tasks.push(Object.assign({ id: x.id }, x.data()))); }
+  } catch (e) { if ($('todoCard')) $('todoCard').innerHTML = '<h2>✅ TO DO</h2><div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
+  renderTodo();
+}
+function renderTodo() {
+  const box = $('todoCard'); if (!box) return;
+  const d = TD.date, ds = tdDash(d), sc = TD.sched[ds] || {}, today = todayInt();
+  const staff = (TD.roster || []).filter(m => m.group !== '캐셔' && (!m.start || m.start <= ds) && (!m.end || m.end >= ds));
+  const st = m => sc[m.id] || '';
+  const on = staff.filter(m => !TD_OFF.includes(st(m))), off = staff.filter(m => TD_OFF.includes(st(m)));
+  const hrs = s => s === '조출' ? '조출 07~17' : s === '마감' || !s ? '10~20' : s;
+  const tasks = TD.tasks.filter(t => tdShow(t, d));
+  const list = who => tasks.filter(t => t.who === who).sort((a, b) => (Object.keys(TD_KINDS).indexOf(a.kind) - Object.keys(TD_KINDS).indexOf(b.kind)) || (a.s - b.s));
+  const item = t => {
+    const k = tdKey(t, d), done = !!(t.done || {})[k], late = t.kind === 'day' && t.s < d;
+    return '<label class="td-li' + (done ? ' done' : '') + '"><input type="checkbox" data-id="' + t.id + '" data-k="' + k + '"' + (done ? ' checked' : '') + '><span class="t">' + esc(t.t) + '</span>' +
+      '<span class="tag">' + (late ? '밀림 ' + mdLabel(t.s) : TD_KINDS[t.kind]) + '</span><button type="button" data-del="' + t.id + '" title="삭제" aria-label="삭제">✕</button></label>';
+  };
+  const block = (who, title, sub, cls) => {
+    const ts = list(who), n = ts.filter(t => (t.done || {})[tdKey(t, d)]).length;
+    return '<div class="td-p' + (cls ? ' ' + cls : '') + '"><h3>' + title + (sub ? ' <span class="tag">' + esc(sub) + '</span>' : '') + '<span class="muted">' + (ts.length ? n + '/' + ts.length : '') + '</span></h3>' +
+      (ts.length ? ts.map(item).join('') : '<p class="muted" style="margin:0;font-size:.88em">할 일이 없습니다</p>') + '</div>';
+  };
+  const known = new Set(['all'].concat(staff.map(m => m.id)));
+  const lost = tasks.filter(t => !known.has(t.who));
+  const opt = '<option value="all">모두 (공통)</option>' + on.concat(off).map(m => '<option value="' + esc(m.id) + '">' + esc(m.name) + '</option>').join('');
+  let h = '<div class="td-h"><h2>✅ TO DO · ' + (Math.floor(d / 100) % 100) + '월 ' + (d % 100) + '일 (' + DOWK[dowOf(d)] + ')' + (d === today ? ' <span class="tag">오늘</span>' : '') + '</h2>' +
+    '<span class="td-nav"><button class="btn ghost sm" data-go="-1" aria-label="전날">◀</button><button class="btn ghost sm" data-go="0">오늘</button><button class="btn ghost sm" data-go="1" aria-label="다음 날">▶</button></span></div>';
+  h += '<p class="td-who">👷 출근 ' + on.length + '명: ' + (on.length ? on.map(m => '<b>' + esc(m.name) + '</b> ' + esc(hrs(st(m)))).join(' · ') : '-') +
+    (off.length ? '<br>🏖️ 쉬는 사람: ' + off.map(m => esc(m.name) + ' (' + esc(st(m)) + ')').join(' · ') : '') +
+    (!TD.roster.length ? '<br><span class="muted">근무표 직원 명단을 읽지 못했습니다.</span>' : '') + '</p>';
+  h += '<div class="td-add"><select id="tdWho" aria-label="누구">' + opt + '</select><input type="text" id="tdT" maxlength="60" placeholder="할 일 (예: 입고 물건 진열, 매일 매장 청소)"><select id="tdKind" aria-label="기간">' +
+    Object.keys(TD_KINDS).map(k => '<option value="' + k + '">' + TD_KINDS[k] + '</option>').join('') + '</select><button class="btn primary" id="tdAdd">추가</button></div>';
+  h += '<div class="td-grid">' + block('all', '📌 모두 (공통)', '') + on.map(m => block(m.id, esc(m.name), hrs(st(m)))).join('') + off.map(m => block(m.id, esc(m.name), st(m), 'off')).join('') +
+    (lost.length ? '<div class="td-p off"><h3>명단에 없는 직원</h3>' + lost.map(item).join('') + '</div>' : '') + '</div>';
+  h += '<p class="muted" style="margin:10px 0 0;font-size:.85em">기간: <b>그날</b> 그 날짜에만 (못 하면 2주까지 오늘로 넘어옴) · <b>이번 주</b> 월~일 한 번 · <b>이번 달</b> 그달 한 번 · <b>계속</b> 날마다 체크 (지울 때까지)</p>';
+  box.innerHTML = h;
+  box.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { const g = Number(b.dataset.go); TD.date = g ? addDaysInt(TD.date, g) : todayInt(); loadTodo(); }));
+  $('tdT').addEventListener('keydown', e => { if (e.key === 'Enter') $('tdAdd').click(); });
+  $('tdAdd').addEventListener('click', async () => {
+    const t = cleanText($('tdT').value, 60); if (!t) { $('tdT').focus(); return; }
+    const rec = { who: $('tdWho').value, t, kind: $('tdKind').value, s: TD.date, e: 0, done: {}, at: serverTimestamp(), by: S.user.email || '' };
+    $('tdAdd').disabled = true;
+    try { const r = await addDoc(collection(db, C.todo), rec); TD.tasks.push(Object.assign({ id: r.id }, rec)); renderTodo(); const n = $('tdT'); if (n) n.focus(); }
+    catch (e) { toast('추가 실패: ' + errMsg(e)); $('tdAdd').disabled = false; }
+  });
+  box.querySelectorAll('input[data-id]').forEach(c => c.addEventListener('change', async () => {
+    const t = TD.tasks.find(x => x.id === c.dataset.id); if (!t) return;
+    const k = c.dataset.k, v = c.checked; t.done = Object.assign({}, t.done, { [k]: v }); renderTodo();
+    try { await setDoc(doc(db, C.todo, t.id), { done: { [k]: v } }, { merge: true }); }
+    catch (e) { t.done[k] = !v; renderTodo(); toast('저장 실패: ' + errMsg(e)); }
+  }));
+  box.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async e => {
+    e.preventDefault();
+    const t = TD.tasks.find(x => x.id === b.dataset.del); if (!t || !confirm('"' + t.t + '" 할 일을 지울까요?' + (t.kind === 'always' ? '\n(계속 할 일은 모든 날짜에서 사라집니다)' : ''))) return;
+    try { await deleteDoc(doc(db, C.todo, t.id)); TD.tasks = TD.tasks.filter(x => x !== t); renderTodo(); }
+    catch (err) { toast('삭제 실패: ' + errMsg(err)); }
+  }));
 }
 
 /* ===================== 판관비 · 점포 BEP (관리자만) =====================
