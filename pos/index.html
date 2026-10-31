@@ -830,6 +830,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
         <label style="margin-right:16px"><input type="radio" name="smsVat" value="excl"> VAT 별도 (그대로 사용 · 기본)</label>
         <label><input type="radio" name="smsVat" value="incl"> VAT 포함 (÷1.1로 환산)</label>
         <span id="vMsg" class="muted" style="margin-left:10px"></span>
+        <div id="vGuess" style="margin-top:12px"></div>
       </div>
       <div class="card">
         <h2>시공 목표</h2>
@@ -1158,7 +1159,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-10-31n';
+var BUILD = '2026-10-31o';
 (function () {
   var busy = false;
   function typing() {
@@ -1841,11 +1842,56 @@ async function renderDataStatus() {
     '<p class="muted" style="margin:0">저장된 모든 달을 1원 단위로 맞춰 봅니다: 일별 합계 ↔ 상세 자료, 마감 문자 ↔ POS, 빠진 날, 마이너스·이상한 값, 마진율, 목표 합계, 결제금액(VAT 포함) 비율, 같은 내용이 두 날에 저장된 경우.</p><div id="intOut"></div></div>';
   $('intBtn').addEventListener('click', async () => {
     $('intBtn').disabled = true; $('intOut').innerHTML = '<p class="muted">점검 중…</p>';
-    try { await loadBase(true); await loadDetail(true); $('intOut').innerHTML = intHtml(checkIntegrity()); }
+    try { await loadBase(true); await loadDetail(true); $('intOut').innerHTML = '<p class="lb" style="margin:12px 0 4px;font-weight:700">문자 금액 기준 (VAT)</p>' + vatGuessHtml(smsVatStats(), false) + intHtml(checkIntegrity()); }
     catch (e) { $('intOut').innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; }
     $('intBtn').disabled = false;
   });
   renderFiles();
+}
+
+/* 문자 금액이 VAT 포함인지 별도인지, 저장된 자료로 판별
+   같은 날의 마감 문자(일마감 금액)를 POS 순매출(VAT 별도)·결제금액(VAT 포함)과 맞춰 봄 */
+function smsVatStats() {
+  const days = [];
+  Object.keys(S.smsCache || {}).forEach(ym => (S.smsCache[ym] || []).forEach(r => {
+    if (r.kind !== '마감' || r.metric !== '일마감') return;
+    const md = (S.daily || {})[ymOf(r.d)] || {}, x = md[dayOf(r.d)];
+    if (!x) return;
+    const net = (Number(x.n) || 0) + (Number(x.o) || 0), v = Number(r.v) || 0, pay = x.p !== undefined && x.p !== null ? Number(x.p) : null;
+    if (net <= 0 || v <= 0) return;
+    const rn = v / net, rp = pay ? v / pay : null;
+    const kind = Math.abs(rn - 1) <= 0.005 ? 'excl' : ((rp !== null && Math.abs(rp - 1) <= 0.005) || Math.abs(rn - 1.1) <= 0.01) ? 'incl' : '';
+    days.push({ d: r.d, v, net, pay, rn, kind });
+  }));
+  days.sort((a, b) => a.d - b.d);
+  const n = days.length, ex = days.filter(x => x.kind === 'excl').length, inc = days.filter(x => x.kind === 'incl').length;
+  const med = n ? days.map(x => x.rn).sort((a, b) => a - b)[Math.floor(n / 2)] : null;
+  const verdict = n < 3 ? '' : ex / n >= 0.7 ? 'excl' : inc / n >= 0.7 ? 'incl' : 'mixed';
+  return { days, n, ex, inc, med, verdict };
+}
+function vatGuessHtml(g, withBtn) {
+  if (!g.n) return '<div class="banner warn">아직 판별할 수 없어요. 같은 날의 <b>마감 문자</b>와 <b>POS 판매 파일</b>이 둘 다 있어야 해요.</div>';
+  const cur = S.settings.smsVat, L = { excl: 'VAT 별도', incl: 'VAT 포함' };
+  const head = '마감 문자 ' + g.n + '일을 POS와 맞춰 봤어요: 순매출(VAT 별도)과 같은 날 ' + g.ex + '일 · 결제금액(VAT 포함)과 같은 날 ' + g.inc + '일 · 문자 ÷ 순매출 중간값 ' + g.med.toFixed(3);
+  if (!g.verdict) return '<div class="banner warn">' + head + '<br>날짜가 3일 이상 모이면 판별할게요.</div>';
+  if (g.verdict === 'mixed') return '<div class="banner warn"><b>판단하기 어려워요.</b> ' + head + '<br>문자와 POS가 자주 다릅니다. POS 파일을 마감 후에 받았는지, 반품·취소 시점이 다른지 확인해 주세요.</div>';
+  const ok = g.verdict === cur;
+  return '<div class="banner ' + (ok ? 'ok' : 'bad') + '"><b>문자 금액은 ' + L[g.verdict] + '로 보여요' + (ok ? ' — 지금 설정과 같아요 ✅' : ' — 지금 설정(' + L[cur] + ')과 달라요 ⚠️') + '</b><br>' + head +
+    (!ok && withBtn ? '<br><button class="btn primary sm" id="vApply" type="button" style="margin-top:8px">' + L[g.verdict] + '로 설정</button>' : '') + '</div>';
+}
+async function showVatGuess() {
+  const el = $('vGuess'); if (!el) return;
+  el.innerHTML = '<p class="muted">문자와 POS를 맞춰 보는 중…</p>';
+  try { const s2 = await getDocs(collection(db, C.sms)); s2.forEach(x => { S.smsCache[Number(x.id)] = Object.values(x.data().recs || {}); }); }
+  catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
+  const g = smsVatStats();
+  el.innerHTML = vatGuessHtml(g, true);
+  if ($('vApply')) $('vApply').addEventListener('click', () => {
+    const r = document.querySelector('input[name=smsVat][value="' + g.verdict + '"]'); if (!r) return;
+    if (!confirm('문자 금액 기준을 "' + (g.verdict === 'excl' ? 'VAT 별도' : 'VAT 포함') + '"로 바꿀까요?')) return;
+    r.checked = true; r.dispatchEvent(new Event('change'));
+    S.settings.smsVat = g.verdict; setTimeout(showVatGuess, 300);
+  });
 }
 
 /* ===================== 숫자 점검 (관리자): 저장된 자료끼리 1원 단위로 맞춰 봄 =====================
@@ -4762,6 +4808,7 @@ async function loadSettings() {
   }));
   $('hol').value = S.settings.holidays.slice().sort((a, b) => a - b).map(dLabel).join('\n');
   document.querySelectorAll('input[name=smsVat]').forEach(r => { r.checked = r.value === S.settings.smsVat; });
+  showVatGuess();
   $('cT').value = S.settings.consTarget; $('cScope').value = S.settings.consScope; $('cBasis').value = S.settings.consBasis;
   $('wUrl').value = S.settings.workUrl || '';
   if (!$('tYm').value) { const td = todayInt(); $('tYm').value = Math.floor(td / 10000) + '-' + String(Math.floor(td / 100) % 100).padStart(2, '0'); }
