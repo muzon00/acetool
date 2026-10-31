@@ -422,7 +422,14 @@ details > summary.up-h { cursor: pointer; margin: 6px 0; font-weight: 700; }
 .ea-g.g-B { background: var(--chip); color: var(--chip-ink); }
 .ea-g.g-C { background: var(--warn-bg); color: var(--warn-ink); }
 .ea-g.g-D { background: var(--bad-bg); color: var(--bad-ink); }
-#eaTbl tr[data-ym] { cursor: pointer; }
+#eaTbl tr[data-ym], #sgaTbl tr[data-ym] { cursor: pointer; }
+#sgaTbl tr[data-ym]:hover td { background: var(--surface2); }
+#sgaTbl tr.on td { background: var(--chip); }
+/* 판관비·BEP: 마진이 판관비를 얼마나 채웠는지 막대 (100% = BEP) */
+.bep-bar { position: relative; height: 16px; background: var(--grid); border-radius: 8px; margin: 6px 0 4px; overflow: hidden; }
+.bep-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 8px; }
+.sga-ed input { width: 100%; min-width: 0; }
+.sga-ed td { padding: 3px 4px; }
 #eaTbl tr[data-ym]:hover td { background: var(--surface2); }
 #eaTbl tr.on td { background: var(--chip); }
 @media (max-width: 640px) { .ea-row { grid-template-columns: 1fr auto; row-gap: 6px; } .ea-t { grid-column: 1 / 3; grid-row: 2; } }
@@ -619,6 +626,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
       <nav class="secnav" id="adminTabs" aria-label="관리자 메뉴">
         <button class="pill on" data-tab="upload">업로드</button>
         <button class="pill" data-tab="eval">월별 평가·원인</button>
+        <button class="pill" data-tab="sga">판관비·BEP</button>
         <button class="pill" data-tab="plans">예정 매출</button>
         <button class="pill" data-tab="download">다운로드</button>
         <button class="pill" data-tab="settings">목표·설정</button>
@@ -775,6 +783,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
     </div>
 
     <div id="a-eval" class="hide"></div>
+    <div id="a-sga" class="hide"></div>
     <div id="a-vip" class="hide"></div>
     <div id="a-members" class="hide"></div>
 
@@ -818,6 +827,12 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
           <li>달마다 <b>목표 달성 · 전년 같은 달 대비 · 최근 흐름 대비 · 마진율</b>로 점수(S~D 등급)를 매깁니다. 진행 중인 달은 예상 마감과 같은 기간끼리 비교합니다.</li>
           <li><b>원인 분석</b>: 고른 달을 전월 / 전년 같은 달 / 직전 3개월 평균과 견줘, 매출이 늘고 준 까닭을 영업일 구성 · 내판 하루 매출력 · 외판 하루 매출력으로 나누고 대분류·담당자·거래처·마진·반품 변화를 짚어 줍니다.</li>
           <li>맨 아래 월별 평가표의 줄을 누르면 그 달로 바뀝니다.</li>
+        </ul>
+        <h3>판관비·BEP</h3>
+        <ul>
+          <li>달을 고르고 그달 판관비 엑셀/CSV를 올리거나(첫 줄에 <b>항목 · 금액</b> 머리글) 직접 입력해 저장합니다. 합계·소계 줄은 빼고 항목만 더합니다.</li>
+          <li>그달 <b>마진(매출총이익)</b>이 판관비보다 크면 BEP 달성입니다. <b>BEP 매출 = 판관비 ÷ 마진율</b>, <b>영업이익 = 마진 − 판관비</b>로 계산하고, 미달이면 마진·매출이 얼마나 부족한지 보여 줍니다.</li>
+          <li>마진은 상세 판매 내역(마진 열)에서 계산하므로, 그달 판매 내역을 올려야 계산됩니다. 진행 중인 달은 지금까지 기준과 예상 마감 기준을 함께 보여 줍니다.</li>
         </ul>
         <h3>욕실·시공 내역 (2025년, 2026년)</h3>
         <ol>
@@ -1002,7 +1017,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-10-31b';
+var BUILD = '2026-10-31c';
 (function () {
   var busy = false;
   function typing() {
@@ -1048,7 +1063,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app); // 오프라인 캐시는 켜지 않음(공용 PC에 데이터가 남지 않도록)
 
-const C = { daily: 'pos_daily', detail: 'pos_detail', targets: 'pos_targets', sms: 'pos_sms', config: 'pos_config', logs: 'pos_logs', roles: 'pos_roles', requests: 'pos_requests', stats: 'pos_stats', cons: 'pos_cons', consSum: 'pos_cons_sum', plans: 'pos_plans', planSum: 'pos_plan_sum', ar: 'pos_ar', events: 'pos_events', my: 'pos_my', report: 'pos_report', ref: 'pos_ref', members: 'pos_members' };
+const C = { daily: 'pos_daily', detail: 'pos_detail', targets: 'pos_targets', sms: 'pos_sms', config: 'pos_config', logs: 'pos_logs', roles: 'pos_roles', requests: 'pos_requests', stats: 'pos_stats', cons: 'pos_cons', consSum: 'pos_cons_sum', plans: 'pos_plans', planSum: 'pos_plan_sum', ar: 'pos_ar', events: 'pos_events', my: 'pos_my', report: 'pos_report', ref: 'pos_ref', members: 'pos_members', sga: 'pos_sga' };
 const SITE_URL = 'https://acetool.site/pos/';
 const XLSX_URL = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
 const XLSX_SRI = 'sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT';
@@ -1441,7 +1456,7 @@ function buildDetail(detail, ym, lastDay) {
 /* ===================== Firestore 읽기/쓰기 ===================== */
 // https 주소만 허용 (javascript: 같은 위험한 링크 차단)
 function safeUrl(u) { try { const x = new URL(String(u || '').trim()); return x.protocol === 'https:' ? x.href : ''; } catch (e) { return ''; } }
-function invalidate() { S.daily = null; S.targets = null; S.settings = null; S.smsCache = {}; S.detail = null; S.cons = null; S.consSum = null; S.plans = null; S.planSum = null; S.ar = null; S.ev = null; S.ref = null; S.members = null; }
+function invalidate() { S.daily = null; S.targets = null; S.settings = null; S.smsCache = {}; S.detail = null; S.cons = null; S.consSum = null; S.plans = null; S.planSum = null; S.ar = null; S.ev = null; S.ref = null; S.members = null; S.sga = null; }
 async function loadBase(force) {
   if (S.daily && S.targets && S.settings && !force) return;
   const [dSnap, tSnap, cSnap] = await Promise.all([getDocs(collection(db, C.daily)), getDocs(collection(db, C.targets)), getDoc(doc(db, C.config, 'settings'))]);
@@ -2382,7 +2397,7 @@ window.addEventListener('resize', () => {
 
 /* ===================== 관리자: 탭 ===================== */
 document.querySelectorAll('#adminTabs .pill').forEach(b => b.addEventListener('click', () => showAdminTab(b.dataset.tab)));
-const ATABS = ['upload', 'eval', 'plans', 'download', 'settings', 'tree', 'vip', 'members', 'help'];
+const ATABS = ['upload', 'eval', 'sga', 'plans', 'download', 'settings', 'tree', 'vip', 'members', 'help'];
 function showAdminTab(t) {
   if (!ATABS.includes(t)) t = 'upload';
   S.adminTab = t;
@@ -2394,6 +2409,7 @@ function showAdminTab(t) {
   if (t === 'settings') loadSettings();
   if (t === 'tree') loadTree();
   if (t === 'eval') loadEval();
+  if (t === 'sga') loadSga();
   if (t === 'vip') loadMembersList();
   if (t === 'members') loadMembers();
   if (t === 'upload') renderDataStatus();
@@ -4638,6 +4654,163 @@ async function loadMembersList() {
   $('memQ').addEventListener('input', () => { memFilter.q = $('memQ').value; draw(); });
   if ($('memHome')) $('memHome').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { memFilter.home = b.dataset.h === '1'; memFilter.gr = ''; loadMembersList(); }));
   draw();
+}
+
+/* ===================== 판관비 · 점포 BEP (관리자만) =====================
+   달마다 판관비를 올리거나(엑셀·CSV) 직접 적어 두면, 그달 마진(매출총이익)과 견줘 손익분기점(BEP)을 넘었는지 봄
+   BEP 매출 = 판관비 ÷ 마진율 · 영업이익 = 마진 − 판관비 (마진은 상세 판매 내역의 마진 열) */
+let SGA = { ym: 0, draft: null, file: '', note: '' };
+async function loadSga() {
+  const el = $('a-sga');
+  if (!S.sga || !S.daily || !S.detail) el.innerHTML = '<div class="card muted">불러오는 중…</div>';
+  try {
+    await loadBase(); await loadDetail();
+    if (!S.sga) { const snap = await getDocs(collection(db, C.sga)); S.sga = {}; snap.forEach(x => { S.sga[Number(x.id)] = x.data(); }); }
+  } catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
+  renderSga();
+}
+const sgaSum = items => (items || []).reduce((t, x) => t + (Number(x.amt) || 0), 0);
+// 그달 매출·마진과 판관비로 BEP 계산 (진행 중인 달은 예상 마감 기준도)
+function sgaCalc(ym) {
+  const live = eaLive(ym), up = eaUpto(ym), a = eaAgg(ym, up), F = sgaSum((S.sga[ym] || {}).items);
+  const net = a.net.n + a.net.o, M = a.mar.n + a.mar.o, rate = a.det && net ? M / net : null;
+  const r = { ym, live, up, sales: a.tot, mar: a.det ? M : null, rate, F, has: !!S.sga[ym] };
+  if (rate !== null && F) { r.op = M - F; r.bep = rate > 0 ? F / rate : null; r.short = r.bep === null ? null : r.bep - a.tot; }
+  if (live && rate !== null && F) {
+    const f = buildSummary(S.daily, S.targets, S.settings.holidays, ym, todayInt(), [], S.settings.smsVat).forecast, fb = f && f['기본'];
+    if (fb) { r.fSales = fb.total; r.fOp = fb.total * rate - F; }
+  }
+  return r;
+}
+// 판관비 파일 읽기: "항목(계정과목) + 금액" 머리글을 찾고, 없으면 줄마다 첫 글자 칸 = 항목, 마지막 숫자 칸 = 금액
+const SGA_TOTAL = /^(합계|총계|총합계|소계|계|판관비계|판관비합계|판매비와관리비계|판매비와관리비합계|판매비와관리비|판관비)$/;
+function parseSga(sheets, fname) {
+  const title = fname + ' ' + ((sheets[0] || []).slice(0, 5).map(r => (r || []).join(' ')).join(' '));
+  const m = /(20\d{2})\s*(?:년|[.\-\/])\s*(\d{1,2})(?!\d)/.exec(title), ym = m && Number(m[2]) >= 1 && Number(m[2]) <= 12 ? Number(m[1]) * 100 + Number(m[2]) : 0;
+  for (const aoa of sheets) {
+    let hi = -1, ci = -1, ai = -1;
+    for (let i = 0; i < Math.min(aoa.length, 30) && hi < 0; i++) {
+      const r = (aoa[i] || []).map(hnorm);
+      const c = r.findIndex(v => /^(항목|항목명|계정|계정명|계정과목|과목|비용항목|비목|내역|구분)$/.test(v));
+      const a = r.findIndex(v => /(금액|당월|실적|발생액|비용)/.test(v) && !/(누계|누적|전년|전월|예산|계획|비율|%|비중)/.test(v));
+      if (c >= 0 && a >= 0 && c !== a) { hi = i; ci = c; ai = a; }
+    }
+    const by = {}; let fileTotal = 0;
+    aoa.slice(hi + 1).forEach(r => {
+      if (!r) return;
+      let name, amt;
+      if (hi >= 0) { name = cleanText(r[ci], 40); amt = toNum(r[ai]); }
+      else {
+        const ti = r.findIndex(v => typeof v === 'string' && /[가-힣A-Za-z]/.test(v) && !/^[\d,.\s-]+$/.test(v));
+        let ni = -1; for (let j = r.length - 1; j > ti; j--) if (r[j] !== '' && r[j] !== null && toNum(r[j]) !== 0) { ni = j; break; }
+        if (ti < 0 || ni < 0) return;
+        name = cleanText(r[ti], 40); amt = toNum(r[ni]);
+      }
+      if (!name || !amt) return;
+      if (SGA_TOTAL.test(hnorm(name))) { if (!fileTotal) fileTotal = amt; return; }
+      by[name] = (by[name] || 0) + amt;
+    });
+    const items = Object.keys(by).map(k => ({ name: k, amt: Math.round(by[k]) }));
+    if (items.length) return { items, fileTotal: Math.round(fileTotal), ym };
+  }
+  return { error: '항목과 금액을 찾지 못했습니다. 첫 줄에 "항목", "금액" 머리글이 있는 표로 올리거나 직접 입력해 주세요.' };
+}
+function renderSga() {
+  eaCache = {};
+  const el = $('a-sga'), cur = ymOf(todayInt());
+  const months = [...new Set(eaMonths().concat(Object.keys(S.sga).map(Number), [cur, addMonths(cur, -1)], SGA.ym ? [SGA.ym] : []))].sort((a, b) => b - a);
+  if (!months.includes(SGA.ym)) SGA.ym = addMonths(cur, -1);  // 기본: 마감된 지난달
+  const ym = SGA.ym, rec = S.sga[ym], r = sgaCalc(ym);
+  if (!SGA.draft) { SGA.draft = rec ? rec.items.map(x => ({ ...x })) : []; SGA.file = rec ? rec.file || '' : ''; }
+  const sel = '<select id="sgaYm" aria-label="달">' + months.map(m => '<option value="' + m + '"' + (m === ym ? ' selected' : '') + '>' + ymLabel(m) + (S.sga[m] ? '' : ' (판관비 없음)') + '</option>').join('') + '</select>';
+  let h = '<div class="card"><div class="bk-h"><h2>🏪 ' + ymLabel(ym) + ' 점포 BEP' + (r.live ? ' <span class="tag">진행 중 · 1~' + r.up + '일</span>' : ' <span class="tag">마감</span>') + '</h2>' + sel + '</div>';
+  if (!rec) h += '<div class="banner warn">이 달 판관비가 아직 없습니다. 아래 "판관비 올리기·입력"에서 파일을 올리거나 직접 입력해 주세요.</div>';
+  else if (r.mar === null) h += '<div class="banner warn">판관비 ' + won(r.F) + ' · 이 달 마진 자료(상세 판매 내역)가 없어 BEP를 계산할 수 없습니다. 업로드 탭에 이 달 POS 판매 내역을 올려 주세요.</div>';
+  else {
+    const ok = r.op >= 0, base = r.live ? '지금까지(1~' + r.up + '일) ' : '';
+    h += ok ? '<div class="banner ok">✅ ' + base + '<b>BEP 달성</b> · 영업이익 <b>+' + won(r.op) + '</b> (마진 ' + eok(r.mar) + ' − 판관비 ' + eok(r.F) + ')</div>'
+      : '<div class="banner bad">❌ ' + base + '<b>BEP 미달</b> · 마진이 판관비보다 <b>' + won(-r.op) + ' 부족</b>' + (r.short > 0 ? ' · BEP까지 매출 <b>' + won(r.short) + '</b> 더 필요 (마진율 ' + pct(r.rate) + ' 기준)' : '') + '</div>';
+    if (r.live && r.fSales !== undefined) h += '<div class="banner ' + (r.fOp >= 0 ? 'ok' : 'warn') + '">📈 예상 마감 기준: 매출 ' + eok(r.fSales) + ' → 영업이익 ' + (r.fOp >= 0 ? '+' : '−') + won(Math.abs(r.fOp)) + (r.fOp >= 0 ? ' (BEP 달성 예상)' : ' (BEP까지 매출 ' + won(r.bep - r.fSales) + ' 더 필요)') + '</div>';
+    const fill = Math.max(0, Math.min(1, r.mar / r.F));
+    h += '<div class="kpis">' + kpi('매출 (VAT 별도)', won(r.sales), r.bep ? 'BEP 매출 ' + eok(r.bep) + ' 대비 ' + pct(r.sales / r.bep, 0) : '', true) +
+      kpi('마진 (매출총이익)', won(r.mar), '마진율 ' + pct(r.rate)) +
+      kpi('판관비', won(r.F), r.sales ? '매출 대비 ' + pct(r.F / r.sales) : '') +
+      kpi('영업이익', (r.op >= 0 ? '+' : '−') + won(Math.abs(r.op)), r.sales ? '영업이익률 ' + pct(r.op / r.sales) : '') +
+      kpi('BEP 매출', r.bep ? won(r.bep) : '-', r.bep ? (r.short > 0 ? '부족 ' + eok(r.short) : '초과 ' + eok(-r.short)) : '마진율이 0 이하') + '</div>' +
+      '<p class="muted" style="margin:10px 0 0">BEP 달성률 (마진 ÷ 판관비) <b>' + pct(r.mar / r.F, 0) + '</b></p>' +
+      '<div class="bep-bar"><i style="width:' + (fill * 100).toFixed(1) + '%;background:' + (r.op >= 0 ? 'var(--ok-ink)' : 'var(--bad-ink)') + '"></i></div>';
+  }
+  h += '</div>';
+  // 항목별 판관비
+  if (rec && rec.items.length) {
+    const its = rec.items.slice().sort((a, b) => b.amt - a.amt), F = sgaSum(its);
+    h += '<div class="card"><h2>📑 ' + ymLabel(ym) + ' 판관비 항목</h2><p class="muted" style="margin-top:0">' + (rec.file ? esc(rec.file) + ' · ' : '') + (rec.at && rec.at.toDate ? whenTxt(rec.at) + ' 저장' : '') + '</p>' +
+      table(['항목', '금액', '비중', '매출 대비'], its.map(x => [esc(x.name), won(x.amt), F ? pct(x.amt / F) : '-', r.sales ? pct(x.amt / r.sales, 2) : '-']).concat([['<b>합계</b>', '<b>' + won(F) + '</b>', '100%', r.sales ? pct(F / r.sales, 2) : '-']])) + '</div>';
+  }
+  // 올리기 · 직접 입력
+  h += '<div class="card"><h2>✏️ ' + ymLabel(ym) + ' 판관비 올리기·입력</h2>' +
+    '<p class="muted" style="margin-top:0">엑셀(.xlsx/.xls)·CSV를 올리면 항목과 금액을 읽어 아래 표에 채웁니다. 확인·수정한 뒤 <b>저장</b>을 눌러 주세요. 합계·소계 줄은 빼고 항목만 더합니다.</p>' +
+    '<div class="row" style="align-items:center"><input type="file" id="sgaFile" accept=".xlsx,.xls,.csv"><span class="muted" id="sgaNote">' + esc(SGA.note) + '</span></div>' +
+    '<div class="scroll" style="margin-top:10px"><table class="sga-ed"><tr><th class="l">항목</th><th>금액 (원)</th><th></th></tr><tbody id="sgaRows"></tbody></table></div>' +
+    '<div class="row" style="align-items:center;margin-top:8px"><button class="btn ghost sm" id="sgaAdd">+ 항목 추가</button><span>합계 <b id="sgaDraftSum"></b></span></div>' +
+    '<div class="row" style="align-items:center;margin-top:12px"><button class="btn primary" id="sgaSave">' + ymLabel(ym) + ' 판관비 저장</button>' + (rec ? '<button class="btn danger" id="sgaDel">이 달 판관비 삭제</button>' : '') + '<span class="muted" id="sgaMsg"></span></div></div>';
+  // 월별 BEP 표
+  const done = Object.keys(S.sga).map(Number).sort((a, b) => b - a).map(sgaCalc);
+  h += '<div class="card"><h2>🗓️ 월별 BEP</h2>' + (done.length ? '<p class="muted" style="margin-top:0">줄을 누르면 그 달을 위에서 봅니다.</p><div class="scroll"><table id="sgaTbl"><tr><th>월</th><th>매출</th><th>마진</th><th>마진율</th><th>판관비</th><th>영업이익</th><th>BEP 매출</th><th>BEP</th></tr>' +
+    done.map(x => '<tr data-ym="' + x.ym + '"' + (x.ym === ym ? ' class="on"' : '') + '><td>' + ymLabel(x.ym) + (x.live ? ' <span class="tag">진행 중</span>' : '') + '</td><td>' + won(x.sales) + '</td><td>' + (x.mar === null ? '-' : won(x.mar)) + '</td><td>' + (x.rate === null ? '-' : pct(x.rate)) + '</td><td>' + won(x.F) + '</td><td>' +
+      (x.op === undefined ? '-' : '<span style="color:var(--' + (x.op >= 0 ? 'ok' : 'bad') + '-ink)">' + (x.op >= 0 ? '+' : '−') + won(Math.abs(x.op)) + '</span>') + '</td><td>' + (x.bep ? won(x.bep) : '-') + '</td><td>' +
+      (x.op === undefined ? '<span class="muted">마진 자료 없음</span>' : x.op >= 0 ? '✅ 달성' : '❌ 매출 ' + eok(Math.max(0, x.short)) + ' 부족') + '</td></tr>').join('') + '</table></div>'
+    : '<p class="muted" style="margin:0">아직 저장한 판관비가 없습니다.</p>') + '</div>';
+  el.innerHTML = h;
+  // 편집 표
+  const drawRows = () => {
+    $('sgaRows').innerHTML = SGA.draft.map((x, i) => '<tr data-i="' + i + '"><td><input data-f="name" value="' + esc(x.name) + '" placeholder="예) 인건비"></td><td><input data-f="amt" inputmode="numeric" value="' + (x.amt ? Number(x.amt).toLocaleString('ko-KR') : '') + '" style="text-align:right"></td><td><button class="btn danger sm" data-rm>삭제</button></td></tr>').join('') ||
+      '<tr><td colspan="3" class="muted">항목이 없습니다. 파일을 올리거나 "+ 항목 추가"를 눌러 주세요.</td></tr>';
+    $('sgaDraftSum').textContent = won(sgaSum(SGA.draft));
+    $('sgaRows').querySelectorAll('tr[data-i]').forEach(tr => {
+      const i = Number(tr.dataset.i);
+      tr.querySelectorAll('input').forEach(inp => inp.addEventListener('input', () => {
+        SGA.draft[i][inp.dataset.f] = inp.dataset.f === 'amt' ? Math.round(toNum(inp.value)) : inp.value;
+        $('sgaDraftSum').textContent = won(sgaSum(SGA.draft));
+      }));
+      tr.querySelector('[data-rm]').addEventListener('click', () => { SGA.draft.splice(i, 1); drawRows(); });
+    });
+  };
+  drawRows();
+  $('sgaYm').addEventListener('change', e => { SGA.ym = Number(e.target.value); SGA.draft = null; SGA.note = ''; renderSga(); });
+  $('sgaAdd').addEventListener('click', () => { SGA.draft.push({ name: '', amt: 0 }); drawRows(); const ins = $('sgaRows').querySelectorAll('input[data-f=name]'); if (ins.length) ins[ins.length - 1].focus(); });
+  $('sgaFile').addEventListener('change', async () => {
+    const f = $('sgaFile').files[0]; if (!f) return;
+    $('sgaNote').textContent = '읽는 중…';
+    let p; try { p = parseSga(await readSheets(f), f.name); } catch (e) { p = { error: errMsg(e) }; }
+    if (p.error) { $('sgaNote').textContent = p.error; return; }
+    if (p.ym && p.ym !== SGA.ym) SGA.ym = p.ym;  // 파일에 적힌 달로 맞춤
+    SGA.draft = p.items; SGA.file = f.name;
+    const t = sgaSum(p.items);
+    SGA.note = f.name + ' · ' + p.items.length + '개 항목 · 합계 ' + won(t) + (p.ym ? ' · 파일의 달 ' + ymLabel(p.ym) : '') +
+      (p.fileTotal ? (Math.abs(p.fileTotal - t) < 1 ? ' · 파일 합계와 같음 ✅' : ' · ⚠️ 파일 합계 ' + won(p.fileTotal) + '와 다름 — 항목을 확인해 주세요') : '') + ' · 확인 후 저장을 눌러 주세요';
+    renderSga();
+  });
+  $('sgaSave').addEventListener('click', async () => {
+    const items = SGA.draft.map(x => ({ name: cleanText(x.name, 40), amt: Math.round(toNum(x.amt)) })).filter(x => x.name && x.amt);
+    if (!items.length) { $('sgaMsg').textContent = '저장할 항목이 없습니다'; return; }
+    const names = items.map(x => x.name), dup = names.find((n, i) => names.indexOf(n) !== i);
+    if (dup) { $('sgaMsg').textContent = '같은 항목이 두 번 있습니다: ' + dup; return; }
+    if (S.sga[ym] && !confirm(ymLabel(ym) + ' 판관비를 새 내용으로 바꿀까요?')) return;
+    $('sgaSave').disabled = true; $('sgaMsg').textContent = '저장 중…';
+    try {
+      const rec = { items, total: sgaSum(items), file: cleanText(SGA.file, 120), at: serverTimestamp(), by: S.user.email || '' };
+      await setDoc(doc(db, C.sga, String(ym)), rec);
+      S.sga[ym] = Object.assign({}, rec, { at: null }); SGA.draft = null; SGA.note = ''; toast(ymLabel(ym) + ' 판관비를 저장했습니다');
+      renderSga();
+    } catch (e) { $('sgaMsg').textContent = '저장 실패: ' + errMsg(e); $('sgaSave').disabled = false; }
+  });
+  if ($('sgaDel')) $('sgaDel').addEventListener('click', async () => {
+    if (!confirm(ymLabel(ym) + ' 판관비를 삭제할까요?')) return;
+    try { await deleteDoc(doc(db, C.sga, String(ym))); delete S.sga[ym]; SGA.draft = null; SGA.note = ''; toast(ymLabel(ym) + ' 판관비를 삭제했습니다'); renderSga(); }
+    catch (e) { $('sgaMsg').textContent = '삭제 실패: ' + errMsg(e); }
+  });
+  $('sgaTbl') && $('sgaTbl').querySelectorAll('tr[data-ym]').forEach(tr => tr.addEventListener('click', () => { SGA.ym = Number(tr.dataset.ym); SGA.draft = null; SGA.note = ''; renderSga(); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
 }
 
 /* ===================== 월별 평가 · 원인 분석 (관리자만) =====================
