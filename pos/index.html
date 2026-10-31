@@ -1000,6 +1000,31 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
     if (f === 'neat' || f === 'round') document.documentElement.dataset.font = f;
   } catch (e) { }
 })();
+// 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
+// (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
+var BUILD = '2026-10-31a';
+(function () {
+  var busy = false;
+  function typing() {
+    var a = document.activeElement;
+    return !!document.querySelector('dialog[open]') || !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName));
+  }
+  function check() {
+    if (busy || document.visibilityState !== 'visible' || typing()) return;
+    busy = true;
+    fetch(location.pathname + '?b=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
+      var m = t.match(/var BUILD = '([^']+)'/);
+      // 같은 버전으로는 한 번만 새로고침 (서버 반영이 늦을 때 왔다 갔다 하지 않게)
+      if (m && m[1] !== BUILD && !typing() && sessionStorage.getItem('pos.reloadTo') !== m[1]) {
+        sessionStorage.setItem('pos.reloadTo', m[1]);
+        location.replace(location.pathname + '?v=' + m[1] + location.hash);
+      }
+    }).catch(function () { }).then(function () { busy = false; });
+  }
+  check();
+  document.addEventListener('visibilitychange', check);
+  setInterval(check, 30 * 60 * 1000);
+})();
 </script>
 
 <script type="module">
