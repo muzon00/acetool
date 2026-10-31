@@ -1118,7 +1118,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-10-31j';
+var BUILD = '2026-10-31k';
 (function () {
   var busy = false;
   function typing() {
@@ -2974,8 +2974,8 @@ function renderConsAnalysis(el) {
   h += '<div class="grid2"><div class="card"><h2>품목별 건수 (' + (live ? '1/1~' + mdLabel(today) : '연간') + ')</h2>' + (catRows.length ? table(['품목', cy + '년', py + '년', '증감'], catRows.map(x => [esc(x.c), x.a, x.b, dif(x.a, x.b)])) : '<p class="muted">품목 표시가 없습니다.</p>') + '</div>' +
     '<div class="card"><h2>' + cy + '년 진행 현황 (시공상태)</h2>' + table(['시공상태', '건수'], group('cs', recs.filter(r => !r.cx && (scope === 'all' || isBath(r)) && Math.floor(r.d / 10000) === cy)).map(x => [esc(x.name), x.n])) +
     '<p class="muted" style="margin:6px 0 0">시공일자가 아직 없는 건: ' + recs.filter(r => !r.cx && (scope === 'all' || isBath(r)) && Math.floor(r.d / 10000) === cy && !r.sd).length + '건</p></div></div>';
-  h += '<div class="grid2"><div class="card"><h2>시공 담당별 (' + cy + '년)</h2>' + table(['시공담당', '건수', '실매출', '시공비'], group('w', cyR).map(x => [esc(x.name), x.n, won(x.net), won(x.fee)])) + '</div>' +
-    '<div class="card"><h2>판매원별 (' + cy + '년)</h2>' + table(['판매원', '건수', '실매출', '마진율'], group('sp', cyR).map(x => [esc(x.name), x.n, won(x.net), x.net ? pct(x.mar / x.net) : '-'])) + '</div></div>';
+  // 판매원별 표는 뺌 (필요 없음)
+  h += '<div class="card"><h2>시공 담당별 (' + cy + '년)</h2>' + table(['시공담당', '건수', '실매출', '시공비'], group('w', cyR).map(x => [esc(x.name), x.n, won(x.net), won(x.fee)])) + '</div>';
   h += '<div class="card"><h2>구매경로별 (' + cy + '년)</h2>' + table(['구매경로', '건수', '비중', '건당 실매출'], group('path', cyR).map(x => [esc(x.name), x.n, pct(x.n / (cyR.length || 1), 0), won(x.net / x.n)])) + '</div>';
   el.innerHTML = h;
   ch.bind();
