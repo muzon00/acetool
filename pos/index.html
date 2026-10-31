@@ -524,7 +524,22 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .td-li { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-top: 1px dashed var(--line); font-size: 1em; cursor: pointer; }
 .td-li:first-of-type { border-top: 0; }
 .td-li input { margin-top: 2px; width: 20px; height: 20px; flex: none; cursor: pointer; }
-.td-new { margin-left: auto; padding: 11px 20px; font-size: 1em; font-weight: 700; }
+.td-new { padding: 11px 20px; font-size: 1em; font-weight: 700; }
+.td-h .td-nav { margin-left: auto; }
+/* TO DO 인쇄 양식 고르기 */
+.tp-opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tp-opts label { display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; cursor: pointer; }
+.tp-opts label:has(input:checked) { border: 2px solid var(--s1); padding: 11px 13px; background: var(--chip); }
+.tp-opts input { margin: 0 0 2px; }
+.tp-opts b { color: var(--ink); }
+.tp-opts span { font-size: .85em; color: var(--ink3); }
+@media (max-width: 640px) { .tp-opts { grid-template-columns: 1fr; } }
+#printArea { display: none; }
+@media print {
+  body.tp-printing > *:not(#printArea) { display: none !important; }
+  body.tp-printing #printArea { display: block !important; }
+  body.tp-printing { background: #fff !important; }
+}
 /* 할 일 쓰기 창 (넓게) */
 dialog.doc.td-dlg { width: min(880px, calc(100% - 20px)); }
 .td-dlg .db { font-size: 1em; display: flex; flex-direction: column; gap: 18px; padding-top: 16px; }
@@ -972,6 +987,19 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
     <div class="td-foot"><span class="muted" id="tdSum"></span><span style="flex:1"></span><button class="btn ghost" id="tdCancel" type="button">취소</button><button class="btn primary" id="tdSave" type="button">등록</button></div>
   </div>
 </dialog>
+<dialog class="doc" id="dlgTdPrint" aria-labelledby="tpT">
+  <div class="dh"><h2 id="tpT">TO DO 인쇄 <span class="muted" id="tpDate" style="font-size:.7em;font-weight:400"></span></h2><button class="btn ghost sm" data-close>닫기</button></div>
+  <div class="db" style="display:flex;flex-direction:column;gap:14px;padding-top:14px">
+    <div class="tp-opts" id="tpOpts">
+      <label><input type="radio" name="tpLay" value="1"><b>1 · 한 장에 모두</b><span>공통 + 사람별 칸을 A4 한 장에. 벽·카운터에 붙여 두기</span></label>
+      <label><input type="radio" name="tpLay" value="2"><b>2 · 사람마다 한 장</b><span>이름 크게, 기간별로 나눠 큰 체크 칸. 출근자 수만큼 장</span></label>
+      <label><input type="radio" name="tpLay" value="3"><b>3 · 잘라서 나눠 주기</b><span>A4 한 장에 4명, 점선대로 잘라 쪽지로. 공통 할 일 포함</span></label>
+    </div>
+    <p class="muted" id="tpInfo" style="margin:0"></p>
+    <p class="muted" style="margin:0;font-size:.88em">매출·마진 같은 숫자는 인쇄되지 않습니다. <b>파일 다운로드</b>는 프린터가 연결된 다른 PC에서 열어(로그인 필요 없음) "인쇄"를 누르면 됩니다. 인쇄 창에서 "PDF로 저장"을 고르면 PDF로도 받을 수 있어요.</p>
+    <div class="td-foot"><span style="flex:1"></span><button class="btn ghost" id="tpDown" type="button">⬇️ 파일 다운로드 (다른 PC에서 인쇄)</button><button class="btn primary" id="tpGo" type="button">🖨️ 인쇄</button></div>
+  </div>
+</dialog>
 <dialog class="doc" id="dlgDay" aria-labelledby="dayT">
   <div class="dh"><h2 id="dayT">일정</h2><button class="btn ghost sm" data-close>닫기</button></div>
   <div class="db">
@@ -1063,7 +1091,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-10-31e';
+var BUILD = '2026-10-31f';
 (function () {
   var busy = false;
   function typing() {
@@ -4749,9 +4777,10 @@ function renderTodo() {
   const known = new Set(['all'].concat(staff.map(m => m.id)));
   const lost = tasks.filter(t => !known.has(t.who));
   TD.people = on.concat(off).map(m => ({ id: m.id, name: m.name, off: TD_OFF.includes(st(m)) ? st(m) : '' }));
+  TD.view = { d, tasks, on: on.map(m => ({ id: m.id, name: m.name, group: m.group || '', hrs: hrs(st(m)) })), off: off.map(m => ({ name: m.name, st: st(m) })) };
   let h = '<div class="td-h"><h2>✅ TO DO · ' + (Math.floor(d / 100) % 100) + '월 ' + (d % 100) + '일 (' + DOWK[dowOf(d)] + ')' + (d === today ? ' <span class="tag">오늘</span>' : '') + '</h2>' +
     '<span class="td-nav"><button class="btn ghost sm" data-go="-1" aria-label="전날">◀</button><button class="btn ghost sm" data-go="0">오늘</button><button class="btn ghost sm" data-go="1" aria-label="다음 날">▶</button></span>' +
-    '<button class="btn primary td-new" id="tdNew" type="button">+ 할 일 쓰기</button></div>';
+    '<button class="btn ghost td-new" id="tdPrint" type="button" style="margin-left:0">🖨️ 인쇄</button><button class="btn primary td-new" id="tdNew" type="button" style="margin-left:0">+ 할 일 쓰기</button></div>';
   h += '<p class="td-who">👷 출근 ' + on.length + '명: ' + (on.length ? on.map(m => '<b>' + esc(m.name) + '</b> ' + esc(hrs(st(m)))).join(' · ') : '-') +
     (off.length ? '<br>🏖️ 쉬는 사람: ' + off.map(m => esc(m.name) + ' (' + esc(st(m)) + ')').join(' · ') : '') +
     (!TD.roster.length ? '<br><span class="muted">근무표 직원 명단을 읽지 못했습니다.</span>' : '') + '</p>';
@@ -4761,6 +4790,7 @@ function renderTodo() {
   box.innerHTML = h;
   box.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { const g = Number(b.dataset.go); TD.date = g ? addDaysInt(TD.date, g) : todayInt(); loadTodo(); }));
   $('tdNew').addEventListener('click', openTodoDlg);
+  $('tdPrint').addEventListener('click', openTdPrint);
   box.querySelectorAll('input[data-id]').forEach(c => c.addEventListener('change', async () => {
     const t = TD.tasks.find(x => x.id === c.dataset.id); if (!t) return;
     const k = c.dataset.k, v = c.checked; t.done = Object.assign({}, t.done, { [k]: v }); renderTodo();
@@ -4774,6 +4804,125 @@ function renderTodo() {
     catch (err) { toast('삭제 실패: ' + errMsg(err)); }
   }));
 }
+
+/* TO DO 인쇄: 1 한 장에 모두 · 2 사람마다 한 장 · 3 한 장에 4명(잘라서) — 매출 숫자는 넣지 않음
+   같은 내용으로 바로 인쇄하거나, 다른 PC에서 열어 인쇄할 HTML 파일로 내려받음 */
+const TP_KEY = 'pos.todoPrint';
+const TP_CSS = `
+.tp-page { box-sizing: border-box; width: 190mm; min-height: 276mm; padding: 0; font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; color: #000; display: flex; flex-direction: column; gap: 3mm; page-break-after: always; break-after: page; }
+.tp-page:last-child { page-break-after: auto; break-after: auto; }
+.tp-head { display: flex; align-items: flex-end; gap: 4mm; border-bottom: 1mm solid #000; padding-bottom: 2mm; }
+.tp-head h1 { margin: 0; font-size: 22pt; font-weight: 800; line-height: 1.1; }
+.tp-head .d { font-size: 13pt; font-weight: 700; }
+.tp-head .r { margin-left: auto; font-size: 9pt; }
+.tp-who { margin: 0; font-size: 9.5pt; line-height: 1.6; }
+.tp-bx { border: 0.4mm solid #000; border-radius: 1.5mm; padding: 2.5mm 3mm; break-inside: avoid; page-break-inside: avoid; }
+.tp-bx h3 { margin: 0 0 1mm; font-size: 12pt; font-weight: 800; }
+.tp-bx h3 span { font-size: 8.5pt; font-weight: 500; margin-left: 2mm; }
+.tp-g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3mm; }
+.tp-g2c { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 5mm; }
+.tp-it { display: flex; align-items: flex-start; gap: 2mm; font-size: 10pt; line-height: 1.45; padding: 1mm 0; border-bottom: 0.2mm dotted #888; }
+.tp-it i { flex: none; width: 3.4mm; height: 3.4mm; border: 0.4mm solid #000; border-radius: 0.5mm; margin-top: 0.6mm; font-style: normal; font-size: 8pt; line-height: 3.4mm; text-align: center; }
+.tp-it em { font-style: normal; margin-left: auto; padding-left: 2mm; font-size: 7.5pt; white-space: nowrap; }
+.tp-bl { height: 6mm; border-bottom: 0.2mm dotted #888; display: flex; align-items: center; }
+.tp-bl i { width: 3.4mm; height: 3.4mm; border: 0.4mm solid #000; border-radius: 0.5mm; }
+.tp-foot { margin-top: auto; display: flex; justify-content: space-between; gap: 4mm; font-size: 8.5pt; border-top: 0.3mm solid #000; padding-top: 1.5mm; }
+.tp-p2 .tp-name { display: flex; align-items: flex-end; gap: 4mm; border-bottom: 1.2mm solid #000; padding-bottom: 2.5mm; }
+.tp-p2 .tp-name h1 { margin: 0; font-size: 32pt; font-weight: 800; line-height: 1; }
+.tp-p2 .tp-name span { font-size: 12pt; font-weight: 700; }
+.tp-p2 .tp-name small { margin-left: auto; font-size: 10pt; }
+.tp-p2 .tp-sh { margin: 2mm 0 0; font-size: 11pt; font-weight: 800; border-bottom: 0.5mm solid #000; padding-bottom: 1mm; }
+.tp-p2 .tp-sh span { font-size: 8.5pt; font-weight: 500; margin-left: 2mm; }
+.tp-p2 .tp-it { font-size: 13pt; padding: 2.6mm 1mm; gap: 3.5mm; align-items: center; border-bottom: 0.25mm solid #aaa; }
+.tp-p2 .tp-it i { width: 5.5mm; height: 5.5mm; margin: 0; font-size: 11pt; line-height: 5.5mm; border-width: 0.5mm; }
+.tp-p2 .tp-it em { font-size: 9pt; }
+.tp-p2 .tp-bl { height: 11mm; border-bottom: 0.25mm solid #aaa; }
+.tp-p2 .tp-bl i { width: 5.5mm; height: 5.5mm; border-width: 0.5mm; margin-left: 1mm; }
+.tp-p3 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, 138mm); gap: 0; min-height: 0; height: 276mm; }
+.tp-q { box-sizing: border-box; padding: 5mm 6mm; display: flex; flex-direction: column; gap: 0.5mm; overflow: hidden; min-width: 0; }
+.tp-q:nth-child(odd) { border-right: 0.4mm dashed #000; }
+.tp-q:nth-child(-n+2) { border-bottom: 0.4mm dashed #000; }
+.tp-q .top { display: flex; justify-content: space-between; font-size: 8pt; }
+.tp-q h2 { margin: 0 0 1.5mm; font-size: 19pt; font-weight: 800; line-height: 1.15; border-bottom: 0.7mm solid #000; padding-bottom: 1.2mm; }
+.tp-q h2 span { font-size: 9pt; font-weight: 600; margin-left: 2mm; }
+.tp-q .tp-it { font-size: 10.5pt; padding: 1.6mm 0; border-bottom: 0.2mm solid #bbb; align-items: center; }
+.tp-q .tp-it em { border: 0.2mm solid #000; border-radius: 3mm; padding: 0 1.5mm; }
+.tp-q .tp-bl { height: 8mm; border-bottom: 0.2mm solid #bbb; }
+.tp-q .more { font-size: 8.5pt; margin-top: 1mm; }
+`;
+function tpTag(t, d) { return t.kind === 'day' ? (t.s < d ? '밀림 ' + mdLabel(t.s) : '오늘') : t.kind === 'week' ? '이번 주' : t.kind === 'month' ? '이번 달' : '매일'; }
+function tpItems(list, d, max) {
+  const ord = ['day', 'week', 'month', 'always'], ts = list.slice().sort((a, b) => ord.indexOf(a.kind) - ord.indexOf(b.kind));
+  const show = max ? ts.slice(0, max) : ts;
+  return show.map(t => '<div class="tp-it"><i>' + ((t.done || {})[tdKey(t, d)] ? '✓' : '') + '</i><span>' + esc(t.t) + '</span><em>' + (t.who === 'all' && t.common ? '공통 · ' : '') + tpTag(t, d) + '</em></div>').join('') +
+    (max && ts.length > max ? '<div class="more">+ ' + (ts.length - max) + '개 더 (화면에서 확인)</div>' : '');
+}
+const tpBlank = n => '<div class="tp-bl"><i></i></div>'.repeat(n);
+function tpBuild(lay) {
+  const v = TD.view, d = v.d, dl = Math.floor(d / 10000) + '년 ' + (Math.floor(d / 100) % 100) + '월 ' + (d % 100) + '일 (' + DOWK[dowOf(d)] + ')', ds = (Math.floor(d / 100) % 100) + '/' + (d % 100) + ' (' + DOWK[dowOf(d)] + ')';
+  const of = who => v.tasks.filter(t => t.who === who), common = of('all').map(t => Object.assign({}, t, { common: true }));
+  const whoLine = '<p class="tp-who">출근 ' + v.on.length + '명: ' + (v.on.map(m => esc(m.name) + ' ' + esc(m.hrs)).join(' · ') || '-') + (v.off.length ? ' &#160;|&#160; 쉬는 사람: ' + v.off.map(m => esc(m.name) + ' (' + esc(m.st) + ')').join(' · ') : '') + '</p>';
+  if (lay === '1') {
+    return '<div class="tp-page"><div class="tp-head"><h1>오늘 할 일</h1><span class="d">' + dl + '</span><span class="r">ACE 일산점</span></div>' + whoLine +
+      (common.length ? '<div class="tp-bx"><h3>모두 (공통)</h3><div class="tp-g2c">' + tpItems(of('all'), d) + '</div></div>' : '') +
+      '<div class="tp-g2">' + v.on.map(m => '<div class="tp-bx"><h3>' + esc(m.name) + '<span>' + esc(m.group) + ' · ' + esc(m.hrs) + '</span></h3>' + tpItems(of(m.id), d) + tpBlank(2) + '</div>').join('') + '</div>' +
+      '<div class="tp-foot"><span>다 한 일은 체크, 못 한 일은 옆에 사유를 적어 주세요</span><span>점장 확인 __________</span></div></div>';
+  }
+  if (lay === '2') {
+    const groups = [['day', '오늘 꼭 할 일', ''], ['week', '이번 주 안에', mdLabel(tdMon(d)) + ' ~ ' + mdLabel(addDaysInt(tdMon(d), 6))], ['month', '이번 달 안에', (Math.floor(d / 100) % 100) + '월'], ['always', '매일 지킬 일', '']];
+    return v.on.map(m => {
+      const ts = of(m.id).concat(common);
+      return '<div class="tp-page tp-p2"><div class="tp-foot" style="margin:0;border:0;padding:0"><span>ACE 일산점 · 오늘 할 일</span><span>' + dl + '</span></div>' +
+        '<div class="tp-name"><h1>' + esc(m.name) + '</h1><span>' + esc(m.group) + ' · ' + esc(m.hrs) + ' 근무</span><small>할 일 ' + ts.length + '개</small></div>' +
+        groups.map(([k, l, sub]) => { const g = ts.filter(t => t.kind === k); return g.length ? '<p class="tp-sh">' + l + (sub ? '<span>' + sub + '</span>' : '') + '</p>' + tpItems(g, d) : ''; }).join('') +
+        (ts.length ? '' : '<p class="tp-sh">오늘 할 일</p>') + '<p class="tp-sh">추가로 한 일 · 메모</p>' + tpBlank(3) +
+        '<div class="tp-foot" style="font-size:10pt"><span>못 한 일이 있으면 사유를 옆에 적어 주세요</span><span>본인 ________ &#160; 점장 확인 ________</span></div></div>';
+    }).join('');
+  }
+  const slips = v.on.map(m => { const ts = of(m.id).concat(common); return '<div class="tp-q"><div class="top"><span>ACE 일산점 · 할 일</span><span>' + ds + '</span></div><h2>' + esc(m.name) + '<span>' + esc(m.hrs) + '</span></h2>' + tpItems(ts, d, 9) + tpBlank(Math.max(1, Math.min(3, 9 - ts.length))) + '<div class="tp-foot" style="font-size:8pt"><span>못 한 일은 사유를 적어 주세요</span><span>확인 ______</span></div></div>'; });
+  let out = '';
+  for (let i = 0; i < slips.length; i += 4) out += '<div class="tp-page tp-p3">' + slips.slice(i, i + 4).join('') + '</div>';
+  return out;
+}
+function tpLay() { const r = document.querySelector('input[name=tpLay]:checked'); return r ? r.value : '3'; }
+function tpInfo() {
+  const v = TD.view, n = v.on.length, lay = tpLay();
+  $('tpInfo').textContent = !n ? '이 날 출근자가 없습니다.' : lay === '1' ? 'A4 1장 (할 일이 많으면 2장)' : lay === '2' ? 'A4 ' + n + '장 (출근자 ' + n + '명)' : 'A4 ' + Math.ceil(n / 4) + '장 (한 장에 4명씩, 점선대로 자르기)';
+}
+function openTdPrint() {
+  if (!TD.view) return;
+  let lay = '3'; try { lay = localStorage.getItem(TP_KEY) || '3'; } catch (e) { }
+  document.querySelectorAll('input[name=tpLay]').forEach(r => { r.checked = r.value === lay; });
+  const d = TD.view.d; $('tpDate').textContent = (Math.floor(d / 100) % 100) + '월 ' + (d % 100) + '일 (' + DOWK[dowOf(d)] + ')';
+  tpInfo(); $('dlgTdPrint').showModal();
+}
+document.querySelectorAll('input[name=tpLay]').forEach(r => r.addEventListener('change', () => { try { localStorage.setItem(TP_KEY, tpLay()); } catch (e) { } tpInfo(); }));
+$('tpGo').addEventListener('click', () => {
+  if (!TD.view || !TD.view.on.length) { toast('이 날 출근자가 없어 인쇄할 것이 없습니다'); return; }
+  let area = $('printArea');
+  if (!area) { area = document.createElement('div'); area.id = 'printArea'; document.body.appendChild(area); }
+  area.innerHTML = '<style>@page { size: A4; margin: 10mm; } ' + TP_CSS + '</style>' + tpBuild(tpLay());
+  $('dlgTdPrint').close();
+  document.body.classList.add('tp-printing');
+  const done = () => { document.body.classList.remove('tp-printing'); area.innerHTML = ''; window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  setTimeout(() => window.print(), 50);
+});
+$('tpDown').addEventListener('click', () => {
+  if (!TD.view || !TD.view.on.length) { toast('이 날 출근자가 없어 내려받을 것이 없습니다'); return; }
+  const d = TD.view.d, lay = tpLay(), name = '할일_' + dLabel(d) + '_' + ['', '한장에모두', '사람마다', '잘라서'][Number(lay)] + '.html';
+  const html = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>오늘 할 일 ' + dLabel(d) + '</title><style>' +
+    '@page { size: A4; margin: 10mm; } body { margin: 0; background: #e5e7eb; } .bar { position: sticky; top: 0; background: #111; color: #fff; padding: 10px 16px; display: flex; gap: 12px; align-items: center; font: 14px sans-serif; }' +
+    '.bar button { font: inherit; font-weight: 700; padding: 8px 18px; border: 0; border-radius: 8px; background: #3182f6; color: #fff; cursor: pointer; } .wrap { padding: 16px 0; }' +
+    '.wrap .tp-page { background: #fff; margin: 0 auto 16px; padding: 10mm; width: 210mm; min-height: 297mm; box-shadow: 0 2px 10px rgba(0,0,0,.15); } .wrap .tp-p3 { height: 297mm; grid-template-rows: repeat(2, 138.5mm); }' +
+    '@media print { body { background: #fff; } .bar { display: none; } .wrap { padding: 0; } .wrap .tp-page { margin: 0; padding: 0; width: 190mm; min-height: 276mm; box-shadow: none; } .wrap .tp-p3 { height: 276mm; grid-template-rows: repeat(2, 138mm); } }' +
+    TP_CSS + '</style></head><body><div class="bar"><b>오늘 할 일 · ' + dLabel(d) + '</b><span style="flex:1"></span><button onclick="window.print()">인쇄</button></div><div class="wrap">' + tpBuild(lay) + '</div></body></html>';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast(name + ' 내려받음 · 프린터 PC에서 열고 "인쇄"를 누르세요');
+});
 
 /* 할 일 쓰기 창: 여러 명 × 여러 줄을 한 번에 등록 */
 const TDW = { who: [], kind: 'day' };
