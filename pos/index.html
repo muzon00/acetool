@@ -611,6 +611,46 @@ dialog.doc h3 { margin: 18px 0 6px; font-size: 1em; }
 dialog.doc p, dialog.doc li { color: var(--ink2); margin: 4px 0; }
 dialog.doc ul { padding-left: 20px; margin: 4px 0; }
 @media (max-width: 560px) { .page-title { font-size: 22px; } .card { padding: 14px; } }
+/* ===== 화면 크기별 맞춤: 휴대폰 · 패드 · PC ===== */
+.td-acts { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+.td-sm { display: none; }
+.wrap { padding-bottom: 96px; }  /* 오른쪽 아래 떠 있는 버튼이 마지막 카드를 가리지 않게 */
+@media (min-width: 1280px) {  /* 넓은 PC: 양옆 여백을 줄이고 글씨를 조금 크게 */
+  .wrap { max-width: 1240px; padding-left: 24px; padding-right: 24px; }
+  body { font-size: calc(var(--fs) + 1px); }
+  .kpi .v { font-size: calc(var(--kpi-size) + 2px); }
+  .goal { grid-template-columns: 200px 1fr; }
+  .gauge { width: 190px; height: 190px; }
+  .td-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }  /* 4칸은 할 일 글자가 끊겨서 3칸 */
+}
+@media (max-width: 640px) {  /* 휴대폰 */
+  .wrap { padding: 10px 10px 92px; }
+  .card { padding: 14px 13px; border-radius: 16px; }
+  .td-h h2 { flex-basis: 100%; font-size: 1.05em; }
+  .td-h .td-nav { margin-left: 0; }
+  .td-acts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; gap: 6px; }
+  .td-acts .td-new { padding: 11px 6px; font-size: .92em; white-space: nowrap; }
+  .td-lg { display: none; }
+  .td-sm { display: inline; }
+  .td-grid { grid-template-columns: 1fr; }
+  .td-p { padding: 12px 13px; }
+  .td-li { font-size: .97em; }
+  .td-foot .btn { flex: 1 1 auto; }
+  /* 카톡으로 등록 표: 줄마다 할 일(위) + 담당·기간(아래) */
+  .tk-tbl, .tk-tbl tbody { display: block; }
+  .tk-tbl tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px; gap: 6px; padding: 8px 0; border-top: 1px solid var(--line); }
+  .tk-tbl tr:first-child { border-top: 0; }
+  .tk-tbl td { display: block; padding: 0; border: 0; width: auto !important; }
+  .tk-tbl td:nth-child(2) { grid-column: 1 / -1; order: -1; }
+  .tk-tbl select { width: 100%; }
+  dialog.doc .db { padding-left: 14px; padding-right: 14px; }
+  dialog.doc .dh { padding: 12px 14px; }
+}
+@media (min-width: 641px) and (max-width: 1024px) {  /* 패드 */
+  .wrap { padding-left: 14px; padding-right: 14px; }
+  .td-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media print { .wrap { padding-bottom: 0; } }
 @media print { .prefs, .toolbar, .tabsbar, .topbar .userbox, #pageRefresh, .secnav, .site-foot { display: none !important; } .topbar, .sticky-head { position: static; } }
 </style>
 </head>
@@ -1118,7 +1158,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-10-31k';
+var BUILD = '2026-10-31l';
 (function () {
   var busy = false;
   function typing() {
@@ -4808,7 +4848,7 @@ function renderTodo() {
   TD.view = { d, tasks, on: on.map(m => ({ id: m.id, name: tdNm(m), group: m.group || '', hrs: hrs(st(m)) })), off: off.map(m => ({ name: tdNm(m), st: st(m) })) };
   let h = '<div class="td-h"><h2>✅ TO DO · ' + (Math.floor(d / 100) % 100) + '월 ' + (d % 100) + '일 (' + DOWK[dowOf(d)] + ')' + (d === today ? ' <span class="tag">오늘</span>' : '') + '</h2>' +
     '<span class="td-nav"><button class="btn ghost sm" data-go="-1" aria-label="전날">◀</button><button class="btn ghost sm" data-go="0">오늘</button><button class="btn ghost sm" data-go="1" aria-label="다음 날">▶</button></span>' +
-    '<button class="btn ghost td-new" id="tdPrint" type="button" style="margin-left:0">🖨️ 인쇄</button><button class="btn ghost td-new" id="tdKakao" type="button" style="margin-left:0">💬 카톡으로 등록</button><button class="btn primary td-new" id="tdNew" type="button" style="margin-left:0">+ 할 일 쓰기</button></div>';
+    '<span class="td-acts"><button class="btn ghost td-new" id="tdPrint" type="button">🖨️ 인쇄</button><button class="btn ghost td-new" id="tdKakao" type="button"><span class="td-lg">💬 카톡으로 등록</span><span class="td-sm">💬 카톡</span></button><button class="btn primary td-new" id="tdNew" type="button"><span class="td-lg">+ 할 일 쓰기</span><span class="td-sm">+ 할 일</span></button></span></div>';
   h += '<p class="td-who">👷 출근 ' + on.length + '명: ' + (on.length ? on.map(m => '<b>' + esc(tdNm(m)) + '</b> ' + esc(hrs(st(m)))).join(' · ') : '-') +
     (off.length ? '<br>🏖️ 쉬는 사람: ' + off.map(m => esc(m.name) + ' (' + esc(st(m)) + ')').join(' · ') : '') +
     (!TD.roster.length ? '<br><span class="muted">근무표 직원 명단을 읽지 못했습니다.</span>' : '') + '</p>';
