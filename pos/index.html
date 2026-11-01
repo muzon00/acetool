@@ -838,9 +838,14 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
           <label class="amt">목표 합계(원, VAT 별도)<input type="number" id="tTotal" min="0" step="1000"><span class="amt-read" data-for="tTotal"></span><span class="amt-chips" data-for="tTotal"></span></label>
           <label class="amt">내판 목표(선택)<input type="number" id="tN" min="0" step="1000"><span class="amt-read" data-for="tN"></span><span class="amt-chips" data-for="tN"></span></label>
           <label class="amt">외판 목표(선택)<input type="number" id="tO" min="0" step="1000"><span class="amt-read" data-for="tO"></span><span class="amt-chips" data-for="tO"></span></label>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <label class="amt">매출총이익 목표(원, 선택)<input type="number" id="tGp" min="0" step="1000"><span class="amt-read" data-for="tGp"></span><span class="amt-chips" data-for="tGp"></span></label>
+          <label>매총율 목표(%, 선택)<input type="number" id="tGr" min="0" max="100" step="0.1" placeholder="예) 22.5" style="width:140px"></label>
           <button class="btn primary" id="tSave">저장</button>
         </div>
         <div id="tSumHint" class="muted" style="margin-top:6px"></div>
+        <div id="tGpHint" class="muted" style="margin-top:4px"></div>
         <div id="tMsg" class="muted" style="margin-top:8px"></div>
         <div class="scroll" style="margin-top:10px"><table id="tTable"></table></div>
       </div>
@@ -1185,7 +1190,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-10-31q';
+var BUILD = '2026-11-01a';
 (function () {
   var busy = false;
   function typing() {
@@ -1650,7 +1655,7 @@ async function loadBase(force) {
   if (S.daily && S.targets && S.settings && !force) return;
   const [dSnap, tSnap, cSnap] = await Promise.all([getDocs(collection(db, C.daily)), getDocs(collection(db, C.targets)), getDoc(doc(db, C.config, 'settings'))]);
   S.daily = {}; dSnap.forEach(s => { S.daily[Number(s.id)] = s.data().days || {}; });
-  S.targets = {}; tSnap.forEach(s => { const x = s.data(); S.targets[Number(s.id)] = { total: x.total ?? null, n: x.n ?? null, o: x.o ?? null }; });
+  S.targets = {}; tSnap.forEach(s => { const x = s.data(); S.targets[Number(s.id)] = { total: x.total ?? null, n: x.n ?? null, o: x.o ?? null, gp: x.gp ?? null, gr: x.gr ?? null }; });
   const c = cSnap.exists() ? cSnap.data() : {};
   S.settings = { holidays: Array.isArray(c.holidays) ? c.holidays.map(Number).filter(Boolean) : [], smsVat: c.smsVat === 'incl' ? 'incl' : 'excl', consTarget: Number(c.consTarget) > 0 ? Number(c.consTarget) : 28, consScope: c.consScope === 'all' ? 'all' : 'bath', consBasis: c.consBasis === 'cons' ? 'cons' : 'sale', workUrl: safeUrl(c.workUrl) };
 }
@@ -1959,6 +1964,7 @@ function checkIntegrity() {
     // 목표: 내판 + 외판 = 전체
     const tg = (S.targets || {})[ym];
     if (tg && tg.total && tg.n !== null && tg.o !== null && Number(tg.n) + Number(tg.o) !== Number(tg.total)) add('warn', ym, 0, '목표: 내판 ' + won(tg.n) + ' + 외판 ' + won(tg.o) + ' ≠ 전체 ' + won(tg.total));
+    if (tg && tg.total && tg.gp && tg.gr !== null && tg.gr !== undefined && Math.abs(tg.gp / tg.total * 100 - tg.gr) > 0.05) add('warn', ym, 0, '목표: 매총이익 ' + won(tg.gp) + ' ÷ 매출 ' + won(tg.total) + ' = ' + (tg.gp / tg.total * 100).toFixed(2) + '% ≠ 매총율 ' + tg.gr + '%');
     // 마감 문자 ↔ POS (VAT 별도 기준)
     const sms = S.smsCache[ym];
     if (sms && sms.length) {
@@ -2466,6 +2472,7 @@ function goalCard(d) {
     const row = (lbl, v, t, col) => t ? '<div class="gsub"><span>' + lbl + '</span><span class="gsub-t"><i style="width:' + Math.min(100, v / t * 100).toFixed(1) + '%;background:' + col + '"></i></span><span>' + pct(v / t, 0) + ' · ' + eok(v) + ' / ' + eok(t) + '</span></div>' : '';
     sub = row('내판', d.cum.n, d.targetN, 'var(--s1)') + row('외판', d.cum.o, d.targetO, 'var(--s2)');
   }
+  sub += '<div class="gmar-sub"></div>';  // 매총이익 · 매총율 (관리자 상세 자료를 불러온 뒤 채움)
   return '<div class="card" data-sec="목표"><h2>목표 진행 · ' + won(T) + '</h2><div class="goal">' + ring +
     '<div class="goal-r"><p class="muted" style="margin:0 0 8px">' + (!d.lastDay ? '아직 이 달 매출 자료가 없어요 · 목표와 하루 필요 금액을 미리 보는 화면이에요' : ahead ? '오늘까지 목표선보다 <b>' + eok(d.cum.total - T * d.elapsed) + ' 앞서</b> 있어요' : '오늘까지 목표선보다 <b>' + eok(T * d.elapsed - d.cum.total) + ' 부족</b>해요') + (d.lastDay ? ' (시간 경과 ' + pct(d.elapsed) + ')' : '') + '</p>' +
     payLine(d) + bar + sub + '<div class="gfacts">' + facts.map(f => '<div><span class="muted">' + f[0] + '</span><b' + (f[2] || '') + '>' + f[1] + '</b></div>').join('') + '</div></div></div></div>';
@@ -2753,6 +2760,13 @@ async function homeAdminParts(d) {
     // 목표 진행 칸: 현재 마진 금액 · 마진율 (상세 자료의 순매출 기준)
     const marT = det.mar.n + det.mar.o, netT = det.net.n + det.net.o, gm = document.querySelector('#homeBody .gmar');
     if (gm && netT) { gm.innerHTML = '현재 마진 <b>' + won(marT) + '</b> · 마진율 <b>' + pct(marT / netT) + '</b>'; gm.classList.remove('hide'); }
+    // 목표 진행: 매총이익 목표 대비 진행 · 매총율 목표 대비
+    const gs = document.querySelector('#homeBody .gmar-sub'), tg = (S.targets || {})[d.ym], gpT = gpTarget(tg), grT = tg && tg.gr !== null && tg.gr !== undefined ? tg.gr : null;
+    if (gs && netT && (gpT || grT !== null)) {
+      const rate = marT / netT;
+      gs.innerHTML = (gpT ? '<div class="gsub" style="grid-template-columns:56px 1fr auto"><span>매총이익</span><span class="gsub-t"><i style="width:' + Math.min(100, Math.max(0, marT / gpT * 100)).toFixed(1) + '%;background:var(--ok-ink)"></i></span><span>' + pct(marT / gpT, 0) + ' · ' + eok(marT) + ' / ' + eok(gpT) + '</span></div>' : '') +
+        (grT !== null ? '<div class="gsub" style="grid-template-columns:56px 1fr auto"><span>매총율</span><span class="gsub-t"><i style="width:' + Math.min(100, Math.max(0, rate * 100 / grT * 100)).toFixed(1) + '%;background:' + (rate * 100 >= grT ? 'var(--ok-ink)' : 'var(--bad-ink)') + '"></i></span><span>' + pct(rate) + ' / 목표 ' + grT + '% · <b style="color:var(--' + (rate * 100 >= grT ? 'ok' : 'bad') + '-ink)">' + ppTxt(rate * 100 - grT) + '</b></span></div>' : '');
+    }
     if (d.last && $('homeBrief')) $('homeBrief').outerHTML = briefCard(d, true);
   } catch (e) { if ($('hDetail')) $('hDetail').innerHTML = '<div class="banner bad">상세 분석: ' + esc(errMsg(e)) + '</div>'; }
   try {
@@ -4817,19 +4831,26 @@ function rpSheet(wb, D, T, boss) {
 
 /* ===================== 관리자: 목표·설정 ===================== */
 async function loadSettings() {
-  try { await loadBase(true); } catch (e) { $('tMsg').textContent = errMsg(e); return; }
+  try { await loadBase(true); await loadDetail(true); } catch (e) { $('tMsg').textContent = errMsg(e); return; }
   const list = Object.keys(S.targets).map(Number).sort((a, b) => b - a);
-  const t = $('tTable');
-  t.innerHTML = '<tr><th>연월</th><th>목표 합계</th><th>내판</th><th>외판</th><th></th></tr>' + list.map(ym => {
-    const x = S.targets[ym];
-    return '<tr><td>' + ymLabel(ym) + '</td><td>' + (x.total ? won(x.total) : '-') + '</td><td>' + (x.n ? won(x.n) : '-') + '</td><td>' + (x.o ? won(x.o) : '-') +
-      '</td><td><button class="btn ghost sm" data-edit="' + ym + '">수정</button> <button class="btn danger sm" data-del="' + ym + '">삭제</button></td></tr>';
+  const t = $('tTable'), cur = ymOf(todayInt());
+  const prog = (v, tg) => tg ? '<br><small class="muted">' + pct(v / tg, 1) + '</small>' : '';
+  t.innerHTML = '<tr><th>연월</th><th>목표 매출<br><small>내판 / 외판</small></th><th>실적 매출<br><small>달성률</small></th><th>매총이익 목표</th><th>실적 매총이익<br><small>달성률</small></th><th>매총율<br><small>목표 → 실적</small></th><th></th></tr>' + list.map(ym => {
+    const x = S.targets[ym], a = gpActual(ym), live = ym >= cur;
+    const gpT = x.gp || (x.total && x.gr !== null && x.gr !== undefined ? Math.round(x.total * x.gr / 100) : null);
+    return '<tr><td>' + ymLabel(ym) + (live && a.days ? ' <span class="tag">진행 중</span>' : '') + '</td>' +
+      '<td>' + (x.total ? won(x.total) : '-') + (x.n || x.o ? '<br><small class="muted">' + (x.n ? eok(x.n) : '-') + ' / ' + (x.o ? eok(x.o) : '-') + '</small>' : '') + '</td>' +
+      '<td>' + (a.days ? won(a.sales) + prog(a.sales, x.total) : '-') + '</td>' +
+      '<td>' + (x.gp ? won(x.gp) : gpT ? won(gpT) + '<br><small class="muted">매출×매총율</small>' : '-') + '</td>' +
+      '<td>' + (a.mar !== null ? won(a.mar) + prog(a.mar, gpT) : a.days ? '<small class="muted">마진 자료 없음</small>' : '-') + '</td>' +
+      '<td>' + (x.gr !== null && x.gr !== undefined ? x.gr + '%' : '-') + ' → ' + (a.rate !== null ? pct(a.rate) + (x.gr !== null && x.gr !== undefined ? '<br><small style="color:var(--' + (a.rate * 100 >= x.gr ? 'ok' : 'bad') + '-ink)">' + ppTxt(a.rate * 100 - x.gr) + '</small>' : '') : '-') + '</td>' +
+      '<td><button class="btn ghost sm" data-edit="' + ym + '">수정</button> <button class="btn danger sm" data-del="' + ym + '">삭제</button></td></tr>';
   }).join('');
   t.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => {
     const ym = Number(b.dataset.edit), x = S.targets[ym];
     $('tYm').value = Math.floor(ym / 100) + '-' + String(ym % 100).padStart(2, '0');
-    $('tTotal').value = x.total || ''; $('tN').value = x.n || ''; $('tO').value = x.o || '';
-    ['tTotal', 'tN', 'tO'].forEach(syncAmt);
+    $('tTotal').value = x.total || ''; $('tN').value = x.n || ''; $('tO').value = x.o || ''; $('tGp').value = x.gp || ''; $('tGr').value = x.gr !== null && x.gr !== undefined ? x.gr : '';
+    ['tTotal', 'tN', 'tO', 'tGp'].forEach(syncAmt);
   }));
   t.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
     const ym = Number(b.dataset.del);
@@ -4844,13 +4865,17 @@ async function loadSettings() {
   if (!$('tYm').value) { const td = todayInt(); $('tYm').value = Math.floor(td / 10000) + '-' + String(Math.floor(td / 100) % 100).padStart(2, '0'); }
 }
 const numOrNull = v => { if (v === '' || v === null) return null; const n = Number(v); return isFinite(n) && n >= 0 ? Math.round(n) : null; };
+// 매총율(%): 빈칸 = 없음, 0~100 숫자만 (소수 둘째 자리까지), 그 밖은 NaN → 저장 막음
+const grOrNull = v => { if (v === '' || v === null || v === undefined) return null; const n = Number(v); return isFinite(n) && n >= 0 && n <= 100 ? Math.round(n * 100) / 100 : NaN; };
 $('tSave').addEventListener('click', async () => {
   const v = $('tYm').value, total = numOrNull($('tTotal').value);
   if (!v || !total) { $('tMsg').textContent = '연월과 목표 합계를 입력해 주세요.'; return; }
   const ym = Number(v.replace('-', ''));
   if (ym < 200001 || ym > 209912) { $('tMsg').textContent = '연월이 올바르지 않습니다.'; return; }
+  const gr = grOrNull($('tGr').value);
+  if (Number.isNaN(gr)) { $('tMsg').textContent = '매총율은 0~100 사이 숫자로 입력해 주세요 (예: 22.5).'; return; }
   try {
-    await setDoc(doc(db, C.targets, String(ym)), { total, n: numOrNull($('tN').value), o: numOrNull($('tO').value), updatedAt: serverTimestamp() });
+    await setDoc(doc(db, C.targets, String(ym)), { total, n: numOrNull($('tN').value), o: numOrNull($('tO').value), gp: numOrNull($('tGp').value), gr, updatedAt: serverTimestamp() });
     $('tMsg').textContent = ymLabel(ym) + ' 목표를 저장했습니다.'; loadSettings();
   } catch (e) { $('tMsg').textContent = '저장 실패: ' + errMsg(e); }
 });
@@ -4870,7 +4895,22 @@ function syncAmt(id) {
   document.querySelector('.amt-read[data-for="' + id + '"]').textContent = krw(inp.value);
   const n = Number($('tN').value) || 0, o = Number($('tO').value) || 0, t = Number($('tTotal').value) || 0;
   sum.textContent = (n || o) ? '내판 + 외판 = ' + (krw(n + o) || '0원') + (t && n + o !== t ? ' (목표 합계와 ' + krw(Math.abs(t - n - o)) + ' 차이)' : '') : '';
+  gpHint();
 }
+// 목표 매출 · 매총이익 · 매총율 서로 맞춰 보기 (매총이익 = 매출 × 매총율)
+function gpHint() {
+  const el = $('tGpHint'); if (!el) return;
+  const t = Number($('tTotal').value) || 0, gp = Number($('tGp').value) || 0, gr = grOrNull($('tGr').value);
+  let h = '';
+  if (Number.isNaN(gr)) h = '⚠️ 매총율은 0~100 사이 숫자로 입력해 주세요';
+  else if (t && gr !== null && !gp) { const v = Math.round(t * gr / 100); h = '목표 매출 × 매총율 ' + gr + '% = 매총이익 ' + krw(v) + ' <button class="btn ghost sm" type="button" id="tGpFill">매총이익에 채우기</button>'; }
+  else if (t && gp && gr === null) { const r = Math.round(gp / t * 10000) / 100; h = '매총이익 ÷ 목표 매출 = 매총율 ' + r + '% <button class="btn ghost sm" type="button" id="tGrFill">매총율에 채우기</button>'; }
+  else if (t && gp && gr !== null) { const r = gp / t * 100; h = Math.abs(r - gr) <= 0.05 ? '✅ 매출 × 매총율 = 매총이익 (서로 맞아요)' : '⚠️ 매총이익 ÷ 매출 = ' + r.toFixed(2) + '%로 매총율 ' + gr + '%와 달라요 (어느 쪽이 맞는지 확인해 주세요)'; }
+  el.innerHTML = h;
+  if ($('tGpFill')) $('tGpFill').addEventListener('click', () => { $('tGp').value = Math.round(t * gr / 100); syncAmt('tGp'); });
+  if ($('tGrFill')) $('tGrFill').addEventListener('click', () => { $('tGr').value = Math.round(gp / t * 10000) / 100; gpHint(); });
+}
+$('tGr').addEventListener('input', gpHint);
 document.querySelectorAll('.amt-chips[data-for]').forEach(box => {
   const id = box.dataset.for, inp = $(id);
   box.innerHTML = AMT_STEPS.map(([v, l]) => '<button type="button" data-v="' + v + '">' + l + '</button>').join('') + '<button type="button" data-v="0" class="clr">지우기</button>';
@@ -5401,6 +5441,18 @@ $('tdSave').addEventListener('click', async () => {
     toast(recs.length + '개 할 일을 등록했습니다');
   } catch (e) { toast('등록 실패: ' + errMsg(e)); tdSumUpdate(); }
 });
+
+/* 목표 대비 실적 (그달 1일 ~ 등록된 마지막 날): 매출은 일별 합계, 매총이익은 POS 마진 열 합계, 매총율 = 마진 ÷ 상세 순매출 */
+function gpActual(ym) {
+  const md = (S.daily || {})[ym] || {}, dd = (S.detail || {})[ym] || {};
+  let sales = 0, days = 0, net = 0, mar = 0, det = false;
+  Object.values(md).forEach(x => { sales += (Number(x.n) || 0) + (Number(x.o) || 0); days++; });
+  Object.values(dd).forEach(rows => (rows || []).forEach(r => { det = true; net += Number(r.n) || 0; mar += Number(r.r) || 0; }));
+  return { sales, days, mar: det ? mar : null, rate: det && net ? mar / net : null };
+}
+const ppTxt = d => (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(1) + '%p';
+// 목표 매총이익: 직접 넣은 값, 없으면 목표 매출 × 목표 매총율
+const gpTarget = tg => !tg ? null : tg.gp ? tg.gp : (tg.total && tg.gr !== null && tg.gr !== undefined ? Math.round(tg.total * tg.gr / 100) : null);
 
 /* ===================== 월마감 체크리스트 (관리자만) =====================
    항목(template)은 한 번 적어 두면 매달 같은 목록으로 체크. 달마다 체크·메모는 따로 저장
@@ -6118,7 +6170,7 @@ $('trSave').addEventListener('click', async () => {
     let msg = trLabel(k) + ' 매출 구조를 저장했습니다.';
     if (trMode === 'month' && $('trSync').checked && root.amt) {
       const n = root.children.find(g => g.key === 'n'), o = root.children.find(g => g.key === 'o');
-      await setDoc(doc(db, C.targets, k), { total: root.amt, n: n ? n.amt : null, o: o ? o.amt : null, updatedAt: serverTimestamp() });
+      await setDoc(doc(db, C.targets, k), { total: root.amt, n: n ? n.amt : null, o: o ? o.amt : null, updatedAt: serverTimestamp() }, { merge: true });
       invalidate(); msg += ' 월 목표에도 반영했습니다.';
     }
     TR = JSON.parse(JSON.stringify(root)); if (!trAt(trSel)) trSel = '';
