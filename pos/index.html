@@ -835,13 +835,13 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
         <h2>월 목표 등록</h2>
         <div class="row">
           <label>연월<input type="month" id="tYm"></label>
-          <label class="amt">목표 합계(원, VAT 별도)<input type="number" id="tTotal" min="0" step="1000"><span class="amt-read" data-for="tTotal"></span><span class="amt-chips" data-for="tTotal"></span></label>
-          <label class="amt">내판 목표(선택)<input type="number" id="tN" min="0" step="1000"><span class="amt-read" data-for="tN"></span><span class="amt-chips" data-for="tN"></span></label>
-          <label class="amt">외판 목표(선택)<input type="number" id="tO" min="0" step="1000"><span class="amt-read" data-for="tO"></span><span class="amt-chips" data-for="tO"></span></label>
+          <label class="amt">목표 합계(원, VAT 별도)<input type="text" inputmode="numeric" autocomplete="off" id="tTotal" placeholder="예) 1억 5,800만"><span class="amt-read" data-for="tTotal"></span><span class="amt-chips" data-for="tTotal"></span></label>
+          <label class="amt">내판 목표(선택)<input type="text" inputmode="numeric" autocomplete="off" id="tN" placeholder="예) 1억 5,800만"><span class="amt-read" data-for="tN"></span><span class="amt-chips" data-for="tN"></span></label>
+          <label class="amt">외판 목표(선택)<input type="text" inputmode="numeric" autocomplete="off" id="tO" placeholder="예) 1억 5,800만"><span class="amt-read" data-for="tO"></span><span class="amt-chips" data-for="tO"></span></label>
         </div>
         <div class="row" style="margin-top:10px">
-          <label class="amt">매출총이익 목표(원, 선택)<input type="number" id="tGp" min="0" step="1000"><span class="amt-read" data-for="tGp"></span><span class="amt-chips" data-for="tGp"></span></label>
-          <label>매총율 목표(%, 선택)<input type="number" id="tGr" min="0" max="100" step="0.1" placeholder="예) 22.5" style="width:140px"></label>
+          <label class="amt">매출총이익 목표(원, 선택)<input type="text" inputmode="numeric" autocomplete="off" id="tGp" placeholder="예) 1억 5,800만"><span class="amt-read" data-for="tGp"></span><span class="amt-chips" data-for="tGp"></span></label>
+          <label>매총율 목표(%, 선택)<input type="text" inputmode="decimal" autocomplete="off" id="tGr" placeholder="예) 22.5" style="width:140px"></label>
           <button class="btn primary" id="tSave">저장</button>
         </div>
         <div id="tSumHint" class="muted" style="margin-top:6px"></div>
@@ -1190,7 +1190,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-01a';
+var BUILD = '2026-11-01b';
 (function () {
   var busy = false;
   function typing() {
@@ -4849,7 +4849,8 @@ async function loadSettings() {
   t.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => {
     const ym = Number(b.dataset.edit), x = S.targets[ym];
     $('tYm').value = Math.floor(ym / 100) + '-' + String(ym % 100).padStart(2, '0');
-    $('tTotal').value = x.total || ''; $('tN').value = x.n || ''; $('tO').value = x.o || ''; $('tGp').value = x.gp || ''; $('tGr').value = x.gr !== null && x.gr !== undefined ? x.gr : '';
+    const f = v => v ? Number(v).toLocaleString('ko-KR') : '';
+    $('tTotal').value = f(x.total); $('tN').value = f(x.n); $('tO').value = f(x.o); $('tGp').value = f(x.gp); $('tGr').value = x.gr !== null && x.gr !== undefined ? x.gr : '';
     ['tTotal', 'tN', 'tO', 'tGp'].forEach(syncAmt);
   }));
   t.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
@@ -4865,18 +4866,38 @@ async function loadSettings() {
   if (!$('tYm').value) { const td = todayInt(); $('tYm').value = Math.floor(td / 10000) + '-' + String(Math.floor(td / 100) % 100).padStart(2, '0'); }
 }
 const numOrNull = v => { if (v === '' || v === null) return null; const n = Number(v); return isFinite(n) && n >= 0 ? Math.round(n) : null; };
+// 목표 금액 칸 읽기: "158000000", "158,000,000", "1억 5,800만", "3,500만원", "1.58억" 모두 정확히 읽음.
+// 빈칸 = null, 읽을 수 없거나 마이너스면 NaN (조용히 빈칸으로 저장하지 않고 막음)
+function parseAmt(v) {
+  let t = String(v === null || v === undefined ? '' : v).replace(/[\s,]/g, '').replace(/원$/, '');
+  if (!t) return null;
+  if (/^\d+(\.\d+)?$/.test(t)) return Math.round(Number(t));
+  const m = /^(?:(\d+(?:\.\d+)?)억)?(?:(\d+(?:\.\d+)?)천만)?(?:(\d+(?:\.\d+)?)만)?(?:(\d+(?:\.\d+)?)천)?(\d+)?$/.exec(t);
+  if (!m || !m.slice(1).some(Boolean)) return NaN;
+  const n = (Number(m[1]) || 0) * 1e8 + (Number(m[2]) || 0) * 1e7 + (Number(m[3]) || 0) * 1e4 + (Number(m[4]) || 0) * 1e3 + (Number(m[5]) || 0);
+  return isFinite(n) ? Math.round(n) : NaN;
+}
+const amtVal = id => parseAmt($(id).value);
 // 매총율(%): 빈칸 = 없음, 0~100 숫자만 (소수 둘째 자리까지), 그 밖은 NaN → 저장 막음
-const grOrNull = v => { if (v === '' || v === null || v === undefined) return null; const n = Number(v); return isFinite(n) && n >= 0 && n <= 100 ? Math.round(n * 100) / 100 : NaN; };
+const grOrNull = v => { v = String(v === null || v === undefined ? '' : v).replace(/[\s%]/g, ''); if (v === '') return null; const n = Number(v); return isFinite(n) && n >= 0 && n <= 100 ? Math.round(n * 100) / 100 : NaN; };
 $('tSave').addEventListener('click', async () => {
-  const v = $('tYm').value, total = numOrNull($('tTotal').value);
+  const v = $('tYm').value, total = amtVal('tTotal');
+  const bad = [['tTotal', '목표 합계'], ['tN', '내판 목표'], ['tO', '외판 목표'], ['tGp', '매출총이익 목표']].filter(([id]) => Number.isNaN(amtVal(id))).map(x => x[1]);
+  if (bad.length) { $('tMsg').innerHTML = '<span style="color:var(--bad-ink)">⚠️ ' + bad.join(', ') + ' 금액을 읽을 수 없어요. 숫자로 입력해 주세요 (예: 35000000 · 3,500만 · 1억 5,800만)</span>'; return; }
   if (!v || !total) { $('tMsg').textContent = '연월과 목표 합계를 입력해 주세요.'; return; }
   const ym = Number(v.replace('-', ''));
   if (ym < 200001 || ym > 209912) { $('tMsg').textContent = '연월이 올바르지 않습니다.'; return; }
   const gr = grOrNull($('tGr').value);
   if (Number.isNaN(gr)) { $('tMsg').textContent = '매총율은 0~100 사이 숫자로 입력해 주세요 (예: 22.5).'; return; }
   try {
-    await setDoc(doc(db, C.targets, String(ym)), { total, n: numOrNull($('tN').value), o: numOrNull($('tO').value), gp: numOrNull($('tGp').value), gr, updatedAt: serverTimestamp() });
-    $('tMsg').textContent = ymLabel(ym) + ' 목표를 저장했습니다.'; loadSettings();
+    const rec = { total, n: amtVal('tN'), o: amtVal('tO'), gp: amtVal('tGp'), gr };
+    await setDoc(doc(db, C.targets, String(ym)), Object.assign({}, rec, { updatedAt: serverTimestamp() }));
+    // 서버에서 다시 읽어 저장된 값이 입력한 값과 같은지 확인
+    const chk = await getDocFromServer(doc(db, C.targets, String(ym))), sv = chk.exists() ? chk.data() : {};
+    const diff = Object.keys(rec).filter(k => (rec[k] ?? null) !== (sv[k] ?? null));
+    const show = x => '목표 ' + (x.total ? won(x.total) : '-') + ' · 매총이익 ' + (x.gp ? won(x.gp) : '-') + ' · 매총율 ' + (x.gr !== null && x.gr !== undefined ? x.gr + '%' : '-');
+    $('tMsg').innerHTML = diff.length ? '<span style="color:var(--bad-ink)">⚠️ 저장 확인 실패 (' + diff.join(', ') + ') — 다시 저장해 주세요</span>' : '✅ ' + ymLabel(ym) + ' 저장 확인: ' + show(sv);
+    loadSettings();
   } catch (e) { $('tMsg').textContent = '저장 실패: ' + errMsg(e); }
 });
 document.querySelectorAll('input[name=smsVat]').forEach(r => r.addEventListener('change', async () => {
@@ -4892,22 +4913,23 @@ function krw(n) {
 const AMT_STEPS = [[1e8, '+1억'], [5e7, '+5천만'], [1e7, '+1천만'], [1e6, '+100만']];
 function syncAmt(id) {
   const inp = $(id), sum = $('tSumHint');
-  document.querySelector('.amt-read[data-for="' + id + '"]').textContent = krw(inp.value);
-  const n = Number($('tN').value) || 0, o = Number($('tO').value) || 0, t = Number($('tTotal').value) || 0;
+  const pv = parseAmt(inp.value), rd = document.querySelector('.amt-read[data-for="' + id + '"]');
+  rd.textContent = Number.isNaN(pv) ? '⚠️ 숫자로 읽을 수 없어요' : krw(pv || 0); rd.style.color = Number.isNaN(pv) ? 'var(--bad-ink)' : '';
+  const n = amtVal('tN') || 0, o = amtVal('tO') || 0, t = amtVal('tTotal') || 0;
   sum.textContent = (n || o) ? '내판 + 외판 = ' + (krw(n + o) || '0원') + (t && n + o !== t ? ' (목표 합계와 ' + krw(Math.abs(t - n - o)) + ' 차이)' : '') : '';
   gpHint();
 }
 // 목표 매출 · 매총이익 · 매총율 서로 맞춰 보기 (매총이익 = 매출 × 매총율)
 function gpHint() {
   const el = $('tGpHint'); if (!el) return;
-  const t = Number($('tTotal').value) || 0, gp = Number($('tGp').value) || 0, gr = grOrNull($('tGr').value);
+  const t = amtVal('tTotal') || 0, gp = amtVal('tGp') || 0, gr = grOrNull($('tGr').value);
   let h = '';
   if (Number.isNaN(gr)) h = '⚠️ 매총율은 0~100 사이 숫자로 입력해 주세요';
   else if (t && gr !== null && !gp) { const v = Math.round(t * gr / 100); h = '목표 매출 × 매총율 ' + gr + '% = 매총이익 ' + krw(v) + ' <button class="btn ghost sm" type="button" id="tGpFill">매총이익에 채우기</button>'; }
   else if (t && gp && gr === null) { const r = Math.round(gp / t * 10000) / 100; h = '매총이익 ÷ 목표 매출 = 매총율 ' + r + '% <button class="btn ghost sm" type="button" id="tGrFill">매총율에 채우기</button>'; }
   else if (t && gp && gr !== null) { const r = gp / t * 100; h = Math.abs(r - gr) <= 0.05 ? '✅ 매출 × 매총율 = 매총이익 (서로 맞아요)' : '⚠️ 매총이익 ÷ 매출 = ' + r.toFixed(2) + '%로 매총율 ' + gr + '%와 달라요 (어느 쪽이 맞는지 확인해 주세요)'; }
   el.innerHTML = h;
-  if ($('tGpFill')) $('tGpFill').addEventListener('click', () => { $('tGp').value = Math.round(t * gr / 100); syncAmt('tGp'); });
+  if ($('tGpFill')) $('tGpFill').addEventListener('click', () => { $('tGp').value = Math.round(t * gr / 100).toLocaleString('ko-KR'); syncAmt('tGp'); });
   if ($('tGrFill')) $('tGrFill').addEventListener('click', () => { $('tGr').value = Math.round(gp / t * 10000) / 100; gpHint(); });
 }
 $('tGr').addEventListener('input', gpHint);
@@ -4917,7 +4939,7 @@ document.querySelectorAll('.amt-chips[data-for]').forEach(box => {
   box.querySelectorAll('button').forEach(b => b.addEventListener('click', e => {
     e.preventDefault();
     const v = Number(b.dataset.v);
-    inp.value = v ? (Number(inp.value) || 0) + v : '';
+    inp.value = v ? ((parseAmt(inp.value) || 0) + v).toLocaleString('ko-KR') : '';
     syncAmt(id);
   }));
   inp.addEventListener('input', () => syncAmt(id));
