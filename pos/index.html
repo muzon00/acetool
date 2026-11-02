@@ -515,6 +515,15 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .td-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
 .td-h h2 { margin: 0; }
 .td-nav { display: inline-flex; gap: 4px; }
+.td-nt { background: var(--surface2); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-bottom: 10px; }
+.td-nt-h { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; margin-bottom: 4px; }
+.td-nt-li { display: flex; gap: 10px; align-items: center; padding: 6px 0; border-top: 1px dashed var(--line); }
+.td-nt-li:first-of-type { border-top: 0; }
+.td-nt-li .d { flex: none; min-width: 74px; font-weight: 700; color: var(--s1); font-size: .9em; }
+.td-nt-li .t { flex: 1; min-width: 0; word-break: break-all; }
+.td-nt-li .del { border: 0; background: transparent; color: var(--ink3); cursor: pointer; width: 32px; height: 32px; }
+.td-nt-add { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.td-nt-add #ntT { flex: 1 1 220px; min-width: 0; }
 .td-who { font-size: .9em; color: var(--ink2); margin: 0 0 10px; line-height: 1.7; }
 .td-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
 .td-p { border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; background: var(--surface); }
@@ -1190,7 +1199,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-01b';
+var BUILD = '2026-11-02a';
 (function () {
   var busy = false;
   function typing() {
@@ -1236,7 +1245,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app); // 오프라인 캐시는 켜지 않음(공용 PC에 데이터가 남지 않도록)
 
-const C = { daily: 'pos_daily', detail: 'pos_detail', targets: 'pos_targets', sms: 'pos_sms', config: 'pos_config', logs: 'pos_logs', roles: 'pos_roles', requests: 'pos_requests', stats: 'pos_stats', cons: 'pos_cons', consSum: 'pos_cons_sum', plans: 'pos_plans', planSum: 'pos_plan_sum', ar: 'pos_ar', events: 'pos_events', my: 'pos_my', report: 'pos_report', ref: 'pos_ref', members: 'pos_members', sga: 'pos_sga', todo: 'pos_todo', close: 'pos_close' };
+const C = { daily: 'pos_daily', detail: 'pos_detail', targets: 'pos_targets', sms: 'pos_sms', config: 'pos_config', logs: 'pos_logs', roles: 'pos_roles', requests: 'pos_requests', stats: 'pos_stats', cons: 'pos_cons', consSum: 'pos_cons_sum', plans: 'pos_plans', planSum: 'pos_plan_sum', ar: 'pos_ar', events: 'pos_events', my: 'pos_my', report: 'pos_report', ref: 'pos_ref', members: 'pos_members', sga: 'pos_sga', todo: 'pos_todo', close: 'pos_close', notice: 'team_notice' };
 const SITE_URL = 'https://acetool.site/pos/';
 const XLSX_URL = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
 const XLSX_SRI = 'sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT';
@@ -5045,7 +5054,7 @@ async function loadMembersList() {
    할 일 기간: 그날 / 이번 주(월~일) / 이번 달 / 계속(매일 체크) — 체크는 기간마다 따로 저장 */
 const TD_KINDS = { day: '그날', week: '이번 주', month: '이번 달', always: '계속 · 매일' };
 const TD_OFF = ['휴무', '연차', '경조', '예비군', '시험', '교육', '육아휴직'];  // 근무표에서 출근하지 않는 상태
-const TD = { date: 0, roster: null, sched: {}, tasks: null };
+const TD = { date: 0, roster: null, sched: {}, tasks: null, notices: null };
 const tdNm = m => m.name + (m.title ? ' ' + m.title : '');  // 이름 + 직책 (김종현 과장)
 const tdDash = dLabel;  // 근무표 문서 이름 (YYYY-MM-DD)
 const tdMon = d => addDaysInt(d, -((dowOf(d) + 6) % 7));  // 그 주 월요일
@@ -5063,6 +5072,7 @@ async function loadTodo(force) {
     if (!TD.roster || force) { const r = await getDoc(doc(db, 'sch_settings', 'roster')); TD.roster = r.exists() ? r.data().members || [] : []; }
     if (!(ds in TD.sched) || force) { const x = await getDoc(doc(db, 'sch_schedule', ds)); TD.sched[ds] = x.exists() ? x.data() : {}; }
     if (!TD.tasks || force) { const snap = await getDocs(collection(db, C.todo)); TD.tasks = []; snap.forEach(x => TD.tasks.push(Object.assign({ id: x.id }, x.data()))); }
+    if (!TD.notices || force) { const ns = await getDocs(collection(db, C.notice)); TD.notices = []; ns.forEach(x => TD.notices.push(Object.assign({ id: x.id }, x.data()))); }
   } catch (e) { if ($('todoCard')) $('todoCard').innerHTML = '<h2>✅ TO DO</h2><div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
   renderTodo();
 }
@@ -5093,6 +5103,12 @@ function renderTodo() {
   let h = '<div class="td-h"><h2>✅ TO DO · ' + (Math.floor(d / 100) % 100) + '월 ' + (d % 100) + '일 (' + DOWK[dowOf(d)] + ')' + (d === today ? ' <span class="tag">오늘</span>' : '') + '</h2>' +
     '<span class="td-nav"><button class="btn ghost sm" data-go="-1" aria-label="전날">◀</button><button class="btn ghost sm" data-go="0">오늘</button><button class="btn ghost sm" data-go="1" aria-label="다음 날">▶</button></span>' +
     '<span class="td-acts"><button class="btn ghost td-new" id="tdPrint" type="button">🖨️ 인쇄</button><button class="btn ghost td-new" id="tdKakao" type="button"><span class="td-lg">💬 카톡으로 등록</span><span class="td-sm">💬 카톡</span></button><button class="btn primary td-new" id="tdNew" type="button"><span class="td-lg">+ 할 일 쓰기</span><span class="td-sm">+ 할 일</span></button></span></div>';
+  // 일정 · 전달 사항: 직원 페이지(acetool.site/todo) 맨 위에 모두에게 보임
+  const nts = (TD.notices || []).filter(n => !n.d || n.d >= today).sort((a, b) => (a.d || 0) - (b.d || 0));
+  h += '<div class="td-nt"><div class="td-nt-h"><b>📢 일정 · 전달 사항</b><span class="muted">직원 페이지 맨 위에 모두에게 보여요 · <a href="../todo/" target="_blank" rel="noopener">직원 페이지 열기 ↗</a></span></div>' +
+    (nts.length ? nts.map(n => '<div class="td-nt-li"><span class="d">' + (n.d ? mdLabel(n.d) + ' (' + DOWK[dowOf(n.d)] + ')' : '📌 공지') + '</span><span class="t">' + esc(n.t) + '</span><button type="button" class="del" data-ntdel="' + esc(n.id) + '" aria-label="지우기">✕</button></div>').join('') : '<p class="muted" style="margin:4px 0">아직 없어요.</p>') +
+    '<div class="td-nt-add"><input type="text" id="ntT" maxlength="120" placeholder="예) 11/5 본사 점검 · 오전 중 매장 정리"><input type="date" id="ntD" aria-label="날짜 (없으면 공지)"><button class="btn primary sm" id="ntAdd" type="button">올리기</button></div>' +
+    '<p class="muted" style="margin:4px 0 0;font-size:.8em">날짜를 고르면 그날까지 "D-3"처럼 보이고 날짜가 지나면 사라져요. 날짜를 비우면 지울 때까지 📌 공지로 보여요.</p></div>';
   h += '<p class="td-who">👷 출근 ' + on.length + '명: ' + (on.length ? on.map(m => '<b>' + esc(tdNm(m)) + '</b> ' + esc(hrs(st(m)))).join(' · ') : '-') +
     (off.length ? '<br>🏖️ 쉬는 사람: ' + off.map(m => esc(m.name) + ' (' + esc(st(m)) + ')').join(' · ') : '') +
     (!TD.roster.length ? '<br><span class="muted">근무표 직원 명단을 읽지 못했습니다.</span>' : '') + '</p>';
@@ -5102,6 +5118,19 @@ function renderTodo() {
   box.innerHTML = h;
   box.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { const g = Number(b.dataset.go); TD.date = g ? addDaysInt(TD.date, g) : todayInt(); loadTodo(); }));
   $('tdNew').addEventListener('click', openTodoDlg);
+  const ntAdd = async () => {
+    const t = cleanText($('ntT').value, 120), dv = $('ntD').value, d2 = dv ? Number(dv.replace(/-/g, '')) : 0;
+    if (!t) { $('ntT').focus(); return; }
+    $('ntAdd').disabled = true;
+    try { const rec = { t, d: d2, at: serverTimestamp(), by: S.user.email || '' }, r = await addDoc(collection(db, C.notice), rec); TD.notices.push(Object.assign({ id: r.id }, rec)); renderTodo(); toast('전달 사항을 올렸습니다'); }
+    catch (e) { toast('올리기 실패: ' + errMsg(e)); $('ntAdd').disabled = false; }
+  };
+  $('ntAdd').addEventListener('click', ntAdd);
+  $('ntT').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ntAdd(); } });
+  box.querySelectorAll('[data-ntdel]').forEach(b => b.addEventListener('click', async () => {
+    const n = TD.notices.find(x => x.id === b.dataset.ntdel); if (!n || !confirm('"' + n.t + '"를 지울까요?')) return;
+    try { await deleteDoc(doc(db, C.notice, n.id)); TD.notices = TD.notices.filter(x => x !== n); renderTodo(); } catch (e) { toast('지우기 실패: ' + errMsg(e)); }
+  }));
   $('tdPrint').addEventListener('click', openTdPrint);
   $('tdKakao').addEventListener('click', openTdKakao);
   box.querySelectorAll('input[data-id]').forEach(c => c.addEventListener('change', async () => {

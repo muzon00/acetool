@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdn.jsdelivr.net; connect-src 'self' https://*.googleapis.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<title>할 일 · 일산점</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="할 일">
+<meta name="theme-color" content="#3182f6">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root { --bg: #f2f4f6; --surface: #fff; --surface2: #f9fafb; --line: #e5e8eb; --ink: #191f28; --ink2: #4e5968; --ink3: #8b95a1; --s1: #3182f6; --chip: #e8f3ff; --chip-ink: #1b64da; --ok: #0b7a3e; --ok-bg: #e8f8ef; --warn-bg: #fff8e1; --warn-ink: #8a5a00; --bad: #d22030; --late-bg: #fff1e6; --late-ink: #b25e00; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body { font: 16px/1.5 "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: var(--ink); }
+.wrap { max-width: 720px; margin: 0 auto; padding: 12px 12px 60px; }
+.hide { display: none !important; }
+.top { background: var(--s1); color: #fff; border-radius: 0 0 24px 24px; margin: -12px -12px 14px; padding: 18px 18px 20px; }
+.top .r1 { display: flex; align-items: center; gap: 8px; font-size: .9em; opacity: .95; flex-wrap: wrap; }
+.top .r1 select { margin-left: auto; background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.5); border-radius: 999px; padding: 6px 12px; min-height: 36px; }
+.top .r1 select option { color: #191f28; }
+.top h1 { margin: 10px 0 4px; font-size: 1.45em; line-height: 1.35; }
+.top h1 em { font-style: normal; color: #ffe14d; }
+.top .nav { display: flex; gap: 6px; margin-top: 10px; }
+.top .nav button { min-height: 40px; padding: 0 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.5); background: transparent; color: #fff; cursor: pointer; }
+.top .bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,.25); overflow: hidden; margin-top: 10px; }
+.top .bar i { display: block; height: 100%; background: #ffe14d; border-radius: 4px; }
+.card { background: var(--surface); border-radius: 18px; padding: 14px 16px; margin-bottom: 12px; }
+.card h2 { margin: 0 0 8px; font-size: 1.05em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.card h2 .tag { font-size: .72em; }
+.card h2 .cnt { margin-left: auto; font-size: .8em; font-weight: 600; color: var(--ink3); }
+.card.me { outline: 2px solid var(--s1); }
+.card.off { opacity: .6; }
+.tag { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .78em; font-weight: 600; background: var(--chip); color: var(--chip-ink); white-space: nowrap; }
+.tag.gray { background: var(--bg); color: var(--ink2); }
+.tag.late { background: var(--late-bg); color: var(--late-ink); }
+.nt { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); }
+.nt:first-of-type { border-top: 0; }
+.nt .d { flex: none; min-width: 74px; font-weight: 700; color: var(--chip-ink); font-size: .92em; }
+.nt .d small { display: block; font-weight: 600; color: var(--late-ink); }
+.nt .t { flex: 1; min-width: 0; word-break: break-all; white-space: pre-wrap; }
+.nt.today { background: var(--warn-bg); border-radius: 12px; padding: 10px; margin: 2px -6px; border-top: 0; }
+.who { display: flex; flex-wrap: wrap; gap: 6px; }
+.who span { background: var(--bg); border-radius: 999px; padding: 5px 11px; font-size: .88em; }
+.who span.off { background: var(--warn-bg); color: var(--warn-ink); }
+.pbar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin: 0 0 4px; }
+.pbar i { display: block; height: 100%; background: var(--s1); border-radius: 3px; }
+.li { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px dashed var(--line); }
+.li:first-of-type { border-top: 0; }
+.li > input[type=checkbox] { width: 24px; height: 24px; flex: none; margin: 0; cursor: pointer; }
+.li .t { flex: 1; min-width: 0; word-break: break-all; text-align: left; border: 0; background: transparent; padding: 0; font: inherit; color: inherit; }
+.li button.t { cursor: text; }
+.li.done .t { color: var(--ink3); text-decoration: line-through; }
+.li .x { flex: none; border: 0; background: transparent; color: var(--ink3); width: 34px; height: 34px; border-radius: 8px; cursor: pointer; font-size: 1em; }
+.li .x:hover { color: var(--bad); background: var(--surface2); }
+.li input.ed { flex: 1; min-width: 0; padding: 6px 8px; border: 1.5px solid var(--s1); border-radius: 8px; }
+.add { display: flex; gap: 6px; margin-top: 8px; }
+.add input { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface2); }
+.add select { padding: 0 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.add button { padding: 0 14px; border: 0; border-radius: 12px; background: var(--s1); color: #fff; font-weight: 700; cursor: pointer; min-height: 44px; }
+.muted { color: var(--ink3); font-size: .88em; }
+.sec { margin: 18px 4px 8px; font-weight: 800; color: var(--ink2); font-size: .95em; }
+#toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #191f28; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: .92em; display: none; z-index: 50; max-width: calc(100% - 32px); }
+@media (min-width: 900px) { .wrap { max-width: 980px; } .people { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } .people .card { margin-bottom: 0; } }
+</style>
+<script>
+// 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
+const BUILD = '2026-11-02a';
+(function () {
+  let busy = false;
+  async function check() {
+    if (busy || document.visibilityState !== 'visible' || (document.activeElement && /^(INPUT|SELECT)$/.test(document.activeElement.tagName))) return;
+    busy = true;
+    try {
+      const t = await (await fetch(location.pathname + '?b=' + Date.now(), { cache: 'no-store' })).text();
+      const m = t.match(/const BUILD = '([^']+)'/);
+      if (m && m[1] !== BUILD && sessionStorage.getItem('todo.reloadTo') !== m[1]) { sessionStorage.setItem('todo.reloadTo', m[1]); location.replace(location.pathname + '?v=' + m[1]); }
+    } catch (e) { }
+    busy = false;
+  }
+  check(); document.addEventListener('visibilitychange', check); setInterval(check, 30 * 60 * 1000);
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="r1"><span>ACE 일산점 · 할 일</span><select id="meSel" aria-label="내 이름"><option value="">내 이름 고르기</option></select></div>
+    <h1 id="hello">불러오는 중…</h1>
+    <div class="bar"><i id="myBar" style="width:0%"></i></div>
+    <div class="nav"><button id="prev" type="button" aria-label="전날">◀</button><button id="today" type="button">오늘</button><button id="next" type="button" aria-label="다음 날">▶</button><span id="dateTxt" style="align-self:center;margin-left:6px;font-weight:700"></span></div>
+  </div>
+
+  <div class="card"><h2>📢 일정 · 전달 사항<span class="cnt" id="ntCnt"></span></h2><div id="notices"><p class="muted">불러오는 중…</p></div></div>
+  <div class="card"><h2>👷 오늘 근무</h2><div class="who" id="whoLine"></div></div>
+
+  <p class="sec">✅ 할 일 <span class="muted" style="font-weight:500">· 내 칸에서 직접 추가·수정할 수 있어요</span></p>
+  <div id="people"></div>
+  <p class="muted" style="margin:12px 4px 0">사장님이 배정한 할 일은 체크만 할 수 있어요. 내가 쓴 할 일은 글자를 눌러 고치고 ✕로 지울 수 있어요. 매출 같은 숫자는 이 페이지에 나오지 않아요.</p>
+</div>
+<div id="toast" role="status"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore, collection, doc, getDoc, setDoc, addDoc, deleteDoc, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+// 매출 현황·근무표와 같은 Firebase 프로젝트 (이 페이지는 할 일 · 전달 사항 · 근무표 명단만 읽음, 매출 자료는 읽지 않음)
+const app = initializeApp({
+  apiKey: 'AIzaSyCIL_n5H8sYTEWb4jhISM5yS_6y_ci5Rnk',
+  authDomain: 'acetool-923f6.firebaseapp.com',
+  projectId: 'acetool-923f6',
+  storageBucket: 'acetool-923f6.firebasestorage.app',
+  messagingSenderId: '961124023870',
+  appId: '1:961124023870:web:8753a14fa706f34255db6f'
+}, 'todo');
+const db = getFirestore(app);
+/* 저장 구조
+   pos_todo/{id}   → { who: 직원id|'all', t, kind: day|week|month|always, s: YYYYMMDD, e, done: { 기간키: true }, at, by, src? }
+                     src: 'staff' = 직원이 이 페이지에서 쓴 할 일 (직원이 고치고 지울 수 있음). 없으면 관리자가 쓴 할 일 (체크만)
+   team_notice/{id} → { t, d: YYYYMMDD 또는 0(날짜 없는 공지), at, by }  — 관리자가 매출 현황 TO DO에서 씀
+   sch_settings/roster, sch_schedule/{YYYY-MM-DD} → 근무표 명단·근무 */
+const KINDS = { day: '오늘', week: '이번 주', month: '이번 달', always: '매일' };
+const OFF = ['휴무', '연차', '경조', '예비군', '시험', '교육', '육아휴직'];
+const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clean = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n || 60);
+const pad = n => String(n).padStart(2, '0');
+function todayInt() { return Number(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()).replace(/-/g, '')); }
+const dowOf = d => new Date(Date.UTC(Math.floor(d / 10000), Math.floor(d / 100) % 100 - 1, d % 100)).getUTCDay();
+const addDays = (d, k) => { const t = new Date(Date.UTC(Math.floor(d / 10000), Math.floor(d / 100) % 100 - 1, d % 100 + k)); return t.getUTCFullYear() * 10000 + (t.getUTCMonth() + 1) * 100 + t.getUTCDate(); };
+const md = d => (Math.floor(d / 100) % 100) + '/' + (d % 100);
+const dash = d => Math.floor(d / 10000) + '-' + pad(Math.floor(d / 100) % 100) + '-' + pad(d % 100);
+const daysBetween = (a, b) => Math.round((Date.UTC(Math.floor(b / 10000), Math.floor(b / 100) % 100 - 1, b % 100) - Date.UTC(Math.floor(a / 10000), Math.floor(a / 100) % 100 - 1, a % 100)) / 86400000);
+const mon = d => addDays(d, -((dowOf(d) + 6) % 7));
+// 매출 현황 TO DO와 같은 규칙: 보이는 날 · 체크 기간 키
+const keyOf = (t, d) => t.kind === 'week' ? 'w' + mon(d) : t.kind === 'month' ? 'm' + Math.floor(d / 100) : t.kind === 'always' ? 'd' + d : 'd' + t.s;
+function shows(t, d) {
+  if (t.kind === 'day') return t.s === d || (d === todayInt() && t.s < d && t.s >= addDays(d, -14) && !(t.done || {})['d' + t.s]);
+  if (t.kind === 'week') return mon(t.s) === mon(d);
+  if (t.kind === 'month') return Math.floor(t.s / 100) === Math.floor(d / 100);
+  return t.s <= d && (!t.e || d <= t.e);
+}
+let toastT = null;
+function toast(m) { const t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => { t.style.display = 'none'; }, 3000); }
+const errMsg = e => ((e && e.code) || '').includes('permission-denied') ? '권한이 없어요 (관리자가 쓴 할 일은 체크만 할 수 있어요)' : ((e && e.code) || '').includes('unavailable') ? '인터넷 연결을 확인해 주세요' : (e && e.message) || String(e);
+
+const S = { date: todayInt(), roster: [], sched: {}, tasks: [], notices: [], me: '', unsubDay: null };
+try { S.me = localStorage.getItem('todo.me') || ''; } catch (e) { }
+const tName = m => m.name + (m.title ? ' ' + m.title : '');
+
+// 실시간: 할 일 · 전달 사항 · 명단 (날짜를 바꾸면 그날 근무표만 다시 구독)
+onSnapshot(collection(db, 'pos_todo'), s => { S.tasks = []; s.forEach(x => S.tasks.push(Object.assign({ id: x.id }, x.data()))); render(); }, e => { $('people').innerHTML = '<div class="card">' + esc(errMsg(e)) + '</div>'; });
+onSnapshot(collection(db, 'team_notice'), s => { S.notices = []; s.forEach(x => S.notices.push(Object.assign({ id: x.id }, x.data()))); render(); }, e => { $('notices').innerHTML = '<p class="muted">' + esc(errMsg(e)) + '</p>'; });
+onSnapshot(doc(db, 'sch_settings', 'roster'), s => { S.roster = s.exists() ? (s.data().members || []) : []; fillMe(); render(); });
+function watchDay() {
+  if (S.unsubDay) S.unsubDay();
+  const ds = dash(S.date);
+  S.unsubDay = onSnapshot(doc(db, 'sch_schedule', ds), s => { S.sched[ds] = s.exists() ? s.data() : {}; render(); });
+}
+watchDay();
+
+function fillMe() {
+  const staff = S.roster.filter(m => m.group !== '캐셔' && m.name);
+  $('meSel').innerHTML = '<option value="">내 이름 고르기</option>' + staff.map(m => '<option value="' + esc(m.id) + '"' + (m.id === S.me ? ' selected' : '') + '>' + esc(tName(m)) + '</option>').join('');
+}
+$('meSel').addEventListener('change', e => { S.me = e.target.value; try { S.me ? localStorage.setItem('todo.me', S.me) : localStorage.removeItem('todo.me'); } catch (x) { } render(); });
+$('prev').addEventListener('click', () => { S.date = addDays(S.date, -1); watchDay(); render(); });
+$('next').addEventListener('click', () => { S.date = addDays(S.date, 1); watchDay(); render(); });
+$('today').addEventListener('click', () => { S.date = todayInt(); watchDay(); render(); });
+
+// 입력 중에 다른 사람 변경으로 화면을 다시 그리면 쓰던 글자가 사라지므로, 입력 칸에 글자가 있으면 다 쓸 때까지 미룸
+function busyTyping() { const a = document.activeElement; return a && a.tagName === 'INPUT' && a.type === 'text' && a.closest('#people') && a.value.trim(); }
+document.addEventListener('focusout', () => setTimeout(() => { if (S.pending && !busyTyping()) render(true); }, 0));
+function render(force) {
+  if (!force && busyTyping()) { S.pending = true; return; }
+  S.pending = false;
+  const d = S.date, ds = dash(d), sc = S.sched[ds] || {}, today = todayInt();
+  const staff = S.roster.filter(m => m.group !== '캐셔' && m.name && (!m.start || m.start <= ds) && (!m.end || m.end >= ds));
+  const st = m => sc[m.id] || '', hrs = s => s === '조출' ? '조출 07~17' : (s === '마감' || !s) ? '10~20' : s;
+  const on = staff.filter(m => !OFF.includes(st(m))), off = staff.filter(m => OFF.includes(st(m)));
+  const vis = S.tasks.filter(t => shows(t, d));
+  const list = who => vis.filter(t => t.who === who).sort((a, b) => ['day', 'week', 'month', 'always'].indexOf(a.kind) - ['day', 'week', 'month', 'always'].indexOf(b.kind) || (a.s - b.s));
+  const doneOf = t => !!(t.done || {})[keyOf(t, d)];
+  // 위쪽 인사
+  const me = S.roster.find(m => m.id === S.me), mine = me ? list(me.id).concat(list('all')) : vis, md2 = mine.filter(doneOf).length;
+  $('dateTxt').textContent = md(d) + ' (' + DOW[dowOf(d)] + ')' + (d === today ? ' · 오늘' : '');
+  $('hello').innerHTML = me ? esc(tName(me)) + '님,<br>할 일 <em>' + mine.length + '개</em> 중 ' + md2 + '개 했어요' : '오늘 매장 할 일 <em>' + vis.length + '개</em><br><span style="font-size:.7em;font-weight:500">위에서 내 이름을 고르면 내 칸에서 바로 쓸 수 있어요</span>';
+  $('myBar').style.width = (mine.length ? md2 / mine.length * 100 : 0).toFixed(1) + '%';
+  // 일정 · 전달 사항: 날짜 없는 공지 + 오늘 이후 일정 (지난 일정은 숨김)
+  const nts = S.notices.filter(n => !n.d || n.d >= d).sort((a, b) => (a.d || 0) - (b.d || 0) || String(a.id).localeCompare(String(b.id)));
+  $('ntCnt').textContent = nts.length ? nts.length + '개' : '';
+  $('notices').innerHTML = nts.length ? nts.map(n => {
+    const left = n.d ? daysBetween(d, n.d) : null;
+    return '<div class="nt' + (n.d === d ? ' today' : '') + '"><span class="d">' + (n.d ? md(n.d) + ' (' + DOW[dowOf(n.d)] + ')<small>' + (left === 0 ? '오늘' : 'D-' + left) + '</small>' : '📌 공지') + '</span><span class="t">' + esc(n.t) + '</span></div>';
+  }).join('') : '<p class="muted" style="margin:0">전달 사항이 없어요.</p>';
+  $('whoLine').innerHTML = on.map(m => '<span><b>' + esc(tName(m)) + '</b> ' + esc(hrs(st(m))) + '</span>').join('') + off.map(m => '<span class="off">' + esc(tName(m)) + ' · ' + esc(st(m)) + '</span>').join('') || '<span class="muted">근무표를 불러오는 중…</span>';
+  // 사람별 칸: 모두 함께 → 내 칸 → 출근자 → 쉬는 사람
+  const order = [{ id: 'all', title: '모두 함께', sub: '' }];
+  const add = (m, offTxt) => order.push({ id: m.id, title: tName(m), sub: offTxt || hrs(st(m)), off: !!offTxt });
+  if (me) add(me, OFF.includes(st(me)) ? st(me) : '');
+  on.filter(m => !me || m.id !== me.id).forEach(m => add(m));
+  off.filter(m => !me || m.id !== me.id).forEach(m => add(m, st(m)));
+  $('people').innerHTML = '<div class="people">' + order.map(p => {
+    const ts = list(p.id), n = ts.filter(doneOf).length, isMe = me && p.id === me.id;
+    return '<div class="card' + (isMe ? ' me' : '') + (p.off ? ' off' : '') + '" data-who="' + esc(p.id) + '"><h2>' + esc(p.title) + (p.sub ? ' <span class="tag' + (p.off ? ' gray' : '') + '">' + esc(p.sub) + '</span>' : '') + (isMe ? ' <span class="tag">나</span>' : '') + '<span class="cnt">' + (ts.length ? n + ' / ' + ts.length : '') + '</span></h2>' +
+      (ts.length ? '<div class="pbar"><i style="width:' + (n / ts.length * 100).toFixed(1) + '%"></i></div>' : '') +
+      (ts.length ? ts.map(t => {
+        const dn = doneOf(t), mineT = t.src === 'staff', late = t.kind === 'day' && t.s < d;
+        return '<div class="li' + (dn ? ' done' : '') + '" data-id="' + esc(t.id) + '"><input type="checkbox"' + (dn ? ' checked' : '') + ' aria-label="다 했음">' +
+          (mineT ? '<button type="button" class="t" data-edit title="눌러서 고치기">' + esc(t.t) + '</button>' : '<span class="t">' + esc(t.t) + '</span>') +
+          '<span class="tag ' + (late ? 'late' : 'gray') + '">' + (late ? md(t.s) + '부터' : KINDS[t.kind]) + '</span>' +
+          (mineT ? '<button type="button" class="x" data-del aria-label="지우기">✕</button>' : '') + '</div>';
+      }).join('') : '<p class="muted" style="margin:2px 0">할 일이 없어요</p>') +
+      '<div class="add"><input type="text" maxlength="60" placeholder="+ ' + (p.id === 'all' ? '모두 함께 할 일' : esc(p.title.split(' ')[0]) + ' 할 일') + ' 추가" aria-label="할 일 추가"><select aria-label="기간">' + Object.keys(KINDS).map(k => '<option value="' + k + '">' + KINDS[k] + '</option>').join('') + '</select><button type="button">추가</button></div></div>';
+  }).join('') + '</div>';
+  bind();
+  if (S.refocus) { const c = document.querySelector('#people .card[data-who="' + CSS.escape(S.refocus) + '"] .add input'); if (c) c.focus(); S.refocus = null; }
+}
+function bind() {
+  document.querySelectorAll('#people .card[data-who]').forEach(card => {
+    const who = card.dataset.who, inp = card.querySelector('.add input'), sel = card.querySelector('.add select'), btn = card.querySelector('.add button');
+    const add = async () => {
+      const t = clean(inp.value); if (!t) { inp.focus(); return; }
+      const me = S.roster.find(m => m.id === S.me);
+      btn.disabled = true;
+      try { await addDoc(collection(db, 'pos_todo'), { who, t, kind: sel.value, s: S.date, e: 0, done: {}, at: serverTimestamp(), by: me ? me.name : '직원', src: 'staff' }); inp.value = ''; S.refocus = who; render(true); toast('추가했어요'); }
+      catch (e) { toast('추가 실패: ' + errMsg(e)); btn.disabled = false; }
+    };
+    btn.addEventListener('click', add);
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+    card.querySelectorAll('.li').forEach(li => {
+      const t = S.tasks.find(x => x.id === li.dataset.id); if (!t) return;
+      li.querySelector('input[type=checkbox]').addEventListener('change', async e => {
+        const k = keyOf(t, S.date), v = e.target.checked;
+        try { await setDoc(doc(db, 'pos_todo', t.id), { done: { [k]: v } }, { merge: true }); }
+        catch (err) { e.target.checked = !v; toast('저장 실패: ' + errMsg(err)); }
+      });
+      const ed = li.querySelector('[data-edit]');
+      if (ed) ed.addEventListener('click', () => {
+        const i = document.createElement('input'); i.type = 'text'; i.className = 'ed'; i.maxLength = 60; i.value = t.t; i.setAttribute('aria-label', '할 일 고치기');
+        ed.replaceWith(i); i.focus(); i.select();
+        let fin = false;
+        const finish = async ok => {
+          if (fin) return; fin = true;
+          const v = clean(i.value);
+          i.blur();
+          if (!ok || !v || v === t.t) { render(true); return; }
+          try { await setDoc(doc(db, 'pos_todo', t.id), { t: v }, { merge: true }); } catch (err) { toast('고치기 실패: ' + errMsg(err)); }
+          render(true);
+        };
+        i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); finish(true); } else if (e.key === 'Escape') finish(false); });
+        i.addEventListener('blur', () => finish(true));
+      });
+      const del = li.querySelector('[data-del]');
+      if (del) del.addEventListener('click', async () => {
+        if (!confirm('"' + t.t + '" 할 일을 지울까요?')) return;
+        try { await deleteDoc(doc(db, 'pos_todo', t.id)); } catch (err) { toast('지우기 실패: ' + errMsg(err)); }
+      });
+    });
+  });
+}
+</script>
+</body>
+</html>
