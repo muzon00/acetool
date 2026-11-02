@@ -524,6 +524,7 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .td-nt-li .del { border: 0; background: transparent; color: var(--ink3); cursor: pointer; width: 32px; height: 32px; }
 .td-nt-add { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
 .td-nt-add #ntT { flex: 1 1 220px; min-width: 0; }
+.td-nt-add #ntK { min-height: 36px; }
 .td-who { font-size: .9em; color: var(--ink2); margin: 0 0 10px; line-height: 1.7; }
 .td-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
 .td-p { border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; background: var(--surface); }
@@ -1199,7 +1200,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-02c';
+var BUILD = '2026-11-02d';
 (function () {
   var busy = false;
   function typing() {
@@ -5106,9 +5107,9 @@ function renderTodo() {
   // 일정 · 전달 사항: 직원 페이지(acetool.site/todo) 맨 위에 모두에게 보임
   const nts = (TD.notices || []).filter(n => !n.d || n.d >= today).sort((a, b) => (a.d || 0) - (b.d || 0));
   h += '<div class="td-nt"><div class="td-nt-h"><b>📢 일정 · 전달 사항</b><span class="muted">직원 페이지 맨 위에 모두에게 보여요 · <a href="../todo/" target="_blank" rel="noopener">직원 페이지 열기 ↗</a></span></div>' +
-    (nts.length ? nts.map(n => '<div class="td-nt-li"><span class="d">' + (n.d ? mdLabel(n.d) + ' (' + DOWK[dowOf(n.d)] + ')' : '📌 공지') + '</span><span class="t">' + esc(n.t) + '</span><button type="button" class="del" data-ntdel="' + esc(n.id) + '" aria-label="지우기">✕</button></div>').join('') : '<p class="muted" style="margin:4px 0">아직 없어요.</p>') +
-    '<div class="td-nt-add"><input type="text" id="ntT" maxlength="120" placeholder="예) 11/5 본사 점검 · 오전 중 매장 정리"><input type="date" id="ntD" aria-label="날짜 (없으면 공지)"><button class="btn primary sm" id="ntAdd" type="button">올리기</button></div>' +
-    '<p class="muted" style="margin:4px 0 0;font-size:.8em">날짜를 고르면 그날까지 "D-3"처럼 보이고 날짜가 지나면 사라져요. 날짜를 비우면 지울 때까지 📌 공지로 보여요.</p></div>';
+    (nts.length ? nts.map(n => '<div class="td-nt-li"><span class="d">' + (n.d ? mdLabel(n.d) + ' (' + DOWK[dowOf(n.d)] + ')' : '🔁 계속') + '</span><span class="t">' + esc(n.t) + '</span><button type="button" class="del" data-ntdel="' + esc(n.id) + '" aria-label="지우기">✕</button></div>').join('') : '<p class="muted" style="margin:4px 0">아직 없어요.</p>') +
+    '<div class="td-nt-add"><input type="text" id="ntT" maxlength="120" placeholder="예) 11/5 본사 점검 · 오전 중 매장 정리"><select id="ntK" aria-label="기간"><option value="always">🔁 계속</option><option value="date">📅 날짜 지정</option></select><input type="date" id="ntD" class="hide" aria-label="날짜"><button class="btn primary sm" id="ntAdd" type="button">올리기</button></div>' +
+    '<p class="muted" style="margin:4px 0 0;font-size:.8em">🔁 계속은 지울 때까지 계속 보이고, 📅 날짜 지정은 그날까지 "D-3"처럼 보이다가 지나면 사라져요.</p></div>';
   h += '<p class="td-who">👷 출근 ' + on.length + '명: ' + (on.length ? on.map(m => '<b>' + esc(tdNm(m)) + '</b> ' + esc(hrs(st(m)))).join(' · ') : '-') +
     (off.length ? '<br>🏖️ 쉬는 사람: ' + off.map(m => esc(m.name) + ' (' + esc(st(m)) + ')').join(' · ') : '') +
     (!TD.roster.length ? '<br><span class="muted">근무표 직원 명단을 읽지 못했습니다.</span>' : '') + '</p>';
@@ -5119,13 +5120,15 @@ function renderTodo() {
   box.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { const g = Number(b.dataset.go); TD.date = g ? addDaysInt(TD.date, g) : todayInt(); loadTodo(); }));
   $('tdNew').addEventListener('click', openTodoDlg);
   const ntAdd = async () => {
-    const t = cleanText($('ntT').value, 120), dv = $('ntD').value, d2 = dv ? Number(dv.replace(/-/g, '')) : 0;
+    const t = cleanText($('ntT').value, 120), byDate = $('ntK').value === 'date', dv = $('ntD').value, d2 = byDate && dv ? Number(dv.replace(/-/g, '')) : 0;
     if (!t) { $('ntT').focus(); return; }
+    if (byDate && !d2) { $('ntD').focus(); toast('날짜를 골라 주세요'); return; }
     $('ntAdd').disabled = true;
     try { const rec = { t, d: d2, at: serverTimestamp(), by: '매니저' }, r = await addDoc(collection(db, C.notice), rec); /* 직원 페이지는 누구나 보므로 이메일 대신 '매니저' */ TD.notices.push(Object.assign({ id: r.id }, rec)); renderTodo(); toast('전달 사항을 올렸습니다'); }
     catch (e) { toast('올리기 실패: ' + errMsg(e)); $('ntAdd').disabled = false; }
   };
   $('ntAdd').addEventListener('click', ntAdd);
+  $('ntK').addEventListener('change', () => { $('ntD').classList.toggle('hide', $('ntK').value !== 'date'); if ($('ntK').value === 'date') $('ntD').focus(); });
   $('ntT').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ntAdd(); } });
   box.querySelectorAll('[data-ntdel]').forEach(b => b.addEventListener('click', async () => {
     const n = TD.notices.find(x => x.id === b.dataset.ntdel); if (!n || !confirm('"' + n.t + '"를 지울까요?')) return;

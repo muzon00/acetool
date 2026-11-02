@@ -52,6 +52,7 @@ button, input, select { font: inherit; color: var(--ink); }
 .nt .by { display: block; font-size: .78em; color: var(--ink3); margin-top: 2px; }
 .nt-add { flex-wrap: wrap; }
 .nt-add #ntT { flex: 1 1 200px; }
+.nt-add #ntK { padding: 0 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); min-height: 44px; }
 .nt-add #ntD { padding: 0 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); min-height: 44px; }
 .nt.today { background: var(--warn-bg); border-radius: 12px; padding: 10px; margin: 2px -6px; border-top: 0; }
 .who { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -79,7 +80,7 @@ button, input, select { font: inherit; color: var(--ink); }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-02d';
+const BUILD = '2026-11-02e';
 (function () {
   let busy = false;
   async function check() {
@@ -106,8 +107,8 @@ const BUILD = '2026-11-02d';
   </div>
 
   <div class="card"><h2>📢 일정 · 전달 사항<span class="cnt" id="ntCnt"></span></h2><div id="notices"><p class="muted">불러오는 중…</p></div>
-    <div class="add nt-add"><input type="text" id="ntT" maxlength="120" placeholder="+ 모두에게 전달할 내용" aria-label="전달 사항"><input type="date" id="ntD" aria-label="날짜 (비우면 공지)"><button type="button" id="ntAdd">올리기</button></div>
-    <p class="muted" style="margin:6px 0 0;font-size:.8em">누구나 올리고 지울 수 있어요. 날짜를 고르면 그날까지 D-day로 보이고 지나면 사라져요. 날짜를 비우면 지울 때까지 📌 공지로 보여요.</p></div>
+    <div class="add nt-add"><input type="text" id="ntT" maxlength="120" placeholder="+ 모두에게 전달할 내용" aria-label="전달 사항"><select id="ntK" aria-label="기간"><option value="always">🔁 계속</option><option value="date">📅 날짜 지정</option></select><input type="date" id="ntD" class="hide" aria-label="날짜"><button type="button" id="ntAdd">올리기</button></div>
+    <p class="muted" style="margin:6px 0 0;font-size:.8em">누구나 올리고 지울 수 있어요. <b>🔁 계속</b>은 지울 때까지 계속 보이고, <b>📅 날짜 지정</b>은 그날까지 D-day로 보이다가 지나면 사라져요.</p></div>
   <div class="card"><h2>👷 오늘 근무</h2><div class="who" id="whoLine"></div></div>
 
   <p class="sec">✅ 할 일 <span class="muted" style="font-weight:500">· 내 칸에서 직접 추가·수정할 수 있어요</span></p>
@@ -208,7 +209,7 @@ function render(force) {
   $('ntCnt').textContent = nts.length ? nts.length + '개' : '';
   $('notices').innerHTML = nts.length ? nts.map(n => {
     const left = n.d ? daysBetween(d, n.d) : null;
-    return '<div class="nt' + (n.d === d ? ' today' : '') + '"><span class="d">' + (n.d ? md(n.d) + ' (' + DOW[dowOf(n.d)] + ')<small>' + (left === 0 ? '오늘' : 'D-' + left) + '</small>' : '📌 공지') + '</span><span class="t">' + esc(n.t) + (n.by ? '<span class="by">' + esc(String(n.by).split('@')[0]) + '</span>' : '') + '</span><button type="button" class="x" data-ntdel="' + esc(n.id) + '" aria-label="지우기">✕</button></div>';
+    return '<div class="nt' + (n.d === d ? ' today' : '') + '"><span class="d">' + (n.d ? md(n.d) + ' (' + DOW[dowOf(n.d)] + ')<small>' + (left === 0 ? '오늘' : 'D-' + left) + '</small>' : '🔁 계속') + '</span><span class="t">' + esc(n.t) + (n.by ? '<span class="by">' + esc(String(n.by).split('@')[0]) + '</span>' : '') + '</span><button type="button" class="x" data-ntdel="' + esc(n.id) + '" aria-label="지우기">✕</button></div>';
   }).join('') : '<p class="muted" style="margin:0">전달 사항이 없어요.</p>';
   $('whoLine').innerHTML = on.map(m => '<span><b>' + esc(tName(m)) + '</b> ' + esc(hrs(st(m))) + '</span>').join('') + off.map(m => '<span class="off">' + esc(tName(m)) + ' · ' + esc(st(m)) + '</span>').join('') || '<span class="muted">근무표를 불러오는 중…</span>';
   // 사람별 칸: 모두 함께 → 내 칸 → 출근자 → 쉬는 사람
@@ -235,8 +236,9 @@ function render(force) {
 }
 // 일정 · 전달 사항: 누구나 올리고 지움 (올린 사람 이름을 함께 남김)
 async function ntAdd() {
-  const t = clean($('ntT').value, 120), dv = $('ntD').value, d = dv ? Number(dv.replace(/-/g, '')) : 0;
+  const t = clean($('ntT').value, 120), byDate = $('ntK').value === 'date', dv = $('ntD').value, d = byDate && dv ? Number(dv.replace(/-/g, '')) : 0;
   if (!t) { $('ntT').focus(); return; }
+  if (byDate && !d) { $('ntD').focus(); toast('날짜를 골라 주세요'); return; }  /* 계속 = d 0 (지울 때까지) */
   const me = S.roster.find(m => m.id === S.me);
   $('ntAdd').disabled = true;
   try { await addDoc(collection(db, 'team_notice'), { t, d, at: serverTimestamp(), by: me ? tName(me) : '직원' }); $('ntT').value = ''; $('ntD').value = ''; toast('전달 사항을 올렸어요'); }
@@ -244,6 +246,7 @@ async function ntAdd() {
   $('ntAdd').disabled = false;
 }
 $('ntAdd').addEventListener('click', ntAdd);
+$('ntK').addEventListener('change', () => { $('ntD').classList.toggle('hide', $('ntK').value !== 'date'); if ($('ntK').value === 'date') $('ntD').focus(); });
 $('ntT').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ntAdd(); } });
 $('notices').addEventListener('click', async e => {
   const b = e.target.closest('[data-ntdel]'); if (!b) return;
