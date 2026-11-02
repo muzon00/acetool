@@ -1199,7 +1199,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-02b';
+var BUILD = '2026-11-02c';
 (function () {
   var busy = false;
   function typing() {
@@ -5122,7 +5122,7 @@ function renderTodo() {
     const t = cleanText($('ntT').value, 120), dv = $('ntD').value, d2 = dv ? Number(dv.replace(/-/g, '')) : 0;
     if (!t) { $('ntT').focus(); return; }
     $('ntAdd').disabled = true;
-    try { const rec = { t, d: d2, at: serverTimestamp(), by: '매니저' }, r = await addDoc(collection(db, C.notice), rec);  // 직원 페이지는 누구나 보므로 이메일 대신 '매니저' TD.notices.push(Object.assign({ id: r.id }, rec)); renderTodo(); toast('전달 사항을 올렸습니다'); }
+    try { const rec = { t, d: d2, at: serverTimestamp(), by: '매니저' }, r = await addDoc(collection(db, C.notice), rec); /* 직원 페이지는 누구나 보므로 이메일 대신 '매니저' */ TD.notices.push(Object.assign({ id: r.id }, rec)); renderTodo(); toast('전달 사항을 올렸습니다'); }
     catch (e) { toast('올리기 실패: ' + errMsg(e)); $('ntAdd').disabled = false; }
   };
   $('ntAdd').addEventListener('click', ntAdd);
