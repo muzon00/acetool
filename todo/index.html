@@ -79,7 +79,7 @@ button, input, select { font: inherit; color: var(--ink); }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-02c';
+const BUILD = '2026-11-02d';
 (function () {
   let busy = false;
   async function check() {
@@ -159,7 +159,7 @@ function shows(t, d) {
 }
 let toastT = null;
 function toast(m) { const t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => { t.style.display = 'none'; }, 3000); }
-const errMsg = e => ((e && e.code) || '').includes('permission-denied') ? '권한이 없어요 (관리자가 쓴 할 일은 체크만 할 수 있어요)' : ((e && e.code) || '').includes('unavailable') ? '인터넷 연결을 확인해 주세요' : (e && e.message) || String(e);
+const errMsg = e => ((e && e.code) || '').includes('permission-denied') ? '서버에서 막혔어요 — 매니저가 쓴 할 일은 체크만 할 수 있고, 그 밖이면 서버 설정(규칙)이 아직 반영되지 않은 거예요. 매니저에게 알려 주세요' : ((e && e.code) || '').includes('unavailable') ? '인터넷 연결을 확인해 주세요' : (e && e.message) || String(e);
 
 const S = { date: todayInt(), roster: [], sched: {}, tasks: [], notices: [], me: '', unsubDay: null };
 try { S.me = localStorage.getItem('todo.me') || ''; } catch (e) { }
