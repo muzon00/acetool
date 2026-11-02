@@ -360,7 +360,7 @@ body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .
   </div>
 </dialog>
 
-<div class="fab-bar"><a class="fab" href="../pos/">📊 매출 현황</a><button class="fab admin-btn hide" id="adminFab">🔒 관리자 모드</button></div>
+<div class="fab-bar"><a class="fab" href="../todo/">✅ 할 일</a><a class="fab" href="../pos/">📊 매출 현황</a><button class="fab admin-btn hide" id="adminFab">🔒 관리자 모드</button></div>
 <div id="toast" role="status"></div>
 
 <script>
@@ -375,7 +375,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-10-31c';
+const BUILD = '2026-11-02a';
 (function () {
   let busy = false;
   async function check() {
