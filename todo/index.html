@@ -21,7 +21,11 @@
 html, body { margin: 0; background: var(--bg); color: var(--ink); }
 body { font: 16px/1.5 "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; -webkit-font-smoothing: antialiased; }
 button, input, select { font: inherit; color: var(--ink); }
-.wrap { max-width: 720px; margin: 0 auto; padding: 12px 12px 60px; }
+.wrap { max-width: 720px; margin: 0 auto; padding: 12px 12px 90px; }
+/* 오른쪽 아래 바로가기 (근무표와 같은 모양) */
+.fab-bar { position: fixed; right: 16px; bottom: 16px; z-index: 40; display: flex; gap: 8px; }
+.fab { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 10px 16px; font-size: .9em; font-weight: 600; text-decoration: none; box-shadow: 0 6px 18px rgba(16, 24, 40, .14); }
+.fab:hover { border-color: var(--s1); }
 .hide { display: none !important; }
 .top { background: var(--s1); color: #fff; border-radius: 0 0 24px 24px; margin: -12px -12px 14px; padding: 18px 18px 20px; }
 .top .r1 { display: flex; align-items: center; gap: 8px; font-size: .9em; opacity: .95; flex-wrap: wrap; }
@@ -80,7 +84,7 @@ button, input, select { font: inherit; color: var(--ink); }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-02e';
+const BUILD = '2026-11-02f';
 (function () {
   let busy = false;
   async function check() {
@@ -115,6 +119,7 @@ const BUILD = '2026-11-02e';
   <div id="people"></div>
   <p class="muted" style="margin:12px 4px 0">매니저가 배정한 할 일은 체크만 할 수 있어요. 내가 쓴 할 일은 글자를 눌러 고치고 ✕로 지울 수 있어요. 매출 같은 숫자는 이 페이지에 나오지 않아요.</p>
 </div>
+<div class="fab-bar"><a class="fab" href="../sch/">📅 근무표</a></div>
 <div id="toast" role="status"></div>
 
 <script type="module">
