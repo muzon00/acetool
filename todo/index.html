@@ -86,7 +86,7 @@ button, input, select { font: inherit; color: var(--ink); }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-02i';
+const BUILD = '2026-11-03a';
 (function () {
   let busy = false;
   async function check() {
@@ -222,7 +222,7 @@ function render(force) {
   S.pending = false;
   const d = S.date, ds = dash(d), sc = S.sched[ds] || {}, today = todayInt();
   const staff = S.roster.filter(m => m.group !== '캐셔' && m.name && (!m.start || m.start <= ds) && (!m.end || m.end >= ds));
-  const st = m => sc[m.id] || '', hrs = s => s === '조출' ? '조출 07~17' : (s === '마감' || !s) ? '10~20' : s;
+  const st = m => sc[m.id] || '', hrs = s => s === '조출' ? '조출 07~17' : s === '조출반차' ? '조출+반차' : (s === '마감' || !s) ? '10~20' : s;
   const on = staff.filter(m => !OFF.includes(st(m))), off = staff.filter(m => OFF.includes(st(m)));
   const vis = S.tasks.filter(t => shows(t, d));
   const list = who => vis.filter(t => t.who === who).sort((a, b) => ['day', 'week', 'month', 'always'].indexOf(a.kind) - ['day', 'week', 'month', 'always'].indexOf(b.kind) || (a.s - b.s));

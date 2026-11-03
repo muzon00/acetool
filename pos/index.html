@@ -1204,7 +1204,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-02e';
+var BUILD = '2026-11-03a';
 (function () {
   var busy = false;
   function typing() {
@@ -5090,7 +5090,7 @@ function renderTodo() {
   const staff = (TD.roster || []).filter(m => m.group !== '캐셔' && (!m.start || m.start <= ds) && (!m.end || m.end >= ds));
   const st = m => sc[m.id] || '';
   const on = staff.filter(m => !TD_OFF.includes(st(m))), off = staff.filter(m => TD_OFF.includes(st(m)));
-  const hrs = s => s === '조출' ? '조출 07~17' : s === '마감' || !s ? '10~20' : s;
+  const hrs = s => s === '조출' ? '조출 07~17' : s === '조출반차' ? '조출+반차' : s === '마감' || !s ? '10~20' : s;
   const tasks = TD.tasks.filter(t => tdShow(t, d));
   const list = who => tasks.filter(t => t.who === who).sort((a, b) => (Object.keys(TD_KINDS).indexOf(a.kind) - Object.keys(TD_KINDS).indexOf(b.kind)) || (a.s - b.s));
   const item = t => {
