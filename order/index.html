@@ -156,35 +156,56 @@ mark { background: #fff1a8; color: inherit; border-radius: 3px; }
 .res td.n { text-align: right; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .res .how { display: block; font-size: .8em; color: var(--ink3); font-weight: 500; }
 
-/* 견적서 */
+/* 견적서 — 엑셀 모양 입력 화면 */
+.xcard { padding-left: 10px; padding-right: 10px; }
+body.wideq .wrap { max-width: 1530px; }
+@media (min-width: 1540px) { body.wideq .swipe { display: none !important; } }
+.xwrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.xs { border-collapse: collapse; table-layout: fixed; width: 1456px; font-size: 12.5px; color: #000; font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Pretendard Variable", sans-serif; }
+.xs td, .xs th { padding: 0; height: 27px; }
+.xs .L { border: 1px solid #000; }
+.xs .R { border: 1px solid #b8bec6; background: #fafafa; }
+.xs .G { border: 0; background: #fff; }
+.xs th.L, .xs th.R { font-weight: 700; font-size: 11.5px; background: #f2f2f2; padding: 2px; text-align: center; line-height: 1.2; }
+.xs th.R { background: #e9ecef; color: #333; }
+.xs th.y { background: #fff36b; }
+.xs input, .xs textarea { width: 100%; height: 100%; min-height: 0; border: 0; border-radius: 0; background: transparent; padding: 3px 5px; font: inherit; color: #000; }
+.xs input:focus, .xs textarea:focus { outline: 2px solid #1f7a4d; outline-offset: -2px; background: #f0fbf4; }
+.xs input.c { text-align: center; } .xs input.r { text-align: right; }
+.xs input.auto { color: #1b64da; font-weight: 700; }
+.xs input.bad { background: #fdecee; outline: 2px solid var(--bad); outline-offset: -2px; }
+.xs .cv { display: block; padding: 3px 6px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; }
+.xs .cv.red { color: #d22030; } .xs .cv.dim { color: #9aa0a6; }
+.xs .del { width: 100%; height: 100%; border: 0; background: transparent; color: #9aa0a6; cursor: pointer; }
+.xs .del:hover { color: var(--bad); background: #fdecee; }
+.xs .ttl { height: 64px; }
+.xs .ttlbox { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 10px; }
+.xs .logo { font-size: 22px; font-weight: 900; font-style: italic; } .xs .logo b { color: #d71920; } .xs .logo i { font-weight: 800; font-size: 18px; }
+.xs .ttlbox h3 { margin: 0; font-size: 30px; letter-spacing: .6em; padding-left: .6em; color: #000; }
+.xs .hd { display: grid; grid-template-columns: 40% 60%; border: 2px solid #000; }
+.xs .hd .l { border-right: 1px solid #000; display: flex; flex-direction: column; }
+.xs .hd .to { border-bottom: 1px solid #000; padding: 8px 10px; }
+.xs .hd .to input { text-align: center; font-size: 15px; font-weight: 700; text-decoration: underline; height: 32px; }
+.xs .hd .kv { display: grid; grid-template-columns: 84px 1fr; border-bottom: 1px dotted #000; height: 30px; align-items: center; }
+.xs .hd .kv span { padding: 0 8px; letter-spacing: .2em; }
+.xs .hd .say { padding: 6px; text-align: center; margin-top: auto; }
+.xs .hd .rr { display: grid; grid-template-columns: 116px 1fr; border-bottom: 1px dotted #000; height: 30px; align-items: center; }
+.xs .hd .rr:last-child { border-bottom: 0; }
+.xs .hd .rr span { border-right: 1px solid #000; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 600; letter-spacing: .12em; }
+.xs .hd .rr div { position: relative; height: 100%; } .xs .hd .rr input { text-align: center; }
+.xs .hd .seal { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); height: 40px; pointer-events: none; opacity: .9; }
+.xs .amt { border: 2px solid #000; padding: 8px 12px; font-size: 15px; font-weight: 800; }
+.xs .amt span { margin-left: 14px; }
+.xs tr.sum td, .xs tr.sum th { background: #dce6f1; font-weight: 800; border-top: 2px solid #000; }
+.xs tr.sum .R { background: #eef1f4; border-top: 1px solid #b8bec6; }
+.xs tr.sum .G { background: #fff; border: 0; }
+.xs .memo { display: grid; grid-template-columns: 44px 1fr; border: 2px solid #000; border-top: 0; min-height: 100px; }
+.xs .memo span { border-right: 1px solid #000; display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; letter-spacing: .4em; }
+.xs .memo textarea { min-height: 100px; resize: vertical; padding: 8px 10px; }
+.xs .rcap { font-size: 11.5px; color: #4e5968; padding: 4px 8px; line-height: 1.4; }
 .mrq { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 .mrq button { min-height: 32px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-size: .88em; font-weight: 600; }
 .mrq button.on { background: var(--s1); color: #fff; border-color: var(--s1); }
-.ql { border: 1px solid var(--line); border-radius: 14px; padding: 8px; margin-bottom: 8px; background: var(--surface2); }
-.ql .qa, .ql .qb { display: grid; gap: 6px; align-items: end; }
-.ql .qa { grid-template-columns: 30px 110px minmax(0, 1.8fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.3fr) 40px; }
-.ql .qb { grid-template-columns: 30px 80px 60px 110px 84px 110px minmax(0, 1fr); margin-top: 6px; }
-.ql label { display: block; font-size: .7em; font-weight: 700; color: var(--ink3); margin: 0 0 2px 2px; }
-.ql input { min-height: 38px; padding: 5px 8px; width: 100%; }
-.ql input.r { text-align: right; }
-.ql .no { text-align: center; color: var(--ink3); font-size: .85em; font-weight: 700; align-self: center; }
-.ql .auto { font-size: .7em; font-weight: 700; padding: 0 4px; border-radius: 4px; }
-.ql .auto.a { color: var(--chip-ink); } .ql .auto.m { color: var(--warn-ink); }
-.ql .amt { text-align: right; font-variant-numeric: tabular-nums; font-size: .9em; line-height: 1.35; align-self: center; }
-.ql .amt b { font-size: 1.05em; } .ql .amt .mg { color: var(--chip-ink); font-weight: 700; font-size: .85em; } .ql .amt .mg.low { color: var(--bad); }
-.ql .x { align-self: center; }
-@media (max-width: 760px) {
-  .ql .qa { grid-template-columns: 1fr 1fr 40px; }
-  .ql .qa .no { grid-column: 1 / 3; text-align: left; } .ql .qa .x { grid-column: 3; grid-row: 1; }
-  .ql .qa .w2 { grid-column: 1 / 4; }
-  .ql .qb { grid-template-columns: 1fr 1fr 1fr; }
-  .ql .qb .no { display: none; } .ql .qb .amt { grid-column: 1 / 4; }
-}
-.tot { margin-top: 12px; border-top: 2px solid var(--ink); padding-top: 10px; display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; font-variant-numeric: tabular-nums; }
-.tot b { text-align: right; }
-.tot .big { font-size: 1.15em; font-weight: 900; }
-.inner { margin-top: 10px; background: var(--chip); color: var(--chip-ink); border-radius: 12px; padding: 10px 12px; display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; font-variant-numeric: tabular-nums; font-size: .92em; }
-.inner b { text-align: right; } .inner .t { grid-column: 1 / -1; font-weight: 800; margin-bottom: 2px; }
 .saved { display: flex; flex-direction: column; gap: 6px; }
 .saved .row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; }
 .saved .row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -233,7 +254,7 @@ mark { background: #fff1a8; color: inherit; border-radius: 3px; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-06a';
+const BUILD = '2026-11-06b';
 (function () {
   let busy = false;
   async function check() {
@@ -298,21 +319,6 @@ const BUILD = '2026-11-06a';
   <!-- 견적서 -->
   <section id="t-quote" class="hide">
     <div class="card">
-      <h2>받는 곳 (거래처)</h2>
-      <div class="grid2">
-        <div><label class="f" for="qTo">받는 분</label><input type="text" id="qTo" maxlength="60" placeholder="예: 박세익 과장님"></div>
-        <div><label class="f" for="qSite">현장명</label><input type="text" id="qSite" maxlength="80" placeholder="예: ○○동 근린생활시설"></div>
-        <div><label class="f" for="qCman">거래처 담당자</label><input type="text" id="qCman" maxlength="40"></div>
-        <div><label class="f" for="qCtel">거래처 연락처</label><input type="text" id="qCtel" maxlength="40"></div>
-        <div><label class="f" for="qDate">견적일</label><input type="date" id="qDate"></div>
-        <div><label class="f" for="qValid">유효 기간</label><input type="text" id="qValid" maxlength="40" placeholder="예: 견적일부터 15일"></div>
-        <div><label class="f" for="qDue">납기</label><input type="text" id="qDue" maxlength="40" placeholder="예: 발주 후 5일"></div>
-        <div><label class="f" for="qPay">결제 조건</label><input type="text" id="qPay" maxlength="40" placeholder="예: 납품 후 현금 / 카드"></div>
-        <div><label class="f" for="qShip">운반비</label><select id="qShip"><option value="포함">견적에 포함</option><option value="별도">별도</option><option value="현장 수령">현장 수령(직접 가져감)</option><option value="">(적지 않음)</option></select></div>
-      </div>
-      <div style="margin-top:10px"><label class="f" for="qMemo">비고 (견적서 아래 칸)</label><textarea id="qMemo" maxlength="400" placeholder="예: 48박스/1파레트 (4,800개) · 주문 제작품은 반품 불가"></textarea></div>
-    </div>
-    <div class="card">
       <h2>마진 정하기 <span class="tag gray">우리만 보는 칸 · 인쇄 안 됨</span></h2>
       <div class="grid3">
         <div><label class="f" for="qMr">기본 마진율 (%)</label><input type="text" id="qMr" inputmode="decimal" placeholder="10"><div class="mrq" id="qMrQ"></div></div>
@@ -321,28 +327,15 @@ const BUILD = '2026-11-06a';
       </div>
       <p class="muted" style="margin:8px 0 0" id="qMrEx"></p>
     </div>
-    <div class="card">
-      <h2>품목 <span class="muted" id="qCnt"></span></h2>
-      <p class="muted" style="margin:0 0 8px">매입단가를 넣으면 단가가 자동으로 나와요. 줄마다 마진율을 따로 적을 수 있고, 단가 칸에 직접 쓰면 그 값이 우선이에요.</p>
-      <div id="qLines"></div>
-      <div class="btns"><button class="btn ghost sm" id="qAdd">＋ 줄 추가</button><button class="btn ghost sm" id="qAddShip">＋ 운반비 줄</button></div>
+    <div class="card xcard">
+      <h2>견적서 쓰기 <span class="muted" id="qCnt"></span></h2>
+      <p class="muted" style="margin:0 0 8px">엑셀처럼 칸을 눌러 바로 쓰세요. 오른쪽 <b>회색 칸</b>(매입단가 · 마진)은 우리만 보고 인쇄되지 않아요. <b>매입단가</b>를 넣으면 단가가 파란 글씨로 자동으로 나오고, 단가 칸에 직접 쓰면 그 값이 우선이에요. Enter 키를 누르면 아래 칸으로 내려가요.</p>
+      <p class="swipe" style="display:block">↔ 표를 옆으로 밀면 오른쪽 매입원가 칸이 보여요</p>
+      <div class="xwrap" id="qSheet"></div>
+      <div class="btns"><button class="btn ghost sm" id="qAdd">＋ 줄 추가</button><button class="btn ghost sm" id="qAdd5">＋ 5줄 추가</button><button class="btn ghost sm" id="qAddShip">＋ 운반비 줄</button>
+        <label class="btn ghost sm" for="sSeal" style="display:inline-flex;align-items:center">🔴 도장(직인) 사진 넣기</label><input type="file" id="sSeal" accept="image/*" class="hide"><button class="btn ghost sm hide" id="sSealX">도장 빼기</button><span class="muted" id="sSealSt" style="align-self:center"></span></div>
       <div id="qErr"></div>
-      <div class="tot" id="qTot"></div>
-      <div class="inner" id="qIn"></div>
-      <p class="muted" style="margin:8px 0 0">금액 = 단가 × 수량 · 부가세 포함 금액 = 줄마다 금액 × 1.1 (원 미만 반올림) 의 합</p>
-    </div>
-    <div class="card">
-      <h2>보내는 곳 (우리 회사) <span class="muted">한 번 적으면 이 기기에 남아요</span></h2>
-      <div class="grid2">
-        <div><label class="f" for="sName">상호 (법인명)</label><input type="text" id="sName" maxlength="60"></div>
-        <div><label class="f" for="sBiz">사업자 번호</label><input type="text" id="sBiz" maxlength="20" placeholder="000-00-00000"></div>
-        <div><label class="f" for="sMgr">담당자</label><input type="text" id="sMgr" maxlength="30"></div>
-        <div><label class="f" for="sTel">전화번호</label><input type="text" id="sTel" maxlength="40"></div>
-        <div><label class="f" for="sFax">FAX</label><input type="text" id="sFax" maxlength="40"></div>
-        <div><label class="f" for="sEmail">E-MAIL</label><input type="text" id="sEmail" maxlength="60"></div>
-      </div>
-      <div style="margin-top:10px"><label class="f" for="sAddr">사업장 주소</label><input type="text" id="sAddr" maxlength="120"></div>
-      <div class="btns"><label class="btn ghost sm" for="sSeal" style="display:inline-flex;align-items:center">🔴 도장(직인) 사진 넣기</label><input type="file" id="sSeal" accept="image/*" class="hide"><button class="btn ghost sm hide" id="sSealX">도장 빼기</button><span class="muted" id="sSealSt" style="align-self:center"></span></div>
+      <p class="muted" style="margin:8px 0 0">금액 = 단가 × 수량 · 부가세 포함 금액 = 줄마다 금액 × 1.1 (원 미만 반올림) 의 합 · 우리 회사 정보(사업자번호 등)는 한 번 적으면 이 기기에 남아요.</p>
     </div>
     <div class="card">
       <h2>내보내기</h2>
@@ -352,14 +345,14 @@ const BUILD = '2026-11-06a';
         <button class="btn ghost" id="qSave">💾 견적 저장</button>
         <button class="btn ghost" id="qNew">새 견적</button>
       </div>
-      <p class="muted" style="margin:8px 0 0">인쇄·파일에는 매입단가·마진이 들어가지 않아요. PDF는 인쇄 창에서 "PDF로 저장"을 고르면 돼요. 저장한 견적은 이 기기에만 남아요.</p>
+      <p class="muted" style="margin:8px 0 0">인쇄·파일에는 오른쪽 매입단가·마진 칸이 들어가지 않아요. PDF는 인쇄 창에서 "PDF로 저장"을 고르면 돼요. 저장한 견적은 이 기기에만 남아요.</p>
       <h3>저장한 견적</h3>
       <div class="saved" id="qSaved"></div>
     </div>
-    <div class="card">
-      <h2>미리보기 <span class="muted">거래처에 나가는 모양</span></h2>
-      <div id="qDocWrap"><div id="printArea"></div></div>
-    </div>
+    <details class="card">
+      <summary style="cursor:pointer;font-weight:800">인쇄될 모양 보기 (거래처에 나가는 모양)</summary>
+      <div id="qDocWrap" style="margin-top:10px"><div id="printArea"></div></div>
+    </details>
   </section>
 </div>
 <div class="fab-bar"><a class="fab" href="../sch/">📅 근무표</a></div>
@@ -1009,8 +1002,8 @@ $('ckToQuote').addEventListener('click', () => {
   const c = (CKS.v['common.cust'] || '').trim(), s = (CKS.v['common.site'] || '').trim();
   if (!c && !s) { toast('공통의 거래처·현장명을 먼저 적어 주세요.'); return; }
   if (c) Q.to = c; if (s) Q.site = s;
-  const sh = (CKS.v['common.ship'] || '').trim(); if (/별도/.test(sh)) Q.ship = '별도'; else if (/포함/.test(sh)) Q.ship = '포함';
-  const py = (CKS.v['common.pay'] || '').trim(); if (py) Q.pay = py;
+  const sh = (CKS.v['common.ship'] || '').trim(), py = (CKS.v['common.pay'] || '').trim(), add = [py && '결제 조건: ' + py, sh && '운반비: ' + sh].filter(x => x && !String(Q.memo || '').includes(x));
+  if (add.length) Q.memo = (Q.memo ? Q.memo + '\n' : '') + add.join('\n');
   qSaveDraft(); go('quote'); toast('견적서로 옮겼어요.');
 });
 
@@ -1270,12 +1263,11 @@ $('cBody').addEventListener('click', e => {
 /* ===================== 견적서 ===================== */
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const blankLine = () => ({ code: '', n: '', br: '', sp: '', u: '', q: '', cost: '', mr: '', p: '', m: '' });
-const newQuote = () => ({ id: 'q' + Date.now(), to: '', site: '', cman: '', ctel: '', date: today(), valid: '견적일부터 15일', due: '', pay: '', ship: '', memo: '', mr: '10', mode: 'sale', ru: '10u', lines: [blankLine(), blankLine(), blankLine()] });
+const newQuote = () => ({ id: 'q' + Date.now(), to: '', site: '', cman: '', ctel: '', date: today(), valid: '', due: '', pay: '', ship: '', memo: '', mr: '10', mode: 'sale', ru: '10u', lines: Array.from({ length: 10 }, blankLine) });
 function normQ(q) { const b = newQuote(); const o = Object.assign(b, q); if (!o.mr && o.mr !== '0') o.mr = '10'; o.lines = (o.lines || []).map(l => Object.assign(blankLine(), l)); if (!o.lines.length) o.lines.push(blankLine()); return o; }
 let Q = normQ(LS.get('quote', null) || newQuote());
 let SUP = Object.assign({ name: 'ACE 일산점', biz: '', addr: '', mgr: '', tel: '', fax: '', email: '', seal: '' }, LS.get('supplier', null) || {});
-const QF = { qTo: 'to', qSite: 'site', qCman: 'cman', qCtel: 'ctel', qDate: 'date', qValid: 'valid', qDue: 'due', qPay: 'pay', qShip: 'ship', qMemo: 'memo', qMr: 'mr', qMode: 'mode', qRu: 'ru' };
-const SF = { sName: 'name', sBiz: 'biz', sAddr: 'addr', sMgr: 'mgr', sTel: 'tel', sFax: 'fax', sEmail: 'email' };
+const QF = { qMr: 'mr', qMode: 'mode', qRu: 'ru' };
 function qSaveDraft() { LS.set('quote', Q); }
 const lineEmpty = l => !['code', 'n', 'br', 'sp', 'q', 'cost', 'p'].some(k => String(l[k] == null ? '' : l[k]).trim());
 /* 마진율 읽기: 0 이상 100 미만, 소수 둘째 자리까지 → 만분율 정수로 (정수 계산으로 소수 오차 없음) */
@@ -1334,44 +1326,59 @@ function renderMrHead() {
 }
 function renderQuoteForm() {
   Object.entries(QF).forEach(([id, k]) => { $(id).value = Q[k] == null ? '' : Q[k]; });
-  Object.entries(SF).forEach(([id, k]) => { $(id).value = SUP[k] || ''; });
-  renderSeal(); renderMrHead(); renderLines();
+  renderSeal(); renderMrHead(); renderSheet();
 }
-function inp(l, k, ph, cls, extra) { return '<input type="text" data-l="' + k + '" value="' + esc(l[k]) + '" placeholder="' + esc(ph) + '"' + (cls ? ' class="' + cls + '"' : '') + (extra || '') + '>'; }
-function renderLines() {
-  $('qLines').innerHTML = Q.lines.map((l, i) => '<div class="ql" data-i="' + i + '">' +
-    '<div class="qa"><span class="no">' + (i + 1) + '</span>' +
-    '<div><label>코드 (NO)</label>' + inp(l, 'code', '상품코드', '', ' maxlength="20"') + '</div>' +
-    '<div class="w2"><label>제품명</label>' + inp(l, 'n', '제품명', '', ' maxlength="60"') + '</div>' +
-    '<div><label>브랜드</label>' + inp(l, 'br', '', '', ' maxlength="20"') + '</div>' +
-    '<div><label>규격</label>' + inp(l, 'sp', '', '', ' maxlength="40"') + '</div>' +
-    '<div class="w2"><label>비고</label>' + inp(l, 'm', '예: 48박스/1파레트', '', ' maxlength="60"') + '</div>' +
-    '<button class="x" data-ldel="' + i + '" aria-label="줄 지우기">✕</button></div>' +
-    '<div class="qb"><span class="no"></span>' +
-    '<div><label>수량</label>' + inp(l, 'q', '1', 'r', ' inputmode="decimal"') + '</div>' +
-    '<div><label>단위</label>' + inp(l, 'u', '개', '', ' maxlength="6"') + '</div>' +
-    '<div><label>매입단가</label>' + inp(l, 'cost', '원', 'r', ' inputmode="numeric"') + '</div>' +
-    '<div><label>마진율 %</label>' + inp(l, 'mr', '기본', 'r', ' inputmode="decimal"') + '</div>' +
-    '<div><label>단가 (vat 별도) <span class="auto" data-st="' + i + '"></span></label>' + inp(l, 'p', '자동', 'r', ' inputmode="numeric"') + '</div>' +
-    '<span class="amt" data-amt="' + i + '"></span></div></div>').join('');
+const XCOLS = [80, 200, 80, 90, 84, 54, 92, 92, 150, 18, 84, 90, 66, 96, 80, 64, 36];
+function renderSheet() {
+  const RG = '<td class="G"></td><td class="G" colspan="7"></td>';
+  const kv = (k, inner) => '<div class="kv"><span>' + k + '</span>' + inner + '</div>';
+  const hq = (k, ph, type) => '<input type="' + (type || 'text') + '" data-hq="' + k + '" placeholder="' + esc(ph || '') + '" maxlength="80">';
+  const rr = (k, f, extra) => '<div class="rr"><span>' + k + '</span><div><input type="text" data-hs="' + f + '" maxlength="120">' + (extra || '') + '</div></div>';
+  let h = '<table class="xs"><colgroup>' + XCOLS.map(w => '<col style="width:' + w + 'px">').join('') + '</colgroup>';
+  h += '<tr><td colspan="9" class="ttl"><div class="ttlbox"><div class="logo"><b>ACE</b> <i>Hardware</i></div><h3>견 적 서</h3><div></div></div></td>' + RG + '</tr>';
+  h += '<tr><td colspan="9"><div class="hd"><div class="l"><div class="to">' + hq('to', '받는 분 (예: 박세익과장님)') + '</div>' + kv('견 적 일 :', hq('date', '', 'date')) + kv('현 장 명 :', hq('site')) + kv('담 당 자 :', hq('cman')) + kv('연 락 처 :', hq('ctel')) + '<div class="say">아래와 같이 견적합니다.</div></div><div>' +
+    rr('사업자번호', 'biz') + rr('상호 (법인명)', 'name', SUP.seal ? '<img class="seal" src="' + SUP.seal + '" alt="">' : '') + rr('사업장 주소', 'addr') + rr('담 당 자', 'mgr') + rr('전화번호', 'tel') + rr('F A X', 'fax') + rr('E-MAIL', 'email') + '</div></div></td>' +
+    '<td class="G"></td><td class="G" colspan="7" style="vertical-align:top"><div class="rcap">← 왼쪽 검은 칸 = 거래처에 나가는 견적서<br>아래 회색 칸 = 우리만 보는 매입원가 · 마진 (인쇄 안 됨)</div></td></tr>';
+  h += '<tr><td colspan="9"><div class="amt" id="xAmt"></div></td>' + RG + '</tr>';
+  h += '<tr><th class="L">NO</th><th class="L">제품명</th><th class="L">브랜드</th><th class="L">규격</th><th class="L">단가<br><small>(vat별도)</small></th><th class="L">수량</th><th class="L y">금액<br>(vat 별도)</th><th class="L y">금액<br>(vat 포함)</th><th class="L">비고</th><td class="G"></td>' +
+    '<th class="R">단가<br>(vat포함)</th><th class="R">매입단가</th><th class="R">적용<br>마진율 %</th><th class="R">매입단가<br>×수량</th><th class="R">마진</th><th class="R">마진율</th><td class="G"></td></tr>';
+  const ci = (k, cls, im) => '<input type="text" class="' + cls + '" data-l="' + k + '"' + (im ? ' inputmode="' + im + '"' : '') + ' maxlength="60">';
+  Q.lines.forEach((l, i) => {
+    h += '<tr data-i="' + i + '"><td class="L">' + ci('code', 'c') + '</td><td class="L">' + ci('n', 'c') + '</td><td class="L">' + ci('br', 'c') + '</td><td class="L">' + ci('sp', 'c') + '</td><td class="L">' + ci('p', 'r', 'numeric') + '</td><td class="L">' + ci('q', 'c', 'decimal') + '</td>' +
+      '<td class="L"><span class="cv" data-c="amt"></span></td><td class="L"><span class="cv" data-c="incl"></span></td><td class="L">' + ci('m', 'c') + '</td><td class="G"></td>' +
+      '<td class="R"><span class="cv" data-c="pi"></span></td><td class="R">' + ci('cost', 'r', 'numeric') + '</td><td class="R">' + ci('mr', 'r', 'decimal') + '</td><td class="R"><span class="cv" data-c="ca"></span></td><td class="R"><span class="cv" data-c="mg"></span></td><td class="R"><span class="cv" data-c="rt"></span></td>' +
+      '<td class="G"><button class="del" data-ldel="' + i + '" aria-label="' + (i + 1) + '번 줄 지우기" title="줄 지우기">✕</button></td></tr>';
+  });
+  h += '<tr class="sum"><th class="L" colspan="6">합 &nbsp; &nbsp; 계</th><td class="L"><span class="cv" id="xSup"></span></td><td class="L"><span class="cv" id="xInc"></span></td><td class="L"></td><td class="G"></td><td class="R"></td><td class="R"></td><td class="R"></td><td class="R"><span class="cv" id="xCost"></span></td><td class="R"><span class="cv" id="xMg"></span></td><td class="R"><span class="cv" id="xRt"></span></td><td class="G"></td></tr>';
+  h += '<tr><td colspan="9"><div class="memo"><span>비고</span><textarea data-hq="memo" maxlength="400" placeholder="예: 48박스/1파레트 (4,800개) · 견적 유효 기간 15일"></textarea></div></td>' + RG + '</tr></table>';
+  $('qSheet').innerHTML = h;
+  $('qSheet').querySelectorAll('[data-hq]').forEach(x => { x.value = Q[x.dataset.hq] || ''; });
+  $('qSheet').querySelectorAll('[data-hs]').forEach(x => { x.value = SUP[x.dataset.hs] || ''; });
+  $('qSheet').querySelectorAll('tr[data-i]').forEach(tr => { const l = Q.lines[+tr.dataset.i]; tr.querySelectorAll('[data-l]').forEach(x => { if (x.dataset.l !== 'p') x.value = l[x.dataset.l] == null ? '' : l[x.dataset.l]; }); });
   renderTotals();
 }
 function renderTotals() {
-  const T = qTotals(), dr = rate100(Q.mr);
-  T.res.forEach((r, i) => {
-    const row = document.querySelector('.ql[data-i="' + i + '"]'); if (!row) return;
-    ['n', 'q', 'cost', 'mr', 'p'].forEach(k => row.querySelector('[data-l="' + k + '"]').classList.toggle('bad', !!(r.err && r.bad && r.bad[k])));
-    const pI = row.querySelector('[data-l="p"]'), st = row.querySelector('[data-st]');
-    pI.placeholder = r.auto != null ? won(r.auto) : '자동';
-    st.className = 'auto ' + (r.manual ? 'm' : 'a'); st.textContent = r.skip || r.err ? '' : r.manual ? '직접' : r.auto != null ? '자동' : '';
-    row.querySelector('[data-l="mr"]').placeholder = Number.isNaN(dr) ? '기본' : '기본 ' + (dr / 100);
-    const mg = r.margin != null ? '<br><span class="mg' + (r.margin <= 0 ? ' low' : '') + '">마진 ' + won(r.margin) + ' · ' + pct(r.margin, r.amt) + '</span>' : '';
-    row.querySelector('[data-amt]').innerHTML = r.skip ? '' : r.err ? '<span style="color:var(--bad);font-weight:700">확인 필요</span>' : '금액 <b>' + won(r.amt) + '</b><br>vat 포함 ' + won(r.incl) + mg;
+  const T = qTotals(), dr = rate100(Q.mr), act = document.activeElement;
+  $('qSheet').querySelectorAll('tr[data-i]').forEach(tr => {
+    const i = +tr.dataset.i, r = T.res[i], l = Q.lines[i]; if (!r) return;
+    ['n', 'q', 'cost', 'mr', 'p'].forEach(k => tr.querySelector('[data-l="' + k + '"]').classList.toggle('bad', !!(r.err && r.bad && r.bad[k])));
+    const pI = tr.querySelector('[data-l="p"]');
+    if (pI !== act) { const man = String(l.p == null ? '' : l.p).trim() !== ''; pI.value = man ? l.p : (r.auto != null ? won(r.auto) : ''); pI.classList.toggle('auto', !man && r.auto != null); }
+    tr.querySelector('[data-l="mr"]').placeholder = Number.isNaN(dr) ? '' : String(dr / 100);
+    const set = (c, t, cls) => { const e = tr.querySelector('[data-c="' + c + '"]'); e.textContent = t; e.className = 'cv' + (cls ? ' ' + cls : ''); };
+    if (r.skip) { ['amt', 'incl', 'pi', 'ca', 'mg', 'rt'].forEach(c => set(c, '-', 'dim')); return; }
+    if (r.err) { set('amt', '확인', 'red'); ['incl', 'pi', 'ca', 'mg', 'rt'].forEach(c => set(c, '', '')); return; }
+    set('amt', won(r.amt)); set('incl', won(r.incl)); set('pi', won(Math.round(r.p * 11 / 10)));
+    set('ca', r.costAmt != null ? won(r.costAmt) : '-', r.costAmt != null ? '' : 'dim');
+    set('mg', r.margin != null ? won(r.margin) : '-', r.margin != null ? (r.margin <= 0 ? 'red' : '') : 'dim');
+    set('rt', r.margin != null ? pct(r.margin, r.amt) : '-', r.margin != null ? (r.margin <= 0 ? 'red' : '') : 'dim');
   });
-  $('qCnt').textContent = T.n ? T.n + '개 품목' : '';
+  if ($('xSup')) {
+    $('xSup').textContent = won(T.supply); $('xInc').textContent = won(T.total); $('xCost').textContent = won(T.costSum); $('xMg').textContent = won(T.margin); $('xRt').textContent = pct(T.margin, T.saleWithCost);
+    $('xAmt').innerHTML = '금 &nbsp; 액 &nbsp; : <span>일금 ' + hangulWon(T.total) + '원정</span> <span>(₩' + won(T.total) + '/부가세 포함)</span>';
+  }
+  $('qCnt').textContent = T.n ? T.n + '개 품목' + (T.noCost ? ' · 매입단가 없는 ' + T.noCost + '줄은 마진 계산에서 빠짐' : '') : '';
   $('qErr').innerHTML = T.errs.length ? '<div class="err">' + T.errs.map(esc).join('<br>') + '<br>고칠 때까지 인쇄·저장이 막혀요.</div>' : '';
-  $('qTot').innerHTML = '<span>금액 합계 (vat 별도)</span><b>' + won(T.supply) + '원</b><span>부가세</span><b>' + won(T.vat) + '원</b><span class="big">합계 (vat 포함)</span><b class="big">' + won(T.total) + '원</b>';
-  $('qIn').innerHTML = '<span class="t">🔒 우리만 보는 마진 (인쇄 안 됨)</span><span>매입 합계</span><b>' + won(T.costSum) + '원</b><span>마진 합계</span><b>' + won(T.margin) + '원</b><span>마진율</span><b>' + pct(T.margin, T.saleWithCost) + '</b>' + (T.noCost ? '<span style="grid-column:1/-1;font-size:.85em">매입단가가 없는 ' + T.noCost + '줄은 마진 계산에서 뺐어요.</span>' : '');
   renderDoc(T);
   return T;
 }
@@ -1380,37 +1387,52 @@ function docHtml(T) {
   const rows = [];
   T.res.forEach((r, i) => { if (r.skip || r.err) return; const l = Q.lines[i]; rows.push('<tr><td class="c">' + esc(l.code || String(rows.length + 1)) + '</td><td class="c">' + esc(l.n) + '</td><td class="c">' + esc(l.br) + '</td><td class="c">' + esc(l.sp) + '</td><td class="r">' + won(r.p) + '</td><td class="c">' + fmtQ(r.q) + (l.u ? ' ' + esc(l.u) : '') + '</td><td class="r">' + won(r.amt) + '</td><td class="r">' + won(r.incl) + '</td><td class="c" style="font-size:11px">' + esc(l.m) + '</td></tr>'); });
   while (rows.length < 15) rows.push('<tr><td>&nbsp;</td><td></td><td></td><td></td><td class="r">-</td><td></td><td class="r">-</td><td class="r">-</td><td></td></tr>');
-  const memo = [Q.valid && '견적 유효 기간: ' + Q.valid, Q.due && '납기: ' + Q.due, Q.pay && '결제 조건: ' + Q.pay, Q.ship && '운반비: ' + Q.ship, Q.memo].filter(Boolean).join('\n');
+  const memo = Q.memo || '';
   const kv = (k, v) => '<div class="kv"><span>' + k + '</span><span>' + esc(v) + '</span></div>';
   return '<div class="qdoc"><div class="qhd"><div class="logo"><b>ACE</b> <i>Hardware</i></div><h1>견 적 서</h1><div></div></div>' +
-    '<div class="qtop"><div class="l"><div class="to">' + esc(Q.to || '(받는 분)') + '</div>' + kv('견적일 :', ds) + kv('현장명 :', Q.site) + kv('담당자 :', Q.cman) + kv('연락처 :', Q.ctel) + '<div class="say">아래와 같이 견적합니다.</div></div>' +
+    '<div class="top"><div class="l"><div class="to">' + esc(Q.to || '(받는 분)') + '</div>' + kv('견적일 :', ds) + kv('현장명 :', Q.site) + kv('담당자 :', Q.cman) + kv('연락처 :', Q.ctel) + '<div class="say">아래와 같이 견적합니다.</div></div>' +
     '<table><tr><th>사업자번호</th><td>' + esc(SUP.biz) + '</td></tr><tr><th>상호 (법인명)</th><td>' + esc(SUP.name) + (SUP.seal ? '<img class="seal" src="' + SUP.seal + '" alt="직인">' : '') + '</td></tr><tr><th>사업장 주소</th><td>' + esc(SUP.addr) + '</td></tr><tr><th>담 당 자</th><td>' + esc(SUP.mgr) + '</td></tr><tr><th>전화번호</th><td>' + esc(SUP.tel) + '</td></tr><tr><th>F A X</th><td>' + esc(SUP.fax) + '</td></tr><tr><th>E-MAIL</th><td>' + esc(SUP.email) + '</td></tr></table></div>' +
     '<div class="amtline">금 &nbsp; 액 &nbsp; : <span>일금 ' + hangulWon(T.total) + '원정</span> <span>(₩' + won(T.total) + '/부가세 포함)</span></div>' +
-    '<table class="qitems"><tr><th style="width:70px">NO</th><th>제품명</th><th style="width:64px">브랜드</th><th style="width:74px">규격</th><th style="width:66px">단가<small>(vat별도)</small></th><th style="width:44px">수량</th><th class="y" style="width:78px">금액(vat 별도)</th><th class="y" style="width:78px">금액(vat 포함)</th><th style="width:112px">비고</th></tr>' + rows.join('') +
+    '<table class="items"><tr><th style="width:70px">NO</th><th>제품명</th><th style="width:64px">브랜드</th><th style="width:74px">규격</th><th style="width:66px">단가<small>(vat별도)</small></th><th style="width:44px">수량</th><th class="y" style="width:78px">금액(vat 별도)</th><th class="y" style="width:78px">금액(vat 포함)</th><th style="width:112px">비고</th></tr>' + rows.join('') +
     '<tr class="sum"><th colspan="6">합 &nbsp; &nbsp; 계</th><td class="r">' + won(T.supply) + '</td><td class="r">' + won(T.total) + '</td><td></td></tr></table>' +
     '<div class="memo"><span>비고</span><span>' + esc(memo) + '</span></div></div>';
 }
 function renderDoc(T) { $('printArea').innerHTML = docHtml(T); }
 function renderSeal() { $('sSealX').classList.toggle('hide', !SUP.seal); $('sSealSt').textContent = SUP.seal ? '도장이 들어가 있어요' : ''; }
-Object.entries(QF).forEach(([id, k]) => $(id).addEventListener(id === 'qShip' || id === 'qMode' || id === 'qRu' ? 'change' : 'input', () => { Q[k] = $(id).value; qSaveDraft(); if (k === 'mr' || k === 'mode' || k === 'ru') { renderMrHead(); renderTotals(); } else renderDoc(qTotals()); }));
+Object.entries(QF).forEach(([id, k]) => $(id).addEventListener(id === 'qMr' ? 'input' : 'change', () => { Q[k] = $(id).value; qSaveDraft(); renderMrHead(); renderTotals(); }));
 $('qMrQ').addEventListener('click', e => { const b = e.target.closest('[data-mrq]'); if (!b) return; Q.mr = b.dataset.mrq; $('qMr').value = Q.mr; qSaveDraft(); renderMrHead(); renderTotals(); });
-Object.entries(SF).forEach(([id, k]) => $(id).addEventListener('input', () => { SUP[k] = $(id).value; LS.set('supplier', SUP); renderDoc(qTotals()); }));
+$('qSheet').addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.hq) { Q[t.dataset.hq] = t.value; qSaveDraft(); renderTotals(); return; }
+  if (t.dataset.hs) { SUP[t.dataset.hs] = t.value; LS.set('supplier', SUP); renderDoc(qTotals()); return; }
+  if (!t.dataset.l) return;
+  const i = +t.closest('tr').dataset.i; Q.lines[i][t.dataset.l] = t.value; if (t.dataset.l === 'p') t.classList.remove('auto'); qSaveDraft(); renderTotals();
+});
+$('qSheet').addEventListener('focusin', e => { const t = e.target; if (t.dataset.l === 'p' && t.classList.contains('auto')) { const r = qTotals().res[+t.closest('tr').dataset.i]; if (r && r.auto != null) { t.value = String(r.auto); t.select(); } } });
+$('qSheet').addEventListener('focusout', e => { if (e.target.dataset.l === 'p') setTimeout(renderTotals, 0); });
+$('qSheet').addEventListener('keydown', e => {
+  const t = e.target; if (e.key !== 'Enter' || !t.dataset.l || e.isComposing) return;
+  e.preventDefault();
+  const i = +t.closest('tr').dataset.i, f = t.dataset.l;
+  if (i + 1 >= Q.lines.length) { Q.lines.push(blankLine()); qSaveDraft(); renderSheet(); }
+  const nx = $('qSheet').querySelector('tr[data-i="' + (i + 1) + '"] [data-l="' + f + '"]'); if (nx) nx.focus();
+});
+$('qSheet').addEventListener('click', e => { const b = e.target.closest('[data-ldel]'); if (!b) return; const i = +b.dataset.ldel; if (!lineEmpty(Q.lines[i]) && !confirm((i + 1) + '번 줄을 지울까요?')) return; Q.lines.splice(i, 1); if (!Q.lines.length) Q.lines.push(blankLine()); qSaveDraft(); renderSheet(); });
+$('qAdd').addEventListener('click', () => { Q.lines.push(blankLine()); qSaveDraft(); renderSheet(); });
+$('qAdd5').addEventListener('click', () => { for (let k = 0; k < 5; k++) Q.lines.push(blankLine()); qSaveDraft(); renderSheet(); });
+$('qAddShip').addEventListener('click', () => { const at = Q.lines.findIndex(lineEmpty); const sh = Object.assign(blankLine(), { n: '운반비', q: '1' }); if (at >= 0) Q.lines[at] = sh; else Q.lines.push(sh); qSaveDraft(); renderSheet(); });
 $('sSeal').addEventListener('change', e => {
   const f = e.target.files && e.target.files[0]; if (!f) return;
   const rd = new FileReader();
-  rd.onload = () => { const im = new Image(); im.onload = () => { const s = Math.min(1, 240 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * s); c.height = Math.round(im.height * s); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); SUP.seal = c.toDataURL('image/png'); if (!LS.set('supplier', SUP)) toast('도장을 저장하지 못했어요.'); renderSeal(); renderDoc(qTotals()); }; im.onerror = () => toast('사진을 읽지 못했어요.'); im.src = rd.result; };
+  rd.onload = () => { const im = new Image(); im.onload = () => { const s = Math.min(1, 240 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * s); c.height = Math.round(im.height * s); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); SUP.seal = c.toDataURL('image/png'); if (!LS.set('supplier', SUP)) toast('도장을 저장하지 못했어요.'); renderSeal(); renderSheet(); }; im.onerror = () => toast('사진을 읽지 못했어요.'); im.src = rd.result; };
   rd.readAsDataURL(f); e.target.value = '';
 });
-$('sSealX').addEventListener('click', () => { SUP.seal = ''; LS.set('supplier', SUP); renderSeal(); renderDoc(qTotals()); });
-$('qLines').addEventListener('input', e => { const f = e.target.dataset.l; if (!f) return; const i = +e.target.closest('.ql').dataset.i; Q.lines[i][f] = e.target.value; qSaveDraft(); renderTotals(); });
-$('qLines').addEventListener('click', e => { const b = e.target.closest('[data-ldel]'); if (!b) return; Q.lines.splice(+b.dataset.ldel, 1); if (!Q.lines.length) Q.lines.push(blankLine()); qSaveDraft(); renderLines(); });
-$('qAdd').addEventListener('click', () => { Q.lines.push(blankLine()); qSaveDraft(); renderLines(); const n = document.querySelectorAll('.ql[data-i] [data-l="n"]'); n[n.length - 1].focus(); });
-$('qAddShip').addEventListener('click', () => { Q.lines = Q.lines.filter(l => !lineEmpty(l)); Q.lines.push(Object.assign(blankLine(), { n: '운반비', u: '대', q: '1' })); qSaveDraft(); renderLines(); });
+$('sSealX').addEventListener('click', () => { SUP.seal = ''; LS.set('supplier', SUP); renderSeal(); renderSheet(); });
 function ready() {
   const T = qTotals();
   if (T.errs.length) { toast('품목에 확인할 곳이 있어요. 빨간 칸을 고쳐 주세요.'); return null; }
   if (!T.n) { toast('품목을 하나 이상 적어 주세요.'); return null; }
-  if (!Q.to.trim()) { toast('받는 분을 적어 주세요.'); $('qTo').focus(); return null; }
+  if (!String(Q.to || '').trim()) { toast('받는 분을 적어 주세요.'); const x = $('qSheet').querySelector('[data-hq="to"]'); if (x) x.focus(); return null; }
   return T;
 }
 $('qPrint').addEventListener('click', () => { const T = ready(); if (!T) return; renderDoc(T); window.print(); });
@@ -1442,7 +1464,7 @@ $('qNew').addEventListener('click', () => { if (!confirm('지금 쓰던 견적�
 
 /* ===================== 탭 ===================== */
 function go(t) {
-  ST.tab = t; LS.set('tab', t);
+  ST.tab = t; LS.set('tab', t); document.body.classList.toggle('wideq', t === 'quote');
   ['prod', 'check', 'calc', 'quote'].forEach(x => $('t-' + x).classList.toggle('hide', x !== t));
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
   if (t === 'prod') renderProd(); else if (t === 'check') renderCheck(); else if (t === 'calc') renderCalc(); else { renderQuoteForm(); renderSaved(); }
