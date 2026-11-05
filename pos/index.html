@@ -481,6 +481,11 @@ svg.chart { width: 100%; height: auto; display: block; }
 #tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--bg); padding: 6px 9px; border-radius: 6px; font-size: 12px; line-height: 1.45; z-index: 9; display: none; max-width: 260px; }
 #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-size: .92em; z-index: 10; display: none; max-width: calc(100% - 32px); text-align: center; }
 .drop { border: 2px dashed var(--line); border-radius: var(--radius); padding: 28px 16px; text-align: center; color: var(--ink2); cursor: pointer; background: var(--surface2); }
+.upslots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 760px) { .upslots { grid-template-columns: 1fr 1fr; } }
+.upslots .slot { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px 10px; text-align: center; cursor: pointer; }
+.upslots .slot .si { font-size: 1.8em; line-height: 1; } .upslots .slot b { font-size: 1.08em; color: var(--ink); } .upslots .slot small { color: var(--ink3); line-height: 1.4; }
+.upslots .slot.on { outline: 3px solid #3182f6; outline-offset: -3px; }
 .drop.over { border-color: var(--accent); }
 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
 .grid2 > .card { margin-bottom: 0; }
@@ -801,21 +806,25 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
 
       <div id="dataStatus"></div>
 
-      <!-- 2. 파일 올리기: 종류를 고르지 않고 아무 파일이나 올리면 내용으로 알아봄 -->
+      <!-- 2. 파일 올리기: 종류별 칸을 따로 (다른 종류 파일을 넣으면 막음) -->
       <div class="card">
         <h2>📄 파일 올리기</h2>
-        <p class="muted" style="margin-top:0">종류를 고를 필요 없이 그냥 올리세요. 파일 안의 머리글을 보고 <b>매출(POS 판매 내역) · 시공 내역 · 채권연령 · 본사 참고자료(매출 유형별 추이 / PB 실적)</b> 중 무엇인지 알아서 구분합니다. 문자 .txt도 됩니다.</p>
-        <div id="upFileBox">
-          <div class="drop" id="drop" tabindex="0" role="button">여기를 눌러 파일을 선택하거나 끌어다 놓으세요<br><b>여러 개를 한꺼번에</b> 골라도 됩니다 (Ctrl·Shift 누르고 클릭)<br><span class="muted">.xlsx · .xls · .csv · .txt (파일당 최대 100MB)</span></div>
-          <input type="file" id="file" class="hide" accept=".xlsx,.xls,.csv,.txt" multiple>
+        <p class="muted" style="margin-top:0">올릴 자료에 맞는 칸을 누르거나 파일을 끌어다 놓으세요. <b>칸과 다른 종류의 파일이면 저장하지 않고 알려 드려요.</b> 여러 개를 한꺼번에 골라도 됩니다 (.xlsx · .xls · .csv, 파일당 최대 100MB).</p>
+        <div id="upFileBox" class="upslots">
+          <div class="drop slot s-sales" data-slot="sales" tabindex="0" role="button"><span class="si">💰</span><b>매출</b><small>POS 판매 내역<br>(영업일자 · 구분 · 과세결제금액)</small></div>
+          <div class="drop slot s-cons" data-slot="cons" tabindex="0" role="button"><span class="si">🛁</span><b>시공</b><small>시공 내역<br>(판매번호 · 시공일자 · 시공상태)</small></div>
+          <div class="drop slot s-ar" data-slot="ar" tabindex="0" role="button"><span class="si">💳</span><b>채권 연령</b><small>채권연령 관리<br>(거래처명 · 잔액)</small></div>
+          <div class="drop slot s-ref" data-slot="ref" tabindex="0" role="button"><span class="si">📚</span><b>본사 참고자료</b><small>매출 유형별 · PB 실적<br>· Master 회원 명단</small></div>
+          <input type="file" id="file" class="hide" accept=".xlsx,.xls,.csv" multiple>
         </div>
+        <div id="upSlotNow" class="muted" style="margin-top:8px"></div>
         <div class="row hide" id="arDateRow" style="margin-top:10px">
           <label>채권 기준일<input type="date" id="arDate"></label>
           <span class="muted" style="max-width:560px">파일 이름에 "10월 24일"처럼 날짜가 있으면 자동으로 채워집니다. 같은 기준일을 다시 올리면 새 내용으로 교체됩니다.</span>
         </div>
         <details id="upPasteBox" style="margin-top:12px">
           <summary class="up-h">📋 엑셀 표를 복사해서 붙여넣기 (파일 대신)</summary>
-          <textarea id="upText" rows="8" placeholder="엑셀에서 머리글 줄부터 표를 드래그해 복사(Ctrl+C)한 뒤 여기에 붙여넣기(Ctrl+V) — 종류는 자동으로 구분합니다"></textarea>
+          <textarea id="upText" rows="8" placeholder="엑셀에서 머리글 줄부터 표를 드래그해 복사(Ctrl+C)한 뒤 여기에 붙여넣기(Ctrl+V) — 이 칸은 종류를 자동으로 구분합니다 (미리보기 위쪽에 무엇으로 알아봤는지 꼭 확인)"></textarea>
           <div class="row" style="margin-top:8px"><button class="btn primary" id="upCheck">내용 확인</button><button class="btn ghost" id="upClear">지우기</button></div>
         </details>
       </div>
@@ -1204,7 +1213,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-06c';
+var BUILD = '2026-11-06d';
 (function () {
   var busy = false;
   function typing() {
@@ -3322,6 +3331,7 @@ $('smsClear').addEventListener('click', () => { $('smsText').value = ''; $('smsP
 // 표 붙여넣기 칸에 문자를 잘못 붙여넣어도 문자 올리기로 보냄
 $('upText').addEventListener('paste', () => setTimeout(() => { const t = $('upText').value; if (looksSms(t)) { $('upText').value = ''; toSms(t); } }, 0));
 $('upCheck').addEventListener('click', () => {
+  S.upSlot = ''; document.querySelectorAll('#upFileBox .slot').forEach(d => d.classList.remove('on')); $('upSlotNow').innerHTML = '';
   const text = $('upText').value;
   if (!text.trim()) { $('preview').innerHTML = '<div class="banner warn">붙여넣은 내용이 없습니다.</div>'; return; }
   if (looksSms(text)) { $('upText').value = ''; toSms(text); return; }
@@ -3345,16 +3355,25 @@ function parseTSV(text) {
   return rows.map(r => r.map(c => c.trim()));
 }
 
-const drop = $('drop'), fileIn = $('file');
-drop.addEventListener('click', () => fileIn.click());
-drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileIn.click(); } });
-drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
-drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); pickFiles([...e.dataTransfer.files]); });
+const fileIn = $('file');
+/* 종류별 칸: 매출 · 시공 · 채권 연령 · 본사 참고자료. 고른 칸과 파일 내용의 종류가 다르면 저장하지 않음 */
+const SLOT = { sales: '💰 매출', cons: '🛁 시공', ar: '💳 채권 연령', ref: '📚 본사 참고자료' };
+const slotOf = k => k === 'sales' ? 'sales' : k === 'cons' ? 'cons' : k === 'ar' ? 'ar' : /^(mix|pb|members)/.test(k || '') ? 'ref' : '';
+function slotErr(kind) { const want = S.upSlot, got = slotOf(kind); if (!want || !got || want === got) return ''; return '이 파일은 <b>' + SLOT[got] + '</b> 자료로 보여요. <b>' + SLOT[want] + '</b> 칸에는 올리지 않았어요. 맞는 칸(' + SLOT[got] + ')에 다시 올려 주세요.'; }
+document.querySelectorAll('#upFileBox .slot').forEach(d => {
+  const go = () => { S.upSlot = d.dataset.slot; fileIn.click(); };
+  d.addEventListener('click', go);
+  d.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  d.addEventListener('dragover', e => { e.preventDefault(); d.classList.add('over'); });
+  d.addEventListener('dragleave', () => d.classList.remove('over'));
+  d.addEventListener('drop', e => { e.preventDefault(); d.classList.remove('over'); S.upSlot = d.dataset.slot; pickFiles([...e.dataTransfer.files]); });
+});
 fileIn.addEventListener('change', () => pickFiles([...fileIn.files]));
 // 한 개면 미리보기 후 등록, 여러 개면 한꺼번에 읽어 목록으로 보여 주고 "모두 저장"
 function pickFiles(fs) {
   if (!fs.length) return;
+  document.querySelectorAll('#upFileBox .slot').forEach(d => d.classList.toggle('on', d.dataset.slot === S.upSlot));
+  $('upSlotNow').innerHTML = S.upSlot ? '지금 올리는 칸: <b>' + SLOT[S.upSlot] + '</b>' : '';
   if (fs.length === 1) readFile(fs[0]); else readMany(fs);
 }
 const UP_MAX = 100 * 1024 * 1024;
@@ -3529,12 +3548,14 @@ async function readMany(files) {
     const j = { name: f.name, reading: true }; jobs.push(j); draw(true);
     try {
       if (f.size > UP_MAX) throw new Error('100MB가 넘습니다');
+      if (/\.txt$/i.test(f.name) && S.upSlot) throw new Error('문자(.txt)는 위쪽 📱 문자 올리기 칸에 붙여 넣어 주세요');
       if (/\.txt$/i.test(f.name)) {
         const res = parseSms(await f.text(), { startDate: Number(($('smsDate').value || '').replace(/-/g, '')) || 0, today: todayInt() });
         if (!res.records.length) throw new Error('문자를 찾지 못했습니다');
         Object.assign(j, { kind: 'sms', info: '문자 ' + res.records.length + '개', save: async () => { const r = await registerSmsRecords(res.records); return '추가 ' + r.added + ' · 교체 ' + r.updated; } });
       } else if (!/\.(xlsx|xls|csv)$/i.test(f.name)) throw new Error('.xlsx · .xls · .csv · .txt만 됩니다');
       else if (isBigXlsx(f)) {
+        if (S.upSlot && S.upSlot !== 'sales') throw new Error('20MB가 넘는 큰 파일은 💰 매출(POS 판매 내역)만 올릴 수 있어요');
         let last = 0;
         const p = await streamSales(f, r => { const now = Date.now(); if (now - last > 500) { last = now; j.st = '읽는 중… ' + Math.round(r * 100) + '%'; draw(true); } });
         if (p.error) throw new Error(p.error);
@@ -3543,6 +3564,8 @@ async function readMany(files) {
         j.st = '';
       } else {
         const made = makeJobs(await readSheets(f), f.name);
+        /* 고른 칸과 다른 종류면 저장하지 않음 */
+        made.forEach(x => { const e = x.kind && !x.error ? slotErr(x.kind) : ''; if (e) { x.error = e.replace(/<[^>]+>/g, ''); delete x.save; } });
         Object.assign(j, made[0]); made.slice(1).forEach(x => jobs.push(x));
       }
     } catch (e) { j.error = errMsg(e); }
@@ -3554,10 +3577,11 @@ async function readMany(files) {
 async function readFile(f) {
   S.parsed = null;
   if (f.size > UP_MAX) { $('preview').innerHTML = '<div class="banner bad">파일이 너무 큽니다(100MB 초과).</div>'; return; }
-  if (/\.txt$/i.test(f.name)) { toSms(await f.text()); fileIn.value = ''; return; }
+  if (/\.txt$/i.test(f.name)) { if (S.upSlot) { $('preview').innerHTML = '<div class="banner bad">문자(.txt)는 위쪽 <b>📱 문자 올리기</b> 칸에 붙여 넣어 주세요.</div>'; fileIn.value = ''; return; } toSms(await f.text()); fileIn.value = ''; return; }
   if (!/\.(xlsx|xls|csv)$/i.test(f.name)) { $('preview').innerHTML = '<div class="banner bad">.xlsx, .xls, .csv, .txt 파일만 올릴 수 있습니다.</div>'; return; }
   $('preview').innerHTML = '<div class="card"><b>' + esc(f.name) + '</b> 읽는 중… <span id="readPct"></span><br><span class="muted">파일이 크면 몇 분 걸릴 수 있습니다. 창을 닫지 말고 기다려 주세요.</span></div>';
   if (isBigXlsx(f)) {
+    if (S.upSlot && S.upSlot !== 'sales') { $('preview').innerHTML = '<div class="banner bad">20MB가 넘는 큰 파일은 <b>💰 매출</b>(POS 판매 내역)만 올릴 수 있어요. ' + esc(SLOT[S.upSlot]) + ' 파일이 맞는지 확인해 주세요.</div>'; fileIn.value = ''; return; }
     let last = 0;
     try {
       const p = await streamSales(f, r => { const now = Date.now(); if (now - last > 400 && $('readPct')) { last = now; $('readPct').textContent = Math.round(r * 100) + '%'; } });
@@ -3573,6 +3597,7 @@ async function readFile(f) {
 }
 function handleSheets(sheets, name) {
   const memS = sheets.find(a => detectKind(a) === 'members');
+  if (memS && S.upSlot && S.upSlot !== 'ref') { $('preview').innerHTML = '<div class="banner bad">🚫 ' + slotErr('members') + '</div>'; fileIn.value = ''; return; }
   if (memS) {
     const others = sheets.filter(a => a !== memS && detectKind(a));
     if (others.length) handleSheets(others, name); else $('preview').innerHTML = '';
@@ -3580,6 +3605,7 @@ function handleSheets(sheets, name) {
     return;
   }
   const found = sheets.map(aoa => ({ aoa, kind: detectKind(aoa) })).filter(x => x.kind);
+  { const bad = found.length ? slotErr(found[0].kind) : ''; if (bad) { $('preview').innerHTML = '<div class="banner bad">🚫 ' + bad + '</div>'; fileIn.value = ''; return; } }
   if (!found.length) { $('preview').innerHTML = isReportForm(sheets) ? '<div class="banner warn">' + UP_FORM + '</div>' : '<div class="banner bad">' + UP_NONE + '</div>'; return; }
   const refs = found.filter(x => /^(mix|pb)/.test(x.kind));
   if (refs.length) { handleRef(refs, name); return; }
