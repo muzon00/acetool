@@ -1,0 +1,15 @@
+{
+  "name": "ACE 홈센터 견적서",
+  "short_name": "견적서",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1d3557",
+  "theme_color": "#1d3557",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon-192.png?v=1", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png?v=1", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon.svg?v=1", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

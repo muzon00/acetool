@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<title>홈센터 견적서 · ACE</title>
+<link rel="icon" href="icon.svg?v=1" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png?v=1">
+<link rel="manifest" href="manifest.webmanifest?v=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="견적서">
+<meta name="theme-color" content="#1d3557">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root { --bg: #f2f4f6; --surface: #fff; --surface2: #f9fafb; --line: #e5e8eb; --ink: #191f28; --ink2: #4e5968; --ink3: #8b95a1; --s1: #1f7a4d; --s1h: #17643f; --chip: #e7f4ec; --chip-ink: #17643f; --ok-bg: #e8f8ef; --ok-ink: #0b7a3e; --warn-bg: #fff8e1; --warn-ink: #8a5a00; --bad: #d22030; --bad-bg: #fdecee; --top: #1d3557; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body { font: 16px/1.55 "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: var(--ink); }
+.wrap { max-width: 980px; margin: 0 auto; padding: 0 12px 96px; }
+.hide { display: none !important; }
+.top { background: var(--top); color: #fff; border-radius: 0 0 24px 24px; margin: 0 -12px 14px; padding: 18px 18px 12px; position: sticky; top: 0; z-index: 30; }
+.top .r1 { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.top h1 { margin: 0; font-size: 1.35em; font-weight: 900; letter-spacing: -.01em; }
+.top .sub { font-size: .85em; opacity: .8; }
+.tabs { display: grid; grid-template-columns: repeat(5, minmax(0, max-content)); gap: 6px; margin-top: 12px; }
+.tabs button { min-height: 42px; padding: 0 16px; white-space: nowrap; border-radius: 12px; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.08); color: #fff; font-weight: 700; cursor: pointer; }
+.tabs button.on { background: #fff; color: var(--top); border-color: #fff; }
+.card { background: var(--surface); border-radius: 18px; padding: 16px; margin-bottom: 12px; }
+.card h2 { margin: 0 0 10px; font-size: 1.08em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.card h3 { margin: 16px 0 8px; font-size: .98em; color: var(--ink2); }
+.card h3:first-of-type { margin-top: 4px; }
+.muted { color: var(--ink3); font-size: .88em; }
+.note { background: var(--warn-bg); color: var(--warn-ink); border-radius: 12px; padding: 10px 12px; font-size: .88em; margin: 8px 0; }
+.err { background: var(--bad-bg); color: var(--bad); border-radius: 12px; padding: 10px 12px; font-size: .9em; margin: 8px 0; font-weight: 600; }
+.ok { background: var(--ok-bg); color: var(--ok-ink); border-radius: 12px; padding: 10px 12px; font-size: .9em; margin: 8px 0; }
+.tag { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .76em; font-weight: 700; background: var(--chip); color: var(--chip-ink); white-space: nowrap; }
+.tag.gray { background: var(--bg); color: var(--ink2); }
+.btn { min-height: 44px; padding: 0 16px; border-radius: 12px; border: 0; background: var(--s1); color: #fff; font-weight: 700; cursor: pointer; }
+.btn:hover { background: var(--s1h); }
+.btn.ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+.btn.ghost:hover { border-color: var(--s1); }
+.btn.sm { min-height: 36px; padding: 0 12px; font-size: .9em; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+input[type=text], input[type=search], input[type=date], select, textarea { width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface2); }
+textarea { min-height: 70px; resize: vertical; }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--s1); outline-offset: -1px; background: #fff; }
+input.bad { border-color: var(--bad); background: var(--bad-bg); }
+label.f { display: block; font-size: .85em; font-weight: 600; color: var(--ink2); margin-bottom: 4px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 12px; }
+@media (max-width: 640px) { .grid2, .grid3 { grid-template-columns: 1fr; } .tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; } .tabs button { padding: 2px 3px; font-size: .82em; white-space: normal; line-height: 1.2; word-break: keep-all; } }
+@media (max-width: 440px) { .tabs button i { display: none; } }
+
+/* 제품 */
+.search { margin-bottom: 12px; }
+.cats { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.cats button { min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-weight: 600; }
+.cats button.on { background: var(--s1); color: #fff; border-color: var(--s1); }
+.items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 640px) { .items { grid-template-columns: 1fr; } }
+.it { border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: var(--surface2); display: flex; gap: 12px; align-items: flex-start; }
+.it .tx { flex: 1; min-width: 0; }
+.pic { width: 76px; height: 57px; flex: none; color: #1f5a3d; background: #fff; border: 1px solid var(--line); border-radius: 10px; }
+.phb { flex: none; padding: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; cursor: zoom-in; width: 96px; height: 72px; }
+.phb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+#phDlg { border: 0; border-radius: 16px; padding: 10px; max-width: min(92vw, 900px); }
+#phDlg img { display: block; max-width: 100%; max-height: 78vh; border-radius: 10px; }
+#phDlg p { margin: 8px 4px 2px; font-weight: 700; }
+#phDlg::backdrop { background: rgba(0,0,0,.6); }
+.figc { margin: 6px 0 18px; }
+.figc h4 { margin: 0 0 6px; font-size: .95em; }
+.figw { overflow-x: auto; }
+.swipe { display: none; margin: 0 0 4px; font-size: .78em; color: var(--ink3); }
+@media (max-width: 620px) { .swipe { display: block; } }
+.fg { width: 100%; min-width: 580px; height: auto; display: block; background: #fff; border: 1px solid var(--line); border-radius: 12px; font-family: "Pretendard Variable", Pretendard, sans-serif; }
+.fg .sl { fill: #e8e8e8; stroke: #a0a0a0; } .fg .sh { stroke: #bdbdbd; stroke-width: 1; }
+.fg .st { fill: #d5dde2; stroke: #455a64; stroke-width: 1.3; stroke-linejoin: round; }
+.fg .bd { fill: #f4efe4; stroke: #a1887f; } .fg .op { opacity: .94; }
+.fg .dk { fill: #37474f; } .fg .wh { fill: #fff; }
+.fg .ln { stroke: #37474f; stroke-width: 1.6; fill: none; } .fg .th { stroke: #37474f; stroke-width: 1; }
+.fg .cl { stroke: #1f7a4d; stroke-width: 2.6; fill: none; stroke-linejoin: round; }
+.fg .nb circle { fill: #1f7a4d; } .fg .nb text { fill: #fff; font-weight: 800; font-size: 12px; }
+.fg .ld { stroke: #1f7a4d; stroke-width: 1.2; stroke-dasharray: 3 2; fill: none; }
+.fg .dm { stroke: #e8590c; stroke-width: 1.3; fill: none; } .fg .dt { fill: #c2410c; font-weight: 700; font-size: 12px; }
+.fg .tt { font-weight: 800; font-size: 13px; fill: #191f28; } .fg .sm { font-weight: 500; font-size: 11.5px; fill: #4e5968; }
+.fg .pin { stroke: #c62828; stroke-width: 3; } .fg .wl { fill: #f9e7a1; stroke: #c9a227; } .fg .wv { stroke: #c9a227; stroke-width: 1.3; fill: none; }
+.fg .bead { stroke: #37474f; stroke-width: 4; stroke-dasharray: 3 3; } .fg .pn { fill: #fafbfc; stroke: #e5e8eb; }
+.fg .jt { fill: #1f7a4d; fill-opacity: .3; stroke: #1f7a4d; stroke-width: 1.5; }
+.fg .tl { fill: #f4f1ea; } .fg .tl2 { fill: #f4f1ea; stroke: #a1887f; } .fg .tc { stroke: #78909c; stroke-width: 2; } .fg .tm { stroke: #37474f; stroke-width: 4.5; } .fg .mo { fill: none; stroke: #1f7a4d; stroke-width: 5; }
+.figc.easy { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 8px 18px; align-items: center; background: #f6faf7; border: 1px solid #dcebe1; border-radius: 16px; padding: 14px; }
+.figc.easy h4 { grid-column: 1 / -1; font-size: 1.08em; margin: 0; }
+.figc.easy .steps { grid-template-columns: 1fr; margin: 0; gap: 10px; }
+.figc.easy .steps li { font-size: .98em; }
+.figc.easy .steps .sn { width: 26px; height: 26px; font-size: .85em; }
+@media (max-width: 760px) { .figc.easy { grid-template-columns: 1fr; } }
+.fg.e { min-width: 0; }
+.fg .big { font-weight: 800; font-size: 15px; fill: #191f28; } .fg .nb.big text { font-size: 15px; fill: #fff; }
+.fg .mid { font-weight: 700; font-size: 14px; fill: #4e5968; }
+.fg .rd { stroke: #37474f; stroke-width: 4; } .fg .cb { fill: #546e7a; } .fg .mb { fill: #90a4ae; stroke: #546e7a; }
+.fg .cbl { stroke: #546e7a; stroke-width: 10; stroke-linecap: round; } .fg .mbl { stroke: #90a4ae; stroke-width: 5; stroke-linecap: round; } .fg .cp { fill: #1f7a4d; stroke: #fff; stroke-width: 2; }
+.fg .tg { stroke: #546e7a; stroke-width: 5; fill: none; stroke-linecap: square; }
+.easyhd { background: var(--chip); color: var(--chip-ink); border-radius: 14px; padding: 12px 14px; margin: 0 0 12px; font-size: 1em; line-height: 1.6; }
+.easyt { width: 100%; border-collapse: collapse; font-size: .95em; }
+.easyt th, .easyt td { border-bottom: 1px solid var(--line); padding: 9px 8px; text-align: left; }
+.easyt th { color: var(--ink3); font-size: .85em; }
+.steps { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 6px; }
+@media (min-width: 900px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; } }
+.steps li { display: flex; gap: 8px; align-items: flex-start; font-size: .9em; color: var(--ink2); }
+.steps .sn { flex: none; width: 22px; height: 22px; border-radius: 50%; background: #1f7a4d; color: #fff; font-weight: 800; font-size: .78em; display: inline-flex; align-items: center; justify-content: center; margin-top: 1px; }
+.steps b { color: var(--ink); }
+.pic .a { fill: #d3e8db; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
+.pic .w { fill: #fff; stroke: currentColor; stroke-width: 1.6; }
+.pic .k { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.pic .d { fill: currentColor; }
+.pic .r { fill: none; stroke: #2f3a35; stroke-width: 6; }
+.pic .t { font: 800 12px sans-serif; fill: currentColor; }
+.it b { display: block; }
+.it p { margin: 2px 0 0; font-size: .9em; color: var(--ink2); }
+.it .sp { margin-top: 6px; font-size: .84em; color: var(--chip-ink); font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips span { background: var(--bg); border-radius: 999px; padding: 4px 10px; font-size: .88em; font-variant-numeric: tabular-nums; }
+mark { background: #fff1a8; color: inherit; border-radius: 3px; }
+
+/* 발주 체크 */
+.ck { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 4px 10px; align-items: start; padding: 10px 0; border-top: 1px dashed var(--line); }
+.ck:first-of-type { border-top: 0; }
+.ck input[type=checkbox] { width: 24px; height: 24px; margin: 2px 0 0; cursor: pointer; }
+.ck .q { font-weight: 600; }
+.ck .h { font-size: .84em; color: var(--ink3); }
+.ck input[type=text] { grid-column: 2; min-height: 40px; }
+.ck.done .q { color: var(--ok-ink); }
+.togs { display: flex; gap: 8px; flex-wrap: wrap; }
+.togs label { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; font-weight: 600; background: var(--surface); }
+.togs input { width: 20px; height: 20px; margin: 0; }
+.prog { font-size: .82em; font-weight: 700; color: var(--ink3); margin-left: auto; }
+
+/* 양산출 */
+.seg { display: grid; grid-template-columns: minmax(0, 1fr) 130px 40px; gap: 6px; margin-bottom: 6px; align-items: center; }
+.mrow { display: grid; grid-template-columns: 150px minmax(0, 1.4fr) minmax(0, 1fr) 70px 90px 40px; gap: 6px; margin-bottom: 6px; align-items: center; }
+.mrow select { min-height: 40px; padding: 6px 8px; }
+.mrow input { min-height: 40px; padding: 6px 8px; }
+.mrow input.r { text-align: right; }
+@media (max-width: 760px) { .mrow { grid-template-columns: 1fr 1fr 1fr 40px; background: var(--surface2); border: 1px solid var(--line); border-radius: 14px; padding: 8px; } .mrow select:first-child { grid-column: 1 / 4; } .mrow .x { grid-column: 4; grid-row: 1; } .mrow [data-mf="n"] { grid-column: 1 / 5; } .mrow [data-mf="sp"] { grid-column: 1 / 5; } .mrow [data-mf="q"] { grid-column: 2 / 5; } }
+.seg.h3 { grid-template-columns: minmax(0, 1fr) 92px 92px 40px; }
+.seg .x, .ql .x, .mrow .x { border: 0; background: transparent; color: var(--ink3); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; font-size: 1em; }
+.seg .x:hover, .ql .x:hover, .mrow .x:hover { color: var(--bad); background: var(--surface2); }
+.res { margin-top: 12px; border-radius: 14px; background: var(--surface2); border: 1px solid var(--line); overflow: hidden; }
+.res table { width: 100%; border-collapse: collapse; font-size: .94em; }
+.res td, .res th { padding: 9px 12px; border-top: 1px solid var(--line); text-align: left; vertical-align: top; }
+.res tr:first-child td, .res tr:first-child th { border-top: 0; }
+.res td.n { text-align: right; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.res .how { display: block; font-size: .8em; color: var(--ink3); font-weight: 500; }
+
+/* 견적서 */
+.ql { display: grid; grid-template-columns: 28px minmax(0, 1.6fr) minmax(0, 1.3fr) 64px 84px 110px 110px 40px; gap: 6px; align-items: center; margin-bottom: 6px; }
+.ql.hd { font-size: .78em; font-weight: 700; color: var(--ink3); margin-bottom: 4px; }
+.ql .no { text-align: center; color: var(--ink3); font-size: .85em; }
+.ql .cap { display: none; }
+.ql .amt { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; font-size: .92em; }
+.ql input { min-height: 40px; padding: 6px 8px; }
+.ql input.r { text-align: right; }
+@media (max-width: 760px) {
+  .ql.hd { display: none; }
+  .ql { grid-template-columns: 1fr 1fr 1fr; background: var(--surface2); border: 1px solid var(--line); border-radius: 14px; padding: 8px; gap: 6px; }
+  .ql .no { grid-column: 1 / 3; text-align: left; font-weight: 700; }
+  .ql .x { grid-column: 3; grid-row: 1; justify-self: end; }
+  .ql .nm { grid-column: 1 / 4; } .ql .sp { grid-column: 1 / 4; }
+  .ql .amt { grid-column: 1 / 4; text-align: right; }
+  .ql .cap { display: contents; } .ql .cap span { font-size: .74em; font-weight: 700; color: var(--ink3); margin-bottom: -4px; padding-left: 4px; }
+  .ql input::placeholder { color: var(--ink3); }
+}
+.tot { margin-top: 12px; border-top: 2px solid var(--ink); padding-top: 10px; display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; font-variant-numeric: tabular-nums; }
+.tot b { text-align: right; }
+.tot .big { font-size: 1.15em; font-weight: 900; }
+.saved { display: flex; flex-direction: column; gap: 6px; }
+.saved .row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; }
+.saved .row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 견적서 미리보기 (인쇄 모양) */
+#qDocWrap { overflow-x: auto; }
+.qdoc { width: 760px; max-width: none; margin: 0 auto; background: #fff; color: #000; padding: 28px 30px; border: 1px solid var(--line); font-size: 13px; line-height: 1.45; }
+.qdoc h1 { text-align: center; font-size: 28px; letter-spacing: .5em; margin: 0 0 18px; padding-left: .5em; }
+.qdoc table { width: 100%; border-collapse: collapse; }
+.qdoc td, .qdoc th { border: 1px solid #000; padding: 5px 7px; }
+.qdoc th { background: #eee; font-weight: 700; }
+.qdoc .meta td { border: 0; padding: 2px 0; }
+.qdoc .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px; }
+.qdoc .r { text-align: right; } .qdoc .c { text-align: center; }
+.qdoc .sum { font-size: 15px; font-weight: 700; border: 2px solid #000; padding: 8px 10px; margin: 6px 0 10px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.qdoc .foot td { font-size: 12px; }
+
+/* 견적서 — 엑셀 모양 입력 화면 */
+.xcard { padding-left: 10px; padding-right: 10px; }
+body.wideq .wrap { max-width: 1530px; }
+@media (min-width: 1540px) { body.wideq .swipe { display: none !important; } }
+.xwrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.xs { border-collapse: collapse; table-layout: fixed; width: 1456px; font-size: 12.5px; color: #000; font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Pretendard Variable", sans-serif; }
+.xs td, .xs th { padding: 0; height: 27px; }
+.xs .L { border: 1px solid #000; }
+.xs .R { border: 1px solid #b8bec6; background: #fafafa; }
+.xs .G { border: 0; background: #fff; }
+.xs th.L, .xs th.R { font-weight: 700; font-size: 11.5px; background: #f2f2f2; padding: 2px; text-align: center; line-height: 1.2; }
+.xs th.R { background: #e9ecef; color: #333; }
+.xs th.y { background: #fff36b; }
+.xs input, .xs textarea { width: 100%; height: 100%; min-height: 0; border: 0; border-radius: 0; background: transparent; padding: 3px 5px; font: inherit; color: #000; }
+.xs input:focus, .xs textarea:focus { outline: 2px solid #1f7a4d; outline-offset: -2px; background: #f0fbf4; }
+.xs input.c { text-align: center; } .xs input.r { text-align: right; }
+.xs input.auto { color: #1b64da; font-weight: 700; }
+.xs input.bad { background: #fdecee; outline: 2px solid var(--bad); outline-offset: -2px; }
+.xs .cv { display: block; padding: 3px 6px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; }
+.xs .cv.red { color: #d22030; } .xs .cv.dim { color: #9aa0a6; }
+.xs .del { width: 100%; height: 100%; border: 0; background: transparent; color: #9aa0a6; cursor: pointer; }
+.xs .del:hover { color: var(--bad); background: #fdecee; }
+.xs .ttl { height: 64px; }
+.xs .ttlbox { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 10px; }
+.xs .logo { font-size: 22px; font-weight: 900; font-style: italic; } .xs .logo b { color: #d71920; } .xs .logo i { font-weight: 800; font-size: 18px; }
+.xs .ttlbox h3 { margin: 0; font-size: 30px; letter-spacing: .6em; padding-left: .6em; color: #000; }
+.xs .hd { display: grid; grid-template-columns: 40% 60%; border: 2px solid #000; }
+.xs .hd .l { border-right: 1px solid #000; display: flex; flex-direction: column; }
+.xs .hd .to { border-bottom: 1px solid #000; padding: 8px 10px; }
+.xs .hd .to input { text-align: center; font-size: 15px; font-weight: 700; text-decoration: underline; height: 32px; }
+.xs .hd .kv { display: grid; grid-template-columns: 84px 1fr; border-bottom: 1px dotted #000; height: 30px; align-items: center; }
+.xs .hd .kv span { padding: 0 8px; letter-spacing: .2em; }
+.xs .hd .say { padding: 6px; text-align: center; margin-top: auto; }
+.xs .hd .rr { display: grid; grid-template-columns: 116px 1fr; border-bottom: 1px dotted #000; height: 30px; align-items: center; }
+.xs .hd .rr:last-child { border-bottom: 0; }
+.xs .hd .rr span { border-right: 1px solid #000; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 600; letter-spacing: .12em; }
+.xs .hd .rr div { position: relative; height: 100%; } .xs .hd .rr input { text-align: center; }
+.xs .hd .seal { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); height: 40px; pointer-events: none; opacity: .9; }
+.xs .amt { border: 2px solid #000; padding: 8px 12px; font-size: 15px; font-weight: 800; }
+.xs .amt span { margin-left: 14px; }
+.xs tr.sum td, .xs tr.sum th { background: #dce6f1; font-weight: 800; border-top: 2px solid #000; }
+.xs tr.sum .R { background: #eef1f4; border-top: 1px solid #b8bec6; }
+.xs tr.sum .G { background: #fff; border: 0; }
+.xs .memo { display: grid; grid-template-columns: 44px 1fr; border: 2px solid #000; border-top: 0; min-height: 100px; }
+.xs .memo span { border-right: 1px solid #000; display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; letter-spacing: .4em; }
+.xs .memo textarea { min-height: 100px; resize: vertical; padding: 8px 10px; }
+.xs .rcap { font-size: 11.5px; color: #4e5968; padding: 4px 8px; line-height: 1.4; }
+.mrq { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.mrq button { min-height: 32px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-size: .88em; font-weight: 600; }
+.mrq button.on { background: var(--s1); color: #fff; border-color: var(--s1); }
+.saved { display: flex; flex-direction: column; gap: 6px; }
+.saved .row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; }
+.saved .row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 홈센터 견적서 미리보기 (인쇄 모양) */
+#qDocWrap { overflow-x: auto; }
+.hdoc { width: 780px; max-width: none; margin: 0 auto; background: #fff; color: #000; padding: 22px 24px; border: 1px solid var(--line); font-size: 12px; line-height: 1.4; font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Pretendard Variable", sans-serif; }
+.hdoc .qhd { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; margin-bottom: 14px; }
+.hdoc .logo { font-size: 22px; font-weight: 900; font-style: italic; letter-spacing: -.02em; } .hdoc .logo b { color: #d71920; } .hdoc .logo i { font-style: italic; font-weight: 800; font-size: 18px; }
+.hdoc h1 { margin: 0; font-size: 30px; letter-spacing: .6em; padding-left: .6em; text-align: center; }
+.hdoc table { width: 100%; border-collapse: collapse; }
+.hdoc td, .hdoc th { border: 1px solid #000; padding: 4px 6px; }
+.hdoc th { font-weight: 700; background: #f2f2f2; }
+.hdoc .qtop { display: grid; grid-template-columns: 40% 60%; border: 2px solid #000; border-bottom: 0; }
+.hdoc .qtop .l { border-right: 1px solid #000; display: flex; flex-direction: column; }
+.hdoc .qtop .to { text-align: center; font-size: 15px; font-weight: 700; text-decoration: underline; padding: 14px 6px; border-bottom: 1px solid #000; }
+.hdoc .qtop .kv { display: grid; grid-template-columns: 78px 1fr; border-bottom: 1px dotted #000; }
+.hdoc .qtop .kv span { padding: 5px 8px; } .hdoc .qtop .kv span:first-child { letter-spacing: .3em; }
+.hdoc .qtop .say { padding: 6px; text-align: center; margin-top: auto; }
+.hdoc .qtop table td, .hdoc .qtop table th { border: 0; border-bottom: 1px dotted #000; } .hdoc .qtop table th { border-right: 1px solid #000; width: 110px; letter-spacing: .15em; background: #fff; }
+.hdoc .qtop table td { text-align: center; position: relative; }
+.hdoc .seal { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); height: 42px; opacity: .9; }
+.hdoc .amtline { border: 2px solid #000; border-top: 1px solid #000; padding: 9px 12px; font-size: 15px; font-weight: 800; }
+.hdoc .amtline span { margin-left: 14px; }
+.hdoc .qitems { margin-top: 6px; border: 2px solid #000; }
+.hdoc .qitems th { background: #f2f2f2; font-size: 11.5px; } .hdoc .qitems th.y { background: #fff36b; }
+.hdoc .qitems td { height: 22px; font-variant-numeric: tabular-nums; }
+.hdoc .r { text-align: right; } .hdoc .c { text-align: center; }
+.hdoc .qitems .sum td, .hdoc .qitems .sum th { background: #dce6f1; font-weight: 800; border-top: 2px solid #000; }
+.hdoc .memo { display: grid; grid-template-columns: 40px 1fr; border: 2px solid #000; border-top: 0; min-height: 90px; }
+.hdoc .memo span:first-child { border-right: 1px solid #000; display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; letter-spacing: .4em; }
+.hdoc .memo span:last-child { padding: 8px 10px; white-space: pre-wrap; }
+
+.fab-bar { position: fixed; right: 16px; bottom: 16px; z-index: 40; display: flex; gap: 8px; }
+.fab { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 10px 16px; font-size: .9em; font-weight: 600; text-decoration: none; box-shadow: 0 6px 18px rgba(16, 24, 40, .14); }
+#toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #191f28; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: .92em; display: none; z-index: 50; max-width: calc(100% - 32px); }
+
+@media print {
+  @page { size: A4; margin: 12mm; }
+  body { background: #fff; }
+  body * { visibility: hidden; }
+  #printArea, #printArea *, #hPrintArea, #hPrintArea * { visibility: visible; }
+  #printArea, #hPrintArea { position: absolute; left: 0; top: 0; width: 100%; }
+  #printArea .qdoc, #hPrintArea .hdoc { border: 0; padding: 0; width: 100%; }
+}
+</style>
+<script>
+// 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
+const BUILD = '2026-11-06a';
+(function () {
+  let busy = false;
+  async function check() {
+    if (busy || document.visibilityState !== 'visible' || (document.activeElement && /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName))) return;
+    busy = true;
+    try {
+      const t = await (await fetch(location.pathname + '?b=' + Date.now(), { cache: 'no-store' })).text();
+      const m = t.match(/const BUILD = '([^']+)'/);
+      if (m && m[1] !== BUILD && sessionStorage.getItem('qt.reloadTo') !== m[1]) { sessionStorage.setItem('qt.reloadTo', m[1]); location.replace(location.pathname + '?v=' + m[1]); }
+    } catch (e) { }
+    busy = false;
+  }
+  check(); document.addEventListener('visibilitychange', check); setInterval(check, 30 * 60 * 1000);
+})();
+</script>
+</head>
+<body class="wideq">
+<div class="wrap">
+  <div class="top">
+    <div class="r1"><h1>홈센터 견적서</h1><span class="sub">매입원가를 넣으면 단가가 자동으로 · 거래처에는 견적서만 보내요</span></div>
+  </div>
+  <section id="t-hq">
+    <div class="card">
+      <h2>마진 정하기 <span class="tag gray">우리만 보는 칸 · 인쇄 안 됨</span></h2>
+      <div class="grid3">
+        <div><label class="f" for="hQMr">기본 마진율 (%)</label><input type="text" id="hQMr" inputmode="decimal" placeholder="10"><div class="mrq" id="hQMrQ"></div></div>
+        <div><label class="f" for="hQMode">계산 방법</label><select id="hQMode"><option value="sale">판매가 기준 — 매입가 ÷ (1 − 마진율)</option><option value="markup">매입가 기준 — 매입가 × (1 + 마진율)</option></select></div>
+        <div><label class="f" for="hQRu">단가 끝자리</label><select id="hQRu"><option value="10u">10원 단위 올림</option><option value="100u">100원 단위 올림</option><option value="1u">1원 단위 올림</option><option value="10r">10원 단위 반올림</option></select></div>
+      </div>
+      <p class="muted" style="margin:8px 0 0" id="hQMrEx"></p>
+    </div>
+    <div class="card xcard">
+      <h2>견적서 쓰기 <span class="muted" id="hQCnt"></span></h2>
+      <p class="muted" style="margin:0 0 8px">엑셀처럼 칸을 눌러 바로 쓰세요. 오른쪽 <b>회색 칸</b>(매입단가 · 마진)은 우리만 보고 인쇄되지 않아요. <b>매입단가</b>를 넣으면 단가가 파란 글씨로 자동으로 나오고, 단가 칸에 직접 쓰면 그 값이 우선이에요. Enter 키를 누르면 아래 칸으로 내려가요.</p>
+      <p class="swipe" style="display:block">↔ 표를 옆으로 밀면 오른쪽 매입원가 칸이 보여요</p>
+      <div class="xwrap" id="hQSheet"></div>
+      <div class="btns"><button class="btn ghost sm" id="hQAdd">＋ 줄 추가</button><button class="btn ghost sm" id="hQAdd5">＋ 5줄 추가</button><button class="btn ghost sm" id="hQAddShip">＋ 운반비 줄</button>
+        <label class="btn ghost sm" for="hSSeal" style="display:inline-flex;align-items:center">🔴 도장(직인) 사진 넣기</label><input type="file" id="hSSeal" accept="image/*" class="hide"><button class="btn ghost sm hide" id="hSSealX">도장 빼기</button><span class="muted" id="hSSealSt" style="align-self:center"></span></div>
+      <div id="hQErr"></div>
+      <p class="muted" style="margin:8px 0 0">금액 = 단가 × 수량 · 부가세 포함 금액 = 줄마다 금액 × 1.1 (원 미만 반올림) 의 합 · 우리 회사 정보(사업자번호 등)는 한 번 적으면 이 기기에 남아요.</p>
+    </div>
+    <div class="card">
+      <h2>거래처에 보내기 <span class="tag">마진 칸 빠짐 · 고칠 수 없는 파일</span></h2>
+      <p class="muted" style="margin:0 0 8px">왼쪽 견적서 부분만 <b>사진(PNG)</b>이나 <b>PDF</b>로 만들어요. 오른쪽 매입단가·마진은 들어가지 않고, 엑셀처럼 거래처가 숫자를 고칠 수 없어요.</p>
+      <div class="btns" style="margin-top:0">
+        <button class="btn" id="hQShareImg">📤 바로 보내기 (사진)</button>
+        <button class="btn" id="hQSharePdf">📤 바로 보내기 (PDF)</button>
+        <button class="btn ghost" id="hQCopy">📋 사진 복사 → 카톡 PC에 붙여넣기</button>
+        <button class="btn ghost" id="hQPng">🖼 사진으로 저장</button>
+        <button class="btn ghost" id="hQPdf">📄 PDF로 저장</button>
+      </div>
+      <div id="hQReady"></div>
+      <p class="muted" style="margin:8px 0 0"><b>휴대폰</b>: 바로 보내기를 누르면 카톡·문자·메일을 고르는 창이 떠요 (파일이 따로 남지 않아요). <b>PC</b>: 바로 보내기(사진)는 사진이 <b>복사</b>되니 카톡 대화창에서 Ctrl+V 하세요. 바로 보내기(PDF)는 PDF가 <b>한 개</b> 저장돼요.</p>
+      <h3>그 밖에</h3>
+      <div class="btns" style="margin-top:0">
+        <button class="btn ghost" id="hQPrint">🖨 인쇄</button>
+        <button class="btn ghost" id="hQSave">💾 견적 저장</button>
+        <button class="btn ghost" id="hQNew">새 견적</button>
+      </div>
+      <p class="muted" style="margin:8px 0 0">저장한 견적은 이 기기에만 남아요.</p>
+      <h3>저장한 견적</h3>
+      <div class="saved" id="hQSaved"></div>
+    </div>
+    <details class="card">
+      <summary style="cursor:pointer;font-weight:800">인쇄될 모양 보기 (거래처에 나가는 모양)</summary>
+      <div id="hQDocWrap" style="margin-top:10px"><div id="hPrintArea"></div></div>
+    </details>
+  </section>
+</div>
+<div class="fab-bar"><a class="fab" href="../order/">📦 수주팀</a><a class="fab" href="../sch/">📅 근무표</a></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let toastT = null;
+function toast(m) { const t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => { t.style.display = 'none'; }, 3200); }
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem('ord.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('ord.' + k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+};
+const won = n => Math.round(n).toLocaleString('ko-KR');
+const fmtQ = n => Number.isInteger(n) ? n.toLocaleString('ko-KR') : n.toLocaleString('ko-KR', { maximumFractionDigits: 2 });
+/* 숫자 엄격 읽기: 빈칸 → null, 읽을 수 없으면 NaN (조용히 0으로 바꾸지 않음) */
+function numIn(v) {
+  let s = String(v == null ? '' : v).replace(/[\s원₩]/g, '').replace(/(mm|m|개|본|장|ea|EA|%)$/, '');
+  if (s === '') return null;
+  /* 쉼표는 세 자리마다 찍은 것만 받음 ("98,6" 같은 것은 읽지 않음) */
+  if (s.includes(',')) { if (!/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)) return NaN; s = s.replace(/,/g, ''); }
+  if (!/^\d+(\.\d+)?$/.test(s)) return NaN;
+  return Number(s);
+}
+
+/* ===================== 제품 자료 ===================== */
+
+/* ===================== 홈센터 견적서 폼 (엑셀 양식) — 따로 떨어진 영역 ===================== */
+const HOME = (() => {
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const blankLine = () => ({ code: '', n: '', br: '', sp: '', u: '', q: '', cost: '', mr: '', p: '', m: '' });
+const newQuote = () => ({ id: 'q' + Date.now(), to: '', site: '', cman: '', ctel: '', date: today(), valid: '', due: '', pay: '', ship: '', memo: '', mr: '10', mode: 'sale', ru: '10u', lines: Array.from({ length: 10 }, blankLine) });
+function normQ(q) { const b = newQuote(); const o = Object.assign(b, q); if (!o.mr && o.mr !== '0') o.mr = '10'; o.lines = (o.lines || []).map(l => Object.assign(blankLine(), l)); if (!o.lines.length) o.lines.push(blankLine()); return o; }
+let Q = normQ((LS.get('hquote', null) || ((LS.get('quote', null) || {}).mode ? LS.get('quote', null) : null)) || newQuote());
+let SUP = Object.assign({ name: 'ACE 일산점', biz: '', addr: '', mgr: '', tel: '', fax: '', email: '', seal: '' }, LS.get('supplier', null) || {});
+const QF = { hQMr: 'mr', hQMode: 'mode', hQRu: 'ru' };
+function qSaveDraft() { LS.set('hquote', Q); }
+const lineEmpty = l => !['code', 'n', 'br', 'sp', 'q', 'cost', 'p'].some(k => String(l[k] == null ? '' : l[k]).trim());
+/* 마진율 읽기: 0 이상 100 미만, 소수 둘째 자리까지 → 만분율 정수로 (정수 계산으로 소수 오차 없음) */
+function rate100(v) { const r = numIn(v); if (r === null || Number.isNaN(r) || r < 0 || r >= 100 && Q.mode === 'sale' || r > 1000) return NaN; const x = Math.round(r * 100); return Math.abs(r * 100 - x) > 1e-6 ? NaN : x; }
+/* 단가 = 매입단가 ÷ (1 − 마진율) 또는 매입단가 × (1 + 마진율), 끝자리 단위로 올림(또는 반올림) */
+function autoPrice(cost, r100) {
+  const ru = Q.ru || '10u', unit = Number(ru.slice(0, -1)), up = ru.slice(-1) === 'u';
+  const num = Q.mode === 'markup' ? cost * (10000 + r100) : cost * 10000, den = (Q.mode === 'markup' ? 10000 : 10000 - r100) * unit;
+  if (up) return Math.floor((num + den - 1) / den) * unit;
+  return Math.floor((2 * num + den) / (2 * den)) * unit;
+}
+function lineCalc(l, i) {
+  if (lineEmpty(l)) return { skip: true };
+  const nm = (i + 1) + '번 줄' + (String(l.n).trim() ? ' (' + String(l.n).trim() + ')' : ''), e = [], bad = {};
+  const q = numIn(l.q), cost = numIn(l.cost), pIn = numIn(l.p);
+  if (!String(l.n).trim()) { e.push((i + 1) + '번 줄: 제품명이 비어 있어요.'); bad.n = 1; }
+  if (q === null) { e.push(nm + ': 수량이 비어 있어요.'); bad.q = 1; }
+  else if (Number.isNaN(q) || Math.abs(q * 100 - Math.round(q * 100)) > 1e-6) { e.push(nm + ': 수량 "' + l.q + '"을(를) 읽을 수 없어요 (소수 둘째 자리까지).'); bad.q = 1; }
+  if (cost !== null && (Number.isNaN(cost) || !Number.isInteger(cost))) { e.push(nm + ': 매입단가 "' + l.cost + '"을(를) 원 단위 숫자로 읽을 수 없어요.'); bad.cost = 1; }
+  if (pIn !== null && (Number.isNaN(pIn) || !Number.isInteger(pIn))) { e.push(nm + ': 단가 "' + l.p + '"을(를) 원 단위 숫자로 읽을 수 없어요.'); bad.p = 1; }
+  const useMr = String(l.mr == null ? '' : l.mr).trim() !== '', r100 = rate100(useMr ? l.mr : Q.mr);
+  if (useMr && Number.isNaN(r100)) { e.push(nm + ': 마진율 "' + l.mr + '"을(를) 읽을 수 없어요 (0 이상 100 미만).'); bad.mr = 1; }
+  if (cost === null && pIn === null && !bad.cost && !bad.p) { e.push(nm + ': 매입단가나 단가 중 하나는 적어 주세요.'); bad.cost = bad.p = 1; }
+  if (e.length) return { err: e, bad };
+  let auto = null;
+  if (cost !== null) { if (Number.isNaN(r100)) return { err: [nm + ': 기본 마진율을 먼저 바르게 적어 주세요.'], bad: { mr: 1 } }; auto = autoPrice(cost, r100); }
+  const p = pIn !== null ? pIn : auto, q100 = Math.round(q * 100);
+  if (!Number.isSafeInteger(q100 * p) || (cost !== null && !Number.isSafeInteger(q100 * cost))) return { err: [nm + ': 금액이 너무 커요.'], bad: {} };
+  const amt = Math.round(q100 * p / 100), incl = Math.round(amt * 11 / 10);
+  const costAmt = cost !== null ? Math.round(q100 * cost / 100) : null, margin = costAmt !== null ? amt - costAmt : null;
+  return { q, p, auto, manual: pIn !== null, amt, incl, cost, costAmt, margin, r100: useMr ? r100 : null };
+}
+function qTotals() {
+  let supply = 0, incl = 0, n = 0, costSum = 0, saleWithCost = 0, noCost = 0; const errs = [];
+  const res = Q.lines.map((l, i) => { const r = lineCalc(l, i); if (r.err) errs.push(...r.err); else if (!r.skip) { supply += r.amt; incl += r.incl; n++; if (r.costAmt !== null) { costSum += r.costAmt; saleWithCost += r.amt; } else noCost++; } return r; });
+  return { res, errs, supply, incl, vat: incl - supply, total: incl, n, costSum, saleWithCost, margin: saleWithCost - costSum, noCost };
+}
+const pct = (a, b) => b ? (Math.round(a / b * 1000) / 10).toFixed(1) + '%' : '-';
+function hangulWon(n) {
+  if (n === 0) return '영';
+  const D = ['', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'], S4 = ['', '십', '백', '천'], B = ['', '만', '억', '조'];
+  let out = '', g = 0;
+  while (n > 0) {
+    const part = n % 10000; n = Math.floor(n / 10000);
+    if (part) { let s = '', p = part; for (let k = 0; k < 4; k++) { const d = p % 10; p = Math.floor(p / 10); if (d) s = D[d] + S4[k] + s; } out = s + B[g] + out; }
+    g++;
+  }
+  return out;
+}
+const MRQ = ['5', '7', '8', '10', '12', '15', '20', '25', '30'];
+function renderMrHead() {
+  $('hQMrQ').innerHTML = MRQ.map(v => '<button type="button" data-mrq="' + v + '" class="' + (String(Q.mr).trim() === v ? 'on' : '') + '">' + v + '%</button>').join('');
+  const r = rate100(Q.mr);
+  $('hQMr').classList.toggle('bad', Number.isNaN(r));
+  if (Number.isNaN(r)) { $('hQMrEx').textContent = '기본 마진율을 숫자로 적어 주세요 (예: 10).'; return; }
+  const ex = autoPrice(4520, r), raw = Q.mode === 'markup' ? 4520 * (10000 + r) / 10000 : 4520 * 10000 / (10000 - r), act = Math.round((ex - 4520) / ex * 1000) / 10;
+  $('hQMrEx').innerHTML = '예) 매입단가 4,520원, 정한 마진율 <b>' + (r / 100) + '%</b> → ' + (Q.mode === 'markup' ? '4,520 × (1 + ' : '4,520 ÷ (1 − ') + (r / 100) + '%) = ' + (Math.round(raw * 10) / 10).toLocaleString('ko-KR') + '원 → ' + ({ '10u': '10원 단위 올림', '100u': '100원 단위 올림', '1u': '1원 단위 올림', '10r': '10원 단위 반올림' }[Q.ru] || '') + ' → 단가 <b>' + won(ex) + '원</b> → 실제 마진율 <b>' + act.toFixed(1) + '%</b><br>단가 끝자리를 올리면 남는 돈이 조금 늘어서, 오른쪽 <b>실제 마진율</b>이 정한 값보다 조금 높게 나와요 (엑셀과 같음).';
+}
+function renderQuoteForm() {
+  Object.entries(QF).forEach(([id, k]) => { $(id).value = Q[k] == null ? '' : Q[k]; });
+  renderSeal(); renderMrHead(); renderSheet();
+}
+const XCOLS = [80, 200, 80, 90, 84, 54, 92, 92, 150, 18, 84, 90, 66, 96, 80, 64, 36];
+function renderSheet() {
+  const RG = '<td class="G"></td><td class="G" colspan="7"></td>';
+  const kv = (k, inner) => '<div class="kv"><span>' + k + '</span>' + inner + '</div>';
+  const hq = (k, ph, type) => '<input type="' + (type || 'text') + '" data-hq="' + k + '" placeholder="' + esc(ph || '') + '" maxlength="80">';
+  const rr = (k, f, extra) => '<div class="rr"><span>' + k + '</span><div><input type="text" data-hs="' + f + '" maxlength="120">' + (extra || '') + '</div></div>';
+  let h = '<table class="xs"><colgroup>' + XCOLS.map(w => '<col style="width:' + w + 'px">').join('') + '</colgroup>';
+  h += '<tr><td colspan="9" class="ttl"><div class="ttlbox"><div class="logo"><b>ACE</b> <i>Hardware</i></div><h3>견 적 서</h3><div></div></div></td>' + RG + '</tr>';
+  h += '<tr><td colspan="9"><div class="hd"><div class="l"><div class="to">' + hq('to', '받는 분 (예: 박세익과장님)') + '</div>' + kv('견 적 일 :', hq('date', '', 'date')) + kv('현 장 명 :', hq('site')) + kv('담 당 자 :', hq('cman')) + kv('연 락 처 :', hq('ctel')) + '<div class="say">아래와 같이 견적합니다.</div></div><div>' +
+    rr('사업자번호', 'biz') + rr('상호 (법인명)', 'name', SUP.seal ? '<img class="seal" src="' + SUP.seal + '" alt="">' : '') + rr('사업장 주소', 'addr') + rr('담 당 자', 'mgr') + rr('전화번호', 'tel') + rr('F A X', 'fax') + rr('E-MAIL', 'email') + '</div></div></td>' +
+    '<td class="G"></td><td class="G" colspan="7" style="vertical-align:top"><div class="rcap">← 왼쪽 검은 칸 = 거래처에 나가는 견적서<br>아래 회색 칸 = 우리만 보는 매입원가 · 마진 (인쇄 안 됨)</div></td></tr>';
+  h += '<tr><td colspan="9"><div class="amt" id="hXAmt"></div></td>' + RG + '</tr>';
+  h += '<tr><th class="L">NO</th><th class="L">제품명</th><th class="L">브랜드</th><th class="L">규격</th><th class="L">단가<br><small>(vat별도)</small></th><th class="L">수량</th><th class="L y">금액<br>(vat 별도)</th><th class="L y">금액<br>(vat 포함)</th><th class="L">비고</th><td class="G"></td>' +
+    '<th class="R">단가<br>(vat포함)</th><th class="R">매입단가</th><th class="R" title="내가 정한 마진율. 비우면 위의 기본 마진율">정한<br>마진율 %</th><th class="R">매입단가<br>×수량</th><th class="R">마진</th><th class="R" title="단가를 10원 단위로 올린 뒤 실제로 남는 마진율">실제<br>마진율</th><td class="G"></td></tr>';
+  const ci = (k, cls, im) => '<input type="text" class="' + cls + '" data-l="' + k + '"' + (im ? ' inputmode="' + im + '"' : '') + ' maxlength="60">';
+  Q.lines.forEach((l, i) => {
+    h += '<tr data-i="' + i + '"><td class="L">' + ci('code', 'c') + '</td><td class="L">' + ci('n', 'c') + '</td><td class="L">' + ci('br', 'c') + '</td><td class="L">' + ci('sp', 'c') + '</td><td class="L">' + ci('p', 'r', 'numeric') + '</td><td class="L">' + ci('q', 'c', 'decimal') + '</td>' +
+      '<td class="L"><span class="cv" data-c="amt"></span></td><td class="L"><span class="cv" data-c="incl"></span></td><td class="L">' + ci('m', 'c') + '</td><td class="G"></td>' +
+      '<td class="R"><span class="cv" data-c="pi"></span></td><td class="R">' + ci('cost', 'r', 'numeric') + '</td><td class="R">' + ci('mr', 'r', 'decimal') + '</td><td class="R"><span class="cv" data-c="ca"></span></td><td class="R"><span class="cv" data-c="mg"></span></td><td class="R"><span class="cv" data-c="rt"></span></td>' +
+      '<td class="G"><button class="del" data-ldel="' + i + '" aria-label="' + (i + 1) + '번 줄 지우기" title="줄 지우기">✕</button></td></tr>';
+  });
+  h += '<tr class="sum"><th class="L" colspan="6">합 &nbsp; &nbsp; 계</th><td class="L"><span class="cv" id="hXSup"></span></td><td class="L"><span class="cv" id="hXInc"></span></td><td class="L"></td><td class="G"></td><td class="R"></td><td class="R"></td><td class="R"></td><td class="R"><span class="cv" id="hXCost"></span></td><td class="R"><span class="cv" id="hXMg"></span></td><td class="R"><span class="cv" id="hXRt"></span></td><td class="G"></td></tr>';
+  h += '<tr><td colspan="9"><div class="memo"><span>비고</span><textarea data-hq="memo" maxlength="400" placeholder="예: 48박스/1파레트 (4,800개) · 견적 유효 기간 15일"></textarea></div></td>' + RG + '</tr></table>';
+  $('hQSheet').innerHTML = h;
+  $('hQSheet').querySelectorAll('[data-hq]').forEach(x => { x.value = Q[x.dataset.hq] || ''; });
+  $('hQSheet').querySelectorAll('[data-hs]').forEach(x => { x.value = SUP[x.dataset.hs] || ''; });
+  $('hQSheet').querySelectorAll('tr[data-i]').forEach(tr => { const l = Q.lines[+tr.dataset.i]; tr.querySelectorAll('[data-l]').forEach(x => { if (x.dataset.l !== 'p') x.value = l[x.dataset.l] == null ? '' : l[x.dataset.l]; }); });
+  renderTotals();
+}
+function renderTotals() {
+  const T = qTotals(), dr = rate100(Q.mr), act = document.activeElement;
+  $('hQSheet').querySelectorAll('tr[data-i]').forEach(tr => {
+    const i = +tr.dataset.i, r = T.res[i], l = Q.lines[i]; if (!r) return;
+    ['n', 'q', 'cost', 'mr', 'p'].forEach(k => tr.querySelector('[data-l="' + k + '"]').classList.toggle('bad', !!(r.err && r.bad && r.bad[k])));
+    const pI = tr.querySelector('[data-l="p"]');
+    if (pI !== act) { const man = String(l.p == null ? '' : l.p).trim() !== ''; pI.value = man ? l.p : (r.auto != null ? won(r.auto) : ''); pI.classList.toggle('auto', !man && r.auto != null); }
+    tr.querySelector('[data-l="mr"]').placeholder = Number.isNaN(dr) ? '' : String(dr / 100);
+    const set = (c, t, cls) => { const e = tr.querySelector('[data-c="' + c + '"]'); e.textContent = t; e.className = 'cv' + (cls ? ' ' + cls : ''); };
+    if (r.skip) { ['amt', 'incl', 'pi', 'ca', 'mg', 'rt'].forEach(c => set(c, '-', 'dim')); return; }
+    if (r.err) { set('amt', '확인', 'red'); ['incl', 'pi', 'ca', 'mg', 'rt'].forEach(c => set(c, '', '')); return; }
+    set('amt', won(r.amt)); set('incl', won(r.incl)); set('pi', won(Math.round(r.p * 11 / 10)));
+    set('ca', r.costAmt != null ? won(r.costAmt) : '-', r.costAmt != null ? '' : 'dim');
+    set('mg', r.margin != null ? won(r.margin) : '-', r.margin != null ? (r.margin <= 0 ? 'red' : '') : 'dim');
+    set('rt', r.margin != null ? pct(r.margin, r.amt) : '-', r.margin != null ? (r.margin <= 0 ? 'red' : '') : 'dim');
+  });
+  if ($('hXSup')) {
+    $('hXSup').textContent = won(T.supply); $('hXInc').textContent = won(T.total); $('hXCost').textContent = won(T.costSum); $('hXMg').textContent = won(T.margin); $('hXRt').textContent = pct(T.margin, T.saleWithCost);
+    $('hXAmt').innerHTML = '금 &nbsp; 액 &nbsp; : <span>일금 ' + hangulWon(T.total) + '원정</span> <span>(₩' + won(T.total) + '/부가세 포함)</span>';
+  }
+  $('hQCnt').textContent = T.n ? T.n + '개 품목' + (T.noCost ? ' · 매입단가 없는 ' + T.noCost + '줄은 마진 계산에서 빠짐' : '') : '';
+  $('hQErr').innerHTML = T.errs.length ? '<div class="err">' + T.errs.map(esc).join('<br>') + '<br>고칠 때까지 인쇄·저장이 막혀요.</div>' : '';
+  renderDoc(T);
+  return T;
+}
+function docHtml(T) {
+  const d = Q.date ? Q.date.split('-') : null, ds = d ? d[0] + '. ' + Number(d[1]) + '. ' + Number(d[2]) + '.' : '';
+  const rows = [];
+  T.res.forEach((r, i) => { if (r.skip || r.err) return; const l = Q.lines[i]; rows.push('<tr><td class="c">' + esc(l.code || '') + '</td><td class="c">' + esc(l.n) + '</td><td class="c">' + esc(l.br) + '</td><td class="c">' + esc(l.sp) + '</td><td class="r">' + won(r.p) + '</td><td class="c">' + fmtQ(r.q) + (l.u ? ' ' + esc(l.u) : '') + '</td><td class="r">' + won(r.amt) + '</td><td class="r">' + won(r.incl) + '</td><td class="c" style="font-size:11px">' + esc(l.m) + '</td></tr>'); });
+  while (rows.length < 15) rows.push('<tr><td>&nbsp;</td><td></td><td></td><td></td><td class="r">-</td><td></td><td class="r">-</td><td class="r">-</td><td></td></tr>');
+  const memo = Q.memo || '';
+  const kv = (k, v) => '<div class="kv"><span>' + k + '</span><span>' + esc(v) + '</span></div>';
+  return '<div class="hdoc"><div class="qhd"><div class="logo"><b>ACE</b> <i>Hardware</i></div><h1>견 적 서</h1><div></div></div>' +
+    '<div class="qtop"><div class="l"><div class="to">' + esc(Q.to || '(받는 분)') + '</div>' + kv('견적일 :', ds) + kv('현장명 :', Q.site) + kv('담당자 :', Q.cman) + kv('연락처 :', Q.ctel) + '<div class="say">아래와 같이 견적합니다.</div></div>' +
+    '<table><tr><th>사업자번호</th><td>' + esc(SUP.biz) + '</td></tr><tr><th>상호 (법인명)</th><td>' + esc(SUP.name) + (SUP.seal ? '<img class="seal" src="' + SUP.seal + '" alt="직인">' : '') + '</td></tr><tr><th>사업장 주소</th><td>' + esc(SUP.addr) + '</td></tr><tr><th>담 당 자</th><td>' + esc(SUP.mgr) + '</td></tr><tr><th>전화번호</th><td>' + esc(SUP.tel) + '</td></tr><tr><th>F A X</th><td>' + esc(SUP.fax) + '</td></tr><tr><th>E-MAIL</th><td>' + esc(SUP.email) + '</td></tr></table></div>' +
+    '<div class="amtline">금 &nbsp; 액 &nbsp; : <span>일금 ' + hangulWon(T.total) + '원정</span> <span>(₩' + won(T.total) + '/부가세 포함)</span></div>' +
+    '<table class="qitems"><tr><th style="width:70px">NO</th><th>제품명</th><th style="width:64px">브랜드</th><th style="width:74px">규격</th><th style="width:66px">단가<small>(vat별도)</small></th><th style="width:44px">수량</th><th class="y" style="width:78px">금액(vat 별도)</th><th class="y" style="width:78px">금액(vat 포함)</th><th style="width:112px">비고</th></tr>' + rows.join('') +
+    '<tr class="sum"><th colspan="6">합 &nbsp; &nbsp; 계</th><td class="r">' + won(T.supply) + '</td><td class="r">' + won(T.total) + '</td><td></td></tr></table>' +
+    '<div class="memo"><span>비고</span><span>' + esc(memo) + '</span></div></div>';
+}
+function renderDoc(T) { $('hPrintArea').innerHTML = docHtml(T); }
+function renderSeal() { $('hSSealX').classList.toggle('hide', !SUP.seal); $('hSSealSt').textContent = SUP.seal ? '도장이 들어가 있어요' : ''; }
+Object.entries(QF).forEach(([id, k]) => $(id).addEventListener(id === 'qMr' ? 'input' : 'change', () => { Q[k] = $(id).value; qSaveDraft(); renderMrHead(); renderTotals(); }));
+$('hQMrQ').addEventListener('click', e => { const b = e.target.closest('[data-mrq]'); if (!b) return; Q.mr = b.dataset.mrq; $('hQMr').value = Q.mr; qSaveDraft(); renderMrHead(); renderTotals(); });
+$('hQSheet').addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.hq) { Q[t.dataset.hq] = t.value; qSaveDraft(); renderTotals(); return; }
+  if (t.dataset.hs) { SUP[t.dataset.hs] = t.value; LS.set('supplier', SUP); renderDoc(qTotals()); return; }
+  if (!t.dataset.l) return;
+  const i = +t.closest('tr').dataset.i; Q.lines[i][t.dataset.l] = t.value; if (t.dataset.l === 'p') t.classList.remove('auto'); qSaveDraft(); renderTotals();
+});
+$('hQSheet').addEventListener('focusin', e => { const t = e.target; if (t.dataset.l === 'p' && t.classList.contains('auto')) { const r = qTotals().res[+t.closest('tr').dataset.i]; if (r && r.auto != null) { t.value = String(r.auto); t.select(); } } });
+$('hQSheet').addEventListener('focusout', e => { if (e.target.dataset.l === 'p') setTimeout(renderTotals, 0); });
+$('hQSheet').addEventListener('keydown', e => {
+  const t = e.target; if (e.key !== 'Enter' || !t.dataset.l || e.isComposing) return;
+  e.preventDefault();
+  const i = +t.closest('tr').dataset.i, f = t.dataset.l;
+  if (i + 1 >= Q.lines.length) { Q.lines.push(blankLine()); qSaveDraft(); renderSheet(); }
+  const nx = $('hQSheet').querySelector('tr[data-i="' + (i + 1) + '"] [data-l="' + f + '"]'); if (nx) nx.focus();
+});
+$('hQSheet').addEventListener('click', e => { const b = e.target.closest('[data-ldel]'); if (!b) return; const i = +b.dataset.ldel; if (!lineEmpty(Q.lines[i]) && !confirm((i + 1) + '번 줄을 지울까요?')) return; Q.lines.splice(i, 1); if (!Q.lines.length) Q.lines.push(blankLine()); qSaveDraft(); renderSheet(); });
+$('hQAdd').addEventListener('click', () => { Q.lines.push(blankLine()); qSaveDraft(); renderSheet(); });
+$('hQAdd5').addEventListener('click', () => { for (let k = 0; k < 5; k++) Q.lines.push(blankLine()); qSaveDraft(); renderSheet(); });
+$('hQAddShip').addEventListener('click', () => { const at = Q.lines.findIndex(lineEmpty); const sh = Object.assign(blankLine(), { n: '운반비', q: '1' }); if (at >= 0) Q.lines[at] = sh; else Q.lines.push(sh); qSaveDraft(); renderSheet(); });
+$('hSSeal').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => { const im = new Image(); im.onload = () => { const s = Math.min(1, 240 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * s); c.height = Math.round(im.height * s); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); SUP.seal = c.toDataURL('image/png'); if (!LS.set('supplier', SUP)) toast('도장을 저장하지 못했어요.'); renderSeal(); renderSheet(); }; im.onerror = () => toast('사진을 읽지 못했어요.'); im.src = rd.result; };
+  rd.readAsDataURL(f); e.target.value = '';
+});
+$('hSSealX').addEventListener('click', () => { SUP.seal = ''; LS.set('supplier', SUP); renderSeal(); renderSheet(); });
+function ready() {
+  const T = qTotals();
+  if (T.errs.length) { toast('품목에 확인할 곳이 있어요. 빨간 칸을 고쳐 주세요.'); return null; }
+  if (!T.n) { toast('품목을 하나 이상 적어 주세요.'); return null; }
+  if (!String(Q.to || '').trim()) { toast('받는 분을 적어 주세요.'); const x = $('hQSheet').querySelector('[data-hq="to"]'); if (x) x.focus(); return null; }
+  return T;
+}
+$('hQPrint').addEventListener('click', () => { const T = ready(); if (!T) return; renderDoc(T); window.print(); });
+/* 거래처에 보내기: 견적서 부분만 그림(PNG)·PDF로 — 마진 칸 없음, 고칠 수 없음 */
+const LIBP = {};
+function lib(src, ok) {
+  if (ok()) return Promise.resolve();
+  if (!LIBP[src]) LIBP[src] = new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = src; sc.onload = () => ok() ? res() : rej(new Error('x')); sc.onerror = () => { LIBP[src] = null; rej(new Error('도구를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.')); }; document.head.appendChild(sc); });
+  return LIBP[src];
+}
+const fileBase = () => '견적서_' + String(Q.to || '거래처').replace(/[\\/:*?"<>|\s]+/g, '_') + '_' + (Q.date || today());
+async function docCanvas(T) {
+  await lib('vendor/html2canvas.min.js?v=1.4.1', () => window.html2canvas);
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed;left:-12000px;top:0;width:820px;background:#fff;';
+  box.innerHTML = docHtml(T); document.body.appendChild(box);
+  const el = box.firstElementChild; el.style.border = '0';
+  try { if (document.fonts && document.fonts.ready) await document.fonts.ready; return await window.html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: false }); }
+  finally { box.remove(); }
+}
+const canvasPng = c => new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('사진을 만들지 못했어요.')), 'image/png'));
+async function canvasPdf(c) {
+  await lib('vendor/jspdf.umd.min.js?v=2.5.1', () => window.jspdf && window.jspdf.jsPDF);
+  const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', compress: true }), W = 190, PH = 277, imgH = c.height * W / c.width;
+  if (imgH <= PH) pdf.addImage(c, 'PNG', 10, 10, W, imgH);
+  else { const sl = Math.floor(c.width * PH / W); for (let y = 0, pg = 0; y < c.height; y += sl, pg++) { const part = document.createElement('canvas'); part.width = c.width; part.height = Math.min(sl, c.height - y); part.getContext('2d').drawImage(c, 0, y, c.width, part.height, 0, 0, c.width, part.height); if (pg) pdf.addPage(); pdf.addImage(part, 'PNG', 10, 10, W, part.height * W / c.width); } }
+  pdf.setProperties({ title: fileBase(), creator: SUP.name || '' });
+  return pdf.output('blob');
+}
+/* 같은 파일을 짧은 시간에 두 번 저장하지 않음 */
+let lastSave = { n: '', t: 0 };
+const isPhone = () => (window.matchMedia && matchMedia('(pointer: coarse)').matches) || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+function saveBlob(b, name) { if (lastSave.n === name && Date.now() - lastSave.t < 6000) return; lastSave = { n: name, t: Date.now() }; const a = document.createElement('a'), u = URL.createObjectURL(b); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 8000); }
+async function makeFile(kind) {
+  const T = ready(); if (!T) return null;
+  const c = await docCanvas(T);
+  if (kind === 'pdf') return new File([await canvasPdf(c)], fileBase() + '.pdf', { type: 'application/pdf' });
+  return new File([await canvasPng(c)], fileBase() + '.png', { type: 'image/png' });
+}
+async function busy(btn, job) {
+  if (btn.disabled) return; const t = btn.textContent; btn.disabled = true; btn.textContent = '만드는 중…';
+  try { await job(); } catch (e) { if (e && e.name === 'AbortError') return; toast((e && e.message) || '만들지 못했어요.'); } finally { btn.disabled = false; btn.textContent = t; }
+}
+async function shareFile(f) {
+  if (!(navigator.canShare && navigator.canShare({ files: [f] }))) { saveBlob(f, f.name); toast('이 기기는 바로 보내기가 안 돼서 파일로 저장했어요. 카톡·메일에 붙여 보내세요.'); return; }
+  try { await navigator.share({ files: [f], title: fileBase() }); $('hQReady').innerHTML = ''; }
+  catch (e) {
+    if (e && e.name === 'AbortError') return;
+    /* 만드는 데 시간이 걸려 한 번 더 눌러야 하는 기기 (아이폰 등) */
+    $('hQReady').innerHTML = '<div class="ok" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">준비됐어요. 아래 버튼을 한 번 더 눌러 주세요. <button class="btn sm" id="hQGo">📤 ' + esc(f.name.endsWith('.pdf') ? 'PDF' : '사진') + ' 보내기</button></div>';
+    $('hQGo').addEventListener('click', ev => { ev.currentTarget.disabled = true; navigator.share({ files: [f], title: fileBase() }).then(() => { $('hQReady').innerHTML = ''; }).catch(err => { $('hQReady').innerHTML = ''; if (!err || err.name !== 'AbortError') { saveBlob(f, f.name); toast('보내기 창을 열지 못해 파일로 저장했어요.'); } }); });
+  }
+}
+/* 휴대폰: 카톡·문자 보내기 창 / PC: 사진은 복사(파일 안 만듦), PDF는 한 개만 저장 */
+$('hQShareImg').addEventListener('click', e => { if (!isPhone()) { copyImg(e.currentTarget); return; } busy(e.currentTarget, async () => { const f = await makeFile('png'); if (f) await shareFile(f); }); });
+$('hQSharePdf').addEventListener('click', e => busy(e.currentTarget, async () => { const f = await makeFile('pdf'); if (!f) return; if (isPhone()) await shareFile(f); else { saveBlob(f, f.name); toast('PDF를 저장했어요 (' + f.name + '). 카톡·메일에 첨부해 보내세요.'); } }));
+$('hQPng').addEventListener('click', e => busy(e.currentTarget, async () => { const f = await makeFile('png'); if (f) { saveBlob(f, f.name); toast('사진으로 저장했어요: ' + f.name); } }));
+$('hQPdf').addEventListener('click', e => busy(e.currentTarget, async () => { const f = await makeFile('pdf'); if (f) { saveBlob(f, f.name); toast('PDF로 저장했어요: ' + f.name); } }));
+$('hQCopy').addEventListener('click', e => copyImg(e.currentTarget));
+function copyImg(btn) {
+  const T = ready(); if (!T) return;
+  if (!(navigator.clipboard && window.ClipboardItem)) { busy(btn, async () => { const f = await makeFile('png'); if (f) { saveBlob(f, f.name); toast('이 브라우저는 사진 복사가 안 돼서 파일로 저장했어요.'); } }); return; }
+  /* 누른 순간 바로 복사를 시작해야 브라우저가 허락함 → 사진은 약속(Promise)으로 넘김 */
+  const pngP = docCanvas(T).then(canvasPng);
+  busy(btn, async () => { await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngP })]); toast('사진을 복사했어요. 카톡 대화창에서 Ctrl+V (맥은 ⌘V) 하면 보내져요.'); }).catch(() => {});
+}
+function savedList() { return LS.get('hsaved', []); }
+function renderSaved() {
+  const L = savedList();
+  $('hQSaved').innerHTML = L.length ? L.map(s => '<div class="row"><span><b>' + esc(s.to || '(받는 분 없음)') + '</b> · ' + esc(s.site || '') + ' <span class="muted">' + esc(s.date) + ' · ' + won(s.total) + '원</span></span><button class="btn ghost sm" data-open="' + esc(s.id) + '">열기</button><button class="btn ghost sm" data-sdel="' + esc(s.id) + '" aria-label="지우기">✕</button></div>').join('') : '<p class="muted" style="margin:0">아직 저장한 견적이 없어요.</p>';
+}
+$('hQSave').addEventListener('click', () => {
+  const T = ready(); if (!T) return;
+  const L = savedList().filter(s => s.id !== Q.id); L.unshift(Object.assign(JSON.parse(JSON.stringify(Q)), { total: T.total, savedAt: Date.now() }));
+  if (!LS.set('hsaved', L.slice(0, 50))) { toast('저장하지 못했어요 (이 브라우저가 저장을 막고 있어요).'); return; }
+  renderSaved(); toast('저장했어요.');
+});
+$('hQSaved').addEventListener('click', e => {
+  const o = e.target.closest('[data-open]'), d = e.target.closest('[data-sdel]');
+  if (o) { const s = savedList().find(x => x.id === o.dataset.open); if (!s) return; Q = normQ(JSON.parse(JSON.stringify(s))); delete Q.total; delete Q.savedAt; qSaveDraft(); renderQuoteForm(); window.scrollTo(0, 0); toast('불러왔어요.'); }
+  if (d) { if (!confirm('이 견적을 지울까요?')) return; LS.set('hsaved', savedList().filter(x => x.id !== d.dataset.sdel)); renderSaved(); }
+});
+$('hQNew').addEventListener('click', () => { if (!confirm('지금 쓰던 견적을 비우고 새로 쓸까요? (저장한 견적은 그대로 남아요)')) return; const keep = { mr: Q.mr, mode: Q.mode, ru: Q.ru }; Q = Object.assign(newQuote(), keep); qSaveDraft(); renderQuoteForm(); });
+
+
+  return { render() { renderQuoteForm(); renderSaved(); }, add(lines) { Q.lines = Q.lines.filter(l => !lineEmpty(l)); lines.forEach(l => Q.lines.push(Object.assign(blankLine(), { n: l.n, sp: l.sp, u: l.u, q: String(l.q) }))); qSaveDraft(); }, qTotals, autoPrice, hangulWon, makeFile, get Q() { return Q; }, set Q(v) { Q = v; } };
+})();
+
+
+window.__qt = { HOME };
+HOME.render();
+</script>
+</body>
+</html>
