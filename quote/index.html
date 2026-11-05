@@ -289,10 +289,33 @@ body.wideq .wrap { max-width: 1530px; }
   #printArea, #hPrintArea { position: absolute; left: 0; top: 0; width: 100%; }
   #printArea .qdoc, #hPrintArea .hdoc { border: 0; padding: 0; width: 100%; }
 }
+/* 2단계 견적서 */
+.inner { margin-top: 10px; background: var(--chip); color: var(--chip-ink); border-radius: 12px; padding: 10px 12px; display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; font-variant-numeric: tabular-nums; font-size: .92em; max-width: 560px; }
+.inner b { text-align: right; } .inner .t { grid-column: 1 / -1; font-weight: 800; margin-bottom: 2px; }
+.flow { margin-top: 12px; }
+.fl { display: flex; align-items: stretch; gap: 6px; flex-wrap: wrap; }
+.fl .fb { flex: 1 1 120px; border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; background: var(--surface2); text-align: center; font-size: .88em; line-height: 1.4; }
+.fl .fb b { font-size: 1.2em; } .fl .fb small { display: block; color: var(--ink3); }
+.fl .fb.g1 { background: #e7f4ec; border-color: #bfe0cc; } .fl .fb.g2 { background: #e6eef8; border-color: #c4d5ec; }
+.fl .fa { flex: 0 1 auto; align-self: center; font-size: .78em; color: var(--ink2); text-align: center; padding: 0 2px; }
+.fl .fa::after { content: ' →'; font-weight: 800; }
+.xs th.g1 { background: #e3f1e8 !important; } .xs th.g2 { background: #e3ecf7 !important; }
+.dn { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .8em; color: #fff; }
+.dn.d1 { background: #1f7a4d; } .dn.d2 { background: #1d4f91; }
+.doc1 { border-top: 4px solid #1f7a4d; } .doc2 { border-top: 4px solid #1d4f91; }
+.dfm { margin-bottom: 8px; }
+.ckl { display: inline-flex; align-items: center; gap: 6px; font-size: .9em; margin: 4px 0; cursor: pointer; } .ckl input { width: 18px; height: 18px; }
+.sup2 { margin: 6px 0 8px; } .sup2 summary { cursor: pointer; font-weight: 700; font-size: .92em; color: var(--ink2); } .sup2 .grid2 { margin-top: 8px; }
+.docbox { overflow-x: auto; margin-top: 10px; }
+.qmode { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+.qmode button { min-height: 40px; padding: 0 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.08); color: #fff; font-weight: 700; cursor: pointer; }
+.qmode button.on { background: #fff; color: var(--top); border-color: #fff; }
+#tPrint { display: none; }
+@media print { body.print2 #tPrint { display: block; visibility: visible; position: absolute; left: 0; top: 0; width: 100%; } body.print2 #tPrint * { visibility: visible; } body.print2 #tPrint .hdoc { border: 0; padding: 0; width: 100%; } }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-06b';
+const BUILD = '2026-11-06c';
 (function () {
   let busy = false;
   async function check() {
@@ -313,6 +336,7 @@ const BUILD = '2026-11-06b';
 <div class="wrap">
   <div class="top">
     <div class="r1"><h1>홈센터 견적서</h1><span class="sub">매입원가를 넣으면 단가가 자동으로 · 거래처에는 견적서만 보내요</span></div>
+    <div class="qmode" id="qmode"><button data-m="one" class="on">📄 견적서 (한 장)</button><button data-m="two">📑 2단계 견적서 (1차 · 최종)</button></div>
   </div>
   <section id="t-hq">
     <div class="card">
@@ -360,6 +384,49 @@ const BUILD = '2026-11-06b';
       <summary style="cursor:pointer;font-weight:800">인쇄될 모양 보기 (거래처에 나가는 모양)</summary>
       <div id="hQDocWrap" style="margin-top:10px"><div id="hPrintArea"></div></div>
     </details>
+  </section>
+  <section id="t-two" class="hide">
+    <div class="card">
+      <h2>마진 정하기 <span class="tag gray">우리만 보는 칸 · 인쇄 안 됨</span></h2>
+      <div class="grid2">
+        <div><label class="f" for="tA">① 우리 마진 A (%) → 1차 견적서</label><input type="text" id="tA" inputmode="decimal" placeholder="10"><div class="mrq" id="tAQ"></div></div>
+        <div><label class="f" for="tB">② 중간 업체 마진 B (%) → 최종 견적서</label><input type="text" id="tB" inputmode="decimal" placeholder="5"><div class="mrq" id="tBQ"></div></div>
+        <div><label class="f" for="tMode">계산 방법</label><select id="tMode"><option value="sale">판매가 기준 — 가격 ÷ (1 − 마진율)</option><option value="markup">매입가 기준 — 가격 × (1 + 마진율)</option></select></div>
+        <div><label class="f" for="tRu">단가 끝자리</label><select id="tRu"><option value="10u">10원 단위 올림</option><option value="100u">100원 단위 올림</option><option value="1u">1원 단위 올림</option><option value="10r">10원 단위 반올림</option></select></div>
+      </div>
+      <div class="flow" id="tFlow"></div>
+    </div>
+    <div class="card xcard">
+      <h2>품목 입력 (한 번만) <span class="muted" id="tCnt"></span></h2>
+      <p class="muted" style="margin:0 0 8px">매입단가를 넣으면 <b>1차 단가</b>(매입가에 A% 붙임)와 <b>최종 단가</b>(1차 단가에 B% 붙임)가 파란 글씨로 자동으로 나와요. 줄마다 %를 따로 적거나 단가를 직접 쓸 수도 있어요. Enter 키를 누르면 아래 칸으로 내려가요.</p>
+      <p class="swipe">↔ 표를 옆으로 밀어 보세요</p>
+      <div class="xwrap" id="tSheet"></div>
+      <div class="btns"><button class="btn ghost sm" id="tAdd">＋ 줄 추가</button><button class="btn ghost sm" id="tAdd5">＋ 5줄 추가</button><button class="btn ghost sm" id="tClear" style="color:var(--bad);border-color:#f3c4c9">🗑 전체 지우기</button><button class="btn ghost sm" id="tSave">💾 저장</button></div>
+      <div id="tUndo"></div><div id="tErr"></div>
+      <div class="inner" id="tIn"></div>
+      <h3>저장한 2단계 견적</h3>
+      <div class="saved" id="tSaved"></div>
+    </div>
+    <div class="twodocs">
+      <div class="card doc1">
+        <h2><span class="dn d1">1차</span> 우리 → 중간 업체 <span class="muted" id="tSum1"></span></h2>
+        <div class="grid2 dfm" data-doc="1"></div>
+        <label class="ckl"><input type="checkbox" data-doc="1" data-f="logo"> ACE Hardware 글자 넣기</label>
+        <div class="btns" data-acts="1"></div>
+        <div id="tReady1"></div>
+        <div class="docbox"><div id="tDoc1"></div></div>
+      </div>
+      <div class="card doc2">
+        <h2><span class="dn d2">최종</span> 중간 업체 → 최종 고객 <span class="muted" id="tSum2"></span></h2>
+        <div class="grid2 dfm" data-doc="2"></div>
+        <details class="sup2"><summary>보내는 곳 = 중간 업체 정보 (최종 견적서 오른쪽 위 칸)</summary><div class="grid2" id="tSup2"></div></details>
+        <label class="ckl"><input type="checkbox" data-doc="2" data-f="logo"> ACE Hardware 글자 넣기</label>
+        <div class="btns" data-acts="2"></div>
+        <div id="tReady2"></div>
+        <div class="docbox"><div id="tDoc2"></div></div>
+      </div>
+    </div>
+    <div id="tPrint"></div>
   </section>
 </div>
 <div class="fab-bar"><a class="fab" href="../order/">📦 수주팀</a><a class="fab" href="../sch/">📅 근무표</a></div>
@@ -665,8 +732,231 @@ $('hQNew').addEventListener('click', () => { if (!confirm('지금 쓰던 견적�
 })();
 
 
-window.__qt = { HOME };
-HOME.render();
+/* ===================== 2단계 견적서: 우리 → 중간 업체 (A%) → 최종 고객 (B%를 1차 단가에 붙임) ===================== */
+const TWO = (() => {
+  const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  const blank = () => ({ code: '', n: '', br: '', sp: '', u: '', q: '', cost: '', a: '', p1: '', b: '', p2: '', m: '' });
+  const newDoc = logo => ({ to: '', site: '', cman: '', ctel: '', date: today(), memo: '', logo });
+  const newT = () => ({ id: 't' + Date.now(), a: '10', b: '5', mode: 'sale', ru: '10u', d1: newDoc(true), d2: newDoc(false), sup2: { name: '', biz: '', addr: '', mgr: '', tel: '', fax: '', email: '' }, lines: Array.from({ length: 10 }, blank) });
+  function norm(t) { const b = newT(), o = Object.assign(b, t || {}); o.d1 = Object.assign(newDoc(true), (t || {}).d1 || {}); o.d2 = Object.assign(newDoc(false), (t || {}).d2 || {}); o.sup2 = Object.assign(newT().sup2, (t || {}).sup2 || {}); o.lines = (o.lines || []).map(l => Object.assign(blank(), l)); if (!o.lines.length) o.lines.push(blank()); return o; }
+  let T = norm(LS.get('h2quote', null));
+  const SUP = () => Object.assign({ name: 'ACE 일산점', biz: '', addr: '', mgr: '', tel: '', fax: '', email: '', seal: '' }, LS.get('supplier', null) || {});
+  const save = () => LS.set('h2quote', T);
+  const s_ = v => String(v == null ? '' : v).trim();
+  const empty = l => !['code', 'n', 'br', 'sp', 'q', 'cost', 'p1', 'p2'].some(k => s_(l[k]));
+  const pct = (a, b) => b ? (Math.round(a / b * 1000) / 10).toFixed(1) + '%' : '-';
+  function hangulWon(n) {
+    if (n === 0) return '영';
+    const D = ['', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'], S4 = ['', '십', '백', '천'], B = ['', '만', '억', '조']; let out = '', g = 0;
+    while (n > 0) { const part = n % 10000; n = Math.floor(n / 10000); if (part) { let s = '', p = part; for (let k = 0; k < 4; k++) { const d = p % 10; p = Math.floor(p / 10); if (d) s = D[d] + S4[k] + s; } out = s + B[g] + out; } g++; }
+    return out;
+  }
+  /* 마진율 → 만분율 정수 (소수 둘째 자리까지) */
+  function r100(v) { const r = numIn(v); if (r === null || Number.isNaN(r) || r < 0 || (r >= 100 && T.mode === 'sale') || r > 1000) return NaN; const x = Math.round(r * 100); return Math.abs(r * 100 - x) > 1e-6 ? NaN : x; }
+  /* 가격 붙이기: 판매가 기준 base ÷ (1 − r) / 매입가 기준 base × (1 + r), 끝자리 올림·반올림 — 정수 계산 */
+  function price(base, r) {
+    const ru = T.ru || '10u', unit = Number(ru.slice(0, -1)), up = ru.slice(-1) === 'u';
+    const num = T.mode === 'markup' ? base * (10000 + r) : base * 10000, den = (T.mode === 'markup' ? 10000 : 10000 - r) * unit;
+    return up ? Math.floor((num + den - 1) / den) * unit : Math.floor((2 * num + den) / (2 * den)) * unit;
+  }
+  function calcLine(l, i) {
+    if (empty(l)) return { skip: true };
+    const nm = (i + 1) + '번 줄' + (s_(l.n) ? ' (' + s_(l.n) + ')' : ''), e = [], bad = {};
+    const q = numIn(l.q), cost = numIn(l.cost), p1 = numIn(l.p1), p2 = numIn(l.p2);
+    if (!s_(l.n)) { e.push((i + 1) + '번 줄: 제품명이 비어 있어요.'); bad.n = 1; }
+    if (q === null) { e.push(nm + ': 수량이 비어 있어요.'); bad.q = 1; }
+    else if (Number.isNaN(q) || Math.abs(q * 100 - Math.round(q * 100)) > 1e-6) { e.push(nm + ': 수량 "' + l.q + '"을(를) 읽을 수 없어요 (소수 둘째 자리까지).'); bad.q = 1; }
+    [['cost', cost, '매입단가'], ['p1', p1, '1차 단가'], ['p2', p2, '최종 단가']].forEach(([k, v, t]) => { if (v !== null && (Number.isNaN(v) || !Number.isInteger(v))) { e.push(nm + ': ' + t + ' "' + l[k] + '"을(를) 원 단위 숫자로 읽을 수 없어요.'); bad[k] = 1; } });
+    const ra = r100(s_(l.a) ? l.a : T.a), rb = r100(s_(l.b) ? l.b : T.b);
+    if (s_(l.a) && Number.isNaN(ra)) { e.push(nm + ': A% "' + l.a + '"을(를) 읽을 수 없어요.'); bad.a = 1; }
+    if (s_(l.b) && Number.isNaN(rb)) { e.push(nm + ': B% "' + l.b + '"을(를) 읽을 수 없어요.'); bad.b = 1; }
+    if (cost === null && p1 === null && !bad.cost && !bad.p1) { e.push(nm + ': 매입단가나 1차 단가 중 하나는 적어 주세요.'); bad.cost = bad.p1 = 1; }
+    if (e.length) return { err: e, bad };
+    let a1 = null; if (cost !== null) { if (Number.isNaN(ra)) return { err: [nm + ': 우리 마진 A%를 먼저 바르게 적어 주세요.'], bad: { a: 1 } }; a1 = price(cost, ra); }
+    const v1 = p1 !== null ? p1 : a1;
+    if (p2 === null && Number.isNaN(rb)) return { err: [nm + ': 중간 업체 마진 B%를 먼저 바르게 적어 주세요.'], bad: { b: 1 } };
+    const a2 = price(v1, rb), v2 = p2 !== null ? p2 : a2, q100 = Math.round(q * 100);
+    if (!Number.isSafeInteger(q100 * v2) || (cost !== null && !Number.isSafeInteger(q100 * cost))) return { err: [nm + ': 금액이 너무 커요.'], bad: {} };
+    const amt1 = Math.round(q100 * v1 / 100), amt2 = Math.round(q100 * v2 / 100), costAmt = cost !== null ? Math.round(q100 * cost / 100) : null;
+    return { q, cost, a1, a2, p1: v1, p2: v2, man1: p1 !== null, man2: p2 !== null, amt1, amt2, inc1: Math.round(amt1 * 11 / 10), inc2: Math.round(amt2 * 11 / 10), costAmt, m1: costAmt !== null ? amt1 - costAmt : null, m2: amt2 - amt1 };
+  }
+  function totals() {
+    const o = { res: [], errs: [], n: 0, s1: 0, s2: 0, i1: 0, i2: 0, cost: 0, sale1c: 0, sale2c: 0, m2: 0, noCost: 0 };
+    o.res = T.lines.map((l, i) => { const r = calcLine(l, i); if (r.err) o.errs.push(...r.err); else if (!r.skip) { o.n++; o.s1 += r.amt1; o.s2 += r.amt2; o.i1 += r.inc1; o.i2 += r.inc2; o.m2 += r.m2; if (r.costAmt !== null) { o.cost += r.costAmt; o.sale1c += r.amt1; o.sale2c += r.amt2; } else o.noCost++; } return r; });
+    o.m1 = o.sale1c - o.cost; return o;
+  }
+  /* ---------- 위쪽: 마진 · 흐름 ---------- */
+  const QUICK = ['3', '5', '7', '10', '12', '15', '20'];
+  function renderHead() {
+    ['A', 'B'].forEach(k => { const v = k === 'A' ? T.a : T.b; $('t' + k + 'Q').innerHTML = QUICK.map(x => '<button type="button" data-q' + k.toLowerCase() + '="' + x + '" class="' + (s_(v) === x ? 'on' : '') + '">' + x + '%</button>').join(''); $('t' + k).classList.toggle('bad', Number.isNaN(r100(v))); });
+    const ra = r100(T.a), rb = r100(T.b);
+    if (Number.isNaN(ra) || Number.isNaN(rb)) { $('tFlow').innerHTML = '<div class="err">A%와 B%를 숫자로 적어 주세요.</div>'; return; }
+    const p1 = price(10000, ra), p2 = price(p1, rb), f = T.mode === 'markup' ? ' × (1 + ' : ' ÷ (1 − ';
+    $('tFlow').innerHTML = '<div class="fl"><span class="fb">매입가<br><b>10,000원</b></span><span class="fa">우리 마진 A ' + (ra / 100) + '%<br>' + '10,000' + f + (ra / 100) + '%)</span><span class="fb g1">1차 견적<br><b>' + won(p1) + '원</b><small>우리 → 중간 업체</small></span><span class="fa">중간 업체 마진 B ' + (rb / 100) + '%<br>' + won(p1) + f + (rb / 100) + '%)</span><span class="fb g2">최종 견적<br><b>' + won(p2) + '원</b><small>중간 업체 → 최종 고객</small></span></div>' +
+      '<p class="muted" style="margin:6px 0 0">예시 (매입가 10,000원) · 우리 몫 ' + won(p1 - 10000) + '원 (' + pct(p1 - 10000, p1) + ') · 중간 업체 몫 ' + won(p2 - p1) + '원 (' + pct(p2 - p1, p2) + ') · 최종가 대비 전체 ' + pct(p2 - 10000, p2) + ' · 끝자리 ' + ({ '10u': '10원 올림', '100u': '100원 올림', '1u': '1원 올림', '10r': '10원 반올림' }[T.ru] || '') + '</p>';
+  }
+  /* ---------- 품목 표 ---------- */
+  const COLS = [70, 180, 70, 80, 50, 120, 84, 54, 86, 92, 54, 86, 92, 80, 80, 34];
+  function renderSheet() {
+    const ci = (k, cls, im) => '<input type="text" class="' + cls + '" data-l="' + k + '"' + (im ? ' inputmode="' + im + '"' : '') + ' maxlength="60">';
+    let h = '<table class="xs" style="width:' + COLS.reduce((a, b) => a + b, 0) + 'px"><colgroup>' + COLS.map(w => '<col style="width:' + w + 'px">').join('') + '</colgroup>';
+    h += '<tr><th class="L" colspan="6">품목 (두 견적서에 똑같이 들어가요)</th><th class="R">우리만</th><th class="L g1" colspan="3">1차 견적서 (우리 → 중간 업체)</th><th class="L g2" colspan="3">최종 견적서 (중간 → 최종 고객)</th><th class="R" colspan="2">마진 (우리만)</th><td class="G"></td></tr>';
+    h += '<tr><th class="L">NO</th><th class="L">제품명</th><th class="L">브랜드</th><th class="L">규격</th><th class="L">수량</th><th class="L">비고</th><th class="R">매입단가</th><th class="L g1">A%</th><th class="L g1">1차 단가</th><th class="L g1">1차 금액<br><small>(vat 별도)</small></th><th class="L g2">B%</th><th class="L g2">최종 단가</th><th class="L g2">최종 금액<br><small>(vat 별도)</small></th><th class="R">우리 마진</th><th class="R">중간 마진</th><td class="G"></td></tr>';
+    T.lines.forEach((l, i) => {
+      h += '<tr data-i="' + i + '"><td class="L">' + ci('code', 'c') + '</td><td class="L">' + ci('n', 'c') + '</td><td class="L">' + ci('br', 'c') + '</td><td class="L">' + ci('sp', 'c') + '</td><td class="L">' + ci('q', 'c', 'decimal') + '</td><td class="L">' + ci('m', 'c') + '</td>' +
+        '<td class="R">' + ci('cost', 'r', 'numeric') + '</td><td class="L">' + ci('a', 'r', 'decimal') + '</td><td class="L">' + ci('p1', 'r', 'numeric') + '</td><td class="L"><span class="cv" data-c="amt1"></span></td>' +
+        '<td class="L">' + ci('b', 'r', 'decimal') + '</td><td class="L">' + ci('p2', 'r', 'numeric') + '</td><td class="L"><span class="cv" data-c="amt2"></span></td>' +
+        '<td class="R"><span class="cv" data-c="m1"></span></td><td class="R"><span class="cv" data-c="m2"></span></td><td class="G"><button class="del" data-ldel="' + i + '" aria-label="' + (i + 1) + '번 줄 지우기">✕</button></td></tr>';
+    });
+    h += '<tr class="sum"><th class="L" colspan="6">합 &nbsp; 계</th><td class="R"><span class="cv" id="tSc"></span></td><td class="L"></td><td class="L"></td><td class="L"><span class="cv" id="tS1"></span></td><td class="L"></td><td class="L"></td><td class="L"><span class="cv" id="tS2"></span></td><td class="R"><span class="cv" id="tM1"></span></td><td class="R"><span class="cv" id="tM2"></span></td><td class="G"></td></tr></table>';
+    $('tSheet').innerHTML = h;
+    $('tSheet').querySelectorAll('tr[data-i]').forEach(tr => { const l = T.lines[+tr.dataset.i]; tr.querySelectorAll('[data-l]').forEach(x => { if (x.dataset.l !== 'p1' && x.dataset.l !== 'p2') x.value = l[x.dataset.l] == null ? '' : l[x.dataset.l]; }); });
+    update();
+  }
+  function update() {
+    const O = totals(), act = document.activeElement, ra = r100(T.a), rb = r100(T.b);
+    $('tSheet').querySelectorAll('tr[data-i]').forEach(tr => {
+      const i = +tr.dataset.i, r = O.res[i], l = T.lines[i]; if (!r) return;
+      ['n', 'q', 'cost', 'a', 'p1', 'b', 'p2'].forEach(k => tr.querySelector('[data-l="' + k + '"]').classList.toggle('bad', !!(r.err && r.bad && r.bad[k])));
+      [['p1', 'a1', 'man1'], ['p2', 'a2', 'man2']].forEach(([k, ak]) => { const x = tr.querySelector('[data-l="' + k + '"]'); if (x === act) return; const man = s_(l[k]) !== ''; x.value = man ? l[k] : (r[ak] != null ? won(r[ak]) : ''); x.classList.toggle('auto', !man && r[ak] != null); });
+      tr.querySelector('[data-l="a"]').placeholder = Number.isNaN(ra) ? '' : String(ra / 100); tr.querySelector('[data-l="b"]').placeholder = Number.isNaN(rb) ? '' : String(rb / 100);
+      const set = (c, t, cls) => { const e = tr.querySelector('[data-c="' + c + '"]'); e.textContent = t; e.className = 'cv' + (cls ? ' ' + cls : ''); };
+      if (r.skip) { ['amt1', 'amt2', 'm1', 'm2'].forEach(c => set(c, '-', 'dim')); return; }
+      if (r.err) { set('amt1', '확인', 'red'); ['amt2', 'm1', 'm2'].forEach(c => set(c, '')); return; }
+      set('amt1', won(r.amt1)); set('amt2', won(r.amt2));
+      set('m1', r.m1 != null ? won(r.m1) + ' · ' + pct(r.m1, r.amt1) : '-', r.m1 == null ? 'dim' : r.m1 <= 0 ? 'red' : '');
+      set('m2', won(r.m2) + ' · ' + pct(r.m2, r.amt2), r.m2 <= 0 ? 'red' : '');
+    });
+    $('tSc').textContent = won(O.cost); $('tS1').textContent = won(O.s1); $('tS2').textContent = won(O.s2); $('tM1').textContent = won(O.m1); $('tM2').textContent = won(O.m2);
+    $('tCnt').textContent = O.n ? O.n + '개 품목' : '';
+    $('tErr').innerHTML = O.errs.length ? '<div class="err">' + O.errs.map(esc).join('<br>') + '<br>고칠 때까지 견적서 보내기·저장이 막혀요.</div>' : '';
+    $('tIn').innerHTML = '<span class="t">🔒 우리만 보는 정리</span><span>매입 합계</span><b>' + won(O.cost) + '원</b><span>1차 견적 합계 (vat 별도)</span><b>' + won(O.s1) + '원</b><span>우리 마진</span><b>' + won(O.m1) + '원 · ' + pct(O.m1, O.sale1c) + '</b><span>최종 견적 합계 (vat 별도)</span><b>' + won(O.s2) + '원</b><span>중간 업체 마진</span><b>' + won(O.m2) + '원 · ' + pct(O.m2, O.s2) + '</b>' + (O.noCost ? '<span style="grid-column:1/-1;font-size:.85em">매입단가가 없는 ' + O.noCost + '줄은 우리 마진 계산에서 뺐어요.</span>' : '');
+    $('tSum1').textContent = O.n ? '합계 ' + won(O.i1) + '원 (vat 포함)' : ''; $('tSum2').textContent = O.n ? '합계 ' + won(O.i2) + '원 (vat 포함)' : '';
+    $('tDoc1').innerHTML = docHtml(1, O); $('tDoc2').innerHTML = docHtml(2, O);
+    return O;
+  }
+  /* ---------- 견적서 두 장 ---------- */
+  function docHtml(w, O) {
+    const D = w === 1 ? T.d1 : T.d2, S = w === 1 ? SUP() : T.sup2, dd = D.date ? D.date.split('-') : null, ds = dd ? dd[0] + '. ' + Number(dd[1]) + '. ' + Number(dd[2]) + '.' : '';
+    const rows = [];
+    O.res.forEach((r, i) => { if (r.skip || r.err) return; const l = T.lines[i], p = w === 1 ? r.p1 : r.p2, a = w === 1 ? r.amt1 : r.amt2, inc = w === 1 ? r.inc1 : r.inc2;
+      rows.push('<tr><td class="c">' + esc(l.code) + '</td><td class="c">' + esc(l.n) + '</td><td class="c">' + esc(l.br) + '</td><td class="c">' + esc(l.sp) + '</td><td class="r">' + won(p) + '</td><td class="c">' + fmtQ(r.q) + (l.u ? ' ' + esc(l.u) : '') + '</td><td class="r">' + won(a) + '</td><td class="r">' + won(inc) + '</td><td class="c" style="font-size:11px">' + esc(l.m) + '</td></tr>'); });
+    while (rows.length < 15) rows.push('<tr><td>&nbsp;</td><td></td><td></td><td></td><td class="r">-</td><td></td><td class="r">-</td><td class="r">-</td><td></td></tr>');
+    const sup = w === 1 ? O.s1 : O.s2, tot = w === 1 ? O.i1 : O.i2, kv = (k, v) => '<div class="kv"><span>' + k + '</span><span>' + esc(v) + '</span></div>';
+    return '<div class="hdoc"><div class="qhd"><div class="logo">' + (D.logo ? '<b>ACE</b> <i>Hardware</i>' : '') + '</div><h1>견 적 서</h1><div></div></div>' +
+      '<div class="qtop"><div class="l"><div class="to">' + esc(D.to || '(받는 분)') + '</div>' + kv('견적일 :', ds) + kv('현장명 :', D.site) + kv('담당자 :', D.cman) + kv('연락처 :', D.ctel) + '<div class="say">아래와 같이 견적합니다.</div></div>' +
+      '<table><tr><th>사업자번호</th><td>' + esc(S.biz) + '</td></tr><tr><th>상호 (법인명)</th><td>' + esc(S.name) + (w === 1 && S.seal ? '<img class="seal" src="' + S.seal + '" alt="직인">' : '') + '</td></tr><tr><th>사업장 주소</th><td>' + esc(S.addr) + '</td></tr><tr><th>담 당 자</th><td>' + esc(S.mgr) + '</td></tr><tr><th>전화번호</th><td>' + esc(S.tel) + '</td></tr><tr><th>F A X</th><td>' + esc(S.fax) + '</td></tr><tr><th>E-MAIL</th><td>' + esc(S.email) + '</td></tr></table></div>' +
+      '<div class="amtline">금 &nbsp; 액 &nbsp; : <span>일금 ' + hangulWon(tot) + '원정</span> <span>(₩' + won(tot) + '/부가세 포함)</span></div>' +
+      '<table class="qitems"><tr><th style="width:70px">NO</th><th>제품명</th><th style="width:64px">브랜드</th><th style="width:74px">규격</th><th style="width:66px">단가<small>(vat별도)</small></th><th style="width:44px">수량</th><th class="y" style="width:78px">금액(vat 별도)</th><th class="y" style="width:78px">금액(vat 포함)</th><th style="width:112px">비고</th></tr>' + rows.join('') +
+      '<tr class="sum"><th colspan="6">합 &nbsp; &nbsp; 계</th><td class="r">' + won(sup) + '</td><td class="r">' + won(tot) + '</td><td></td></tr></table>' +
+      '<div class="memo"><span>비고</span><span>' + esc(D.memo) + '</span></div></div>';
+  }
+  function renderForms() {
+    [1, 2].forEach(w => {
+      const D = w === 1 ? T.d1 : T.d2, f = (k, t, ty) => '<div><label class="f">' + t + '</label><input type="' + (ty || 'text') + '" data-doc="' + w + '" data-f="' + k + '" maxlength="80"></div>';
+      const box = document.querySelector('.dfm[data-doc="' + w + '"]');
+      box.innerHTML = f('to', w === 1 ? '받는 분 (중간 업체)' : '받는 분 (최종 고객)') + f('site', '현장명') + f('cman', '담당자') + f('ctel', '연락처') + f('date', '견적일', 'date') + '<div><label class="f">비고 (견적서 아래 칸)</label><input type="text" data-doc="' + w + '" data-f="memo" maxlength="200"></div>';
+      box.querySelectorAll('input').forEach(x => { x.value = D[x.dataset.f] || ''; });
+      document.querySelector('.ckl input[data-doc="' + w + '"]').checked = !!D.logo;
+      document.querySelector('[data-acts="' + w + '"]').innerHTML = '<button class="btn" data-act="simg" data-w="' + w + '">📤 바로 보내기 (사진)</button><button class="btn" data-act="spdf" data-w="' + w + '">📤 바로 보내기 (PDF)</button><button class="btn ghost" data-act="copy" data-w="' + w + '">📋 사진 복사</button><button class="btn ghost" data-act="png" data-w="' + w + '">🖼 사진 저장</button><button class="btn ghost" data-act="pdf" data-w="' + w + '">📄 PDF 저장</button><button class="btn ghost" data-act="print" data-w="' + w + '">🖨 인쇄</button>';
+    });
+    const sf = [['name', '상호 (법인명)'], ['biz', '사업자번호'], ['addr', '사업장 주소'], ['mgr', '담당자'], ['tel', '전화번호'], ['fax', 'FAX'], ['email', 'E-MAIL']];
+    $('tSup2').innerHTML = sf.map(([k, t]) => '<div><label class="f">' + t + '</label><input type="text" data-s2="' + k + '" maxlength="120"></div>').join('');
+    $('tSup2').querySelectorAll('input').forEach(x => { x.value = T.sup2[x.dataset.s2] || ''; });
+  }
+  function render() { ['tA', 'tB', 'tMode', 'tRu'].forEach(id => { $(id).value = T[{ tA: 'a', tB: 'b', tMode: 'mode', tRu: 'ru' }[id]]; }); renderHead(); renderForms(); renderSheet(); renderSaved(); }
+  /* ---------- 내보내기 (사진 · PDF · 인쇄) ---------- */
+  function ready(w) {
+    const O = totals();
+    if (O.errs.length) { toast('품목에 확인할 곳이 있어요. 빨간 칸을 고쳐 주세요.'); return null; }
+    if (!O.n) { toast('품목을 하나 이상 적어 주세요.'); return null; }
+    const D = w === 1 ? T.d1 : T.d2;
+    if (!s_(D.to)) { toast((w === 1 ? '1차' : '최종') + ' 견적서의 받는 분을 적어 주세요.'); const x = document.querySelector('.dfm[data-doc="' + w + '"] [data-f="to"]'); if (x) x.focus(); return null; }
+    return O;
+  }
+  const LIBP = {};
+  function lib(src, ok) { if (ok()) return Promise.resolve(); if (!LIBP[src]) LIBP[src] = new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = src; sc.onload = () => ok() ? res() : rej(new Error('x')); sc.onerror = () => { LIBP[src] = null; rej(new Error('도구를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.')); }; document.head.appendChild(sc); }); return LIBP[src]; }
+  const base = w => (w === 1 ? '1차견적서_' : '최종견적서_') + String((w === 1 ? T.d1 : T.d2).to || '거래처').replace(/[\\/:*?"<>|\s]+/g, '_') + '_' + ((w === 1 ? T.d1 : T.d2).date || today());
+  async function canvasOf(w, O) {
+    await lib('vendor/html2canvas.min.js?v=1.4.1', () => window.html2canvas);
+    const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-12000px;top:0;width:820px;background:#fff;'; box.innerHTML = docHtml(w, O); document.body.appendChild(box);
+    const el = box.firstElementChild; el.style.border = '0';
+    try { if (document.fonts && document.fonts.ready) await document.fonts.ready; return await window.html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false }); } finally { box.remove(); }
+  }
+  const toPng = c => new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('사진을 만들지 못했어요.')), 'image/png'));
+  async function toPdf(c, w) {
+    await lib('vendor/jspdf.umd.min.js?v=2.5.1', () => window.jspdf && window.jspdf.jsPDF);
+    const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', compress: true }), W = 190, PH = 277, ih = c.height * W / c.width;
+    if (ih <= PH) pdf.addImage(c, 'PNG', 10, 10, W, ih);
+    else { const sl = Math.floor(c.width * PH / W); for (let y = 0, pg = 0; y < c.height; y += sl, pg++) { const part = document.createElement('canvas'); part.width = c.width; part.height = Math.min(sl, c.height - y); part.getContext('2d').drawImage(c, 0, y, c.width, part.height, 0, 0, c.width, part.height); if (pg) pdf.addPage(); pdf.addImage(part, 'PNG', 10, 10, W, part.height * W / c.width); } }
+    pdf.setProperties({ title: base(w) }); return pdf.output('blob');
+  }
+  let lastSave = { n: '', t: 0 };
+  const isPhone = () => (window.matchMedia && matchMedia('(pointer: coarse)').matches) || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  function saveBlob(b, name) { if (lastSave.n === name && Date.now() - lastSave.t < 6000) return; lastSave = { n: name, t: Date.now() }; const a = document.createElement('a'), u = URL.createObjectURL(b); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 8000); }
+  async function makeFile(w, kind) { const O = ready(w); if (!O) return null; const c = await canvasOf(w, O); return kind === 'pdf' ? new File([await toPdf(c, w)], base(w) + '.pdf', { type: 'application/pdf' }) : new File([await toPng(c)], base(w) + '.png', { type: 'image/png' }); }
+  async function busy(btn, job) { if (btn.disabled) return; const t = btn.textContent; btn.disabled = true; btn.textContent = '만드는 중…'; try { await job(); } catch (e) { if (!e || e.name !== 'AbortError') toast((e && e.message) || '만들지 못했어요.'); } finally { btn.disabled = false; btn.textContent = t; } }
+  async function share(w, f) {
+    if (!(navigator.canShare && navigator.canShare({ files: [f] }))) { saveBlob(f, f.name); toast('이 기기는 바로 보내기가 안 돼서 파일로 저장했어요.'); return; }
+    try { await navigator.share({ files: [f], title: f.name }); }
+    catch (e) { if (e && e.name === 'AbortError') return; const R = $('tReady' + w); R.innerHTML = '<div class="ok" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">준비됐어요. 한 번 더 눌러 주세요. <button class="btn sm">📤 보내기</button></div>'; R.querySelector('button').addEventListener('click', ev => { ev.currentTarget.disabled = true; navigator.share({ files: [f], title: f.name }).then(() => { R.innerHTML = ''; }).catch(er => { R.innerHTML = ''; if (!er || er.name !== 'AbortError') { saveBlob(f, f.name); toast('보내기 창을 열지 못해 파일로 저장했어요.'); } }); }); }
+  }
+  function copy(w, btn) {
+    const O = ready(w); if (!O) return;
+    if (!(navigator.clipboard && window.ClipboardItem)) { busy(btn, async () => { const f = await makeFile(w, 'png'); if (f) { saveBlob(f, f.name); toast('이 브라우저는 사진 복사가 안 돼서 파일로 저장했어요.'); } }); return; }
+    const pngP = canvasOf(w, O).then(toPng);
+    busy(btn, async () => { await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngP })]); toast((w === 1 ? '1차' : '최종') + ' 견적서 사진을 복사했어요. 카톡 대화창에서 Ctrl+V 하세요.'); });
+  }
+  document.querySelector('#t-two .twodocs').addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if (!b) return; const w = +b.dataset.w, a = b.dataset.act;
+    if (a === 'simg') { if (!isPhone()) { copy(w, b); return; } busy(b, async () => { const f = await makeFile(w, 'png'); if (f) await share(w, f); }); }
+    else if (a === 'spdf') busy(b, async () => { const f = await makeFile(w, 'pdf'); if (!f) return; if (isPhone()) await share(w, f); else { saveBlob(f, f.name); toast('PDF를 저장했어요 (' + f.name + ').'); } });
+    else if (a === 'copy') copy(w, b);
+    else if (a === 'png') busy(b, async () => { const f = await makeFile(w, 'png'); if (f) { saveBlob(f, f.name); toast('사진으로 저장했어요: ' + f.name); } });
+    else if (a === 'pdf') busy(b, async () => { const f = await makeFile(w, 'pdf'); if (f) { saveBlob(f, f.name); toast('PDF로 저장했어요: ' + f.name); } });
+    else if (a === 'print') { const O = ready(w); if (!O) return; $('tPrint').innerHTML = docHtml(w, O); document.body.classList.add('print2'); window.print(); setTimeout(() => { document.body.classList.remove('print2'); $('tPrint').innerHTML = ''; }, 500); }
+  });
+  /* ---------- 입력 이벤트 ---------- */
+  const KEY = { tA: 'a', tB: 'b', tMode: 'mode', tRu: 'ru' };
+  Object.keys(KEY).forEach(id => $(id).addEventListener(id === 'tA' || id === 'tB' ? 'input' : 'change', () => { T[KEY[id]] = $(id).value; save(); renderHead(); update(); }));
+  $('tAQ').addEventListener('click', e => { const b = e.target.closest('[data-qa]'); if (!b) return; T.a = b.dataset.qa; $('tA').value = T.a; save(); renderHead(); update(); });
+  $('tBQ').addEventListener('click', e => { const b = e.target.closest('[data-qb]'); if (!b) return; T.b = b.dataset.qb; $('tB').value = T.b; save(); renderHead(); update(); });
+  $('tSheet').addEventListener('input', e => { const t = e.target; if (!t.dataset.l) return; const l = T.lines[+t.closest('tr').dataset.i]; l[t.dataset.l] = t.value; if (t.dataset.l === 'p1' || t.dataset.l === 'p2') t.classList.remove('auto'); save(); update(); });
+  $('tSheet').addEventListener('focusin', e => { const t = e.target, k = t.dataset.l; if ((k === 'p1' || k === 'p2') && t.classList.contains('auto')) { const r = totals().res[+t.closest('tr').dataset.i]; const v = r && r[k === 'p1' ? 'a1' : 'a2']; if (v != null) { t.value = String(v); t.select(); } } });
+  $('tSheet').addEventListener('focusout', e => { const k = e.target.dataset.l; if (k === 'p1' || k === 'p2') setTimeout(update, 0); });
+  $('tSheet').addEventListener('keydown', e => { const t = e.target; if (e.key !== 'Enter' || !t.dataset.l || e.isComposing) return; e.preventDefault(); const i = +t.closest('tr').dataset.i, f = t.dataset.l; if (i + 1 >= T.lines.length) { T.lines.push(blank()); save(); renderSheet(); } const nx = $('tSheet').querySelector('tr[data-i="' + (i + 1) + '"] [data-l="' + f + '"]'); if (nx) nx.focus(); });
+  $('tSheet').addEventListener('click', e => { const b = e.target.closest('[data-ldel]'); if (!b) return; const i = +b.dataset.ldel; if (!empty(T.lines[i]) && !confirm((i + 1) + '번 줄을 지울까요?')) return; T.lines.splice(i, 1); if (!T.lines.length) T.lines.push(blank()); save(); renderSheet(); });
+  $('tAdd').addEventListener('click', () => { T.lines.push(blank()); save(); renderSheet(); });
+  $('tAdd5').addEventListener('click', () => { for (let k = 0; k < 5; k++) T.lines.push(blank()); save(); renderSheet(); });
+  document.querySelector('#t-two .twodocs').addEventListener('input', e => { const t = e.target; if (t.dataset.s2) { T.sup2[t.dataset.s2] = t.value; save(); update(); return; } if (!t.dataset.doc || t.type === 'checkbox') return; (t.dataset.doc === '1' ? T.d1 : T.d2)[t.dataset.f] = t.value; save(); update(); });
+  document.querySelector('#t-two .twodocs').addEventListener('change', e => { const t = e.target; if (t.type !== 'checkbox' || !t.dataset.doc) return; (t.dataset.doc === '1' ? T.d1 : T.d2).logo = t.checked; save(); update(); });
+  let undoT = null, undoV = null;
+  $('tClear').addEventListener('click', () => {
+    if (T.lines.every(empty) && !['to', 'site', 'cman', 'ctel', 'memo'].some(k => s_(T.d1[k]) || s_(T.d2[k]))) { toast('지울 내용이 없어요.'); return; }
+    if (!confirm('입력한 품목과 두 견적서의 받는 분·현장·비고를 전체 지울까요?\n(마진 %, 중간 업체 정보, 저장한 견적은 그대로 남아요)')) return;
+    undoV = JSON.parse(JSON.stringify(T)); T = Object.assign(newT(), { a: T.a, b: T.b, mode: T.mode, ru: T.ru, sup2: T.sup2 }); save(); render();
+    $('tUndo').innerHTML = '<div class="ok" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">전체 지웠어요. <button class="btn sm" id="tUndoBtn">↩ 되돌리기</button></div>';
+    $('tUndoBtn').addEventListener('click', () => { if (!undoV) return; T = norm(undoV); undoV = null; save(); render(); $('tUndo').innerHTML = ''; toast('되돌렸어요.'); });
+    clearTimeout(undoT); undoT = setTimeout(() => { undoV = null; $('tUndo').innerHTML = ''; }, 10000);
+  });
+  /* ---------- 저장 · 불러오기 ---------- */
+  const list = () => LS.get('h2saved', []);
+  function renderSaved() { const L = list(); $('tSaved').innerHTML = L.length ? L.map(s => '<div class="row"><span><b>' + esc(s.d1.to || '(1차 받는 분)') + '</b> → ' + esc(s.d2.to || '(최종 받는 분)') + ' <span class="muted">' + esc(s.d1.date || '') + ' · A ' + esc(s.a) + '% · B ' + esc(s.b) + '% · 최종 ' + won(s.total || 0) + '원</span></span><button class="btn ghost sm" data-open="' + esc(s.id) + '">열기</button><button class="btn ghost sm" data-sdel="' + esc(s.id) + '" aria-label="지우기">✕</button></div>').join('') : '<p class="muted" style="margin:0">아직 저장한 2단계 견적이 없어요.</p>'; }
+  $('tSave').addEventListener('click', () => { const O = totals(); if (O.errs.length) { toast('빨간 칸을 먼저 고쳐 주세요.'); return; } if (!O.n) { toast('품목을 하나 이상 적어 주세요.'); return; } const L = list().filter(s => s.id !== T.id); L.unshift(Object.assign(JSON.parse(JSON.stringify(T)), { total: O.i2, savedAt: Date.now() })); if (!LS.set('h2saved', L.slice(0, 50))) { toast('저장하지 못했어요.'); return; } renderSaved(); toast('저장했어요.'); });
+  $('tSaved').addEventListener('click', e => { const o = e.target.closest('[data-open]'), d = e.target.closest('[data-sdel]'); if (o) { const s = list().find(x => x.id === o.dataset.open); if (!s) return; T = norm(JSON.parse(JSON.stringify(s))); delete T.total; delete T.savedAt; save(); render(); window.scrollTo(0, 0); toast('불러왔어요.'); } if (d) { if (!confirm('이 견적을 지울까요?')) return; LS.set('h2saved', list().filter(x => x.id !== d.dataset.sdel)); renderSaved(); } });
+  return { render, totals, makeFile, price, get T() { return T; }, set T(v) { T = norm(v); } };
+})();
+
+/* ===================== 화면 고르기 (한 장 / 2단계) ===================== */
+function showMode(m) {
+  $('t-hq').classList.toggle('hide', m !== 'one'); $('t-two').classList.toggle('hide', m !== 'two');
+  document.querySelectorAll('#qmode button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
+  LS.set('qmode', m); if (m === 'two') TWO.render(); else HOME.render();
+}
+$('qmode').addEventListener('click', e => { const b = e.target.closest('button'); if (b) showMode(b.dataset.m); });
+
+window.__qt = { HOME, TWO };
+showMode(LS.get('qmode', 'one') === 'two' ? 'two' : 'one');
 </script>
 </body>
 </html>
