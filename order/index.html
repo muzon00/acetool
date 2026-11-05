@@ -27,7 +27,7 @@ button, input, select, textarea { font: inherit; color: var(--ink); }
 .top .r1 { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .top h1 { margin: 0; font-size: 1.35em; font-weight: 900; letter-spacing: -.01em; }
 .top .sub { font-size: .85em; opacity: .8; }
-.tabs { display: grid; grid-template-columns: repeat(4, minmax(0, max-content)); gap: 6px; margin-top: 12px; }
+.tabs { display: grid; grid-template-columns: repeat(5, minmax(0, max-content)); gap: 6px; margin-top: 12px; }
 .tabs button { min-height: 42px; padding: 0 16px; white-space: nowrap; border-radius: 12px; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.08); color: #fff; font-weight: 700; cursor: pointer; }
 .tabs button.on { background: #fff; color: var(--top); border-color: #fff; }
 .card { background: var(--surface); border-radius: 18px; padding: 16px; margin-bottom: 12px; }
@@ -53,7 +53,7 @@ input.bad { border-color: var(--bad); background: var(--bad-bg); }
 label.f { display: block; font-size: .85em; font-weight: 600; color: var(--ink2); margin-bottom: 4px; }
 .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
 .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 12px; }
-@media (max-width: 640px) { .grid2, .grid3 { grid-template-columns: 1fr; } .tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); } .tabs button { padding: 0 4px; font-size: .9em; } }
+@media (max-width: 640px) { .grid2, .grid3 { grid-template-columns: 1fr; } .tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; } .tabs button { padding: 2px 3px; font-size: .82em; white-space: normal; line-height: 1.2; word-break: keep-all; } }
 @media (max-width: 440px) { .tabs button i { display: none; } }
 
 /* 제품 */
@@ -156,6 +156,44 @@ mark { background: #fff1a8; color: inherit; border-radius: 3px; }
 .res td.n { text-align: right; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .res .how { display: block; font-size: .8em; color: var(--ink3); font-weight: 500; }
 
+/* 견적서 */
+.ql { display: grid; grid-template-columns: 28px minmax(0, 1.6fr) minmax(0, 1.3fr) 64px 84px 110px 110px 40px; gap: 6px; align-items: center; margin-bottom: 6px; }
+.ql.hd { font-size: .78em; font-weight: 700; color: var(--ink3); margin-bottom: 4px; }
+.ql .no { text-align: center; color: var(--ink3); font-size: .85em; }
+.ql .cap { display: none; }
+.ql .amt { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; font-size: .92em; }
+.ql input { min-height: 40px; padding: 6px 8px; }
+.ql input.r { text-align: right; }
+@media (max-width: 760px) {
+  .ql.hd { display: none; }
+  .ql { grid-template-columns: 1fr 1fr 1fr; background: var(--surface2); border: 1px solid var(--line); border-radius: 14px; padding: 8px; gap: 6px; }
+  .ql .no { grid-column: 1 / 3; text-align: left; font-weight: 700; }
+  .ql .x { grid-column: 3; grid-row: 1; justify-self: end; }
+  .ql .nm { grid-column: 1 / 4; } .ql .sp { grid-column: 1 / 4; }
+  .ql .amt { grid-column: 1 / 4; text-align: right; }
+  .ql .cap { display: contents; } .ql .cap span { font-size: .74em; font-weight: 700; color: var(--ink3); margin-bottom: -4px; padding-left: 4px; }
+  .ql input::placeholder { color: var(--ink3); }
+}
+.tot { margin-top: 12px; border-top: 2px solid var(--ink); padding-top: 10px; display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; font-variant-numeric: tabular-nums; }
+.tot b { text-align: right; }
+.tot .big { font-size: 1.15em; font-weight: 900; }
+.saved { display: flex; flex-direction: column; gap: 6px; }
+.saved .row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; }
+.saved .row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 견적서 미리보기 (인쇄 모양) */
+#qDocWrap { overflow-x: auto; }
+.qdoc { width: 760px; max-width: none; margin: 0 auto; background: #fff; color: #000; padding: 28px 30px; border: 1px solid var(--line); font-size: 13px; line-height: 1.45; }
+.qdoc h1 { text-align: center; font-size: 28px; letter-spacing: .5em; margin: 0 0 18px; padding-left: .5em; }
+.qdoc table { width: 100%; border-collapse: collapse; }
+.qdoc td, .qdoc th { border: 1px solid #000; padding: 5px 7px; }
+.qdoc th { background: #eee; font-weight: 700; }
+.qdoc .meta td { border: 0; padding: 2px 0; }
+.qdoc .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px; }
+.qdoc .r { text-align: right; } .qdoc .c { text-align: center; }
+.qdoc .sum { font-size: 15px; font-weight: 700; border: 2px solid #000; padding: 8px 10px; margin: 6px 0 10px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.qdoc .foot td { font-size: 12px; }
+
 /* 견적서 — 엑셀 모양 입력 화면 */
 .xcard { padding-left: 10px; padding-right: 10px; }
 body.wideq .wrap { max-width: 1530px; }
@@ -210,34 +248,34 @@ body.wideq .wrap { max-width: 1530px; }
 .saved .row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; }
 .saved .row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* 견적서 미리보기 (인쇄 모양 — 엑셀 양식과 같은 배치) */
+/* 홈센터 견적서 미리보기 (인쇄 모양) */
 #qDocWrap { overflow-x: auto; }
-.qdoc { width: 780px; max-width: none; margin: 0 auto; background: #fff; color: #000; padding: 22px 24px; border: 1px solid var(--line); font-size: 12px; line-height: 1.4; font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Pretendard Variable", sans-serif; }
-.qdoc .qhd { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; margin-bottom: 14px; }
-.qdoc .logo { font-size: 22px; font-weight: 900; font-style: italic; letter-spacing: -.02em; } .qdoc .logo b { color: #d71920; } .qdoc .logo i { font-style: italic; font-weight: 800; font-size: 18px; }
-.qdoc h1 { margin: 0; font-size: 30px; letter-spacing: .6em; padding-left: .6em; text-align: center; }
-.qdoc table { width: 100%; border-collapse: collapse; }
-.qdoc td, .qdoc th { border: 1px solid #000; padding: 4px 6px; }
-.qdoc th { font-weight: 700; background: #f2f2f2; }
-.qdoc .qtop { display: grid; grid-template-columns: 40% 60%; border: 2px solid #000; border-bottom: 0; }
-.qdoc .qtop .l { border-right: 1px solid #000; display: flex; flex-direction: column; }
-.qdoc .qtop .to { text-align: center; font-size: 15px; font-weight: 700; text-decoration: underline; padding: 14px 6px; border-bottom: 1px solid #000; }
-.qdoc .qtop .kv { display: grid; grid-template-columns: 78px 1fr; border-bottom: 1px dotted #000; }
-.qdoc .qtop .kv span { padding: 5px 8px; } .qdoc .qtop .kv span:first-child { letter-spacing: .3em; }
-.qdoc .qtop .say { padding: 6px; text-align: center; margin-top: auto; }
-.qdoc .qtop table td, .qdoc .qtop table th { border: 0; border-bottom: 1px dotted #000; } .qdoc .qtop table th { border-right: 1px solid #000; width: 110px; letter-spacing: .15em; background: #fff; }
-.qdoc .qtop table td { text-align: center; position: relative; }
-.qdoc .seal { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); height: 42px; opacity: .9; }
-.qdoc .amtline { border: 2px solid #000; border-top: 1px solid #000; padding: 9px 12px; font-size: 15px; font-weight: 800; }
-.qdoc .amtline span { margin-left: 14px; }
-.qdoc .qitems { margin-top: 6px; border: 2px solid #000; }
-.qdoc .qitems th { background: #f2f2f2; font-size: 11.5px; } .qdoc .qitems th.y { background: #fff36b; }
-.qdoc .qitems td { height: 22px; font-variant-numeric: tabular-nums; }
-.qdoc .r { text-align: right; } .qdoc .c { text-align: center; }
-.qdoc .qitems .sum td, .qdoc .qitems .sum th { background: #dce6f1; font-weight: 800; border-top: 2px solid #000; }
-.qdoc .memo { display: grid; grid-template-columns: 40px 1fr; border: 2px solid #000; border-top: 0; min-height: 90px; }
-.qdoc .memo span:first-child { border-right: 1px solid #000; display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; letter-spacing: .4em; }
-.qdoc .memo span:last-child { padding: 8px 10px; white-space: pre-wrap; }
+.hdoc { width: 780px; max-width: none; margin: 0 auto; background: #fff; color: #000; padding: 22px 24px; border: 1px solid var(--line); font-size: 12px; line-height: 1.4; font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Pretendard Variable", sans-serif; }
+.hdoc .qhd { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; margin-bottom: 14px; }
+.hdoc .logo { font-size: 22px; font-weight: 900; font-style: italic; letter-spacing: -.02em; } .hdoc .logo b { color: #d71920; } .hdoc .logo i { font-style: italic; font-weight: 800; font-size: 18px; }
+.hdoc h1 { margin: 0; font-size: 30px; letter-spacing: .6em; padding-left: .6em; text-align: center; }
+.hdoc table { width: 100%; border-collapse: collapse; }
+.hdoc td, .hdoc th { border: 1px solid #000; padding: 4px 6px; }
+.hdoc th { font-weight: 700; background: #f2f2f2; }
+.hdoc .qtop { display: grid; grid-template-columns: 40% 60%; border: 2px solid #000; border-bottom: 0; }
+.hdoc .qtop .l { border-right: 1px solid #000; display: flex; flex-direction: column; }
+.hdoc .qtop .to { text-align: center; font-size: 15px; font-weight: 700; text-decoration: underline; padding: 14px 6px; border-bottom: 1px solid #000; }
+.hdoc .qtop .kv { display: grid; grid-template-columns: 78px 1fr; border-bottom: 1px dotted #000; }
+.hdoc .qtop .kv span { padding: 5px 8px; } .hdoc .qtop .kv span:first-child { letter-spacing: .3em; }
+.hdoc .qtop .say { padding: 6px; text-align: center; margin-top: auto; }
+.hdoc .qtop table td, .hdoc .qtop table th { border: 0; border-bottom: 1px dotted #000; } .hdoc .qtop table th { border-right: 1px solid #000; width: 110px; letter-spacing: .15em; background: #fff; }
+.hdoc .qtop table td { text-align: center; position: relative; }
+.hdoc .seal { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); height: 42px; opacity: .9; }
+.hdoc .amtline { border: 2px solid #000; border-top: 1px solid #000; padding: 9px 12px; font-size: 15px; font-weight: 800; }
+.hdoc .amtline span { margin-left: 14px; }
+.hdoc .qitems { margin-top: 6px; border: 2px solid #000; }
+.hdoc .qitems th { background: #f2f2f2; font-size: 11.5px; } .hdoc .qitems th.y { background: #fff36b; }
+.hdoc .qitems td { height: 22px; font-variant-numeric: tabular-nums; }
+.hdoc .r { text-align: right; } .hdoc .c { text-align: center; }
+.hdoc .qitems .sum td, .hdoc .qitems .sum th { background: #dce6f1; font-weight: 800; border-top: 2px solid #000; }
+.hdoc .memo { display: grid; grid-template-columns: 40px 1fr; border: 2px solid #000; border-top: 0; min-height: 90px; }
+.hdoc .memo span:first-child { border-right: 1px solid #000; display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; letter-spacing: .4em; }
+.hdoc .memo span:last-child { padding: 8px 10px; white-space: pre-wrap; }
 
 .fab-bar { position: fixed; right: 16px; bottom: 16px; z-index: 40; display: flex; gap: 8px; }
 .fab { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 10px 16px; font-size: .9em; font-weight: 600; text-decoration: none; box-shadow: 0 6px 18px rgba(16, 24, 40, .14); }
@@ -247,14 +285,14 @@ body.wideq .wrap { max-width: 1530px; }
   @page { size: A4; margin: 12mm; }
   body { background: #fff; }
   body * { visibility: hidden; }
-  #printArea, #printArea * { visibility: visible; }
-  #printArea { position: absolute; left: 0; top: 0; width: 100%; }
-  #printArea .qdoc { border: 0; padding: 0; width: 100%; }
+  #printArea, #printArea *, #hPrintArea, #hPrintArea * { visibility: visible; }
+  #printArea, #hPrintArea { position: absolute; left: 0; top: 0; width: 100%; }
+  #printArea .qdoc, #hPrintArea .hdoc { border: 0; padding: 0; width: 100%; }
 }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-06b';
+const BUILD = '2026-11-06c';
 (function () {
   let busy = false;
   async function check() {
@@ -280,6 +318,7 @@ const BUILD = '2026-11-06b';
       <button data-t="check"><i>📝 </i>발주 체크</button>
       <button data-t="calc"><i>🧮 </i>양산출</button>
       <button data-t="quote"><i>📄 </i>견적서</button>
+      <button data-t="hq"><i>🏪 </i>홈센터 견적서 폼</button>
     </div>
   </div>
 
@@ -319,23 +358,37 @@ const BUILD = '2026-11-06b';
   <!-- 견적서 -->
   <section id="t-quote" class="hide">
     <div class="card">
-      <h2>마진 정하기 <span class="tag gray">우리만 보는 칸 · 인쇄 안 됨</span></h2>
-      <div class="grid3">
-        <div><label class="f" for="qMr">기본 마진율 (%)</label><input type="text" id="qMr" inputmode="decimal" placeholder="10"><div class="mrq" id="qMrQ"></div></div>
-        <div><label class="f" for="qMode">계산 방법</label><select id="qMode"><option value="sale">판매가 기준 — 매입가 ÷ (1 − 마진율)</option><option value="markup">매입가 기준 — 매입가 × (1 + 마진율)</option></select></div>
-        <div><label class="f" for="qRu">단가 끝자리</label><select id="qRu"><option value="10u">10원 단위 올림</option><option value="100u">100원 단위 올림</option><option value="1u">1원 단위 올림</option><option value="10r">10원 단위 반올림</option></select></div>
+      <h2>받는 곳 · 조건</h2>
+      <div class="grid2">
+        <div><label class="f" for="qTo">거래처(받는 분)</label><input type="text" id="qTo" maxlength="60" placeholder="예: ○○건설 김부장님"></div>
+        <div><label class="f" for="qSite">현장명</label><input type="text" id="qSite" maxlength="80" placeholder="예: ○○동 근린생활시설 부대토목"></div>
+        <div><label class="f" for="qDate">견적일</label><input type="date" id="qDate"></div>
+        <div><label class="f" for="qValid">유효 기간</label><input type="text" id="qValid" maxlength="40" placeholder="예: 견적일부터 15일"></div>
+        <div><label class="f" for="qDue">납기</label><input type="text" id="qDue" maxlength="40" placeholder="예: 발주 후 5일 (주문 제작품 별도)"></div>
+        <div><label class="f" for="qPay">결제 조건</label><input type="text" id="qPay" maxlength="40" placeholder="예: 납품 후 현금 / 카드"></div>
+        <div><label class="f" for="qShip">운반비</label><select id="qShip"><option value="포함">견적에 포함</option><option value="별도">별도</option><option value="현장 수령">현장 수령(직접 가져감)</option></select></div>
+        <div><label class="f" for="qBy">담당자 · 연락처</label><input type="text" id="qBy" maxlength="60" placeholder="예: 수주팀 홍길동 010-0000-0000"></div>
       </div>
-      <p class="muted" style="margin:8px 0 0" id="qMrEx"></p>
+      <div style="margin-top:10px"><label class="f" for="qMemo">비고</label><textarea id="qMemo" maxlength="400" placeholder="예: 하차는 현장에서 지게차 준비 / 주문 제작품은 반품 불가"></textarea></div>
     </div>
-    <div class="card xcard">
-      <h2>견적서 쓰기 <span class="muted" id="qCnt"></span></h2>
-      <p class="muted" style="margin:0 0 8px">엑셀처럼 칸을 눌러 바로 쓰세요. 오른쪽 <b>회색 칸</b>(매입단가 · 마진)은 우리만 보고 인쇄되지 않아요. <b>매입단가</b>를 넣으면 단가가 파란 글씨로 자동으로 나오고, 단가 칸에 직접 쓰면 그 값이 우선이에요. Enter 키를 누르면 아래 칸으로 내려가요.</p>
-      <p class="swipe" style="display:block">↔ 표를 옆으로 밀면 오른쪽 매입원가 칸이 보여요</p>
-      <div class="xwrap" id="qSheet"></div>
-      <div class="btns"><button class="btn ghost sm" id="qAdd">＋ 줄 추가</button><button class="btn ghost sm" id="qAdd5">＋ 5줄 추가</button><button class="btn ghost sm" id="qAddShip">＋ 운반비 줄</button>
-        <label class="btn ghost sm" for="sSeal" style="display:inline-flex;align-items:center">🔴 도장(직인) 사진 넣기</label><input type="file" id="sSeal" accept="image/*" class="hide"><button class="btn ghost sm hide" id="sSealX">도장 빼기</button><span class="muted" id="sSealSt" style="align-self:center"></span></div>
+    <div class="card">
+      <h2>품목 <span class="muted" id="qCnt"></span></h2>
+      <div class="ql hd"><span>#</span><span>품명</span><span>규격</span><span>단위</span><span>수량</span><span>단가(원)</span><span style="text-align:right">금액(원)</span><span></span></div>
+      <div id="qLines"></div>
+      <div class="btns"><button class="btn ghost sm" id="qAdd">＋ 줄 추가</button><button class="btn ghost sm" id="qAddShip">＋ 운반비 줄</button></div>
       <div id="qErr"></div>
-      <p class="muted" style="margin:8px 0 0">금액 = 단가 × 수량 · 부가세 포함 금액 = 줄마다 금액 × 1.1 (원 미만 반올림) 의 합 · 우리 회사 정보(사업자번호 등)는 한 번 적으면 이 기기에 남아요.</p>
+      <div class="tot" id="qTot"></div>
+      <p class="muted" style="margin:8px 0 0">금액 = 수량 × 단가 (원 미만 반올림) · 부가세 = 공급가액의 10% (원 미만 버림)</p>
+    </div>
+    <div class="card">
+      <h2>보내는 곳 (우리 매장) <span class="muted">한 번 적으면 이 기기에 남아요</span></h2>
+      <div class="grid2">
+        <div><label class="f" for="sName">상호</label><input type="text" id="sName" maxlength="60"></div>
+        <div><label class="f" for="sCeo">대표자</label><input type="text" id="sCeo" maxlength="30"></div>
+        <div><label class="f" for="sBiz">사업자 번호</label><input type="text" id="sBiz" maxlength="20" placeholder="000-00-00000"></div>
+        <div><label class="f" for="sTel">전화</label><input type="text" id="sTel" maxlength="40"></div>
+      </div>
+      <div style="margin-top:10px"><label class="f" for="sAddr">주소</label><input type="text" id="sAddr" maxlength="120"></div>
     </div>
     <div class="card">
       <h2>내보내기</h2>
@@ -345,13 +398,50 @@ const BUILD = '2026-11-06b';
         <button class="btn ghost" id="qSave">💾 견적 저장</button>
         <button class="btn ghost" id="qNew">새 견적</button>
       </div>
-      <p class="muted" style="margin:8px 0 0">인쇄·파일에는 오른쪽 매입단가·마진 칸이 들어가지 않아요. PDF는 인쇄 창에서 "PDF로 저장"을 고르면 돼요. 저장한 견적은 이 기기에만 남아요.</p>
+      <p class="muted" style="margin:8px 0 0">PDF는 인쇄 창에서 대상(프린터)을 "PDF로 저장"으로 바꾸면 돼요. 저장한 견적은 이 기기에만 남아요.</p>
       <h3>저장한 견적</h3>
       <div class="saved" id="qSaved"></div>
     </div>
+    <div class="card">
+      <h2>미리보기</h2>
+      <div id="qDocWrap"><div id="printArea"></div></div>
+    </div>
+  </section>
+  <section id="t-hq" class="hide">
+    <div class="card">
+      <h2>마진 정하기 <span class="tag gray">우리만 보는 칸 · 인쇄 안 됨</span></h2>
+      <div class="grid3">
+        <div><label class="f" for="hQMr">기본 마진율 (%)</label><input type="text" id="hQMr" inputmode="decimal" placeholder="10"><div class="mrq" id="hQMrQ"></div></div>
+        <div><label class="f" for="hQMode">계산 방법</label><select id="hQMode"><option value="sale">판매가 기준 — 매입가 ÷ (1 − 마진율)</option><option value="markup">매입가 기준 — 매입가 × (1 + 마진율)</option></select></div>
+        <div><label class="f" for="hQRu">단가 끝자리</label><select id="hQRu"><option value="10u">10원 단위 올림</option><option value="100u">100원 단위 올림</option><option value="1u">1원 단위 올림</option><option value="10r">10원 단위 반올림</option></select></div>
+      </div>
+      <p class="muted" style="margin:8px 0 0" id="hQMrEx"></p>
+    </div>
+    <div class="card xcard">
+      <h2>견적서 쓰기 <span class="muted" id="hQCnt"></span></h2>
+      <p class="muted" style="margin:0 0 8px">엑셀처럼 칸을 눌러 바로 쓰세요. 오른쪽 <b>회색 칸</b>(매입단가 · 마진)은 우리만 보고 인쇄되지 않아요. <b>매입단가</b>를 넣으면 단가가 파란 글씨로 자동으로 나오고, 단가 칸에 직접 쓰면 그 값이 우선이에요. Enter 키를 누르면 아래 칸으로 내려가요.</p>
+      <p class="swipe" style="display:block">↔ 표를 옆으로 밀면 오른쪽 매입원가 칸이 보여요</p>
+      <div class="xwrap" id="hQSheet"></div>
+      <div class="btns"><button class="btn ghost sm" id="hQAdd">＋ 줄 추가</button><button class="btn ghost sm" id="hQAdd5">＋ 5줄 추가</button><button class="btn ghost sm" id="hQAddShip">＋ 운반비 줄</button>
+        <label class="btn ghost sm" for="hSSeal" style="display:inline-flex;align-items:center">🔴 도장(직인) 사진 넣기</label><input type="file" id="hSSeal" accept="image/*" class="hide"><button class="btn ghost sm hide" id="hSSealX">도장 빼기</button><span class="muted" id="hSSealSt" style="align-self:center"></span></div>
+      <div id="hQErr"></div>
+      <p class="muted" style="margin:8px 0 0">금액 = 단가 × 수량 · 부가세 포함 금액 = 줄마다 금액 × 1.1 (원 미만 반올림) 의 합 · 우리 회사 정보(사업자번호 등)는 한 번 적으면 이 기기에 남아요.</p>
+    </div>
+    <div class="card">
+      <h2>내보내기</h2>
+      <div class="btns" style="margin-top:0">
+        <button class="btn" id="hQPrint">🖨 인쇄 · PDF 저장</button>
+        <button class="btn ghost" id="hQDl">⬇ 파일로 받기 (다른 PC에서 출력)</button>
+        <button class="btn ghost" id="hQSave">💾 견적 저장</button>
+        <button class="btn ghost" id="hQNew">새 견적</button>
+      </div>
+      <p class="muted" style="margin:8px 0 0">인쇄·파일에는 오른쪽 매입단가·마진 칸이 들어가지 않아요. PDF는 인쇄 창에서 "PDF로 저장"을 고르면 돼요. 저장한 견적은 이 기기에만 남아요.</p>
+      <h3>저장한 견적</h3>
+      <div class="saved" id="hQSaved"></div>
+    </div>
     <details class="card">
       <summary style="cursor:pointer;font-weight:800">인쇄될 모양 보기 (거래처에 나가는 모양)</summary>
-      <div id="qDocWrap" style="margin-top:10px"><div id="printArea"></div></div>
+      <div id="hQDocWrap" style="margin-top:10px"><div id="hPrintArea"></div></div>
     </details>
   </section>
 </div>
@@ -1002,8 +1092,8 @@ $('ckToQuote').addEventListener('click', () => {
   const c = (CKS.v['common.cust'] || '').trim(), s = (CKS.v['common.site'] || '').trim();
   if (!c && !s) { toast('공통의 거래처·현장명을 먼저 적어 주세요.'); return; }
   if (c) Q.to = c; if (s) Q.site = s;
-  const sh = (CKS.v['common.ship'] || '').trim(), py = (CKS.v['common.pay'] || '').trim(), add = [py && '결제 조건: ' + py, sh && '운반비: ' + sh].filter(x => x && !String(Q.memo || '').includes(x));
-  if (add.length) Q.memo = (Q.memo ? Q.memo + '\n' : '') + add.join('\n');
+  const sh = (CKS.v['common.ship'] || '').trim(); if (/별도/.test(sh)) Q.ship = '별도'; else if (/포함/.test(sh)) Q.ship = '포함';
+  const py = (CKS.v['common.pay'] || '').trim(); if (py) Q.pay = py;
   qSaveDraft(); go('quote'); toast('견적서로 옮겼어요.');
 });
 
@@ -1230,12 +1320,13 @@ function renderCalcOut() {
   document.querySelectorAll('[data-calc] input[type=text]:not([data-mf])').forEach(i => { const k = i.dataset.k || ('seg' + (i.dataset.f === 'H' ? 'H' : '') + i.dataset.seg); i.classList.toggle('bad', R.bad.includes(k) && (i.dataset.k || i.dataset.f !== 'n')); });
   if (R.errs.length) { box.innerHTML = '<div class="err">' + R.errs.map(esc).join('<br>') + '</div>'; return; }
   box.innerHTML = '<div class="res"><table>' + R.rows.map(r => '<tr><td>' + esc(r[0]) + '<span class="how">' + esc(r[2]) + '</span></td><td class="n">' + esc(r[1]) + '</td></tr>').join('') + '</table></div>' +
-    '<div class="btns"><button class="btn" id="cToQ">견적서에 넣기 (' + R.lines.length + '줄)</button></div>';
+    '<div class="btns"><button class="btn" id="cToQ">견적서에 넣기 (' + R.lines.length + '줄)</button><button class="btn ghost" id="cToH">홈센터 견적서 폼에 넣기</button></div>';
   $('cToQ').addEventListener('click', () => {
     Q.lines = Q.lines.filter(l => !lineEmpty(l));
-    R.lines.forEach(l => Q.lines.push(Object.assign(blankLine(), { n: l.n, sp: l.sp, u: l.u, q: String(l.q) })));
+    R.lines.forEach(l => Q.lines.push({ n: l.n, sp: l.sp, u: l.u, q: String(l.q), p: '', m: '' }));
     qSaveDraft(); go('quote'); toast(R.lines.length + '줄을 넣었어요. 단가를 적어 주세요.');
   });
+  $('cToH').addEventListener('click', () => { HOME.add(R.lines); go('hq'); toast(R.lines.length + '줄을 넣었어요. 매입단가를 적으면 단가가 자동으로 나와요.'); });
 }
 $('ccats').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; ST.ccat = b.dataset.c; LS.set('ccat', ST.ccat); renderCalc(); });
 $('cBody').addEventListener('input', e => {
@@ -1262,13 +1353,139 @@ $('cBody').addEventListener('click', e => {
 
 /* ===================== 견적서 ===================== */
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const blankLine = () => ({ n: '', sp: '', u: '', q: '', p: '', m: '' });
+const newQuote = () => ({ id: 'q' + Date.now(), to: '', site: '', date: today(), valid: '견적일부터 15일', due: '', pay: '', ship: '포함', by: '', memo: '', lines: [blankLine(), blankLine(), blankLine()] });
+let Q = LS.get('quote', null) || newQuote();
+let SUP = LS.get('supplier', null) || { name: 'ACE 일산점', ceo: '', biz: '', tel: '', addr: '' };
+const QF = { qTo: 'to', qSite: 'site', qDate: 'date', qValid: 'valid', qDue: 'due', qPay: 'pay', qShip: 'ship', qBy: 'by', qMemo: 'memo' };
+const SF = { sName: 'name', sCeo: 'ceo', sBiz: 'biz', sTel: 'tel', sAddr: 'addr' };
+function qSaveDraft() { LS.set('quote', Q); }
+const lineEmpty = l => !String(l.n).trim() && !String(l.sp).trim() && !String(l.q).trim() && !String(l.p).trim();
+/* 줄 계산: 수량은 소수 둘째 자리까지, 단가는 원 단위 정수. 금액 = 수량 × 단가 (원 미만 반올림) — 정수로만 계산 */
+function lineCalc(l, i) {
+  if (lineEmpty(l)) return { skip: true };
+  const q = numIn(l.q), p = numIn(l.p), e = [];
+  if (!String(l.n).trim()) e.push((i + 1) + '번 줄: 품명이 비어 있어요.');
+  if (q === null) e.push((i + 1) + '번 줄: 수량이 비어 있어요.');
+  else if (Number.isNaN(q)) e.push((i + 1) + '번 줄: 수량 "' + l.q + '"을(를) 숫자로 읽을 수 없어요.');
+  else if (Math.abs(q * 100 - Math.round(q * 100)) > 1e-6) e.push((i + 1) + '번 줄: 수량은 소수 둘째 자리까지만 돼요.');
+  if (p === null) e.push((i + 1) + '번 줄: 단가가 비어 있어요.');
+  else if (Number.isNaN(p) || !Number.isInteger(p)) e.push((i + 1) + '번 줄: 단가 "' + l.p + '"을(를) 원 단위 숫자로 읽을 수 없어요.');
+  if (e.length) return { err: e, badQ: q === null || Number.isNaN(q), badP: p === null || Number.isNaN(p) || !Number.isInteger(p) };
+  const q100 = Math.round(q * 100), amt = Math.round(q100 * p / 100);
+  if (!Number.isSafeInteger(q100 * p)) return { err: [(i + 1) + '번 줄: 금액이 너무 커요.'] };
+  return { q, p, amt };
+}
+function qTotals() {
+  let supply = 0, n = 0; const errs = [], res = Q.lines.map((l, i) => { const r = lineCalc(l, i); if (r.err) errs.push(...r.err); else if (!r.skip) { supply += r.amt; n++; } return r; });
+  const vat = Math.floor(supply / 10);
+  return { res, errs, supply, vat, total: supply + vat, n };
+}
+function hangulWon(n) {
+  if (n === 0) return '영';
+  const D = ['', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'], S4 = ['', '십', '백', '천'], B = ['', '만', '억', '조'];
+  let out = '', g = 0;
+  while (n > 0) {
+    const part = n % 10000; n = Math.floor(n / 10000);
+    if (part) { let s = '', p = part; for (let k = 0; k < 4; k++) { const d = p % 10; p = Math.floor(p / 10); if (d) s = D[d] + S4[k] + s; } out = s + B[g] + out; }
+    g++;
+  }
+  return out;
+}
+function renderQuoteForm() {
+  Object.entries(QF).forEach(([id, k]) => { $(id).value = Q[k] || ''; });
+  Object.entries(SF).forEach(([id, k]) => { $(id).value = SUP[k] || ''; });
+  renderLines();
+}
+function renderLines() {
+  $('qLines').innerHTML = Q.lines.map((l, i) => '<div class="ql" data-i="' + i + '"><span class="no">' + (i + 1) + '</span>' +
+    '<input type="text" class="nm" data-l="n" value="' + esc(l.n) + '" maxlength="40" placeholder="품명" aria-label="품명">' +
+    '<input type="text" class="sp" data-l="sp" value="' + esc(l.sp) + '" maxlength="40" placeholder="규격" aria-label="규격">' +
+    '<span class="cap"><span>단위</span><span>수량</span><span>단가(원)</span></span>' +
+    '<input type="text" data-l="u" value="' + esc(l.u) + '" maxlength="6" placeholder="단위" aria-label="단위">' +
+    '<input type="text" class="r" data-l="q" value="' + esc(l.q) + '" inputmode="decimal" placeholder="수량" aria-label="수량">' +
+    '<input type="text" class="r" data-l="p" value="' + esc(l.p) + '" inputmode="numeric" placeholder="단가" aria-label="단가(원)">' +
+    '<span class="amt" data-amt="' + i + '"></span><button class="x" data-ldel="' + i + '" aria-label="줄 지우기">✕</button></div>').join('');
+  renderTotals();
+}
+function renderTotals() {
+  const T = qTotals();
+  T.res.forEach((r, i) => {
+    const row = document.querySelector('.ql[data-i="' + i + '"]'); if (!row) return;
+    row.querySelector('[data-amt]').textContent = r.skip ? '' : r.err ? '확인 필요' : won(r.amt);
+    row.querySelector('[data-l="q"]').classList.toggle('bad', !!(r.err && r.badQ));
+    row.querySelector('[data-l="p"]').classList.toggle('bad', !!(r.err && r.badP));
+  });
+  $('qCnt').textContent = T.n ? T.n + '개 품목' : '';
+  $('qErr').innerHTML = T.errs.length ? '<div class="err">' + T.errs.map(esc).join('<br>') + '<br>고칠 때까지 인쇄·저장이 막혀요.</div>' : '';
+  $('qTot').innerHTML = '<span>공급가액</span><b>' + won(T.supply) + '원</b><span>부가세 (10%)</span><b>' + won(T.vat) + '원</b><span class="big">합계</span><b class="big">' + won(T.total) + '원</b>';
+  renderDoc(T);
+  return T;
+}
+function docHtml(T) {
+  const d = Q.date ? Q.date.split('-') : null, ds = d ? d[0] + '년 ' + Number(d[1]) + '월 ' + Number(d[2]) + '일' : '';
+  const rows = [];
+  T.res.forEach((r, i) => { if (r.skip || r.err) return; const l = Q.lines[i]; rows.push('<tr><td class="c">' + (rows.length + 1) + '</td><td>' + esc(l.n) + '</td><td>' + esc(l.sp) + '</td><td class="c">' + esc(l.u) + '</td><td class="r">' + fmtQ(r.q) + '</td><td class="r">' + won(r.p) + '</td><td class="r">' + won(r.amt) + '</td></tr>'); });
+  while (rows.length < 12) rows.push('<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>');
+  return '<div class="qdoc"><h1>견 적 서</h1><div class="two"><table class="meta"><tr><td><b style="font-size:16px">' + esc(Q.to || '(거래처)') + '</b> 귀하</td></tr><tr><td>현장: ' + esc(Q.site) + '</td></tr><tr><td>견적일: ' + esc(ds) + '</td></tr><tr><td>유효 기간: ' + esc(Q.valid) + '</td></tr><tr><td style="padding-top:6px">아래와 같이 견적합니다.</td></tr></table>' +
+    '<table><tr><th style="width:86px">상호</th><td>' + esc(SUP.name) + '</td></tr><tr><th>대표자</th><td>' + esc(SUP.ceo) + '</td></tr><tr><th>사업자 번호</th><td>' + esc(SUP.biz) + '</td></tr><tr><th>주소</th><td>' + esc(SUP.addr) + '</td></tr><tr><th>전화</th><td>' + esc(SUP.tel) + '</td></tr></table></div>' +
+    '<div class="sum"><span>합계 금액 (부가세 포함)</span><span>일금 ' + hangulWon(T.total) + '원정 (₩' + won(T.total) + ')</span></div>' +
+    '<table><tr><th style="width:34px">No</th><th>품명</th><th>규격</th><th style="width:44px">단위</th><th style="width:70px">수량</th><th style="width:90px">단가</th><th style="width:110px">금액</th></tr>' + rows.join('') +
+    '<tr><th colspan="6" class="r">공급가액</th><td class="r">' + won(T.supply) + '</td></tr><tr><th colspan="6" class="r">부가세</th><td class="r">' + won(T.vat) + '</td></tr><tr><th colspan="6" class="r">합계</th><td class="r"><b>' + won(T.total) + '</b></td></tr></table>' +
+    '<table class="foot" style="margin-top:10px"><tr><th style="width:90px">납기</th><td>' + esc(Q.due) + '</td><th style="width:90px">결제 조건</th><td>' + esc(Q.pay) + '</td></tr><tr><th>운반비</th><td>' + esc(Q.ship) + '</td><th>담당</th><td>' + esc(Q.by) + '</td></tr><tr><th>비고</th><td colspan="3" style="white-space:pre-wrap">' + esc(Q.memo) + '</td></tr></table></div>';
+}
+function renderDoc(T) { $('printArea').innerHTML = docHtml(T); }
+Object.entries(QF).forEach(([id, k]) => $(id).addEventListener('input', () => { Q[k] = $(id).value; qSaveDraft(); renderDoc(qTotals()); }));
+$('qShip').addEventListener('change', () => { Q.ship = $('qShip').value; qSaveDraft(); renderDoc(qTotals()); });
+Object.entries(SF).forEach(([id, k]) => $(id).addEventListener('input', () => { SUP[k] = $(id).value; LS.set('supplier', SUP); renderDoc(qTotals()); }));
+$('qLines').addEventListener('input', e => { const f = e.target.dataset.l; if (!f) return; const i = +e.target.closest('.ql').dataset.i; Q.lines[i][f] = e.target.value; qSaveDraft(); renderTotals(); });
+$('qLines').addEventListener('click', e => { const b = e.target.closest('[data-ldel]'); if (!b) return; Q.lines.splice(+b.dataset.ldel, 1); if (!Q.lines.length) Q.lines.push(blankLine()); qSaveDraft(); renderLines(); });
+$('qAdd').addEventListener('click', () => { Q.lines.push(blankLine()); qSaveDraft(); renderLines(); const n = document.querySelectorAll('.ql[data-i] .nm'); n[n.length - 1].focus(); });
+$('qAddShip').addEventListener('click', () => { Q.lines = Q.lines.filter(l => !lineEmpty(l)); Q.lines.push({ n: '운반비', sp: '', u: '대', q: '1', p: '', m: '' }); qSaveDraft(); renderLines(); });
+function ready() {
+  const T = qTotals();
+  if (T.errs.length) { toast('품목에 확인할 곳이 있어요. 빨간 칸을 고쳐 주세요.'); return null; }
+  if (!T.n) { toast('품목을 하나 이상 적어 주세요.'); return null; }
+  if (!Q.to.trim()) { toast('거래처(받는 분)를 적어 주세요.'); $('qTo').focus(); return null; }
+  return T;
+}
+$('qPrint').addEventListener('click', () => { const T = ready(); if (!T) return; renderDoc(T); window.print(); });
+$('qDl').addEventListener('click', () => {
+  const T = ready(); if (!T) return;
+  const css = [...document.styleSheets[document.styleSheets.length - 1].cssRules].filter(r => r.selectorText && r.selectorText.includes('.qdoc')).map(r => r.cssText).join('\n');
+  const html = '<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>견적서 ' + esc(Q.to) + '</title><style>body{margin:0;font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;background:#fff}' + css + '@page{size:A4;margin:12mm}@media print{.qdoc{border:0;padding:0;width:100%}.pb{display:none}}.pb{display:block;margin:16px auto;padding:10px 20px;font-size:16px}</style></head><body><button class="pb" onclick="print()">인쇄</button>' + docHtml(T) + '</body></html>';
+  const a = document.createElement('a'), u = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  a.href = u; a.download = '견적서_' + (Q.to || '거래처').replace(/[\\/:*?"<>|\s]+/g, '_') + '_' + Q.date + '.html'; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(u), 5000); toast('파일을 받았어요. 다른 PC에서 열고 인쇄를 누르면 돼요.');
+});
+function savedList() { return LS.get('saved', []); }
+function renderSaved() {
+  const L = savedList();
+  $('qSaved').innerHTML = L.length ? L.map(s => '<div class="row"><span><b>' + esc(s.to || '(거래처 없음)') + '</b> · ' + esc(s.site || '') + ' <span class="muted">' + esc(s.date) + ' · ' + won(s.total) + '원</span></span><button class="btn ghost sm" data-open="' + esc(s.id) + '">열기</button><button class="btn ghost sm" data-sdel="' + esc(s.id) + '" aria-label="지우기">✕</button></div>').join('') : '<p class="muted" style="margin:0">아직 저장한 견적이 없어요.</p>';
+}
+$('qSave').addEventListener('click', () => {
+  const T = ready(); if (!T) return;
+  const L = savedList().filter(s => s.id !== Q.id); L.unshift(Object.assign(JSON.parse(JSON.stringify(Q)), { total: T.total, savedAt: Date.now() }));
+  if (!LS.set('saved', L.slice(0, 50))) { toast('저장하지 못했어요 (이 브라우저가 저장을 막고 있어요).'); return; }
+  renderSaved(); toast('저장했어요.');
+});
+$('qSaved').addEventListener('click', e => {
+  const o = e.target.closest('[data-open]'), d = e.target.closest('[data-sdel]');
+  if (o) { const s = savedList().find(x => x.id === o.dataset.open); if (!s) return; Q = JSON.parse(JSON.stringify(s)); delete Q.total; delete Q.savedAt; qSaveDraft(); renderQuoteForm(); window.scrollTo(0, 0); toast('불러왔어요.'); }
+  if (d) { if (!confirm('이 견적을 지울까요?')) return; LS.set('saved', savedList().filter(x => x.id !== d.dataset.sdel)); renderSaved(); }
+});
+$('qNew').addEventListener('click', () => { if (!confirm('지금 쓰던 견적을 비우고 새로 쓸까요? (저장한 견적은 그대로 남아요)')) return; Q = newQuote(); qSaveDraft(); renderQuoteForm(); });
+
+/* ===================== 홈센터 견적서 폼 (엑셀 양식) — 따로 떨어진 영역 ===================== */
+const HOME = (() => {
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const blankLine = () => ({ code: '', n: '', br: '', sp: '', u: '', q: '', cost: '', mr: '', p: '', m: '' });
 const newQuote = () => ({ id: 'q' + Date.now(), to: '', site: '', cman: '', ctel: '', date: today(), valid: '', due: '', pay: '', ship: '', memo: '', mr: '10', mode: 'sale', ru: '10u', lines: Array.from({ length: 10 }, blankLine) });
 function normQ(q) { const b = newQuote(); const o = Object.assign(b, q); if (!o.mr && o.mr !== '0') o.mr = '10'; o.lines = (o.lines || []).map(l => Object.assign(blankLine(), l)); if (!o.lines.length) o.lines.push(blankLine()); return o; }
-let Q = normQ(LS.get('quote', null) || newQuote());
+let Q = normQ((LS.get('hquote', null) || ((LS.get('quote', null) || {}).mode ? LS.get('quote', null) : null)) || newQuote());
 let SUP = Object.assign({ name: 'ACE 일산점', biz: '', addr: '', mgr: '', tel: '', fax: '', email: '', seal: '' }, LS.get('supplier', null) || {});
-const QF = { qMr: 'mr', qMode: 'mode', qRu: 'ru' };
-function qSaveDraft() { LS.set('quote', Q); }
+const QF = { hQMr: 'mr', hQMode: 'mode', hQRu: 'ru' };
+function qSaveDraft() { LS.set('hquote', Q); }
 const lineEmpty = l => !['code', 'n', 'br', 'sp', 'q', 'cost', 'p'].some(k => String(l[k] == null ? '' : l[k]).trim());
 /* 마진율 읽기: 0 이상 100 미만, 소수 둘째 자리까지 → 만분율 정수로 (정수 계산으로 소수 오차 없음) */
 function rate100(v) { const r = numIn(v); if (r === null || Number.isNaN(r) || r < 0 || r >= 100 && Q.mode === 'sale' || r > 1000) return NaN; const x = Math.round(r * 100); return Math.abs(r * 100 - x) > 1e-6 ? NaN : x; }
@@ -1319,10 +1536,10 @@ function hangulWon(n) {
 }
 const MRQ = ['5', '7', '8', '10', '12', '15', '20', '25', '30'];
 function renderMrHead() {
-  $('qMrQ').innerHTML = MRQ.map(v => '<button type="button" data-mrq="' + v + '" class="' + (String(Q.mr).trim() === v ? 'on' : '') + '">' + v + '%</button>').join('');
+  $('hQMrQ').innerHTML = MRQ.map(v => '<button type="button" data-mrq="' + v + '" class="' + (String(Q.mr).trim() === v ? 'on' : '') + '">' + v + '%</button>').join('');
   const r = rate100(Q.mr);
-  $('qMr').classList.toggle('bad', Number.isNaN(r));
-  $('qMrEx').textContent = Number.isNaN(r) ? '기본 마진율을 숫자로 적어 주세요 (예: 10).' : '예) 매입단가 4,520원 → 단가 ' + won(autoPrice(4520, r)) + '원 (' + (Q.mode === 'markup' ? '4,520 × (1 + ' : '4,520 ÷ (1 − ') + (r / 100) + '%)' + ', ' + ({ '10u': '10원 단위 올림', '100u': '100원 단위 올림', '1u': '1원 단위 올림', '10r': '10원 단위 반올림' }[Q.ru] || '') + ')';
+  $('hQMr').classList.toggle('bad', Number.isNaN(r));
+  $('hQMrEx').textContent = Number.isNaN(r) ? '기본 마진율을 숫자로 적어 주세요 (예: 10).' : '예) 매입단가 4,520원 → 단가 ' + won(autoPrice(4520, r)) + '원 (' + (Q.mode === 'markup' ? '4,520 × (1 + ' : '4,520 ÷ (1 − ') + (r / 100) + '%)' + ', ' + ({ '10u': '10원 단위 올림', '100u': '100원 단위 올림', '1u': '1원 단위 올림', '10r': '10원 단위 반올림' }[Q.ru] || '') + ')';
 }
 function renderQuoteForm() {
   Object.entries(QF).forEach(([id, k]) => { $(id).value = Q[k] == null ? '' : Q[k]; });
@@ -1339,7 +1556,7 @@ function renderSheet() {
   h += '<tr><td colspan="9"><div class="hd"><div class="l"><div class="to">' + hq('to', '받는 분 (예: 박세익과장님)') + '</div>' + kv('견 적 일 :', hq('date', '', 'date')) + kv('현 장 명 :', hq('site')) + kv('담 당 자 :', hq('cman')) + kv('연 락 처 :', hq('ctel')) + '<div class="say">아래와 같이 견적합니다.</div></div><div>' +
     rr('사업자번호', 'biz') + rr('상호 (법인명)', 'name', SUP.seal ? '<img class="seal" src="' + SUP.seal + '" alt="">' : '') + rr('사업장 주소', 'addr') + rr('담 당 자', 'mgr') + rr('전화번호', 'tel') + rr('F A X', 'fax') + rr('E-MAIL', 'email') + '</div></div></td>' +
     '<td class="G"></td><td class="G" colspan="7" style="vertical-align:top"><div class="rcap">← 왼쪽 검은 칸 = 거래처에 나가는 견적서<br>아래 회색 칸 = 우리만 보는 매입원가 · 마진 (인쇄 안 됨)</div></td></tr>';
-  h += '<tr><td colspan="9"><div class="amt" id="xAmt"></div></td>' + RG + '</tr>';
+  h += '<tr><td colspan="9"><div class="amt" id="hXAmt"></div></td>' + RG + '</tr>';
   h += '<tr><th class="L">NO</th><th class="L">제품명</th><th class="L">브랜드</th><th class="L">규격</th><th class="L">단가<br><small>(vat별도)</small></th><th class="L">수량</th><th class="L y">금액<br>(vat 별도)</th><th class="L y">금액<br>(vat 포함)</th><th class="L">비고</th><td class="G"></td>' +
     '<th class="R">단가<br>(vat포함)</th><th class="R">매입단가</th><th class="R">적용<br>마진율 %</th><th class="R">매입단가<br>×수량</th><th class="R">마진</th><th class="R">마진율</th><td class="G"></td></tr>';
   const ci = (k, cls, im) => '<input type="text" class="' + cls + '" data-l="' + k + '"' + (im ? ' inputmode="' + im + '"' : '') + ' maxlength="60">';
@@ -1349,17 +1566,17 @@ function renderSheet() {
       '<td class="R"><span class="cv" data-c="pi"></span></td><td class="R">' + ci('cost', 'r', 'numeric') + '</td><td class="R">' + ci('mr', 'r', 'decimal') + '</td><td class="R"><span class="cv" data-c="ca"></span></td><td class="R"><span class="cv" data-c="mg"></span></td><td class="R"><span class="cv" data-c="rt"></span></td>' +
       '<td class="G"><button class="del" data-ldel="' + i + '" aria-label="' + (i + 1) + '번 줄 지우기" title="줄 지우기">✕</button></td></tr>';
   });
-  h += '<tr class="sum"><th class="L" colspan="6">합 &nbsp; &nbsp; 계</th><td class="L"><span class="cv" id="xSup"></span></td><td class="L"><span class="cv" id="xInc"></span></td><td class="L"></td><td class="G"></td><td class="R"></td><td class="R"></td><td class="R"></td><td class="R"><span class="cv" id="xCost"></span></td><td class="R"><span class="cv" id="xMg"></span></td><td class="R"><span class="cv" id="xRt"></span></td><td class="G"></td></tr>';
+  h += '<tr class="sum"><th class="L" colspan="6">합 &nbsp; &nbsp; 계</th><td class="L"><span class="cv" id="hXSup"></span></td><td class="L"><span class="cv" id="hXInc"></span></td><td class="L"></td><td class="G"></td><td class="R"></td><td class="R"></td><td class="R"></td><td class="R"><span class="cv" id="hXCost"></span></td><td class="R"><span class="cv" id="hXMg"></span></td><td class="R"><span class="cv" id="hXRt"></span></td><td class="G"></td></tr>';
   h += '<tr><td colspan="9"><div class="memo"><span>비고</span><textarea data-hq="memo" maxlength="400" placeholder="예: 48박스/1파레트 (4,800개) · 견적 유효 기간 15일"></textarea></div></td>' + RG + '</tr></table>';
-  $('qSheet').innerHTML = h;
-  $('qSheet').querySelectorAll('[data-hq]').forEach(x => { x.value = Q[x.dataset.hq] || ''; });
-  $('qSheet').querySelectorAll('[data-hs]').forEach(x => { x.value = SUP[x.dataset.hs] || ''; });
-  $('qSheet').querySelectorAll('tr[data-i]').forEach(tr => { const l = Q.lines[+tr.dataset.i]; tr.querySelectorAll('[data-l]').forEach(x => { if (x.dataset.l !== 'p') x.value = l[x.dataset.l] == null ? '' : l[x.dataset.l]; }); });
+  $('hQSheet').innerHTML = h;
+  $('hQSheet').querySelectorAll('[data-hq]').forEach(x => { x.value = Q[x.dataset.hq] || ''; });
+  $('hQSheet').querySelectorAll('[data-hs]').forEach(x => { x.value = SUP[x.dataset.hs] || ''; });
+  $('hQSheet').querySelectorAll('tr[data-i]').forEach(tr => { const l = Q.lines[+tr.dataset.i]; tr.querySelectorAll('[data-l]').forEach(x => { if (x.dataset.l !== 'p') x.value = l[x.dataset.l] == null ? '' : l[x.dataset.l]; }); });
   renderTotals();
 }
 function renderTotals() {
   const T = qTotals(), dr = rate100(Q.mr), act = document.activeElement;
-  $('qSheet').querySelectorAll('tr[data-i]').forEach(tr => {
+  $('hQSheet').querySelectorAll('tr[data-i]').forEach(tr => {
     const i = +tr.dataset.i, r = T.res[i], l = Q.lines[i]; if (!r) return;
     ['n', 'q', 'cost', 'mr', 'p'].forEach(k => tr.querySelector('[data-l="' + k + '"]').classList.toggle('bad', !!(r.err && r.bad && r.bad[k])));
     const pI = tr.querySelector('[data-l="p"]');
@@ -1373,12 +1590,12 @@ function renderTotals() {
     set('mg', r.margin != null ? won(r.margin) : '-', r.margin != null ? (r.margin <= 0 ? 'red' : '') : 'dim');
     set('rt', r.margin != null ? pct(r.margin, r.amt) : '-', r.margin != null ? (r.margin <= 0 ? 'red' : '') : 'dim');
   });
-  if ($('xSup')) {
-    $('xSup').textContent = won(T.supply); $('xInc').textContent = won(T.total); $('xCost').textContent = won(T.costSum); $('xMg').textContent = won(T.margin); $('xRt').textContent = pct(T.margin, T.saleWithCost);
-    $('xAmt').innerHTML = '금 &nbsp; 액 &nbsp; : <span>일금 ' + hangulWon(T.total) + '원정</span> <span>(₩' + won(T.total) + '/부가세 포함)</span>';
+  if ($('hXSup')) {
+    $('hXSup').textContent = won(T.supply); $('hXInc').textContent = won(T.total); $('hXCost').textContent = won(T.costSum); $('hXMg').textContent = won(T.margin); $('hXRt').textContent = pct(T.margin, T.saleWithCost);
+    $('hXAmt').innerHTML = '금 &nbsp; 액 &nbsp; : <span>일금 ' + hangulWon(T.total) + '원정</span> <span>(₩' + won(T.total) + '/부가세 포함)</span>';
   }
-  $('qCnt').textContent = T.n ? T.n + '개 품목' + (T.noCost ? ' · 매입단가 없는 ' + T.noCost + '줄은 마진 계산에서 빠짐' : '') : '';
-  $('qErr').innerHTML = T.errs.length ? '<div class="err">' + T.errs.map(esc).join('<br>') + '<br>고칠 때까지 인쇄·저장이 막혀요.</div>' : '';
+  $('hQCnt').textContent = T.n ? T.n + '개 품목' + (T.noCost ? ' · 매입단가 없는 ' + T.noCost + '줄은 마진 계산에서 빠짐' : '') : '';
+  $('hQErr').innerHTML = T.errs.length ? '<div class="err">' + T.errs.map(esc).join('<br>') + '<br>고칠 때까지 인쇄·저장이 막혀요.</div>' : '';
   renderDoc(T);
   return T;
 }
@@ -1389,7 +1606,7 @@ function docHtml(T) {
   while (rows.length < 15) rows.push('<tr><td>&nbsp;</td><td></td><td></td><td></td><td class="r">-</td><td></td><td class="r">-</td><td class="r">-</td><td></td></tr>');
   const memo = Q.memo || '';
   const kv = (k, v) => '<div class="kv"><span>' + k + '</span><span>' + esc(v) + '</span></div>';
-  return '<div class="qdoc"><div class="qhd"><div class="logo"><b>ACE</b> <i>Hardware</i></div><h1>견 적 서</h1><div></div></div>' +
+  return '<div class="hdoc"><div class="qhd"><div class="logo"><b>ACE</b> <i>Hardware</i></div><h1>견 적 서</h1><div></div></div>' +
     '<div class="top"><div class="l"><div class="to">' + esc(Q.to || '(받는 분)') + '</div>' + kv('견적일 :', ds) + kv('현장명 :', Q.site) + kv('담당자 :', Q.cman) + kv('연락처 :', Q.ctel) + '<div class="say">아래와 같이 견적합니다.</div></div>' +
     '<table><tr><th>사업자번호</th><td>' + esc(SUP.biz) + '</td></tr><tr><th>상호 (법인명)</th><td>' + esc(SUP.name) + (SUP.seal ? '<img class="seal" src="' + SUP.seal + '" alt="직인">' : '') + '</td></tr><tr><th>사업장 주소</th><td>' + esc(SUP.addr) + '</td></tr><tr><th>담 당 자</th><td>' + esc(SUP.mgr) + '</td></tr><tr><th>전화번호</th><td>' + esc(SUP.tel) + '</td></tr><tr><th>F A X</th><td>' + esc(SUP.fax) + '</td></tr><tr><th>E-MAIL</th><td>' + esc(SUP.email) + '</td></tr></table></div>' +
     '<div class="amtline">금 &nbsp; 액 &nbsp; : <span>일금 ' + hangulWon(T.total) + '원정</span> <span>(₩' + won(T.total) + '/부가세 포함)</span></div>' +
@@ -1397,82 +1614,86 @@ function docHtml(T) {
     '<tr class="sum"><th colspan="6">합 &nbsp; &nbsp; 계</th><td class="r">' + won(T.supply) + '</td><td class="r">' + won(T.total) + '</td><td></td></tr></table>' +
     '<div class="memo"><span>비고</span><span>' + esc(memo) + '</span></div></div>';
 }
-function renderDoc(T) { $('printArea').innerHTML = docHtml(T); }
-function renderSeal() { $('sSealX').classList.toggle('hide', !SUP.seal); $('sSealSt').textContent = SUP.seal ? '도장이 들어가 있어요' : ''; }
+function renderDoc(T) { $('hPrintArea').innerHTML = docHtml(T); }
+function renderSeal() { $('hSSealX').classList.toggle('hide', !SUP.seal); $('hSSealSt').textContent = SUP.seal ? '도장이 들어가 있어요' : ''; }
 Object.entries(QF).forEach(([id, k]) => $(id).addEventListener(id === 'qMr' ? 'input' : 'change', () => { Q[k] = $(id).value; qSaveDraft(); renderMrHead(); renderTotals(); }));
-$('qMrQ').addEventListener('click', e => { const b = e.target.closest('[data-mrq]'); if (!b) return; Q.mr = b.dataset.mrq; $('qMr').value = Q.mr; qSaveDraft(); renderMrHead(); renderTotals(); });
-$('qSheet').addEventListener('input', e => {
+$('hQMrQ').addEventListener('click', e => { const b = e.target.closest('[data-mrq]'); if (!b) return; Q.mr = b.dataset.mrq; $('hQMr').value = Q.mr; qSaveDraft(); renderMrHead(); renderTotals(); });
+$('hQSheet').addEventListener('input', e => {
   const t = e.target;
   if (t.dataset.hq) { Q[t.dataset.hq] = t.value; qSaveDraft(); renderTotals(); return; }
   if (t.dataset.hs) { SUP[t.dataset.hs] = t.value; LS.set('supplier', SUP); renderDoc(qTotals()); return; }
   if (!t.dataset.l) return;
   const i = +t.closest('tr').dataset.i; Q.lines[i][t.dataset.l] = t.value; if (t.dataset.l === 'p') t.classList.remove('auto'); qSaveDraft(); renderTotals();
 });
-$('qSheet').addEventListener('focusin', e => { const t = e.target; if (t.dataset.l === 'p' && t.classList.contains('auto')) { const r = qTotals().res[+t.closest('tr').dataset.i]; if (r && r.auto != null) { t.value = String(r.auto); t.select(); } } });
-$('qSheet').addEventListener('focusout', e => { if (e.target.dataset.l === 'p') setTimeout(renderTotals, 0); });
-$('qSheet').addEventListener('keydown', e => {
+$('hQSheet').addEventListener('focusin', e => { const t = e.target; if (t.dataset.l === 'p' && t.classList.contains('auto')) { const r = qTotals().res[+t.closest('tr').dataset.i]; if (r && r.auto != null) { t.value = String(r.auto); t.select(); } } });
+$('hQSheet').addEventListener('focusout', e => { if (e.target.dataset.l === 'p') setTimeout(renderTotals, 0); });
+$('hQSheet').addEventListener('keydown', e => {
   const t = e.target; if (e.key !== 'Enter' || !t.dataset.l || e.isComposing) return;
   e.preventDefault();
   const i = +t.closest('tr').dataset.i, f = t.dataset.l;
   if (i + 1 >= Q.lines.length) { Q.lines.push(blankLine()); qSaveDraft(); renderSheet(); }
-  const nx = $('qSheet').querySelector('tr[data-i="' + (i + 1) + '"] [data-l="' + f + '"]'); if (nx) nx.focus();
+  const nx = $('hQSheet').querySelector('tr[data-i="' + (i + 1) + '"] [data-l="' + f + '"]'); if (nx) nx.focus();
 });
-$('qSheet').addEventListener('click', e => { const b = e.target.closest('[data-ldel]'); if (!b) return; const i = +b.dataset.ldel; if (!lineEmpty(Q.lines[i]) && !confirm((i + 1) + '번 줄을 지울까요?')) return; Q.lines.splice(i, 1); if (!Q.lines.length) Q.lines.push(blankLine()); qSaveDraft(); renderSheet(); });
-$('qAdd').addEventListener('click', () => { Q.lines.push(blankLine()); qSaveDraft(); renderSheet(); });
-$('qAdd5').addEventListener('click', () => { for (let k = 0; k < 5; k++) Q.lines.push(blankLine()); qSaveDraft(); renderSheet(); });
-$('qAddShip').addEventListener('click', () => { const at = Q.lines.findIndex(lineEmpty); const sh = Object.assign(blankLine(), { n: '운반비', q: '1' }); if (at >= 0) Q.lines[at] = sh; else Q.lines.push(sh); qSaveDraft(); renderSheet(); });
-$('sSeal').addEventListener('change', e => {
+$('hQSheet').addEventListener('click', e => { const b = e.target.closest('[data-ldel]'); if (!b) return; const i = +b.dataset.ldel; if (!lineEmpty(Q.lines[i]) && !confirm((i + 1) + '번 줄을 지울까요?')) return; Q.lines.splice(i, 1); if (!Q.lines.length) Q.lines.push(blankLine()); qSaveDraft(); renderSheet(); });
+$('hQAdd').addEventListener('click', () => { Q.lines.push(blankLine()); qSaveDraft(); renderSheet(); });
+$('hQAdd5').addEventListener('click', () => { for (let k = 0; k < 5; k++) Q.lines.push(blankLine()); qSaveDraft(); renderSheet(); });
+$('hQAddShip').addEventListener('click', () => { const at = Q.lines.findIndex(lineEmpty); const sh = Object.assign(blankLine(), { n: '운반비', q: '1' }); if (at >= 0) Q.lines[at] = sh; else Q.lines.push(sh); qSaveDraft(); renderSheet(); });
+$('hSSeal').addEventListener('change', e => {
   const f = e.target.files && e.target.files[0]; if (!f) return;
   const rd = new FileReader();
   rd.onload = () => { const im = new Image(); im.onload = () => { const s = Math.min(1, 240 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * s); c.height = Math.round(im.height * s); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); SUP.seal = c.toDataURL('image/png'); if (!LS.set('supplier', SUP)) toast('도장을 저장하지 못했어요.'); renderSeal(); renderSheet(); }; im.onerror = () => toast('사진을 읽지 못했어요.'); im.src = rd.result; };
   rd.readAsDataURL(f); e.target.value = '';
 });
-$('sSealX').addEventListener('click', () => { SUP.seal = ''; LS.set('supplier', SUP); renderSeal(); renderSheet(); });
+$('hSSealX').addEventListener('click', () => { SUP.seal = ''; LS.set('supplier', SUP); renderSeal(); renderSheet(); });
 function ready() {
   const T = qTotals();
   if (T.errs.length) { toast('품목에 확인할 곳이 있어요. 빨간 칸을 고쳐 주세요.'); return null; }
   if (!T.n) { toast('품목을 하나 이상 적어 주세요.'); return null; }
-  if (!String(Q.to || '').trim()) { toast('받는 분을 적어 주세요.'); const x = $('qSheet').querySelector('[data-hq="to"]'); if (x) x.focus(); return null; }
+  if (!String(Q.to || '').trim()) { toast('받는 분을 적어 주세요.'); const x = $('hQSheet').querySelector('[data-hq="to"]'); if (x) x.focus(); return null; }
   return T;
 }
-$('qPrint').addEventListener('click', () => { const T = ready(); if (!T) return; renderDoc(T); window.print(); });
-$('qDl').addEventListener('click', () => {
+$('hQPrint').addEventListener('click', () => { const T = ready(); if (!T) return; renderDoc(T); window.print(); });
+$('hQDl').addEventListener('click', () => {
   const T = ready(); if (!T) return;
-  const css = [...document.styleSheets[document.styleSheets.length - 1].cssRules].filter(r => r.selectorText && r.selectorText.includes('.qdoc')).map(r => r.cssText).join('\n');
-  const html = '<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>견적서 ' + esc(Q.to) + '</title><style>body{margin:0;background:#fff}' + css + '@page{size:A4;margin:10mm}@media print{.qdoc{border:0;padding:0;width:100%}.pb{display:none}}.pb{display:block;margin:16px auto;padding:10px 20px;font-size:16px}</style></head><body><button class="pb" onclick="print()">인쇄</button>' + docHtml(T) + '</body></html>';
+  const css = [...document.styleSheets[document.styleSheets.length - 1].cssRules].filter(r => r.selectorText && r.selectorText.includes('.hdoc')).map(r => r.cssText).join('\n');
+  const html = '<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>견적서 ' + esc(Q.to) + '</title><style>body{margin:0;background:#fff}' + css + '@page{size:A4;margin:10mm}@media print{.hdoc{border:0;padding:0;width:100%}.pb{display:none}}.pb{display:block;margin:16px auto;padding:10px 20px;font-size:16px}</style></head><body><button class="pb" onclick="print()">인쇄</button>' + docHtml(T) + '</body></html>';
   const a = document.createElement('a'), u = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
   a.href = u; a.download = '견적서_' + (Q.to || '거래처').replace(/[\\/:*?"<>|\s]+/g, '_') + '_' + Q.date + '.html'; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(u), 5000); toast('파일을 받았어요. 다른 PC에서 열고 인쇄를 누르면 돼요.');
 });
-function savedList() { return LS.get('saved', []); }
+function savedList() { return LS.get('hsaved', []); }
 function renderSaved() {
   const L = savedList();
-  $('qSaved').innerHTML = L.length ? L.map(s => '<div class="row"><span><b>' + esc(s.to || '(받는 분 없음)') + '</b> · ' + esc(s.site || '') + ' <span class="muted">' + esc(s.date) + ' · ' + won(s.total) + '원</span></span><button class="btn ghost sm" data-open="' + esc(s.id) + '">열기</button><button class="btn ghost sm" data-sdel="' + esc(s.id) + '" aria-label="지우기">✕</button></div>').join('') : '<p class="muted" style="margin:0">아직 저장한 견적이 없어요.</p>';
+  $('hQSaved').innerHTML = L.length ? L.map(s => '<div class="row"><span><b>' + esc(s.to || '(받는 분 없음)') + '</b> · ' + esc(s.site || '') + ' <span class="muted">' + esc(s.date) + ' · ' + won(s.total) + '원</span></span><button class="btn ghost sm" data-open="' + esc(s.id) + '">열기</button><button class="btn ghost sm" data-sdel="' + esc(s.id) + '" aria-label="지우기">✕</button></div>').join('') : '<p class="muted" style="margin:0">아직 저장한 견적이 없어요.</p>';
 }
-$('qSave').addEventListener('click', () => {
+$('hQSave').addEventListener('click', () => {
   const T = ready(); if (!T) return;
   const L = savedList().filter(s => s.id !== Q.id); L.unshift(Object.assign(JSON.parse(JSON.stringify(Q)), { total: T.total, savedAt: Date.now() }));
-  if (!LS.set('saved', L.slice(0, 50))) { toast('저장하지 못했어요 (이 브라우저가 저장을 막고 있어요).'); return; }
+  if (!LS.set('hsaved', L.slice(0, 50))) { toast('저장하지 못했어요 (이 브라우저가 저장을 막고 있어요).'); return; }
   renderSaved(); toast('저장했어요.');
 });
-$('qSaved').addEventListener('click', e => {
+$('hQSaved').addEventListener('click', e => {
   const o = e.target.closest('[data-open]'), d = e.target.closest('[data-sdel]');
   if (o) { const s = savedList().find(x => x.id === o.dataset.open); if (!s) return; Q = normQ(JSON.parse(JSON.stringify(s))); delete Q.total; delete Q.savedAt; qSaveDraft(); renderQuoteForm(); window.scrollTo(0, 0); toast('불러왔어요.'); }
-  if (d) { if (!confirm('이 견적을 지울까요?')) return; LS.set('saved', savedList().filter(x => x.id !== d.dataset.sdel)); renderSaved(); }
+  if (d) { if (!confirm('이 견적을 지울까요?')) return; LS.set('hsaved', savedList().filter(x => x.id !== d.dataset.sdel)); renderSaved(); }
 });
-$('qNew').addEventListener('click', () => { if (!confirm('지금 쓰던 견적을 비우고 새로 쓸까요? (저장한 견적은 그대로 남아요)')) return; const keep = { mr: Q.mr, mode: Q.mode, ru: Q.ru }; Q = Object.assign(newQuote(), keep); qSaveDraft(); renderQuoteForm(); });
+$('hQNew').addEventListener('click', () => { if (!confirm('지금 쓰던 견적을 비우고 새로 쓸까요? (저장한 견적은 그대로 남아요)')) return; const keep = { mr: Q.mr, mode: Q.mode, ru: Q.ru }; Q = Object.assign(newQuote(), keep); qSaveDraft(); renderQuoteForm(); });
+
+
+  return { render() { renderQuoteForm(); renderSaved(); }, add(lines) { Q.lines = Q.lines.filter(l => !lineEmpty(l)); lines.forEach(l => Q.lines.push(Object.assign(blankLine(), { n: l.n, sp: l.sp, u: l.u, q: String(l.q) }))); qSaveDraft(); }, qTotals, autoPrice, hangulWon, get Q() { return Q; }, set Q(v) { Q = v; } };
+})();
 
 /* ===================== 탭 ===================== */
 function go(t) {
-  ST.tab = t; LS.set('tab', t); document.body.classList.toggle('wideq', t === 'quote');
-  ['prod', 'check', 'calc', 'quote'].forEach(x => $('t-' + x).classList.toggle('hide', x !== t));
+  ST.tab = t; LS.set('tab', t); document.body.classList.toggle('wideq', t === 'hq');
+  ['prod', 'check', 'calc', 'quote', 'hq'].forEach(x => $('t-' + x).classList.toggle('hide', x !== t));
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
-  if (t === 'prod') renderProd(); else if (t === 'check') renderCheck(); else if (t === 'calc') renderCalc(); else { renderQuoteForm(); renderSaved(); }
+  if (t === 'prod') renderProd(); else if (t === 'check') renderCheck(); else if (t === 'calc') renderCalc(); else if (t === 'hq') HOME.render(); else { renderQuoteForm(); renderSaved(); }
   window.scrollTo(0, 0);
 }
 $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) go(b.dataset.t); });
-window.__ord = { numIn, calcRun, qTotals, hangulWon, lineCalc, autoPrice, CALC, get Q() { return Q; }, set Q(v) { Q = v; } };
-go(['prod', 'check', 'calc', 'quote'].includes(ST.tab) ? ST.tab : 'prod');
+window.__ord = { numIn, calcRun, qTotals, hangulWon, lineCalc, HOME, CALC, get Q() { return Q; }, set Q(v) { Q = v; } };
+go(['prod', 'check', 'calc', 'quote', 'hq'].includes(ST.tab) ? ST.tab : 'prod');
 </script>
 </body>
 </html>
