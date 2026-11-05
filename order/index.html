@@ -92,6 +92,22 @@ label.f { display: block; font-size: .85em; font-weight: 600; color: var(--ink2)
 .fg .bead { stroke: #37474f; stroke-width: 4; stroke-dasharray: 3 3; } .fg .pn { fill: #fafbfc; stroke: #e5e8eb; }
 .fg .jt { fill: #1f7a4d; fill-opacity: .3; stroke: #1f7a4d; stroke-width: 1.5; }
 .fg .tl { fill: #f4f1ea; } .fg .tl2 { fill: #f4f1ea; stroke: #a1887f; } .fg .tc { stroke: #78909c; stroke-width: 2; } .fg .tm { stroke: #37474f; stroke-width: 4.5; } .fg .mo { fill: none; stroke: #1f7a4d; stroke-width: 5; }
+.figc.easy { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 8px 18px; align-items: center; background: #f6faf7; border: 1px solid #dcebe1; border-radius: 16px; padding: 14px; }
+.figc.easy h4 { grid-column: 1 / -1; font-size: 1.08em; margin: 0; }
+.figc.easy .steps { grid-template-columns: 1fr; margin: 0; gap: 10px; }
+.figc.easy .steps li { font-size: .98em; }
+.figc.easy .steps .sn { width: 26px; height: 26px; font-size: .85em; }
+@media (max-width: 760px) { .figc.easy { grid-template-columns: 1fr; } }
+.fg.e { min-width: 0; }
+.fg .big { font-weight: 800; font-size: 15px; fill: #191f28; } .fg .nb.big text { font-size: 15px; fill: #fff; }
+.fg .mid { font-weight: 700; font-size: 14px; fill: #4e5968; }
+.fg .rd { stroke: #37474f; stroke-width: 4; } .fg .cb { fill: #546e7a; } .fg .mb { fill: #90a4ae; stroke: #546e7a; }
+.fg .cbl { stroke: #546e7a; stroke-width: 10; stroke-linecap: round; } .fg .mbl { stroke: #90a4ae; stroke-width: 5; stroke-linecap: round; } .fg .cp { fill: #1f7a4d; stroke: #fff; stroke-width: 2; }
+.fg .tg { stroke: #546e7a; stroke-width: 5; fill: none; stroke-linecap: square; }
+.easyhd { background: var(--chip); color: var(--chip-ink); border-radius: 14px; padding: 12px 14px; margin: 0 0 12px; font-size: 1em; line-height: 1.6; }
+.easyt { width: 100%; border-collapse: collapse; font-size: .95em; }
+.easyt th, .easyt td { border-bottom: 1px solid var(--line); padding: 9px 8px; text-align: left; }
+.easyt th { color: var(--ink3); font-size: .85em; }
 .steps { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 6px; }
 @media (min-width: 900px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; } }
 .steps li { display: flex; gap: 8px; align-items: flex-start; font-size: .9em; color: var(--ink2); }
@@ -193,7 +209,7 @@ mark { background: #fff1a8; color: inherit; border-radius: 3px; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-05f';
+const BUILD = '2026-11-05g';
 (function () {
   let busy = false;
   async function check() {
@@ -503,7 +519,43 @@ const FIG = (() => {
   t += '<rect class="tl2" x="368" y="178" width="134" height="9"/><rect class="tl2" x="578" y="178" width="86" height="9"/>';
   t += '<text class="sm" x="560" y="110">행거</text><text class="sm" x="430" y="212">텍스 (보드에 얹기만 함)</text><text class="sm" x="370" y="150">벽 몰딩</text><path class="ld" d="M392 152L372 168"/><text class="sm" x="580" y="212">메인 T-BAR</text><path class="ld" d="M592 202L560 192"/>';
   const tbar = box('0 0 680 282', t, 'T-BAR 천장 그림');
-  return { ceil, joint, wall, tbar };
+  /* ===== 쉽게 보기 (큰 그림 · 번호만) ===== */
+  const NB = (n, x, y) => '<g class="nb big"><circle cx="' + x + '" cy="' + y + '" r="14"/><text x="' + x + '" y="' + (y + 5) + '" text-anchor="middle">' + n + '</text></g>';
+  const ez = (vb, body, label) => '<svg class="fg e" viewBox="' + vb + '" role="img" aria-label="' + label + '">' + body + '</svg>';
+  /* e1: 천장 4단계 */
+  let a = slab(30, 10, 360, 32) + '<text class="big" x="46" y="32">위층 콘크리트 바닥</text>';
+  [120, 300].forEach(x => { a += '<rect class="dk" x="' + (x - 6) + '" y="36" width="12" height="10"/><path class="rd" d="M' + x + ' 46V112"/><rect class="dk" x="' + (x - 7) + '" y="104" width="14" height="8" rx="2"/>'; });
+  a += '<rect class="cb" x="30" y="112" width="360" height="16" rx="3"/>';
+  for (let x = 44; x <= 380; x += 28) a += '<rect class="mb" x="' + (x - 6) + '" y="132" width="12" height="12" rx="2"/>';
+  a += '<rect class="bd" x="30" y="150" width="360" height="18" rx="2"/>';
+  a += NB(1, 412, 76) + ld(398, 76, 302, 76) + NB(2, 412, 120) + ld(398, 120, 390, 120) + NB(3, 18, 196) + ld(26, 184, 40, 145) + NB(4, 412, 172) + ld(398, 168, 390, 162);
+  const e1 = ez('0 0 432 214', a, '천장은 매달고, 굵은 뼈대, 가는 뼈대, 판 순서');
+  /* e2: 위에서 본 井 모양 */
+  let b = '';
+  for (let x = 54; x <= 386; x += 34) b += '<path class="mbl" d="M' + x + ' 26V214"/>';
+  [56, 130, 204].forEach(y => { b += '<path class="cbl" d="M30 ' + y + 'H410"/>'; for (let x = 54; x <= 386; x += 34) b += '<circle class="cp" cx="' + x + '" cy="' + y + '" r="6"/>'; });
+  b += '<path class="dm" d="M428 56V130M423 63l5-7 5 7M423 123l5 7 5-7"/><text class="dt" x="434" y="98">90cm</text>';
+  b += '<path class="dm" d="M54 232H88M61 227l-7 5 7 5M81 227l7 5-7 5"/><text class="dt" x="94" y="236">30cm</text>';
+  b += NB(1, 16, 56) + NB(2, 122, 18) + NB(3, 246, 166) + ld(238, 155, 225, 136);
+  const e2 = ez('0 0 470 246', b, '위에서 보면 굵은 뼈대와 가는 뼈대가 우물 정 모양');
+  /* e3: 벽 샌드위치 */
+  let w2 = slab(16, 8, 270, 20) + slab(16, 236, 270, 20) + '<rect class="cb" x="22" y="28" width="258" height="12" rx="2"/><rect class="cb" x="22" y="224" width="258" height="12" rx="2"/>';
+  w2 += '<rect class="wl" x="118" y="40" width="58" height="184"/><path class="wv" d="M124 80q7-7 14 0t14 0t14 0M124 132q7-7 14 0t14 0t14 0M124 184q7-7 14 0t14 0t14 0"/>';
+  [56, 112, 176, 236].forEach(x => { w2 += '<rect class="mb" x="' + (x - 6) + '" y="40" width="12" height="184"/>'; });
+  w2 += '<rect class="bd op" x="182" y="40" width="98" height="184"/>';
+  w2 += '<rect class="pn" x="304" y="40" width="166" height="184" rx="10"/><text class="mid" x="320" y="66">위에서 보면</text>';
+  w2 += '<rect class="bd" x="318" y="96" width="138" height="16" rx="2"/><path class="st" d="M368 112h40v5h-35v26h35v5h-40z"/><rect class="bd" x="318" y="148" width="138" height="16" rx="2"/><text class="mid" x="322" y="196">판 · 기둥 · 판</text><text class="mid" x="322" y="214">= 샌드위치</text>';
+  w2 += NB(1, 151, 34) + NB(2, 56, 132) + NB(3, 147, 158) + NB(4, 231, 132) + NB(4, 474, 104) + NB(2, 430, 130);
+  const e3 = ez('0 0 492 262', w2, '벽은 레일에 기둥을 꽂고 양쪽에 판을 붙인 샌드위치');
+  /* e4: 바둑판 + 판 올려놓기 */
+  let t2 = '';
+  for (let r = 0; r < 2; r++) for (let k = 0; k < 3; k++) if (!(r === 0 && k === 1)) t2 += '<rect class="tl2" x="' + (40 + k * 100) + '" y="' + (96 + r * 76) + '" width="100" height="76"/>';
+  t2 += '<path class="tg" d="M40 96H340M40 172H340M40 248H340M40 96V248M140 96V248M240 96V248M340 96V248"/>';
+  t2 += '<g transform="translate(156 30) rotate(-8)"><rect class="tl2" x="0" y="0" width="88" height="44"/></g>';
+  t2 += '<path class="dm" d="M190 130V84M184 92l6-8 6 8"/><text class="mid" x="20" y="40">들어 올리면</text><text class="mid" x="20" y="58">열려요</text>';
+  t2 += NB(1, 40, 262) + NB(2, 90, 134);
+  const e4 = ez('0 0 380 280', t2, '텍스 천장은 바둑판 격자 위에 판을 올려놓기만 함');
+  return { ceil, joint, wall, tbar, e1, e2, e3, e4 };
 })();
 
 /* 제품 자료 — 같은 것이 두 번 나오지 않도록 정리 (기초 모래·콘크리트·몰탈 등은 '공통 자재' 한 곳에만) */
@@ -663,6 +715,30 @@ const PROD = [
     ] }
   ] },
   { id: 'lgs', name: '⊏ 경량철골', groups: [
+    { t: '쉽게 보기 — 뼈대를 만들고, 판을 붙여요', html: '<div class="easyhd"><b>경량철골 = 가벼운 쇠 뼈대 + 석고보드 판</b><br>천장은 위층에 <b>매달고</b>, 벽은 바닥에서 <b>세워요</b>. 뼈대를 다 만들면 판을 붙이면 끝이에요.</div>', figs: [
+      { k: 'e1', easy: 1, t: '① 천장 — 위층 바닥에 매단 "두 겹 사다리"', steps: [
+        ['1', '매달기', '위층 콘크리트 바닥에 앵커를 박고, 긴 나사봉(행거볼트)을 늘어뜨려요.'],
+        ['2', '굵은 뼈대 (캐링 찬넬)', '나사봉 끝 고리(캐링 행거)에 굵은 바를 한 방향으로 걸어요. 너트를 돌려 높이를 맞춰요.'],
+        ['3', '가는 뼈대 (M-BAR)', '굵은 바 밑에 가는 바를 반대 방향으로 촘촘히 붙여요. 집게(클립)로 묶어요.'],
+        ['4', '판 붙이기 (석고보드)', '가는 바에 판을 대고 나사(피스)로 박으면 끝!']
+      ] },
+      { k: 'e2', easy: 1, t: '② 천장을 위에서 보면 — "우물 정(井)" 모양', steps: [
+        ['1', '굵은 뼈대 (캐링)', '넓게 — 90cm마다 한 줄'],
+        ['2', '가는 뼈대 (M-BAR)', '촘촘하게 — 30cm마다 한 줄, 굵은 뼈대와 십자로 엇갈려요.'],
+        ['3', '클립 (초록 점)', '둘이 만나는 점마다 1개. 그래서 클립 수 = 만나는 점의 수예요.']
+      ] },
+      { k: 'e3', easy: 1, t: '③ 벽 — 레일에 기둥을 꽂고 양쪽에 판 붙이기', steps: [
+        ['1', '레일 깔기 (런너)', '바닥과 천장에 홈 파인 레일을 핀으로 박아요.'],
+        ['2', '기둥 꽂기 (스터드)', '레일 홈에 기둥을 끼워 45cm마다 세워요.'],
+        ['3', '솜 넣기 (흡음재)', '소리를 막을 때 기둥 사이에 채워요.'],
+        ['4', '판 붙이기 (석고보드)', '양쪽에 판을 대고 기둥에 나사로 박아요. 위에서 보면 판 두 장이 기둥을 끼운 샌드위치예요.']
+      ] },
+      { k: 'e4', easy: 1, t: '④ 텍스 천장 — 바둑판을 매달고 판 "올려놓기"', steps: [
+        ['1', '바둑판 매달기 (T-BAR)', '①번 천장처럼 매달아서 60cm 칸 격자를 만들어요.'],
+        ['2', '판 올려놓기 (텍스)', '칸마다 판을 위에 얹기만 해요. 나사를 안 박아서 들어 올리면 열려요.']
+      ] }
+    ], foot: '' },
+    { t: '한 줄 요약', html: '<table class="easyt"><tr><th>종류</th><th>한마디로</th><th>판 고정</th></tr><tr><td><b>M-BAR 천장</b></td><td>매단 <b>두 겹 사다리</b>에 판 붙이기</td><td>나사로 박음</td></tr><tr><td><b>벽체</b></td><td><b>레일에 기둥</b> 꽂고 양쪽에 판 붙이기</td><td>나사로 박음</td></tr><tr><td><b>T-BAR 천장</b></td><td>매단 <b>바둑판</b>에 판 올려놓기</td><td>얹기만 함</td></tr></table>' },
     { t: '천장틀 (M-BAR 천장 · 석고보드 천장)', items: [
       { n: '캐링 찬넬', p: 'cchan', d: '천장틀의 큰 뼈대. 행거에 매달고 그 아래에 M-BAR를 붙임.', sp: '대표 38×12mm · 두께 1.2t 안팎' },
       { n: 'M-BAR (싱글)', p: 'mbar', d: '석고보드를 직접 붙이는 바. 보드 가운데 자리에 씀.' },
@@ -687,7 +763,7 @@ const PROD = [
       { n: '코너비드', p: 'bead', d: '석고보드 모서리를 보호하고 곧게 마감.' }
     ] },
     { t: '스터드 · 런너 규격 (폭, mm)', chips: ['50', '65', '75', '100'], foot: '두께는 0.8t 안팎이 많아요. 길이는 층고에 맞춰 주문하는 경우가 많으니 거래처에 확인하세요.' },
-    { t: '조립 방법 · 연결부 (그림)', figs: [
+    { t: '자세히 보기 — 조립 방법 · 연결부 (그림)', figs: [
       { k: 'ceil', t: '1. M-BAR 천장틀 — 옆에서 본 모습', steps: [
         ['1', '인서트 · 앵커', '콘크리트 슬래브에 행거 간격(보통 900)으로 박아 둠.'],
         ['2', '행거볼트', '인서트에 돌려 끼워 아래로 내림. 천장 높이에 맞춰 길이를 자름.'],
@@ -755,9 +831,10 @@ function renderProd() {
         if (its.length) gh = '<div class="items">' + its.map(it => '<div class="it">' + (PHOTOS[it.n] ? '<button class="phb" data-ph="' + esc(PHOTOS[it.n]) + '" data-nm="' + esc(it.n) + '" aria-label="' + esc(it.n) + ' 사진 크게 보기"><img class="ph" src="img/' + esc(PHOTOS[it.n]) + '" alt="' + esc(it.n) + '" loading="lazy"></button>' : pic(it.p)) + '<div class="tx"><b>' + hl(it.n, q) + '</b><p>' + hl(it.d, q) + '</p>' + (it.sp ? '<div class="sp">' + hl(it.sp, q) + '</div>' : '') + '</div></div>').join('') + '</div>';
         hits += its.length;
       }
+      if (g.html && !g.figs && (!q || has(g.t) || has(g.html.replace(/<[^>]+>/g, '')))) { gh = g.html; hits++; }
       if (g.figs) {
         const fs = g.figs.filter(f => has(g.t) || has(f.t) || f.steps.some(st => has(st[1]) || has(st[2])));
-        if (fs.length) gh = fs.map(f => '<div class="figc"><h4>' + hl(f.t, q) + '</h4><p class="swipe">↔ 그림을 옆으로 밀어서 보세요</p><div class="figw">' + FIG[f.k] + '</div><ol class="steps">' + f.steps.map(st => '<li><span class="sn">' + st[0] + '</span><span><b>' + hl(st[1], q) + '</b> ' + hl(st[2], q) + '</span></li>').join('') + '</ol></div>').join('');
+        if (fs.length) gh = (g.html && !q ? g.html : '') + fs.map(f => '<div class="figc' + (f.easy ? ' easy' : '') + '"><h4>' + hl(f.t, q) + '</h4>' + (f.easy ? '' : '<p class="swipe">↔ 그림을 옆으로 밀어서 보세요</p>') + '<div class="figw">' + FIG[f.k] + '</div><ol class="steps">' + f.steps.map(st => '<li><span class="sn">' + st[0] + '</span><span><b>' + hl(st[1], q) + '</b> ' + hl(st[2], q) + '</span></li>').join('') + '</ol></div>').join('');
         hits += fs.length;
       }
       if (g.chips && (has(g.t) || g.chips.some(has))) { gh = '<div class="chips">' + g.chips.map(x => '<span>' + hl(x, q) + '</span>').join('') + '</div>'; hits++; }
