@@ -1204,7 +1204,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-06b';
+var BUILD = '2026-11-06c';
 (function () {
   var busy = false;
   function typing() {
@@ -1885,6 +1885,7 @@ async function renderDataStatus() {
   el.innerHTML = '<div class="card"><h2>📦 자료 현황 · 언제, 어디까지 올렸나</h2>' + table(['자료', '들어 있는 기간', '마지막 업로드', '올린 사람', '파일'],
     rows.map(([k, range, l]) => [k, range, l ? whenTxt(l.at) : '-', l ? esc(String(l.by || '').split('@')[0]) : '-', l ? esc(String(l.file || '').replace(/^\[[^\]]+\]\s*/, '')) + (l.from ? ' <small class="muted">(' + mdLabel(l.from) + (l.to && l.to !== l.from ? '~' + mdLabel(l.to) : '') + ')</small>' : '') : '-'])) +
     '<p class="muted" style="margin:8px 0 0">"들어 있는 기간"은 지금 저장된 자료 기준, "파일" 옆 괄호는 그 업로드에 들어 있던 날짜입니다. 전체 이력은 다운로드 › 등록 이력 CSV에서 볼 수 있어요.</p></div>' +
+    consJunkCard() +
     '<div class="card" id="intCard"><div class="bk-h"><h2>🔍 숫자 점검</h2><button class="btn primary" id="intBtn" type="button">전체 점검 실행</button></div>' +
     '<p class="muted" style="margin:0">저장된 모든 달을 1원 단위로 맞춰 봅니다: 일별 합계 ↔ 상세 자료, 마감 문자 ↔ POS, 빠진 날, 마이너스·이상한 값, 마진율, 목표 합계, 결제금액(VAT 포함) 비율, 같은 내용이 두 날에 저장된 경우.</p><div id="intOut"></div></div>';
   $('intBtn').addEventListener('click', async () => {
@@ -1893,6 +1894,7 @@ async function renderDataStatus() {
     catch (e) { $('intOut').innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; }
     $('intBtn').disabled = false;
   });
+  const jb = $('junkBtn'); if (jb) jb.addEventListener('click', clearConsJunk);
   renderFiles();
 }
 
@@ -3273,7 +3275,10 @@ function detectKind(aoa) {
   if (h0.includes('상품코드') && h0.includes('상품명') && h0.includes('지점') && h0.includes('실매출')) return 'pbtop';
   if (/PB\s*실적/.test(txt) || has('PB실매출')) return 'pb';
   if (/매출\s*유형/.test(txt) || top.some(l => l.some(c => /^[ㄴ└]?관계사$/.test(c)))) return 'mix';
-  if (has('영업일자', '판매번호') && top.some(l => l.some(c => ['시공일자', '시공상태', '시공PKG'].concat(CONS_CATS).includes(c)))) return 'cons';
+  /* 시공 파일: 영업일자·판매번호가 있는 '제목 줄'에 시공 칸이 있어야 함 (내용 칸의 '조명'·'타일' 같은 분류 이름은 보지 않음).
+     판매 파일(과세결제금액 칸)은 시공으로 보지 않음 — 2026-11-06 판매 파일이 시공으로 잘못 들어간 일 */
+  const hdr = top.find(l => l.includes('영업일자') && l.includes('판매번호'));
+  if (hdr && !hdr.includes('과세결제금액') && hdr.some(c => ['시공일자', '시공상태', '시공PKG'].concat(CONS_CATS).includes(c))) return 'cons';
   if (has('거래처명', '잔액')) return 'ar';
   if (has('영업일자', '구분') || has('일자', '구분', '순매출')) return 'sales';
   return '';
@@ -3901,6 +3906,32 @@ function consMonthly(recs) {
     if (r.sd) { add(r.sd, 'ca'); if (isBath(r)) add(r.sd, 'cb'); }
   });
   return out;
+}
+/* 시공 정보가 하나도 없는 '시공' 건 = 판매 파일이 시공으로 잘못 들어간 자료 */
+const consJunk = r => !r.sd && !r.cs && !r.pkg && !r.w && !(r.cats && r.cats.length) && !r.fee && !r.demo && !r.sub && !r.as;
+function consJunkCard() {
+  const J = (S.cons || []).filter(consJunk); if (!J.length) return '';
+  const byD = {}; J.forEach(r => { byD[r.d] = (byD[r.d] || 0) + 1; });
+  return '<div class="card"><div class="banner warn"><b>⚠ 시공 정보가 하나도 없는 시공 건 ' + J.length + '건</b> — 판매 파일이 시공으로 잘못 들어간 자료로 보여요 (시공일자·시공상태·패키지·시공 품목·시공비가 모두 비어 있음).<br>' +
+    Object.keys(byD).sort().map(d => dLabel(Number(d)) + ' ' + byD[d] + '건').join(' · ') + '</div><button class="btn danger" id="junkBtn" type="button">이 ' + J.length + '건 지우기</button> <span id="junkMsg" class="muted"></span></div>';
+}
+async function clearConsJunk() {
+  const J = (S.cons || []).filter(consJunk); if (!J.length) return;
+  if (!confirm('시공 정보가 하나도 없는 시공 건 ' + J.length + '건을 지울까요?\n(진짜 시공 건은 시공일자·상태·품목 중 하나라도 있어서 지워지지 않아요)')) return;
+  $('junkBtn').disabled = true; $('junkMsg').textContent = '지우는 중…';
+  try {
+    const byY = {}; J.forEach(r => { (byY[String(Math.floor(r.d / 10000))] = byY[String(Math.floor(r.d / 10000))] || []).push(r.no); });
+    let n = 0;
+    for (const y of Object.keys(byY)) n += await runTransaction(db, async tx => {
+      const ref = doc(db, C.cons, y), sn = await tx.get(ref); if (!sn.exists()) return 0;
+      const cur = Object.assign({}, sn.data().recs || {}); let k = 0;
+      byY[y].forEach(no => { if (cur[no] && consJunk(cur[no])) { delete cur[no]; k++; } });
+      tx.set(ref, { year: Number(y), recs: cur, updatedAt: serverTimestamp() }); return k;
+    });
+    await loadCons(true); await rebuildConsSummary();
+    await addDoc(collection(db, C.logs), { at: serverTimestamp(), by: S.user.email || '', file: '[시공 정리] 시공 정보 없는 건 삭제', from: 0, to: 0, usedRows: n, fileNet: 0, savedNet: 0, match: true, bad: [] });
+    invalidate(); S.logs = null; toast(n + '건을 지웠어요'); renderDataStatus();
+  } catch (e) { $('junkMsg').textContent = '실패: ' + errMsg(e); $('junkBtn').disabled = false; }
 }
 async function rebuildConsSummary() {
   await loadCons(true);
