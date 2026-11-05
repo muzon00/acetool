@@ -100,9 +100,14 @@ mark { background: #fff1a8; color: inherit; border-radius: 3px; }
 
 /* 양산출 */
 .seg { display: grid; grid-template-columns: minmax(0, 1fr) 130px 40px; gap: 6px; margin-bottom: 6px; align-items: center; }
+.mrow { display: grid; grid-template-columns: 150px minmax(0, 1.4fr) minmax(0, 1fr) 70px 90px 40px; gap: 6px; margin-bottom: 6px; align-items: center; }
+.mrow select { min-height: 40px; padding: 6px 8px; }
+.mrow input { min-height: 40px; padding: 6px 8px; }
+.mrow input.r { text-align: right; }
+@media (max-width: 760px) { .mrow { grid-template-columns: 1fr 1fr 1fr 40px; background: var(--surface2); border: 1px solid var(--line); border-radius: 14px; padding: 8px; } .mrow select:first-child { grid-column: 1 / 4; } .mrow .x { grid-column: 4; grid-row: 1; } .mrow [data-mf="n"] { grid-column: 1 / 5; } .mrow [data-mf="sp"] { grid-column: 1 / 5; } .mrow [data-mf="q"] { grid-column: 2 / 5; } }
 .seg.h3 { grid-template-columns: minmax(0, 1fr) 92px 92px 40px; }
-.seg .x, .ql .x { border: 0; background: transparent; color: var(--ink3); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; font-size: 1em; }
-.seg .x:hover, .ql .x:hover { color: var(--bad); background: var(--surface2); }
+.seg .x, .ql .x, .mrow .x { border: 0; background: transparent; color: var(--ink3); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; font-size: 1em; }
+.seg .x:hover, .ql .x:hover, .mrow .x:hover { color: var(--bad); background: var(--surface2); }
 .res { margin-top: 12px; border-radius: 14px; background: var(--surface2); border: 1px solid var(--line); overflow: hidden; }
 .res table { width: 100%; border-collapse: collapse; font-size: .94em; }
 .res td, .res th { padding: 9px 12px; border-top: 1px solid var(--line); text-align: left; vertical-align: top; }
@@ -163,7 +168,7 @@ mark { background: #fff1a8; color: inherit; border-radius: 3px; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-05d';
+const BUILD = '2026-11-05e';
 (function () {
   let busy = false;
   async function check() {
@@ -183,7 +188,7 @@ const BUILD = '2026-11-05d';
 <body>
 <div class="wrap">
   <div class="top">
-    <div class="r1"><h1>수주팀 · 부대토목</h1><span class="sub">흄관 · PE관 · 맨홀 · 수로관 · 그레이팅 · 경계석 · 화강블럭 · 보강토</span></div>
+    <div class="r1"><h1>수주팀 · 부대토목</h1><span class="sub">흄관 · PE관 · 맨홀 · 수로관 · 그레이팅 · 경계석 · 화강블럭 · 보강토 · 경량철골</span></div>
     <div class="tabs" id="tabs">
       <button data-t="prod"><i>📚 </i>제품 종류</button>
       <button data-t="check"><i>📝 </i>발주 체크</button>
@@ -280,7 +285,7 @@ const BUILD = '2026-11-05d';
 </div>
 <div class="fab-bar"><a class="fab" href="../sch/">📅 근무표</a></div>
 <div id="toast"></div>
-<dialog id="phDlg"><img id="phImg" alt=""><p id="phNm"></p><button class="btn ghost sm" id="phX" style="width:100%">닫기</button></dialog>
+<dialog id="phDlg"><img id="phImg" alt=""><p id="phNm"></p><p id="phCr" class="muted" style="font-weight:500;font-size:.8em"></p><button class="btn ghost sm" id="phX" style="width:100%">닫기</button></dialog>
 
 <script>
 'use strict';
@@ -375,10 +380,28 @@ const PIC = {
   capb: '<rect class="d" x="12" y="14" width="40" height="6" rx="1"/><rect class="a" x="14" y="20" width="18" height="9"/><rect class="a" x="32" y="20" width="18" height="9"/><rect class="a" x="14" y="29" width="18" height="9"/><rect class="a" x="32" y="29" width="18" height="9"/>',
   gravel: '<rect class="a" x="10" y="12" width="44" height="26"/><g class="w"><circle cx="18" cy="19" r="3"/><circle cx="28" cy="18" r="2.5"/><circle cx="38" cy="20" r="3"/><circle cx="47" cy="18" r="2.5"/><circle cx="22" cy="29" r="2.5"/><circle cx="32" cy="30" r="3"/><circle cx="43" cy="30" r="2.5"/></g>',
   pad: '<rect class="a" x="8" y="30" width="48" height="10"/><rect class="w" x="14" y="20" width="18" height="10"/><rect class="w" x="32" y="20" width="18" height="10"/>',
-  doc: '<path class="a" d="M18 6h20l8 8v28H18z"/><path class="k" d="M38 6v8h8M23 22h18M23 28h18M23 34h12"/>'
+  doc: '<path class="a" d="M18 6h20l8 8v28H18z"/><path class="k" d="M38 6v8h8M23 22h18M23 28h18M23 34h12"/>',
+  cchan: '<path class="a" d="M10 14h44v5H16v10h38v5H10z"/>',
+  mbar: '<path class="a" d="M14 36h8V16h20v20h8v4H38V20H26v20H14z"/>',
+  mbar2: '<path class="a" d="M6 36h8V16h36v20h8v4H46V20H18v20H6z"/>',
+  rod: '<rect class="a" x="29" y="4" width="6" height="40"/><path class="k" d="M29 9l6 2M29 14l6 2M29 19l6 2M29 24l6 2M29 29l6 2M29 34l6 2M29 39l6 2"/>',
+  hanger: '<rect class="a" x="29" y="4" width="6" height="18"/><path class="a" d="M22 20h20v6h-6v14h-8V26h-6z"/><path class="k" d="M20 40h24"/>',
+  clip: '<path class="a" d="M16 12h32v6H38v18h-4V18h-4v18h-4V18H16z"/>',
+  joint: '<path class="a" d="M6 20h24v8H6zM34 20h24v8H34z"/><rect class="d" x="24" y="16" width="16" height="16" rx="2"/>',
+  anchor: '<path class="a" d="M26 6h12v8H26z"/><path class="a" d="M28 14h8v18l4 10h-16l4-10z"/><path class="k" d="M28 22h8M28 28h8"/>',
+  tbar: '<path class="a" d="M10 30h44v6H10zM29 10h6v20h-6z"/><circle class="w" cx="32" cy="14" r="2"/>',
+  tile: '<rect class="a" x="10" y="8" width="44" height="32"/><g class="d"><circle cx="16" cy="14" r="1"/><circle cx="24" cy="18" r="1"/><circle cx="33" cy="13" r="1"/><circle cx="42" cy="17" r="1"/><circle cx="49" cy="12" r="1"/><circle cx="18" cy="26" r="1"/><circle cx="28" cy="30" r="1"/><circle cx="37" cy="25" r="1"/><circle cx="46" cy="30" r="1"/><circle cx="20" cy="35" r="1"/><circle cx="40" cy="35" r="1"/></g>',
+  stud: '<path class="a" d="M18 8h28v8h-5v-3H24v22h17v-3h5v8H18z"/>',
+  runner: '<path class="a" d="M14 12h5v22h26V12h5v27H14z"/>',
+  gyp: '<path class="a" d="M8 34l10-10h38l-10 10z"/><path class="a" d="M8 34h38v4H8zM46 34l10-10v4l-10 10z"/><path class="a" d="M8 27l10-10h38l-10 10z"/><path class="a" d="M8 27h38v4H8zM46 27l10-10v4l-10 10z"/>',
+  wool: '<rect class="a" x="22" y="14" width="34" height="24"/><circle class="a" cx="20" cy="26" r="13"/><path class="k" d="M20 26m-8 0a8 8 0 1 0 16 0a8 8 0 1 0-16 0M20 26m-3 0a3 3 0 1 0 6 0"/>',
+  bead: '<path class="a" d="M14 10l18 10 18-10v6L32 26 14 16z"/><path class="a" d="M32 26v14"/><g class="w"><circle cx="20" cy="15" r="1.6"/><circle cx="26" cy="18" r="1.6"/><circle cx="38" cy="18" r="1.6"/><circle cx="44" cy="15" r="1.6"/></g>',
+  screw: '<path class="a" d="M20 10h24l-4 6H24z"/><path class="a" d="M28 16h8v20l-4 8-4-8z"/><path class="k" d="M28 20l8 3M28 25l8 3M28 30l8 3"/>',
+  pin: '<rect class="d" x="24" y="8" width="16" height="4" rx="1"/><path class="a" d="M30 12h4v26l-2 6-2-6z"/>'
 };
 /* 실물 사진: order/img/ 에 넣은 파일만 (제품 이름 → 파일 이름). 없으면 그림 */
-const PHOTOS = {};
+const PHOTOS = {"외압관 1종": "hume.jpg", "외압관 2종": "hume.jpg", "끝벽 · 날개벽": "headwall.jpg", "PE 이중벽관": "pe.jpg", "맨홀 뚜껑": "mhcover.jpg", "발디딤 (사다리)": "mhstep.jpg", "빗물받이 (우수받이)": "inlet.jpg", "주철 (덕타일)": "inlet.jpg", "L형 측구": "lgutter.jpg", "콘크리트 덮개": "slabcover.jpg", "스틸 (아연도금)": "steelgrat.jpg", "일반형 (평강)": "steelgrat.jpg", "콘크리트 경계석": "ckerb.jpg", "보차도 · 도로 경계석": "kerb.jpg", "진입로 낮춤 경계석": "dropkerb.jpg", "곡선 경계석": "curvekerb.jpg", "화강 판석": "graniteslab.jpg", "사고석 · 큐브석": "setts.jpg", "점자블럭 (유도블럭)": "tactile.jpg", "지오그리드 (보강재)": "geogrid.jpg", "기초 모래 · 쇄석": "sand.jpg", "몰탈 (이음 · 붙임 · 줄눈)": "mortar.jpg", "기초 · 보호 콘크리트": "concpour.jpg", "스터드": "stud.jpg", "석고보드": "gypsum.jpg", "경량 피스 · 석고보드 피스": "screw.jpg", "흡음재 (그라스울)": "glasswool.jpg", "인서트 · 앵커": "anchor.jpg", "행거볼트 (전산볼트)": "rod.jpg", "T-BAR (메인 · 크로스)": "tbarceil.jpg", "텍스 (흡음 천장판)": "tbarceil.jpg"};
+const CREDITS = {"hume.jpg": {"artist": "TUBS", "lic": "CC BY-SA 4.0", "licurl": "https://creativecommons.org/licenses/by-sa/4.0", "page": "https://commons.wikimedia.org/wiki/File:Betonwerk_Bieren_002.jpg"}, "headwall.jpg": {"artist": "Michael Trolove", "lic": "CC BY-SA 2.0", "licurl": "https://creativecommons.org/licenses/by-sa/2.0", "page": "https://commons.wikimedia.org/wiki/File:Headwall_-_geograph.org.uk_-_911044.jpg"}, "pe.jpg": {"artist": "Andrew Krizhanovsky", "lic": "Public domain", "licurl": "", "page": "https://commons.wikimedia.org/wiki/File:PXL_20220830_083_Corrugated_pipe_on_the_road_near_a_ditch_with_water.jpg"}, "mhcover.jpg": {"artist": "pasa (Flickr)", "lic": "CC BY 2.0", "licurl": "https://creativecommons.org/licenses/by/2.0", "page": "https://commons.wikimedia.org/wiki/File:Round_cast_iron_Manhole_cover.jpg"}, "mhstep.jpg": {"artist": "Silenzio76", "lic": "CC BY-SA 4.0", "licurl": "https://creativecommons.org/licenses/by-sa/4.0", "page": "https://commons.wikimedia.org/wiki/File:Sewer_MH_Steps.jpg"}, "inlet.jpg": {"artist": "Oxfordian Kissuth", "lic": "CC BY 3.0", "licurl": "https://creativecommons.org/licenses/by/3.0", "page": "https://commons.wikimedia.org/wiki/File:Gullydeckel_in_Hemel_Hempstead.jpg"}, "lgutter.jpg": {"artist": "미국 연방재난관리청(FEMA)", "lic": "Public domain", "licurl": "", "page": "https://commons.wikimedia.org/wiki/File:Biloxi,_MS,_May_6,_2015_-_A_construction_worker_from_Oscar_Renda_Contracting_finishes_concrete_preparation_related_to_curb_and_gutter_replacement_after_the_installation_of_new_water_-_DPLA_-_d6469b4b0c875710562f8ac816863916.jpg"}, "slabcover.jpg": {"artist": "Fumikas Sagisavas", "lic": "CC0", "licurl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en", "page": "https://commons.wikimedia.org/wiki/File:Concrete_trench_cover_(2).jpg"}, "steelgrat.jpg": {"artist": "Belt777", "lic": "CC BY-SA 3.0", "licurl": "https://creativecommons.org/licenses/by-sa/3.0", "page": "https://commons.wikimedia.org/wiki/File:Press_grating.jpg"}, "ckerb.jpg": {"artist": "Oto Zapletal", "lic": "CC0", "licurl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en", "page": "https://commons.wikimedia.org/wiki/File:Concrete_Curbs_-_PREFA_Su%C4%8Dany_-_Slovakia_05.jpg"}, "kerb.jpg": {"artist": "Ezekielf", "lic": "CC0", "licurl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en", "page": "https://commons.wikimedia.org/wiki/File:Long_gradual_sidewalk_ramp_to_tactile_paving_and_curb_cut_in_Colchester_VT.jpg"}, "dropkerb.jpg": {"artist": "Ezekielf", "lic": "CC0", "licurl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en", "page": "https://commons.wikimedia.org/wiki/File:Sidewalk_ramp_to_flush_curb_with_flat_tactile_paving_in_Winooski_VT.jpg"}, "curvekerb.jpg": {"artist": "Ezekielf", "lic": "CC0", "licurl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en", "page": "https://commons.wikimedia.org/wiki/File:Sidewalk_ramp_to_lowered_curb_and_flat_tactile_paving_in_Colchester_VT.jpg"}, "graniteslab.jpg": {"artist": "Kai Kemmann", "lic": "CC BY-SA 4.0", "licurl": "https://creativecommons.org/licenses/by-sa/4.0", "page": "https://commons.wikimedia.org/wiki/File:Granite_pavers,_Kirschbergstra%C3%9Fe,_08451_Crimmitschau,_Germany_01.jpg"}, "setts.jpg": {"artist": "kim traynor", "lic": "CC BY-SA 2.0", "licurl": "https://creativecommons.org/licenses/by-sa/2.0", "page": "https://commons.wikimedia.org/wiki/File:Granite_setts_in_Kyle_Place,_Abbeyhill_-_geograph.org.uk_-_1731064.jpg"}, "tactile.jpg": {"artist": "Mx. Granger", "lic": "CC0", "licurl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en", "page": "https://commons.wikimedia.org/wiki/File:Tactile_paving_in_China_2.jpg"}, "geogrid.jpg": {"artist": "Tomasz Beszczyński (Efr)", "lic": "Public domain", "licurl": "", "page": "https://commons.wikimedia.org/wiki/File:Geosiatka.Polyfelt.GX.80-30.jpg"}, "sand.jpg": {"artist": "W.carter", "lic": "CC BY-SA 4.0", "licurl": "https://creativecommons.org/licenses/by-sa/4.0", "page": "https://commons.wikimedia.org/wiki/File:Pile_of_sand_by_the_soccer_fields_at_Brastad_Arena.jpg"}, "mortar.jpg": {"artist": "Kebabknight", "lic": "CC BY-SA 4.0", "licurl": "https://creativecommons.org/licenses/by-sa/4.0", "page": "https://commons.wikimedia.org/wiki/File:Sand-cement-render.jpg"}, "concpour.jpg": {"artist": "Imprezzive1 at English Wikipedia", "lic": "Public domain", "licurl": "", "page": "https://commons.wikimedia.org/wiki/File:Slip_form_curb_under_construction.jpg"}, "stud.jpg": {"artist": "MTA Capital Construction Mega Projects", "lic": "CC BY 2.0", "licurl": "https://creativecommons.org/licenses/by/2.0", "page": "https://commons.wikimedia.org/wiki/File:Metal_stud_framing_for_the_engineering_rooms_located_in_the_LIRR_concourse_area._(CM014B,_07-18-2018)_(28645816477).jpg"}, "gypsum.jpg": {"artist": "Amaxson at English Wikipedia", "lic": "Public domain", "licurl": "", "page": "https://commons.wikimedia.org/wiki/File:Drywall.jpg"}, "screw.jpg": {"artist": "DaRy on sv.wikipedia", "lic": "CC BY-SA 3.0", "licurl": "http://creativecommons.org/licenses/by-sa/3.0/", "page": "https://commons.wikimedia.org/wiki/File:Skruvar_part4.jpg"}, "glasswool.jpg": {"artist": "Original uploader was Radomil at pl.wikipedia", "lic": "CC BY-SA 3.0", "licurl": "http://creativecommons.org/licenses/by-sa/3.0/", "page": "https://commons.wikimedia.org/wiki/File:Glass_wool_insulation.jpg"}, "anchor.jpg": {"artist": "Dmitry G", "lic": "CC BY-SA 3.0", "licurl": "https://creativecommons.org/licenses/by-sa/3.0", "page": "https://commons.wikimedia.org/wiki/File:Ancor_bolt_for_concrete.JPG"}, "rod.jpg": {"artist": "Taylor 49", "lic": "CC BY-SA 4.0", "licurl": "https://creativecommons.org/licenses/by-sa/4.0", "page": "https://commons.wikimedia.org/wiki/File:Threaded_rods_of_different_sizes.png"}, "tbarceil.jpg": {"artist": "Adamantios", "lic": "CC BY-SA 3.0", "licurl": "http://creativecommons.org/licenses/by-sa/3.0/", "page": "https://commons.wikimedia.org/wiki/File:Suspended-ceiling-0a.jpg"}};
 const pic = k => '<svg class="pic" viewBox="0 0 64 48" aria-hidden="true">' + (PIC[k] || '') + '</svg>';
 
 /* 제품 자료 — 같은 것이 두 번 나오지 않도록 정리 (기초 모래·콘크리트·몰탈 등은 '공통 자재' 한 곳에만) */
@@ -537,6 +560,36 @@ const PROD = [
       { n: '물량 세는 법', p: 'ruler', d: '벽 면적(m²) × m²당 블록 수(제조사 기준) + 캡블록은 길이(m)로.' }
     ] }
   ] },
+  { id: 'lgs', name: '⊏ 경량철골', groups: [
+    { t: '천장틀 (M-BAR 천장 · 석고보드 천장)', items: [
+      { n: '캐링 찬넬', p: 'cchan', d: '천장틀의 큰 뼈대. 행거에 매달고 그 아래에 M-BAR를 붙임.', sp: '대표 38×12mm · 두께 1.2t 안팎' },
+      { n: 'M-BAR (싱글)', p: 'mbar', d: '석고보드를 직접 붙이는 바. 보드 가운데 자리에 씀.' },
+      { n: 'M-BAR (더블)', p: 'mbar2', d: '폭이 넓은 M-BAR. 석고보드 두 장이 만나는 이음 자리에 씀.' },
+      { n: '행거볼트 (전산볼트)', p: 'rod', d: '슬래브에서 천장틀을 매다는 긴 나사봉.', sp: '대표 W3/8″ · 길이는 천장 높이에 맞춤' },
+      { n: '캐링 행거', p: 'hanger', d: '행거볼트와 캐링 찬넬을 잇는 걸쇠. 높이를 맞춤.' },
+      { n: 'M-BAR 클립', p: 'clip', d: 'M-BAR를 캐링 찬넬에 고정. 둘이 엇갈리는 곳마다 1개.' },
+      { n: '조인트 (캐링 · M-BAR)', p: 'joint', d: '바를 길게 이어 붙일 때 쓰는 연결재.' },
+      { n: '인서트 · 앵커', p: 'anchor', d: '콘크리트 슬래브에 행거볼트를 박아 고정.' }
+    ] },
+    { t: 'T-BAR 천장 (텍스 천장)', items: [
+      { n: 'T-BAR (메인 · 크로스)', p: 'tbar', d: '텍스(흡음 천장판)를 얹는 T자 바. 메인과 크로스를 격자로 짬.' },
+      { n: '벽 몰딩 (L바)', p: 'angle', d: '벽과 천장이 만나는 테두리를 받치고 마감.' },
+      { n: '텍스 (흡음 천장판)', p: 'tile', d: 'T-BAR 격자에 얹는 천장판.', sp: '대표 300×600 · 600×600' }
+    ] },
+    { t: '벽체 (칸막이)', items: [
+      { n: '스터드', p: 'stud', d: '벽 안에 일정 간격으로 세우는 C형 기둥.', sp: '50형 · 65형 · 75형 · 100형 (폭 mm)' },
+      { n: '런너', p: 'runner', d: '바닥과 천장에 대는 U형 레일. 스터드를 끼워 세움.', sp: '스터드와 같은 폭으로' },
+      { n: '보강 찬넬 · 스페이서', p: 'cchan', d: '스터드를 가로로 잡아 흔들림을 막음. 높은 벽·문틀 주변.' },
+      { n: '석고보드', p: 'gyp', d: '벽·천장 마감판. 일반·방수·방화(내화) 보드가 있음.', sp: '대표 9.5t · 12.5t, 900×1800 · 900×2400' },
+      { n: '흡음재 (그라스울)', p: 'wool', d: '벽 속에 넣어 소리와 열을 막음.' },
+      { n: '코너비드', p: 'bead', d: '석고보드 모서리를 보호하고 곧게 마감.' }
+    ] },
+    { t: '스터드 · 런너 규격 (폭, mm)', chips: ['50', '65', '75', '100'], foot: '두께는 0.8t 안팎이 많아요. 길이는 층고에 맞춰 주문하는 경우가 많으니 거래처에 확인하세요.' },
+    { t: '고정 철물', items: [
+      { n: '경량 피스 · 석고보드 피스', p: 'screw', d: '바끼리, 또는 보드를 바에 고정하는 나사.', sp: '통·봉지 단위' },
+      { n: '타정 핀 · 콘크리트 못', p: 'pin', d: '런너를 바닥·천장 콘크리트에 고정.' }
+    ] }
+  ] },
   { id: 'base', name: '🧱 공통 자재', groups: [
     { t: '기초 · 마감 (여러 제품에 함께 쓰는 것)', items: [
       { n: '기초 모래 · 쇄석', p: 'pile', d: '관·수로관·경계석·블럭 밑에 깔아 고르게 받침.' },
@@ -573,10 +626,13 @@ function renderProd() {
     });
     if (ch) h += '<div class="card"><h2>' + esc(c.name) + '</h2>' + ch + '</div>';
   });
+  const used = [...new Set(Object.values(PHOTOS))];
+  if (h && used.length && !q && ST.pcat === 'all') h += '<div class="card"><h2>사진 출처</h2><p class="muted" style="margin:0 0 6px">위키미디어 공용의 자유 이용 사진이에요. 해외 사진이라 국내 제품과 모양이 조금 다를 수 있어요.</p><div class="muted" style="font-size:.78em;line-height:1.7">' + used.map(f => esc(Object.keys(PHOTOS).filter(k => PHOTOS[k] === f).join(', ')) + ' — ' + credHtml(f)).join('<br>') + '</div></div>';
   $('plist').innerHTML = h || '<div class="card muted">"' + esc(q) + '"에 맞는 항목이 없어요.</div>';
 }
 $('pq').addEventListener('input', renderProd);
-$('plist').addEventListener('click', e => { const b = e.target.closest('.phb'); if (!b) return; $('phImg').src = 'img/' + b.dataset.ph; $('phImg').alt = b.dataset.nm; $('phNm').textContent = b.dataset.nm; $('phDlg').showModal(); });
+function credHtml(f) { const c = CREDITS[f]; if (!c) return ''; return '사진: ' + esc(c.artist) + ' · <a href="' + esc(c.licurl || c.page) + '" target="_blank" rel="noopener">' + esc(c.lic) + '</a> · <a href="' + esc(c.page) + '" target="_blank" rel="noopener">위키미디어 공용</a>'; }
+$('plist').addEventListener('click', e => { const b = e.target.closest('.phb'); if (!b) return; $('phImg').src = 'img/' + b.dataset.ph; $('phImg').alt = b.dataset.nm; $('phNm').textContent = b.dataset.nm; $('phCr').innerHTML = credHtml(b.dataset.ph); $('phDlg').showModal(); });
 $('phX').addEventListener('click', () => $('phDlg').close());
 $('phDlg').addEventListener('click', e => { if (e.target === $('phDlg')) $('phDlg').close(); });
 $('pcats').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; ST.pcat = b.dataset.c; renderProd(); });
@@ -710,15 +766,22 @@ const CALC = LS.get('calc', null) || {
   grat: { segs: [{ n: '구간 1', L: '' }], name: '스틸 그레이팅', spec: '', gl: '1000', frame: true, bolt: '0' },
   curb: { segs: [{ n: '직선 1', L: '' }], spec: '180×250×1000', cl: '1000', curve: '', corner: '', spare: '3', fw: '', ft: '' }
 };
+if (!CALC.lgc) CALC.lgc = { segs: [{ n: '방 1', L: '', H: '' }], sc: '900', sm: '300', sh: '900', lc: '', lm: '', bw: '900', bl: '1800', layers: '1', spare: '5' };
+if (!CALC.lgw) CALC.lgw = { segs: [{ n: '벽 1', L: '', H: '' }], size: '65', ss: '450', ls: '', lr: '', sides: '2', layers: '1', bw: '900', bl: '1800', spare: '5', wool: true };
+if (!CALC.man) CALC.man = { rows: [{ c: 'hume', n: '', sp: '', u: '', q: '' }] };
 if (!CALC.rw) CALC.rw = { segs: [{ n: '벽 1', L: '', H: '' }], spec: '', bw: '', bh: '', spare: '3', capw: '', gs: '', gl: '', gw: '', perf: true };
 function calcSave() { LS.set('calc', CALC); }
-const CNAME = { hume: '⭕ 흄관', grat: '▦ 그레이팅', curb: '▭ 경계석', rw: '▥ 보강토' };
+const CNAME = { hume: '⭕ 흄관', grat: '▦ 그레이팅', curb: '▭ 경계석', rw: '▥ 보강토', lgc: '⊏ 경량 천장', lgw: '⊏ 경량 벽체', man: '✍ 직접 등록' };
+const TWO = { rw: ['벽 구간별 길이 · 높이 (m)', '길이 m', '높이 m'], lgc: ['방(구역)별 가로 · 세로 (m)', '가로 m', '세로 m'], lgw: ['벽 구간별 길이 · 높이 (m)', '길이 m', '높이 m'] };
 function segHtml(c) {
-  const hh = c === 'rw';
-  return '<label class="f">' + (hh ? '벽 구간별 길이 · 높이 (m)' : '구간별 길이 (m)') + '</label>' + CALC[c].segs.map((s, i) => '<div class="seg' + (hh ? ' h3' : '') + '"><input type="text" data-seg="' + i + '" data-f="n" value="' + esc(s.n) + '" maxlength="30" aria-label="구간 이름"><input type="text" data-seg="' + i + '" data-f="L" value="' + esc(s.L) + '" inputmode="decimal" placeholder="길이 m" aria-label="길이(m)">' +
-    (hh ? '<input type="text" data-seg="' + i + '" data-f="H" value="' + esc(s.H || '') + '" inputmode="decimal" placeholder="높이 m" aria-label="높이(m)">' : '') + '<button class="x" data-segdel="' + i + '" aria-label="구간 지우기">✕</button></div>').join('') +
+  const hh = !!TWO[c], T = TWO[c] || ['구간별 길이 (m)', '길이 m'];
+  return '<label class="f">' + T[0] + '</label>' + CALC[c].segs.map((s, i) => '<div class="seg' + (hh ? ' h3' : '') + '"><input type="text" data-seg="' + i + '" data-f="n" value="' + esc(s.n) + '" maxlength="30" aria-label="구간 이름"><input type="text" data-seg="' + i + '" data-f="L" value="' + esc(s.L) + '" inputmode="decimal" placeholder="' + T[1] + '" aria-label="' + T[1] + '">' +
+    (hh ? '<input type="text" data-seg="' + i + '" data-f="H" value="' + esc(s.H || '') + '" inputmode="decimal" placeholder="' + T[2] + '" aria-label="' + T[2] + '">' : '') + '<button class="x" data-segdel="' + i + '" aria-label="구간 지우기">✕</button></div>').join('') +
     '<button class="btn ghost sm" data-segadd>＋ 구간 추가</button>';
 }
+function pick(c, k, label, opts, ph) { const id = 'dl_' + c + '_' + k; return '<div><label class="f" for="c_' + c + '_' + k + '">' + label + ' <span class="muted">(고르거나 직접 쓰기)</span></label><input type="text" id="c_' + c + '_' + k + '" data-k="' + k + '" list="' + id + '" value="' + esc(CALC[c][k] || '') + '" placeholder="' + esc(ph || '') + '" maxlength="40"><datalist id="' + id + '">' + opts.map(o => '<option value="' + esc(o) + '">').join('') + '</datalist></div>'; }
+const prodNames = (cat, gt) => { const C = PROD.find(x => x.id === cat); return C ? C.groups.filter(g => g.items && (!gt || gt.some(t => g.t.includes(t)))).flatMap(g => g.items.map(i => i.n)) : []; };
+const prodChips = cat => { const C = PROD.find(x => x.id === cat); return C ? C.groups.filter(g => g.chips).flatMap(g => g.chips) : []; };
 function fld(c, k, label, ph, extra) { return '<div><label class="f" for="c_' + c + '_' + k + '">' + label + '</label><input type="text" id="c_' + c + '_' + k + '" data-k="' + k + '" value="' + esc(CALC[c][k]) + '" placeholder="' + esc(ph || '') + '"' + (extra || ' inputmode="decimal"') + '></div>'; }
 function renderCalc() {
   $('ccats').innerHTML = Object.keys(CNAME).map(c => '<button data-c="' + c + '" class="' + (ST.ccat === c ? 'on' : '') + '">' + CNAME[c] + '</button>').join('');
@@ -727,23 +790,48 @@ function renderCalc() {
   if (c === 'hume') {
     h += '<div class="grid3">' +
       '<div><label class="f" for="c_hume_dia">구경 (mm)</label><select id="c_hume_dia" data-k="dia">' + PROD[0].groups.find(g => g.id === 'dia').chips.map(d => '<option' + (C.dia === d ? ' selected' : '') + '>' + d + '</option>').join('') + '</select></div>' +
+      '<div><label class="f" for="c_hume_kind">종류</label><select id="c_hume_kind" data-k="kind">' + ['외압관 1종', '외압관 2종', '내압관'].map(k => '<option' + ((C.kind || '외압관 1종') === k ? ' selected' : '') + '>' + k + '</option>').join('') + '</select></div>' +
       '<div><label class="f" for="c_hume_joint">이음</label><select id="c_hume_joint" data-k="joint"><option value="B"' + (C.joint === 'B' ? ' selected' : '') + '>B형 (고무링)</option><option value="C"' + (C.joint === 'C' ? ' selected' : '') + '>C형 (칼라)</option></select></div>' +
       fld(c, 'pl', '1본 길이 (m)', '2.5') + fld(c, 'base', '1본당 받침 (개)', '2') + fld(c, 'mh', '맨홀 개수 (비우면 구간 수 + 1)', '자동') + fld(c, 'spare', '여유분 관 (본)', '0') + '</div>';
     h += '<div style="margin-top:12px">' + segHtml(c) + '</div><p class="muted">맨홀과 맨홀 사이를 한 구간으로 적어 주세요. 구간마다 따로 올림해서 셉니다.</p>';
   } else if (c === 'grat') {
-    h += '<div class="grid3">' + fld(c, 'name', '품명', '스틸 그레이팅', ' maxlength="40"') + fld(c, 'spec', '규격 (내폭×높이 등)', '예: 300×38', ' maxlength="40"') + fld(c, 'gl', '한 장 길이 (mm)', '1000') +
+    h += '<div class="grid3">' + pick(c, 'name', '품명', prodNames('grat', ['재질', '모양']).map(n => n + ' 그레이팅'), '스틸 그레이팅') + fld(c, 'spec', '규격 (내폭×높이 등)', '예: 300×38', ' maxlength="40"') + fld(c, 'gl', '한 장 길이 (mm)', '1000') +
       '<div><label class="f" for="c_grat_frame">받침틀</label><select id="c_grat_frame" data-k="frame"><option value="1"' + (C.frame ? ' selected' : '') + '>포함 (양쪽 2줄)</option><option value="0"' + (!C.frame ? ' selected' : '') + '>없음</option></select></div>' +
       fld(c, 'bolt', '1장당 고정 볼트 (개)', '0') + '</div>';
     h += '<div style="margin-top:12px">' + segHtml(c) + '</div><p class="muted">끊어지는 곳(집수정·꺾이는 곳)마다 구간을 나눠 주세요. 구간마다 따로 올림해서 셉니다.</p>';
   } else if (c === 'rw') {
-    h += '<div class="grid3">' + fld(c, 'spec', '블록 이름 · 규격', '예: 대형 보강토 블록', ' maxlength="40"') + fld(c, 'bw', '블록 앞면 가로 (mm)', '카탈로그 값') + fld(c, 'bh', '블록 앞면 높이 (mm)', '카탈로그 값') +
+    h += '<div class="grid3">' + pick(c, 'spec', '블록 이름 · 규격', prodNames('rw', ['블록 종류']).concat(['대형 블록', '중형 블록', '소형 블록']), '예: 대형 블록') + fld(c, 'bw', '블록 앞면 가로 (mm)', '카탈로그 값') + fld(c, 'bh', '블록 앞면 높이 (mm)', '카탈로그 값') +
       fld(c, 'spare', '여유 (%)', '3') + fld(c, 'capw', '캡블록 1개 길이 (mm) · 선택', '비우면 안 셈') +
       '<div><label class="f" for="c_rw_perf">배수 유공관</label><select id="c_rw_perf" data-k="perf"><option value="1"' + (C.perf ? ' selected' : '') + '>넣음 (벽 길이만큼)</option><option value="0"' + (!C.perf ? ' selected' : '') + '>안 넣음</option></select></div>' +
       fld(c, 'gs', '지오그리드 층 간격 (m) · 선택', '설계도 값, 예: 0.6') + fld(c, 'gl', '지오그리드 보강 길이 (m) · 선택', '설계도 값, 예: 2.5') + fld(c, 'gw', '뒷채움 쇄석 폭 (m) · 선택', '예: 0.3') + '</div>';
     h += '<div style="margin-top:12px">' + segHtml(c) + '</div><p class="muted">높이가 다른 곳은 구간을 나눠 주세요. 블록은 구간마다 (높이 ÷ 블록 높이 → 올림 단수) × (길이 ÷ 블록 가로 → 올림 개수)로 셉니다. 지오그리드 층수·길이는 설계도가 우선이에요.</p>';
+  } else if (c === 'lgc') {
+    h += '<div class="grid3">' + fld(c, 'sc', '캐링 간격 (mm)', '900') + fld(c, 'sm', 'M-BAR 간격 (mm)', '300') + fld(c, 'sh', '행거 간격 (mm)', '900') +
+      fld(c, 'lc', '캐링 찬넬 1본 길이 (m)', '거래처 길이') + fld(c, 'lm', 'M-BAR 1본 길이 (m)', '거래처 길이') + fld(c, 'spare', '여유 (%)', '5') +
+      fld(c, 'bw', '석고보드 폭 (mm)', '900') + fld(c, 'bl', '석고보드 길이 (mm)', '1800') + fld(c, 'layers', '보드 겹수', '1') + '</div>';
+    h += '<div style="margin-top:12px">' + segHtml(c) + '</div><p class="muted">방(구역)마다 가로·세로를 적어 주세요. 캐링은 세로 방향으로 (세로 ÷ 간격 + 1)줄 × 가로 길이, M-BAR는 가로 방향으로 (가로 ÷ 간격 + 1)줄 × 세로 길이로 셉니다. 여유(%)는 바·보드에 붙어요.</p>';
+  } else if (c === 'lgw') {
+    h += '<div class="grid3">' + pick(c, 'size', '스터드 · 런너 규격 (형)', prodChips('lgs').map(x => x + '형'), '65형') + fld(c, 'ss', '스터드 간격 (mm)', '450') + fld(c, 'ls', '스터드 1본 길이 (m) · 선택', '비우면 벽 높이에 맞춰 주문') +
+      fld(c, 'lr', '런너 1본 길이 (m)', '거래처 길이') + fld(c, 'sides', '보드 붙이는 면 (1 또는 2)', '2') + fld(c, 'layers', '면마다 보드 겹수', '1') +
+      fld(c, 'bw', '석고보드 폭 (mm)', '900') + fld(c, 'bl', '석고보드 길이 (mm)', '1800') + fld(c, 'spare', '여유 (%)', '5') +
+      '<div><label class="f" for="c_lgw_wool">흡음재 (그라스울)</label><select id="c_lgw_wool" data-k="wool"><option value="1"' + (C.wool ? ' selected' : '') + '>넣음 (벽 면적만큼)</option><option value="0"' + (!C.wool ? ' selected' : '') + '>안 넣음</option></select></div></div>';
+    h += '<div style="margin-top:12px">' + segHtml(c) + '</div><p class="muted">문·창 같은 구멍은 빼지 않고 셉니다 (그만큼 여유가 됨). 스터드는 구간마다 (길이 ÷ 간격 + 1)개, 런너는 위아래 2줄입니다.</p>';
+  } else if (c === 'man') {
+    const cats = PROD.map(x => [x.id, x.name]).concat([['free', '✍ 직접 쓰기']]);
+    h += '<p class="muted" style="margin:0 0 8px">제품 종류에서 고르거나, 목록에 없는 것은 "직접 쓰기"로 적으세요. 수량은 이미 아는 값을 넣는 곳이에요.</p>' + C.rows.map((r, i) => {
+      const its = r.c === 'free' ? [] : prodNames(r.c), inList = its.includes(r.n);
+      return '<div class="mrow" data-mr="' + i + '"><select data-mf="c" aria-label="분류">' + cats.map(([id, n]) => '<option value="' + id + '"' + (r.c === id ? ' selected' : '') + '>' + esc(n) + '</option>').join('') + '</select>' +
+        (r.c === 'free' ? '<input type="text" data-mf="n" value="' + esc(r.n) + '" placeholder="품명" maxlength="40" aria-label="품명">'
+          : '<select data-mf="n" aria-label="품명"><option value="">— 제품 고르기 —</option>' + its.map(n => '<option' + (r.n === n ? ' selected' : '') + '>' + esc(n) + '</option>').join('') + (r.n && !inList ? '<option selected>' + esc(r.n) + '</option>' : '') + '</select>') +
+        '<input type="text" data-mf="sp" list="mdl_' + i + '" value="' + esc(r.sp) + '" placeholder="규격" maxlength="40" aria-label="규격"><datalist id="mdl_' + i + '">' + (r.c === 'free' ? [] : prodChips(r.c)).map(o => '<option value="' + esc(o) + '">').join('') + '</datalist>' +
+        '<input type="text" data-mf="u" list="mdl_u" value="' + esc(r.u) + '" placeholder="단위" maxlength="6" aria-label="단위">' +
+        '<input type="text" data-mf="q" value="' + esc(r.q) + '" placeholder="수량" inputmode="decimal" aria-label="수량" class="r">' +
+        '<button class="x" data-mdel="' + i + '" aria-label="줄 지우기">✕</button></div>';
+    }).join('') + '<datalist id="mdl_u">' + ['개', '본', '장', 'm', 'm²', 'm³', '롤', '통', '포', '대', '식', 'kg', '톤'].map(u => '<option value="' + u + '">').join('') + '</datalist>' +
+      '<button class="btn ghost sm" data-madd>＋ 줄 추가</button>';
   } else {
-    h += '<div class="grid3">' + fld(c, 'spec', '규격', '180×250×1000', ' maxlength="40"') + fld(c, 'cl', '1개 길이 (mm)', '1000') + fld(c, 'spare', '여유 (%)', '3') +
-      fld(c, 'curve', '곡선 경계석 (개)', '도면 개수') + fld(c, 'corner', '코너석·진입 낮춤석 (개)', '도면 개수') + '<div></div>' +
+    h += '<div class="grid3">' + pick(c, 'name', '품명', prodNames('curb'), '화강석 경계석') + pick(c, 'spec', '규격', prodChips('curb'), '180×250×1000') + fld(c, 'cl', '1개 길이 (mm)', '1000') + fld(c, 'spare', '여유 (%)', '3') +
+      fld(c, 'curve', '곡선 경계석 (개)', '도면 개수') + fld(c, 'corner', '코너석·진입 낮춤석 (개)', '도면 개수') +
       fld(c, 'fw', '기초 콘크리트 폭 (m) · 선택', '예: 0.3') + fld(c, 'ft', '기초 콘크리트 두께 (m) · 선택', '예: 0.15') + '</div>';
     h += '<div style="margin-top:12px">' + segHtml(c) + '</div><p class="muted">곡선부는 길이에 넣지 말고 개수만 위에 적어 주세요. 여유(%)는 직선 수량에만 붙어요.</p>';
   }
@@ -756,11 +844,25 @@ function calcRun(c) {
   const need = (k, label, min, int) => { const v = numIn(C[k]); if (v === null) { errs.push(label + '을(를) 적어 주세요.'); bad.push(k); return NaN; } if (Number.isNaN(v) || v < min || (int && !Number.isInteger(v))) { errs.push(label + ' "' + C[k] + '"을(를) 숫자로 읽을 수 없어요.'); bad.push(k); return NaN; } return v; };
   const opt = (k, label, int) => { const v = numIn(C[k]); if (v === null) return null; if (Number.isNaN(v) || (int && !Number.isInteger(v))) { errs.push(label + ' "' + C[k] + '"을(를) 숫자로 읽을 수 없어요.'); bad.push(k); return NaN; } return v; };
   const segs = [];
-  if (c === 'rw') C.segs.forEach((s, i) => {
-    const v = numIn(s.L), hv = numIn(s.H), nm = s.n || '벽 ' + (i + 1);
+  if (c === 'man') {
+    const R = { errs, bad, rows: [], lines: [] };
+    C.rows.forEach((r, i) => {
+      const n = String(r.n || '').trim(), qv = numIn(r.q);
+      if (!n && (r.q === '' || r.q == null)) return;
+      if (!n) { errs.push((i + 1) + '번 줄: 품명을 고르거나 적어 주세요.'); bad.push('mn' + i); return; }
+      if (qv === null) { errs.push((i + 1) + '번 줄 (' + n + '): 수량을 적어 주세요.'); bad.push('mq' + i); return; }
+      if (Number.isNaN(qv) || Math.abs(qv * 100 - Math.round(qv * 100)) > 1e-6) { errs.push((i + 1) + '번 줄 (' + n + '): 수량 "' + r.q + '"을(를) 읽을 수 없어요 (소수 둘째 자리까지).'); bad.push('mq' + i); return; }
+      R.rows.push([n + (r.sp ? ' ' + r.sp : ''), fmtQ(qv) + ' ' + (r.u || ''), (PROD.find(x => x.id === r.c) || { name: '직접 쓰기' }).name]);
+      R.lines.push({ n, sp: r.sp || '', u: r.u || '', q: qv });
+    });
+    if (!R.rows.length && !errs.length) errs.push('품목을 하나 이상 고르고 수량을 적어 주세요.');
+    return R;
+  }
+  if (TWO[c]) C.segs.forEach((s, i) => {
+    const v = numIn(s.L), hv = numIn(s.H), nm = s.n || (c === 'lgc' ? '방 ' : '벽 ') + (i + 1), Ln = c === 'lgc' ? '가로' : '길이', Hn = c === 'lgc' ? '세로' : '높이';
     if (v === null && hv === null) return;
-    if (v === null || Number.isNaN(v) || v <= 0) { errs.push(v === null ? nm + ' 길이를 적어 주세요.' : nm + ' 길이 "' + s.L + '"을(를) 읽을 수 없어요.'); bad.push('seg' + i); }
-    if (hv === null || Number.isNaN(hv) || hv <= 0) { errs.push(hv === null ? nm + ' 높이를 적어 주세요.' : nm + ' 높이 "' + s.H + '"을(를) 읽을 수 없어요.'); bad.push('segH' + i); }
+    if (v === null || Number.isNaN(v) || v <= 0) { errs.push(v === null ? nm + ' ' + Ln + '를 적어 주세요.' : nm + ' ' + Ln + ' "' + s.L + '"을(를) 읽을 수 없어요.'); bad.push('seg' + i); }
+    if (hv === null || Number.isNaN(hv) || hv <= 0) { errs.push(hv === null ? nm + ' ' + Hn + '를 적어 주세요.' : nm + ' ' + Hn + ' "' + s.H + '"을(를) 읽을 수 없어요.'); bad.push('segH' + i); }
     if (v > 0 && hv > 0) segs.push({ n: nm, L: v, H: hv });
   });
   else C.segs.forEach((s, i) => { const v = numIn(s.L); if (v === null) return; if (Number.isNaN(v) || v <= 0) { errs.push((s.n || '구간 ' + (i + 1)) + ' 길이 "' + s.L + '"을(를) 읽을 수 없어요.'); bad.push('seg' + i); } else segs.push({ n: s.n || '구간 ' + (i + 1), L: v }); });
@@ -779,7 +881,7 @@ function calcRun(c) {
     R.rows.push([C.joint === 'B' ? '고무링' : '칼라', fmtQ(joints) + ' 개', '관끼리 이음: ' + n + '본 − 구간 ' + segs.length + ' = ' + joints + (C.joint === 'B' ? ' · 고무링이 관에 붙어 나오면 따로 안 사요' : '')]);
     if (base > 0) R.rows.push(['흄관 받침', fmtQ(n * base) + ' 개', n + '본 × ' + base + '개']);
     R.rows.push(['맨홀', fmtQ(mh) + ' 개', mhIn === null ? '구간 ' + segs.length + ' + 1 (양 끝 포함, 실제 도면 확인)' : '직접 입력']);
-    R.lines.push({ n: '흄관', sp: dia + ' ' + C.joint + '형 L=' + fmtQ(pl) + 'm', u: '본', q: total });
+    R.lines.push({ n: '흄관', sp: dia + ' ' + (C.kind || '외압관 1종') + ' ' + C.joint + '형 L=' + fmtQ(pl) + 'm', u: '본', q: total });
     if (joints > 0) R.lines.push({ n: C.joint === 'B' ? '고무링' : '칼라', sp: dia, u: '개', q: joints });
     if (base > 0) R.lines.push({ n: '흄관 받침', sp: dia, u: '개', q: n * base });
     if (mh > 0) R.lines.push({ n: '조립식 맨홀', sp: '', u: '개', q: mh });
@@ -795,6 +897,45 @@ function calcRun(c) {
     R.lines.push({ n: C.name || '그레이팅', sp: (C.spec ? C.spec + ' ' : '') + 'L=' + fmtQ(gl) + 'mm', u: '장', q: n });
     if (C.frame) R.lines.push({ n: '받침틀 (앵글)', sp: C.spec || '', u: 'm', q: L * 2 });
     if (bolt > 0) R.lines.push({ n: '고정 볼트', sp: '', u: '개', q: n * bolt });
+  } else if (c === 'lgc') {
+    const sc = need('sc', '캐링 간격', 100), sm = need('sm', 'M-BAR 간격', 100), sh = need('sh', '행거 간격', 100), lc = need('lc', '캐링 찬넬 1본 길이', 0.5), lm = need('lm', 'M-BAR 1본 길이', 0.5),
+      spare = need('spare', '여유', 0), bw = need('bw', '석고보드 폭', 100), bl = need('bl', '석고보드 길이', 100), layers = need('layers', '보드 겹수', 1, true);
+    if (errs.length) return R;
+    const up = (x, sp) => Math.ceil(x * (100 + sp) / 100 - 1e-9);
+    let cLen = 0, mLen = 0, hang = 0, clip = 0, area = 0, per = 0; const how = [];
+    segs.forEach(s => {
+      const W = mm(s.L), D = mm(s.H), cl = Math.floor(D / sc) + 1, ml = Math.floor(W / sm) + 1, hp = Math.floor(W / sh) + 1;
+      cLen += cl * W; mLen += ml * D; hang += cl * hp; clip += cl * ml; area += W * D; per += 2 * (W + D);
+      how.push(s.n + ': 캐링 ' + cl + '줄 · M-BAR ' + ml + '줄 · 행거 ' + cl + '×' + hp);
+    });
+    const A = area / 1e6, nc = up(cLen / mm(lc), spare), nm = up(mLen / mm(lm), spare), nb = up(area * layers / (bw * bl), spare);
+    R.rows.push(['천장 면적', fmtQ(Math.round(A * 100) / 100) + ' m²', how.join(' / ')]);
+    R.rows.push(['캐링 찬넬', fmtQ(nc) + ' 본', '총 ' + fmtQ(cLen / 1000) + 'm ÷ ' + fmtQ(lc) + 'm' + (spare ? ' × (1 + ' + spare + '%)' : '') + ' 올림']);
+    R.rows.push(['M-BAR', fmtQ(nm) + ' 본', '총 ' + fmtQ(mLen / 1000) + 'm ÷ ' + fmtQ(lm) + 'm' + (spare ? ' × (1 + ' + spare + '%)' : '') + ' 올림 · 보드 이음 자리는 더블로 (나눠서 주문)']);
+    R.rows.push(['행거볼트 · 캐링 행거 · 인서트', fmtQ(hang) + ' 개씩', '캐링 줄마다 (가로 ÷ 행거 간격 + 1)개']);
+    R.rows.push(['M-BAR 클립', fmtQ(clip) + ' 개', '캐링과 M-BAR가 엇갈리는 곳마다 1개']);
+    R.rows.push(['석고보드', fmtQ(nb) + ' 장', fmtQ(Math.round(A * 100) / 100) + 'm² × ' + layers + '겹 ÷ 1장 ' + fmtQ(bw * bl / 1e6) + 'm²' + (spare ? ' × (1 + ' + spare + '%)' : '') + ' 올림']);
+    R.rows.push(['벽 몰딩', fmtQ(per / 1000) + ' m', '방마다 둘레 합 (필요할 때만)']);
+    R.lines.push({ n: '캐링 찬넬', sp: 'L=' + fmtQ(lc) + 'm', u: '본', q: nc }, { n: 'M-BAR', sp: 'L=' + fmtQ(lm) + 'm', u: '본', q: nm },
+      { n: '행거볼트 (전산볼트)', sp: '', u: '개', q: hang }, { n: '캐링 행거', sp: '', u: '개', q: hang }, { n: '인서트 · 앵커', sp: '', u: '개', q: hang },
+      { n: 'M-BAR 클립', sp: '', u: '개', q: clip }, { n: '석고보드', sp: fmtQ(bw) + '×' + fmtQ(bl), u: '장', q: nb });
+  } else if (c === 'lgw') {
+    const ss = need('ss', '스터드 간격', 100), ls = opt('ls', '스터드 1본 길이'), lr = need('lr', '런너 1본 길이', 0.5), sides = need('sides', '보드 붙이는 면', 1, true), layers = need('layers', '보드 겹수', 1, true),
+      bw = need('bw', '석고보드 폭', 100), bl = need('bl', '석고보드 길이', 100), spare = need('spare', '여유', 0);
+    if (sides > 2) { errs.push('보드 붙이는 면은 1 또는 2예요.'); bad.push('sides'); }
+    if (ls !== null && ls < 0.5) { errs.push('스터드 1본 길이는 m로 적어 주세요 (예: 3).'); bad.push('ls'); }
+    if (errs.length) return R;
+    const up = (x, sp) => Math.ceil(x * (100 + sp) / 100 - 1e-9), sz = String(C.size || '').trim();
+    const cnt = segs.map(s => Math.floor(mm(s.L) / ss) + 1), pcs = segs.map(s => ls ? Math.ceil(mm(s.H) / mm(ls)) : 1);
+    const studs = up(cnt.reduce((a, n, i) => a + n * pcs[i], 0), spare), rLen = segs.reduce((a, s) => a + 2 * mm(s.L), 0), nr = up(rLen / mm(lr), spare);
+    const area = segs.reduce((a, s) => a + mm(s.L) * mm(s.H), 0), nb = up(area * sides * layers / (bw * bl), spare);
+    R.rows.push(['벽 면적', fmtQ(Math.round(area / 1e4) / 100) + ' m²', segs.map(s => s.n + ' ' + fmtQ(s.L) + '×' + fmtQ(s.H)).join(' · ')]);
+    R.rows.push(['스터드 ' + sz, fmtQ(studs) + ' 본', segs.map((s, i) => s.n + ' ' + cnt[i] + '개' + (pcs[i] > 1 ? '×' + pcs[i] + '토막' : '')).join(' · ') + (spare ? ' × (1 + ' + spare + '%)' : '') + (ls ? '' : ' · 길이는 벽 높이에 맞춰 주문')]);
+    R.rows.push(['런너 ' + sz, fmtQ(nr) + ' 본', '위아래 2줄 총 ' + fmtQ(rLen / 1000) + 'm ÷ ' + fmtQ(lr) + 'm' + (spare ? ' × (1 + ' + spare + '%)' : '') + ' 올림']);
+    R.rows.push(['석고보드', fmtQ(nb) + ' 장', fmtQ(Math.round(area / 1e4) / 100) + 'm² × ' + sides + '면 × ' + layers + '겹 ÷ 1장 ' + fmtQ(bw * bl / 1e6) + 'm²' + (spare ? ' × (1 + ' + spare + '%)' : '') + ' 올림']);
+    if (C.wool) R.rows.push(['흡음재 (그라스울)', fmtQ(Math.round(area / 1e4) / 100) + ' m²', '벽 면적만큼']);
+    R.lines.push({ n: '스터드', sp: sz + (ls ? ' L=' + fmtQ(ls) + 'm' : ' (길이 맞춤)'), u: '본', q: studs }, { n: '런너', sp: sz + ' L=' + fmtQ(lr) + 'm', u: '본', q: nr }, { n: '석고보드', sp: fmtQ(bw) + '×' + fmtQ(bl), u: '장', q: nb });
+    if (C.wool) R.lines.push({ n: '흡음재 (그라스울)', sp: '', u: 'm²', q: Math.round(area / 1e4) / 100 });
   } else if (c === 'rw') {
     const bw = need('bw', '블록 앞면 가로', 50), bh = need('bh', '블록 앞면 높이', 50), spare = need('spare', '여유', 0), capw = opt('capw', '캡블록 길이'), gs = opt('gs', '지오그리드 층 간격'), gl = opt('gl', '지오그리드 보강 길이'), gw = opt('gw', '뒷채움 쇄석 폭');
     if (capw !== null && capw < 50) { errs.push('캡블록 길이는 mm로 적어 주세요 (예: 400).'); bad.push('capw'); }
@@ -823,13 +964,13 @@ function calcRun(c) {
     const cl = need('cl', '1개 길이', 100), spare = need('spare', '여유', 0), curve = opt('curve', '곡선 경계석', true), corner = opt('corner', '코너석·진입석', true), fw = opt('fw', '기초 폭'), ft = opt('ft', '기초 두께');
     if (errs.length) return R;
     const raw = mm(L) / cl, n = Math.ceil(raw * (100 + spare) / 100 - 1e-9);
-    R.rows.push(['경계석 ' + (C.spec || ''), fmtQ(n) + ' 개', fmtQ(mm(L)) + 'mm ÷ ' + fmtQ(cl) + ' = ' + fmtQ(Math.round(raw * 100) / 100) + (spare ? ' × (1 + ' + spare + '%)' : '') + ' → 올림']);
+    R.rows.push([(C.name || '경계석') + ' ' + (C.spec || ''), fmtQ(n) + ' 개', fmtQ(mm(L)) + 'mm ÷ ' + fmtQ(cl) + ' = ' + fmtQ(Math.round(raw * 100) / 100) + (spare ? ' × (1 + ' + spare + '%)' : '') + ' → 올림']);
     if (curve) R.rows.push(['곡선 경계석', fmtQ(curve) + ' 개', '직접 입력 (R값별로 나눠 주문)']);
     if (corner) R.rows.push(['코너석 · 진입 낮춤석', fmtQ(corner) + ' 개', '직접 입력']);
     let vol = null;
     if (fw && ft) { vol = Math.ceil(L * fw * ft * 100 - 1e-9) / 100; R.rows.push(['기초 콘크리트', fmtQ(vol) + ' m³', fmtQ(L) + 'm × ' + fw + 'm × ' + ft + 'm (곡선부 제외, 0.01 올림)']); }
     else if (fw || ft) R.rows.push(['기초 콘크리트', '-', '폭과 두께를 둘 다 적어야 계산돼요']);
-    R.lines.push({ n: '경계석', sp: C.spec || '', u: '개', q: n });
+    R.lines.push({ n: C.name || '경계석', sp: C.spec || '', u: '개', q: n });
     if (curve) R.lines.push({ n: '곡선 경계석', sp: C.spec || '', u: '개', q: curve });
     if (corner) R.lines.push({ n: '코너석 · 진입 낮춤석', sp: C.spec || '', u: '개', q: corner });
     if (vol) R.lines.push({ n: '기초 콘크리트', sp: '', u: 'm³', q: vol });
@@ -838,7 +979,8 @@ function calcRun(c) {
 }
 function renderCalcOut() {
   const c = ST.ccat, R = calcRun(c), box = $('cOut'); if (!box) return;
-  document.querySelectorAll('[data-calc] input[type=text]').forEach(i => { const k = i.dataset.k || ('seg' + (i.dataset.f === 'H' ? 'H' : '') + i.dataset.seg); i.classList.toggle('bad', R.bad.includes(k) && (i.dataset.k || i.dataset.f !== 'n')); });
+  document.querySelectorAll('.mrow').forEach(r => { const i = r.dataset.mr; r.querySelector('[data-mf="q"]').classList.toggle('bad', R.bad.includes('mq' + i)); r.querySelector('[data-mf="n"]').classList.toggle('bad', R.bad.includes('mn' + i)); });
+  document.querySelectorAll('[data-calc] input[type=text]:not([data-mf])').forEach(i => { const k = i.dataset.k || ('seg' + (i.dataset.f === 'H' ? 'H' : '') + i.dataset.seg); i.classList.toggle('bad', R.bad.includes(k) && (i.dataset.k || i.dataset.f !== 'n')); });
   if (R.errs.length) { box.innerHTML = '<div class="err">' + R.errs.map(esc).join('<br>') + '</div>'; return; }
   box.innerHTML = '<div class="res"><table>' + R.rows.map(r => '<tr><td>' + esc(r[0]) + '<span class="how">' + esc(r[2]) + '</span></td><td class="n">' + esc(r[1]) + '</td></tr>').join('') + '</table></div>' +
     '<div class="btns"><button class="btn" id="cToQ">견적서에 넣기 (' + R.lines.length + '줄)</button></div>';
@@ -851,18 +993,22 @@ function renderCalcOut() {
 $('ccats').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; ST.ccat = b.dataset.c; LS.set('ccat', ST.ccat); renderCalc(); });
 $('cBody').addEventListener('input', e => {
   const t = e.target, C = CALC[ST.ccat];
+  if (t.dataset.mf) { const r = C.rows[+t.closest('.mrow').dataset.mr]; r[t.dataset.mf] = t.value; calcSave(); if (t.tagName === 'SELECT') { if (t.dataset.mf === 'c') { r.n = ''; r.sp = ''; } renderCalc(); } else renderCalcOut(); return; }
   if (t.dataset.seg !== undefined) C.segs[+t.dataset.seg][t.dataset.f] = t.value;
   else if (t.dataset.k) C[t.dataset.k] = t.value;
   else return;
   calcSave(); renderCalcOut();
 });
 $('cBody').addEventListener('change', e => {
-  const t = e.target, C = CALC[ST.ccat]; if (t.tagName !== 'SELECT') return;
-  C[t.dataset.k] = (t.dataset.k === 'frame' || t.dataset.k === 'perf') ? t.value === '1' : t.value; calcSave(); renderCalcOut();
+  const t = e.target, C = CALC[ST.ccat]; if (t.tagName !== 'SELECT' || t.dataset.mf) return;
+  C[t.dataset.k] = (t.dataset.k === 'frame' || t.dataset.k === 'perf' || t.dataset.k === 'wool') ? t.value === '1' : t.value; calcSave(); renderCalcOut();
 });
 $('cBody').addEventListener('click', e => {
   const C = CALC[ST.ccat];
-  if (e.target.closest('[data-segadd]')) { C.segs.push({ n: ({ curb: '직선 ', rw: '벽 ' }[ST.ccat] || '구간 ') + (C.segs.length + 1), L: '', H: '' }); calcSave(); renderCalc(); const ins = document.querySelectorAll('[data-f="L"]'); ins[ins.length - 1].focus(); }
+  if (e.target.closest('[data-madd]')) { const last = C.rows[C.rows.length - 1]; C.rows.push({ c: last ? last.c : 'hume', n: '', sp: '', u: '', q: '' }); calcSave(); renderCalc(); return; }
+  const md = e.target.closest('[data-mdel]');
+  if (md) { if (C.rows.length === 1) C.rows[0] = { c: C.rows[0].c, n: '', sp: '', u: '', q: '' }; else C.rows.splice(+md.dataset.mdel, 1); calcSave(); renderCalc(); return; }
+  if (e.target.closest('[data-segadd]')) { C.segs.push({ n: ({ curb: '직선 ', rw: '벽 ', lgw: '벽 ', lgc: '방 ' }[ST.ccat] || '구간 ') + (C.segs.length + 1), L: '', H: '' }); calcSave(); renderCalc(); const ins = document.querySelectorAll('[data-f="L"]'); ins[ins.length - 1].focus(); }
   const d = e.target.closest('[data-segdel]');
   if (d) { if (C.segs.length === 1) { C.segs[0].L = ''; C.segs[0].H = ''; } else C.segs.splice(+d.dataset.segdel, 1); calcSave(); renderCalc(); }
 });
