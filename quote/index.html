@@ -292,7 +292,7 @@ body.wideq .wrap { max-width: 1530px; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-06a';
+const BUILD = '2026-11-06b';
 (function () {
   let busy = false;
   async function check() {
@@ -329,9 +329,9 @@ const BUILD = '2026-11-06a';
       <p class="muted" style="margin:0 0 8px">엑셀처럼 칸을 눌러 바로 쓰세요. 오른쪽 <b>회색 칸</b>(매입단가 · 마진)은 우리만 보고 인쇄되지 않아요. <b>매입단가</b>를 넣으면 단가가 파란 글씨로 자동으로 나오고, 단가 칸에 직접 쓰면 그 값이 우선이에요. Enter 키를 누르면 아래 칸으로 내려가요.</p>
       <p class="swipe" style="display:block">↔ 표를 옆으로 밀면 오른쪽 매입원가 칸이 보여요</p>
       <div class="xwrap" id="hQSheet"></div>
-      <div class="btns"><button class="btn ghost sm" id="hQAdd">＋ 줄 추가</button><button class="btn ghost sm" id="hQAdd5">＋ 5줄 추가</button><button class="btn ghost sm" id="hQAddShip">＋ 운반비 줄</button>
+      <div class="btns"><button class="btn ghost sm" id="hQAdd">＋ 줄 추가</button><button class="btn ghost sm" id="hQAdd5">＋ 5줄 추가</button><button class="btn ghost sm" id="hQAddShip">＋ 운반비 줄</button><button class="btn ghost sm" id="hQClear" style="color:var(--bad);border-color:#f3c4c9">🗑 전체 지우기</button>
         <label class="btn ghost sm" for="hSSeal" style="display:inline-flex;align-items:center">🔴 도장(직인) 사진 넣기</label><input type="file" id="hSSeal" accept="image/*" class="hide"><button class="btn ghost sm hide" id="hSSealX">도장 빼기</button><span class="muted" id="hSSealSt" style="align-self:center"></span></div>
-      <div id="hQErr"></div>
+      <div id="hQUndo"></div><div id="hQErr"></div>
       <p class="muted" style="margin:8px 0 0">금액 = 단가 × 수량 · 부가세 포함 금액 = 줄마다 금액 × 1.1 (원 미만 반올림) 의 합 · 우리 회사 정보(사업자번호 등)는 한 번 적으면 이 기기에 남아요.</p>
     </div>
     <div class="card">
@@ -552,6 +552,17 @@ $('hQSheet').addEventListener('keydown', e => {
 $('hQSheet').addEventListener('click', e => { const b = e.target.closest('[data-ldel]'); if (!b) return; const i = +b.dataset.ldel; if (!lineEmpty(Q.lines[i]) && !confirm((i + 1) + '번 줄을 지울까요?')) return; Q.lines.splice(i, 1); if (!Q.lines.length) Q.lines.push(blankLine()); qSaveDraft(); renderSheet(); });
 $('hQAdd').addEventListener('click', () => { Q.lines.push(blankLine()); qSaveDraft(); renderSheet(); });
 $('hQAdd5').addEventListener('click', () => { for (let k = 0; k < 5; k++) Q.lines.push(blankLine()); qSaveDraft(); renderSheet(); });
+/* 전체 지우기: 받는 분·현장·품목·비고를 비움. 우리 회사 정보·도장·마진 설정·저장한 견적은 그대로. 10초 안에 되돌리기 가능 */
+let undoQ = null, undoT = null;
+$('hQClear').addEventListener('click', () => {
+  if (Q.lines.every(lineEmpty) && !['to', 'site', 'cman', 'ctel', 'memo'].some(k => String(Q[k] || '').trim())) { toast('지울 내용이 없어요.'); return; }
+  if (!confirm('입력한 내용을 전체 지울까요?\n(받는 분 · 현장 · 품목 · 비고)\n\n우리 회사 정보, 도장, 마진 설정, 저장한 견적은 그대로 남아요.')) return;
+  undoQ = JSON.parse(JSON.stringify(Q));
+  Q = Object.assign(newQuote(), { mr: Q.mr, mode: Q.mode, ru: Q.ru }); qSaveDraft(); renderQuoteForm();
+  $('hQUndo').innerHTML = '<div class="ok" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">전체 지웠어요. <button class="btn sm" id="hQUndoBtn">↩ 되돌리기</button></div>';
+  $('hQUndoBtn').addEventListener('click', () => { if (!undoQ) return; Q = normQ(undoQ); undoQ = null; qSaveDraft(); renderQuoteForm(); $('hQUndo').innerHTML = ''; toast('되돌렸어요.'); });
+  clearTimeout(undoT); undoT = setTimeout(() => { undoQ = null; $('hQUndo').innerHTML = ''; }, 10000);
+});
 $('hQAddShip').addEventListener('click', () => { const at = Q.lines.findIndex(lineEmpty); const sh = Object.assign(blankLine(), { n: '운반비', q: '1' }); if (at >= 0) Q.lines[at] = sh; else Q.lines.push(sh); qSaveDraft(); renderSheet(); });
 $('hSSeal').addEventListener('change', e => {
   const f = e.target.files && e.target.files[0]; if (!f) return;
