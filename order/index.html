@@ -147,6 +147,15 @@ mark { background: #fff1a8; color: inherit; border-radius: 3px; }
 .mrow input { min-height: 40px; padding: 6px 8px; }
 .mrow input.r { text-align: right; }
 @media (max-width: 760px) { .mrow { grid-template-columns: 1fr 1fr 1fr 40px; background: var(--surface2); border: 1px solid var(--line); border-radius: 14px; padding: 8px; } .mrow select:first-child { grid-column: 1 / 4; } .mrow .x { grid-column: 4; grid-row: 1; } .mrow [data-mf="n"] { grid-column: 1 / 5; } .mrow [data-mf="sp"] { grid-column: 1 / 5; } .mrow [data-mf="q"] { grid-column: 2 / 5; } }
+.pt { margin-top: 12px; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: #fff; }
+.pt h3 { margin: 0 0 4px !important; font-size: .98em; color: var(--ink); }
+.pt .tw { overflow-x: auto; }
+.pt table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: .92em; font-variant-numeric: tabular-nums; }
+.pt th, .pt td { padding: 6px 6px; border-top: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.pt td:first-child { white-space: normal; min-width: 150px; }
+.pt th { font-size: .8em; color: var(--ink3); border-top: 0; } .pt .r { text-align: right; }
+.pt .prin { width: 110px; min-height: 36px; padding: 4px 8px; text-align: right; }
+.pt tr.ptot th, .pt tr.ptot td { border-top: 2px solid var(--ink); color: var(--ink); font-size: 1em; }
 .seg.h3 { grid-template-columns: minmax(0, 1fr) 92px 92px 40px; }
 .seg .x, .ql .x, .mrow .x { border: 0; background: transparent; color: var(--ink3); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; font-size: 1em; }
 .seg .x:hover, .ql .x:hover, .mrow .x:hover { color: var(--bad); background: var(--surface2); }
@@ -293,7 +302,7 @@ body.wideq .wrap { max-width: 1530px; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-06g';
+const BUILD = '2026-11-06h';
 (function () {
   let busy = false;
   async function check() {
@@ -1101,7 +1110,9 @@ function renderCalc() {
       fld(c, 'bolt', '1장당 고정 볼트 (개)', '0') + '</div>';
     h += '<div style="margin-top:12px">' + segHtml(c) + '</div><p class="muted">끊어지는 곳(집수정·꺾이는 곳)마다 구간을 나눠 주세요. 구간마다 따로 올림해서 셉니다.</p>';
   } else if (c === 'rw') {
-    h += '<div class="grid3">' + pick(c, 'spec', '블록 이름 · 규격', prodNames('rw', ['블록 종류']).concat(['대형 블록', '중형 블록', '소형 블록']), '예: 대형 블록') + fld(c, 'bw', '블록 앞면 가로 (mm)', '카탈로그 값') + fld(c, 'bh', '블록 앞면 높이 (mm)', '카탈로그 값') +
+    h += '<div class="grid3">' + pick(c, 'spec', '블록 이름 · 규격', prodNames('rw', ['블록 종류']).concat(['대형 블록', '중형 블록', '소형 블록']), '예: 대형 블록') + fld(c, 'bw', '블록 앞면 가로 (mm)', '예: 500') + fld(c, 'bh', '블록 앞면 높이 (mm)', '예: 250') +
+      '<div><label class="f" for="c_rw_how">블록 수 세는 법</label><select id="c_rw_how" data-k="how"><option value="grid"' + (C.how !== 'm2' ? ' selected' : '') + '>구간마다 단 × 개 (올림)</option><option value="m2"' + (C.how === 'm2' ? ' selected' : '') + '>헤베(m²)당 개수 × 면적</option></select></div>' +
+      fld(c, 'pm', '헤베(m²)당 개수 · 선택', '비우면 규격으로 계산 (예: 8)') +
       fld(c, 'spare', '여유 (%)', '3') + fld(c, 'capw', '캡블록 1개 길이 (mm) · 선택', '비우면 안 셈') +
       '<div><label class="f" for="c_rw_perf">배수 유공관</label><select id="c_rw_perf" data-k="perf"><option value="1"' + (C.perf ? ' selected' : '') + '>넣음 (벽 길이만큼)</option><option value="0"' + (!C.perf ? ' selected' : '') + '>안 넣음</option></select></div>' +
       fld(c, 'gs', '지오그리드 층 간격 (m) · 선택', '설계도 값, 예: 0.6') + fld(c, 'gl', '지오그리드 보강 길이 (m) · 선택', '설계도 값, 예: 2.5') + fld(c, 'gw', '뒷채움 쇄석 폭 (m) · 선택', '예: 0.3') + '</div>';
@@ -1178,6 +1189,7 @@ function calcRun(c) {
     const plmm = mm(pl), per = segs.map(s => Math.ceil(mm(s.L) / plmm)), n = per.reduce((a, b) => a + b, 0), joints = n - segs.length, total = n + spare;
     const mh = mhIn === null ? segs.length + 1 : mhIn;
     const dia = 'Ø' + C.dia;
+    R.base = { u: 'm', v: L, label: '관 연장' };
     R.rows.push(['흄관 ' + dia + ' (' + C.joint + '형)', fmtQ(total) + ' 본', '총 연장 ' + fmtQ(L) + 'm · 구간마다 올림: ' + segs.map((s, i) => fmtQ(s.L) + '÷' + fmtQ(pl) + '=' + per[i]).join(', ') + (spare ? ' · 여유 ' + spare + '본' : '')]);
     R.rows.push([C.joint === 'B' ? '고무링' : '칼라', fmtQ(joints) + ' 개', '관끼리 이음: ' + n + '본 − 구간 ' + segs.length + ' = ' + joints + (C.joint === 'B' ? ' · 고무링이 관에 붙어 나오면 따로 안 사요' : '')]);
     if (base > 0) R.rows.push(['흄관 받침', fmtQ(n * base) + ' 개', n + '본 × ' + base + '개']);
@@ -1190,6 +1202,7 @@ function calcRun(c) {
     const gl = need('gl', '한 장 길이', 100), bolt = need('bolt', '1장당 볼트', 0, true);
     if (errs.length) return R;
     const per = segs.map(s => Math.ceil(mm(s.L) / gl)), n = per.reduce((a, b) => a + b, 0);
+    R.base = { u: 'm', v: L, label: '배수로 연장' };
     R.rows.push([C.name || '그레이팅', fmtQ(n) + ' 장', '총 연장 ' + fmtQ(L) + 'm · 구간마다 올림: ' + segs.map((s, i) => fmtQ(mm(s.L)) + 'mm÷' + fmtQ(gl) + '=' + per[i]).join(', ')]);
     const cuts = segs.map((s, i) => { const r = mm(s.L) - (per[i] - 1) * gl; return r < gl ? s.n + ' 마지막 1장 ' + fmtQ(r) + 'mm' : ''; }).filter(Boolean);
     if (cuts.length) R.rows.push(['맞춤(자투리)', cuts.length + ' 곳', cuts.join(' · ') + ' → 맞춤 제작하거나 잘라 쓰기']);
@@ -1210,6 +1223,7 @@ function calcRun(c) {
       how.push(s.n + ': 캐링 ' + cl + '줄 · M-BAR ' + ml + '줄 · 행거 ' + cl + '×' + hp);
     });
     const A = area / 1e6, nc = up(cLen / mm(lc), spare), nm = up(mLen / mm(lm), spare), nb = up(area * layers / (bw * bl), spare);
+    R.base = { u: 'm²', v: A, label: '천장 면적' };
     R.rows.push(['천장 면적', fmtQ(Math.round(A * 100) / 100) + ' m²', how.join(' / ')]);
     R.rows.push(['캐링 찬넬', fmtQ(nc) + ' 본', '총 ' + fmtQ(cLen / 1000) + 'm ÷ ' + fmtQ(lc) + 'm' + (spare ? ' × (1 + ' + spare + '%)' : '') + ' 올림']);
     R.rows.push(['M-BAR', fmtQ(nm) + ' 본', '총 ' + fmtQ(mLen / 1000) + 'm ÷ ' + fmtQ(lm) + 'm' + (spare ? ' × (1 + ' + spare + '%)' : '') + ' 올림 · 보드 이음 자리는 더블로 (나눠서 주문)']);
@@ -1230,6 +1244,7 @@ function calcRun(c) {
     const cnt = segs.map(s => Math.floor(mm(s.L) / ss) + 1), pcs = segs.map(s => ls ? Math.ceil(mm(s.H) / mm(ls)) : 1);
     const studs = up(cnt.reduce((a, n, i) => a + n * pcs[i], 0), spare), rLen = segs.reduce((a, s) => a + 2 * mm(s.L), 0), nr = up(rLen / mm(lr), spare);
     const area = segs.reduce((a, s) => a + mm(s.L) * mm(s.H), 0), nb = up(area * sides * layers / (bw * bl), spare);
+    R.base = { u: 'm²', v: area / 1e6, label: '벽 면적' };
     R.rows.push(['벽 면적', fmtQ(Math.round(area / 1e4) / 100) + ' m²', segs.map(s => s.n + ' ' + fmtQ(s.L) + '×' + fmtQ(s.H)).join(' · ')]);
     R.rows.push(['스터드 ' + sz, fmtQ(studs) + ' 본', segs.map((s, i) => s.n + ' ' + cnt[i] + '개' + (pcs[i] > 1 ? '×' + pcs[i] + '토막' : '')).join(' · ') + (spare ? ' × (1 + ' + spare + '%)' : '') + (ls ? '' : ' · 길이는 벽 높이에 맞춰 주문')]);
     R.rows.push(['런너 ' + sz, fmtQ(nr) + ' 본', '위아래 2줄 총 ' + fmtQ(rLen / 1000) + 'm ÷ ' + fmtQ(lr) + 'm' + (spare ? ' × (1 + ' + spare + '%)' : '') + ' 올림']);
@@ -1238,16 +1253,26 @@ function calcRun(c) {
     R.lines.push({ n: '스터드', sp: sz + (ls ? ' L=' + fmtQ(ls) + 'm' : ' (길이 맞춤)'), u: '본', q: studs }, { n: '런너', sp: sz + ' L=' + fmtQ(lr) + 'm', u: '본', q: nr }, { n: '석고보드', sp: fmtQ(bw) + '×' + fmtQ(bl), u: '장', q: nb });
     if (C.wool) R.lines.push({ n: '흡음재 (그라스울)', sp: '', u: 'm²', q: Math.round(area / 1e4) / 100 });
   } else if (c === 'rw') {
-    const bw = need('bw', '블록 앞면 가로', 50), bh = need('bh', '블록 앞면 높이', 50), spare = need('spare', '여유', 0), capw = opt('capw', '캡블록 길이'), gs = opt('gs', '지오그리드 층 간격'), gl = opt('gl', '지오그리드 보강 길이'), gw = opt('gw', '뒷채움 쇄석 폭');
+    const pm = opt('pm', '헤베당 개수'), m2 = C.how === 'm2', sizeNeed = !m2 || pm === null;
+    const bw = sizeNeed ? need('bw', '블록 앞면 가로', 50) : opt('bw', '블록 앞면 가로'), bh = sizeNeed ? need('bh', '블록 앞면 높이', 50) : opt('bh', '블록 앞면 높이'), spare = need('spare', '여유', 0), capw = opt('capw', '캡블록 길이'), gs = opt('gs', '지오그리드 층 간격'), gl = opt('gl', '지오그리드 보강 길이'), gw = opt('gw', '뒷채움 쇄석 폭');
     if (capw !== null && capw < 50) { errs.push('캡블록 길이는 mm로 적어 주세요 (예: 400).'); bad.push('capw'); }
     if (gs !== null && gs <= 0) { errs.push('지오그리드 층 간격은 0보다 커야 해요.'); bad.push('gs'); }
     if (errs.length) return R;
     const up2 = x => Math.ceil(x * 100 - 1e-9) / 100;
-    const rows = segs.map(s => Math.ceil(mm(s.H) / bh)), per = segs.map(s => Math.ceil(mm(s.L) / bw)), blk = segs.map((s, i) => rows[i] * per[i]);
-    const raw = blk.reduce((a, b) => a + b, 0), n = Math.ceil(raw * (100 + spare) / 100 - 1e-9);
+    if (pm !== null && pm <= 0) { errs.push('헤베당 개수는 0보다 커야 해요.'); bad.push('pm'); return R; }
     const area = segs.reduce((a, s) => a + mm(s.L) * mm(s.H), 0) / 1e6;
-    R.rows.push(['벽 면적', fmtQ(Math.round(area * 100) / 100) + ' m²', segs.map(s => s.n + ' ' + fmtQ(s.L) + '×' + fmtQ(s.H)).join(' · ') + ' · 참고: m²당 ' + fmtQ(Math.round(1e8 / (bw * bh)) / 100) + '개']);
-    R.rows.push(['보강토 블록 ' + (C.spec || ''), fmtQ(n) + ' 개', segs.map((s, i) => s.n + ' ' + rows[i] + '단×' + per[i] + '개=' + blk[i]).join(' · ') + ' → 합 ' + raw + (spare ? ' × (1 + ' + spare + '%) 올림' : '')]);
+    /* 1헤베(m²)당 개수: 카탈로그 값이 있으면 그 값, 없으면 1 ÷ (앞면 가로 × 높이) */
+    const perM2 = pm !== null ? pm : 1e6 / (bw * bh);
+    R.rows.push(['1헤베(m²)당 블록', fmtQ(Math.round(perM2 * 100) / 100) + ' 개', pm !== null ? '카탈로그 값 (직접 입력)' : '1m² ÷ (앞면 ' + fmtQ(bw) + '×' + fmtQ(bh) + 'mm = ' + (bw * bh / 1e6).toLocaleString('ko-KR', { maximumFractionDigits: 4 }) + 'm²) = ' + fmtQ(Math.round(perM2 * 100) / 100) + '개' + (Number.isInteger(Math.round(perM2 * 1e6) / 1e6) ? '' : ' (줄눈·자르는 양에 따라 조금 달라요)')]);
+    R.rows.push(['벽 면적 (헤베)', fmtQ(Math.round(area * 100) / 100) + ' m²', segs.map(s => s.n + ' ' + fmtQ(s.L) + '×' + fmtQ(s.H)).join(' · ')]);
+    let n;
+    if (m2) { const raw = area * perM2; n = Math.ceil(raw * (100 + spare) / 100 - 1e-9); R.rows.push(['보강토 블록 ' + (C.spec || ''), fmtQ(n) + ' 개', fmtQ(Math.round(area * 100) / 100) + 'm² × ' + fmtQ(Math.round(perM2 * 100) / 100) + '개 = ' + fmtQ(Math.round(raw * 100) / 100) + (spare ? ' × (1 + ' + spare + '%)' : '') + ' → 올림']); }
+    else {
+      const rows = segs.map(s => Math.ceil(mm(s.H) / bh)), per = segs.map(s => Math.ceil(mm(s.L) / bw)), blk = segs.map((s, i) => rows[i] * per[i]);
+      const raw = blk.reduce((a, b) => a + b, 0); n = Math.ceil(raw * (100 + spare) / 100 - 1e-9);
+      R.rows.push(['보강토 블록 ' + (C.spec || ''), fmtQ(n) + ' 개', segs.map((s, i) => s.n + ' ' + rows[i] + '단×' + per[i] + '개=' + blk[i]).join(' · ') + ' → 합 ' + raw + (spare ? ' × (1 + ' + spare + '%) 올림' : '')]);
+    }
+    R.base = { u: 'm²', v: area, label: '벽 면적' };
     let cap = 0;
     if (capw) { const cp = segs.map(s => Math.ceil(mm(s.L) / capw)); cap = cp.reduce((a, b) => a + b, 0); R.rows.push(['캡블록', fmtQ(cap) + ' 개', '구간마다 길이 ÷ ' + fmtQ(capw) + 'mm 올림: ' + cp.join(' + ')]); }
     let geo = null;
@@ -1265,6 +1290,7 @@ function calcRun(c) {
     const cl = need('cl', '1개 길이', 100), spare = need('spare', '여유', 0), curve = opt('curve', '곡선 경계석', true), corner = opt('corner', '코너석·진입석', true), fw = opt('fw', '기초 폭'), ft = opt('ft', '기초 두께');
     if (errs.length) return R;
     const raw = mm(L) / cl, n = Math.ceil(raw * (100 + spare) / 100 - 1e-9);
+    R.base = { u: 'm', v: L, label: '경계석 연장' };
     R.rows.push([(C.name || '경계석') + ' ' + (C.spec || ''), fmtQ(n) + ' 개', fmtQ(mm(L)) + 'mm ÷ ' + fmtQ(cl) + ' = ' + fmtQ(Math.round(raw * 100) / 100) + (spare ? ' × (1 + ' + spare + '%)' : '') + ' → 올림']);
     if (curve) R.rows.push(['곡선 경계석', fmtQ(curve) + ' 개', '직접 입력 (R값별로 나눠 주문)']);
     if (corner) R.rows.push(['코너석 · 진입 낮춤석', fmtQ(corner) + ' 개', '직접 입력']);
@@ -1278,16 +1304,50 @@ function calcRun(c) {
   }
   return R;
 }
+/* 양산출 단가 → 금액 · 헤베(m²)당 / m당 단가 (원 단위 정수로 계산) */
+let LASTR = null;
+function priceCalc() {
+  const R = LASTR, C = CALC[ST.ccat] || {}, pr = C.pr || {}, ok = [], bad = [], errs = []; let tot = 0, n = 0;
+  if (!R) return { ok, bad, errs, tot, n };
+  R.lines.forEach((l, i) => {
+    const v = numIn(pr[l.n + '|' + l.sp]);
+    if (v === null) return;
+    if (Number.isNaN(v) || !Number.isInteger(v)) { bad.push(i); errs.push(l.n + ' 단가 "' + pr[l.n + '|' + l.sp] + '"을(를) 원 단위 숫자로 읽을 수 없어요.'); return; }
+    const amt = Math.round(Math.round(l.q * 100) * v / 100); ok[i] = { p: v, amt }; tot += amt; n++;
+  });
+  return { ok, bad, errs, tot, n };
+}
+function updPrice() {
+  const R = LASTR; if (!R || !$('pTot')) return;
+  const P = priceCalc(), B = R.base && R.base.v > 0 ? R.base : null, per = a => won(Math.round(a / B.v)) + '원';
+  R.lines.forEach((l, i) => {
+    const o = P.ok[i], a = document.querySelector('[data-pa="' + i + '"]'), b = document.querySelector('[data-pb="' + i + '"]'), inp = document.querySelector('[data-pi="' + i + '"]');
+    inp.classList.toggle('bad', P.bad.includes(i));
+    a.textContent = o ? won(o.amt) + '원' : P.bad.includes(i) ? '확인' : '';
+    if (b) b.textContent = o ? per(o.amt) : '';
+  });
+  $('pTot').innerHTML = P.n ? '<b>' + won(P.tot) + '원</b>' : '';
+  if ($('pPer')) $('pPer').innerHTML = P.n ? '<b>' + per(P.tot) + '</b>' : '';
+  $('pErr').innerHTML = P.errs.length ? '<div class="err">' + P.errs.map(esc).join('<br>') + '</div>' : (P.n && P.n < R.lines.length ? '<p class="muted" style="margin:6px 0 0">단가를 넣은 ' + P.n + '줄만 합계에 들어가요.</p>' : '');
+}
 function renderCalcOut() {
   const c = ST.ccat, R = calcRun(c), box = $('cOut'); if (!box) return;
   document.querySelectorAll('.mrow').forEach(r => { const i = r.dataset.mr; r.querySelector('[data-mf="q"]').classList.toggle('bad', R.bad.includes('mq' + i)); r.querySelector('[data-mf="n"]').classList.toggle('bad', R.bad.includes('mn' + i)); });
   document.querySelectorAll('[data-calc] input[type=text]:not([data-mf])').forEach(i => { const k = i.dataset.k || ('seg' + (i.dataset.f === 'H' ? 'H' : '') + i.dataset.seg); i.classList.toggle('bad', R.bad.includes(k) && (i.dataset.k || i.dataset.f !== 'n')); });
   if (R.errs.length) { box.innerHTML = '<div class="err">' + R.errs.map(esc).join('<br>') + '</div>'; return; }
-  box.innerHTML = '<div class="res"><table>' + R.rows.map(r => '<tr><td>' + esc(r[0]) + '<span class="how">' + esc(r[2]) + '</span></td><td class="n">' + esc(r[1]) + '</td></tr>').join('') + '</table></div>' +
+  LASTR = R;
+  const C = CALC[c]; if (!C.pr) C.pr = {};
+  const B = R.base && R.base.v > 0 ? R.base : null, bu = B ? (B.u === 'm²' ? '헤베(m²)당' : 'm당') : '';
+  const ptab = '<div class="pt"><h3>단가 넣고 ' + (B ? bu + ' 단가 보기' : '금액 보기') + '</h3>' + (B ? '<p class="muted" style="margin:0 0 6px">' + esc(B.label) + ' ' + fmtQ(Math.round(B.v * 100) / 100) + (B.u === 'm²' ? 'm² (헤베 = 가로 1m × 세로 1m)' : 'm') + ' 기준이에요. 단가는 이 기기에 남아요.</p>' : '') +
+    '<p class="swipe">↔ 표를 옆으로 밀어 보세요</p><div class="tw"><table><tr><th>품목</th><th class="r">수량</th><th class="r">단가 (원)</th><th class="r">금액</th>' + (B ? '<th class="r">' + bu + '</th>' : '') + '</tr>' +
+    R.lines.map((l, i) => '<tr><td>' + esc(l.n) + (l.sp ? ' <span class="muted">' + esc(l.sp) + '</span>' : '') + '</td><td class="r">' + fmtQ(l.q) + ' ' + esc(l.u) + '</td><td class="r"><input type="text" class="prin" data-pr="' + esc(l.n + '|' + l.sp) + '" data-pi="' + i + '" value="' + esc(C.pr[l.n + '|' + l.sp] || '') + '" inputmode="numeric" placeholder="원" aria-label="' + esc(l.n) + ' 단가"></td><td class="r" data-pa="' + i + '"></td>' + (B ? '<td class="r" data-pb="' + i + '"></td>' : '') + '</tr>').join('') +
+    '<tr class="ptot"><th>합계</th><td></td><td></td><td class="r" id="pTot"></td>' + (B ? '<td class="r" id="pPer"></td>' : '') + '</tr></table></div><div id="pErr"></div></div>';
+  box.innerHTML = '<div class="res"><table>' + R.rows.map(r => '<tr><td>' + esc(r[0]) + '<span class="how">' + esc(r[2]) + '</span></td><td class="n">' + esc(r[1]) + '</td></tr>').join('') + '</table></div>' + (R.lines.length ? ptab : '') +
     '<div class="btns"><button class="btn" id="cToQ">견적서에 넣기 (' + R.lines.length + '줄)</button><button class="btn ghost" id="cToH">홈센터 견적서에 넣기 ↗</button></div>';
   $('cToQ').addEventListener('click', () => {
     Q.lines = Q.lines.filter(l => !lineEmpty(l));
-    R.lines.forEach(l => Q.lines.push({ n: l.n, sp: l.sp, u: l.u, q: String(l.q), p: '', m: '' }));
+    const P = priceCalc();
+    R.lines.forEach((l, i) => Q.lines.push({ n: l.n, sp: l.sp, u: l.u, q: String(l.q), p: P.ok[i] ? String(P.ok[i].p) : '', m: '' }));
     qSaveDraft(); go('quote'); toast(R.lines.length + '줄을 넣었어요. 단가를 적어 주세요.');
   });
   /* 홈센터 견적서 앱(같은 사이트, 같은 저장소)에 줄을 넣고 그 앱으로 이동 */
@@ -1295,15 +1355,18 @@ function renderCalcOut() {
     const H = LS.get('hquote', null) || { id: 'q' + Date.now(), to: '', site: '', cman: '', ctel: '', date: '', memo: '', mr: '10', mode: 'sale', ru: '10u', lines: [] };
     const blank = () => ({ code: '', n: '', br: '', sp: '', u: '', q: '', cost: '', mr: '', p: '', m: '' });
     const nonEmpty = (H.lines || []).filter(l => ['code', 'n', 'br', 'sp', 'q', 'cost', 'p'].some(k => String(l[k] == null ? '' : l[k]).trim()));
-    R.lines.forEach(l => nonEmpty.push(Object.assign(blank(), { n: l.n, sp: l.sp, u: l.u, q: String(l.q) })));
+    const P = priceCalc();
+    R.lines.forEach((l, i) => nonEmpty.push(Object.assign(blank(), { n: l.n, sp: l.sp, u: l.u, q: String(l.q), p: P.ok[i] ? String(P.ok[i].p) : '' })));
     H.lines = nonEmpty;
     if (!LS.set('hquote', H)) { toast('저장하지 못했어요.'); return; }
     location.href = '../quote/';
   });
+  updPrice();
 }
 $('ccats').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; ST.ccat = b.dataset.c; LS.set('ccat', ST.ccat); renderCalc(); });
 $('cBody').addEventListener('input', e => {
   const t = e.target, C = CALC[ST.ccat];
+  if (t.dataset.pr !== undefined) { if (!C.pr) C.pr = {}; C.pr[t.dataset.pr] = t.value; calcSave(); updPrice(); return; }
   if (t.dataset.mf) { const r = C.rows[+t.closest('.mrow').dataset.mr]; r[t.dataset.mf] = t.value; calcSave(); if (t.tagName === 'SELECT') { if (t.dataset.mf === 'c') { r.n = ''; r.sp = ''; } renderCalc(); } else renderCalcOut(); return; }
   if (t.dataset.seg !== undefined) C.segs[+t.dataset.seg][t.dataset.f] = t.value;
   else if (t.dataset.k) C[t.dataset.k] = t.value;
