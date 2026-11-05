@@ -333,10 +333,33 @@ body.wideq .wrap { max-width: 1530px; }
 .qmode button.on { background: #fff; color: var(--top); border-color: #fff; }
 #tPrint { display: none; }
 @media print { body.print2 #tPrint { display: block; visibility: visible; position: absolute; left: 0; top: 0; width: 100%; } body.print2 #tPrint * { visibility: visible; } body.print2 #tPrint .hdoc { border: 0; padding: 0; width: 100%; } }
+/* 기업용 견적서 양식 */
+.cdoc { width: 820px; background: #fff; color: #000; padding: 18px 20px; border: 1px solid var(--line); font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Pretendard Variable", sans-serif; font-size: 12px; line-height: 1.35; margin: 0 auto; }
+.cdoc table { width: 100%; border-collapse: collapse; }
+.cdoc th, .cdoc td { border: 1px solid #000; padding: 3px 5px; height: 24px; }
+.cdoc th { font-weight: 600; background: #fff; text-align: center; }
+.cdoc .r { text-align: right; font-variant-numeric: tabular-nums; } .cdoc .c { text-align: center; }
+.cdoc .chd { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: 8px; }
+.cdoc .chd h1 { margin: 0; font-size: 28px; letter-spacing: .35em; padding-left: .35em; }
+.cdoc .clogo { text-align: right; line-height: 1.05; }
+.cdoc .clogo .eu { display: block; color: #1d4f91; font-weight: 900; font-size: 15px; letter-spacing: .04em; }
+.cdoc .clogo .ac { font-style: italic; font-weight: 900; font-size: 22px; } .cdoc .clogo .ac b { color: #d71920; } .cdoc .clogo .ac i { font-size: 18px; margin-left: 2px; }
+.cdoc .cbs { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 8px; }
+.cdoc .cbx th.vl { width: 24px; line-height: 1.6; }
+.cdoc .cbx th { width: 74px; white-space: nowrap; } .cdoc .cbx td { text-align: center; } .cdoc .cbx td.nm { position: relative; }
+.cdoc .seal { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); height: 34px; opacity: .9; }
+.cdoc .csum { margin-bottom: 0; } .cdoc .csum th { background: #f2f2f2; }
+.cdoc .cit th { background: #f2f2f2; } .cdoc .cit td { font-variant-numeric: tabular-nums; }
+.cdoc .cit tr.ctot td { background: #dce6f1; font-weight: 700; }
+.cdoc .cit { table-layout: fixed; } .cdoc .cit td { overflow: hidden; word-break: keep-all; }
+.cdoc .cmemo { display: grid; grid-template-columns: 110px 1fr; border: 1px solid #000; border-top: 0; min-height: 110px; }
+.cdoc .cmemo span:first-child { border-right: 1px solid #000; display: flex; align-items: center; justify-content: center; }
+.cdoc .cmemo span:last-child { padding: 8px 10px; white-space: pre-wrap; line-height: 2.1; letter-spacing: .02em; }
+body.print2 #tPrint .cdoc { border: 0; padding: 0; width: 100%; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-06d';
+const BUILD = '2026-11-06f';
 (function () {
   let busy = false;
   async function check() {
@@ -433,7 +456,7 @@ const BUILD = '2026-11-06d';
 
     <div class="card xcard stp" data-step="2">
       <h2>2. 품목 넣기 <span class="muted" id="tCnt"></span></h2>
-      <p class="muted" style="margin:0 0 8px">제품명 · 수량 · <b>매입단가</b>만 넣으면 <b class="c1">1차 단가</b>와 <b class="c2">최종 단가</b>가 자동으로 나와요. Enter 키 = 아래 칸.</p>
+      <p class="muted" style="margin:0 0 8px">제품명 · 수량 · <b>매입단가</b>만 넣으면 <b class="c1">1차 단가</b>와 <b class="c2">최종 단가</b>가 자동으로 나와요. 단가를 이미 알면 그 칸에 바로 쓰면 돼요. <b>엑셀에서 여러 줄을 복사해 제품명 칸에 붙여 넣으면</b> 한 번에 들어가요 (제품명 · 규격 · 단위 · 수량 · 매입단가 순서). Enter 키 = 아래 칸.</p>
       <label class="ckl"><input type="checkbox" id="tDetail"> 자세히 보기 (코드·브랜드 · 줄마다 % · 금액 · 마진)</label>
       <div class="xwrap" id="tSheet"></div>
       <div class="btns"><button class="btn ghost sm" id="tAdd">＋ 줄 추가</button><button class="btn ghost sm" id="tAdd5">＋ 5줄 추가</button><button class="btn ghost sm" id="tSave">💾 저장</button><button class="btn ghost sm" id="tClear" style="color:var(--bad);border-color:#f3c4c9">🗑 전체 지우기</button></div>
@@ -446,7 +469,8 @@ const BUILD = '2026-11-06d';
     <div class="card stp doc1" data-step="3">
       <h2>3. <span class="dn d1">1차</span> 견적서 — 우리 → 중간 업체 <span class="muted" id="tSum1"></span></h2>
       <div class="grid3 dfm" data-doc="1"></div>
-      <details class="more"><summary>담당자 · 연락처 · 비고 · 로고</summary><div class="grid3 dfm2" data-doc="1"></div></details>
+      <details class="more"><summary>보내는 곳 = 우리 회사 정보 (공급자 칸 · 한 번 적으면 이 기기에 남아요)</summary><div class="grid3" id="tSup1" style="margin-top:8px"></div></details>
+      <details class="more" open><summary>양식 · 담당자 · 연락처 · 비고 · 로고</summary><div class="grid3 dfm2" data-doc="1"></div></details>
       <div class="btns sendbar" data-acts="1"></div>
       <div id="tReady1"></div>
       <div class="docbox"><div id="tDoc1"></div></div>
@@ -456,8 +480,9 @@ const BUILD = '2026-11-06d';
     <div class="card stp doc2" data-step="4">
       <h2>4. <span class="dn d2">최종</span> 견적서 — 중간 업체 → 최종 고객 <span class="muted" id="tSum2"></span></h2>
       <div class="grid3 dfm" data-doc="2"></div>
-      <details class="more" open><summary>보내는 곳 = 중간 업체 정보 (견적서 오른쪽 위 칸)</summary><div class="grid3" id="tSup2" style="margin-top:8px"></div></details>
-      <details class="more"><summary>담당자 · 연락처 · 비고 · 로고</summary><div class="grid3 dfm2" data-doc="2"></div></details>
+      <details class="more" open><summary>중간 기업 정보 (1차 견적서의 ‘공급받는자’ = 최종 견적서의 ‘공급자’)</summary><div class="grid3" id="tSup2" style="margin-top:8px"></div></details>
+      <details class="more" open><summary>최종 업체 정보 (최종 견적서의 ‘공급받는자’)</summary><div class="grid3" id="tCust" style="margin-top:8px"></div></details>
+      <details class="more" open><summary>양식 · 담당자 · 연락처 · 비고 · 로고</summary><div class="grid3 dfm2" data-doc="2"></div></details>
       <div class="btns sendbar" data-acts="2"></div>
       <div id="tReady2"></div>
       <div class="docbox"><div id="tDoc2"></div></div>
@@ -773,11 +798,12 @@ $('hQNew').addEventListener('click', () => { if (!confirm('지금 쓰던 견적�
 const TWO = (() => {
   const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
   const blank = () => ({ code: '', n: '', br: '', sp: '', u: '', q: '', cost: '', a: '', p1: '', b: '', p2: '', m: '' });
-  const newDoc = logo => ({ to: '', site: '', cman: '', ctel: '', date: today(), memo: '', logo });
-  const newT = () => ({ id: 't' + Date.now(), a: '10', b: '5', mode: 'sale', ru: '10u', d1: newDoc(true), d2: newDoc(false), sup2: { name: '', biz: '', addr: '', mgr: '', tel: '', fax: '', email: '' }, lines: Array.from({ length: 10 }, blank) });
-  function norm(t) { const b = newT(), o = Object.assign(b, t || {}); o.d1 = Object.assign(newDoc(true), (t || {}).d1 || {}); o.d2 = Object.assign(newDoc(false), (t || {}).d2 || {}); o.sup2 = Object.assign(newT().sup2, (t || {}).sup2 || {}); o.lines = (o.lines || []).map(l => Object.assign(blank(), l)); if (!o.lines.length) o.lines.push(blank()); return o; }
+  const newDoc = (logo, form) => ({ to: '', site: '', cman: '', ctel: '', date: today(), memo: form === 'corp' ? MEMO_CORP : '', logo, form });
+  const MEMO_CORP = '위 견적은 도착도 견적입니다. / 발주 요청시 약 7일정도 재고확보 시간이 필요합니다. 참고부탁드립니다.\n제품명, 규격 수량 확인 필수 부탁드립니다.\n위 견적은 견적일로부터, 7일간 유효합니다.\n위 상품은 반품이 불가하오니, 참고부탁드립니다.';
+  const newT = () => ({ id: 't' + Date.now(), a: '10', b: '5', mode: 'sale', ru: '10u', d1: newDoc(true, 'corp'), d2: newDoc(true, 'corp'), sup2: { name: '', biz: '', ceo: '', addr: '', mgr: '', tel: '', fax: '', email: '', btype: '', bitem: '' }, cust: { name: '', biz: '', ceo: '', addr: '', tel: '', fax: '', btype: '', bitem: '' }, lines: Array.from({ length: 10 }, blank) });
+  function norm(t) { const b = newT(), o = Object.assign(b, t || {}); o.d1 = Object.assign(newDoc(true, 'corp'), (t || {}).d1 || {}); o.d2 = Object.assign(newDoc(true, 'corp'), (t || {}).d2 || {}); o.cust = Object.assign(newT().cust, (t || {}).cust || {}); o.sup2 = Object.assign(newT().sup2, (t || {}).sup2 || {}); o.lines = (o.lines || []).map(l => Object.assign(blank(), l)); if (!o.lines.length) o.lines.push(blank()); return o; }
   let T = norm(LS.get('h2quote', null));
-  const SUP = () => Object.assign({ name: 'ACE 일산점', biz: '', addr: '', mgr: '', tel: '', fax: '', email: '', seal: '' }, LS.get('supplier', null) || {});
+  const SUP = () => Object.assign({ name: 'ACE 일산점', biz: '', ceo: '', addr: '', mgr: '', tel: '', fax: '', email: '', btype: '', bitem: '', seal: '' }, LS.get('supplier', null) || {});
   const save = () => LS.set('h2quote', T);
   const s_ = v => String(v == null ? '' : v).trim();
   const empty = l => !['code', 'n', 'br', 'sp', 'q', 'cost', 'p1', 'p2'].some(k => s_(l[k]));
@@ -834,7 +860,7 @@ const TWO = (() => {
   }
   /* ---------- 2단계: 품목 표 (기본은 꼭 필요한 칸만, '자세히'를 켜면 전부) ---------- */
   const DEFS = [
-    ['code', 'NO', 70, 'L', 'in', 'c', '', 1], ['n', '제품명', 200, 'L', 'in', 'c', ''], ['br', '브랜드', 80, 'L', 'in', 'c', '', 1], ['sp', '규격', 110, 'L', 'in', 'c', ''], ['q', '수량', 60, 'L', 'in', 'c', 'decimal'],
+    ['code', 'NO', 70, 'L', 'in', 'c', '', 1], ['n', '제품명', 200, 'L', 'in', 'c', ''], ['br', '브랜드', 80, 'L', 'in', 'c', '', 1], ['sp', '규격', 110, 'L', 'in', 'c', ''], ['u', '단위', 54, 'L', 'in', 'c', ''], ['q', '수량', 60, 'L', 'in', 'c', 'decimal'],
     ['cost', '매입단가<br><small>(우리만)</small>', 100, 'R', 'in', 'r', 'numeric'],
     ['a', 'A %', 54, 'L g1', 'in', 'r', 'decimal', 1], ['p1', '1차 단가', 100, 'L g1', 'in', 'r', 'numeric'], ['amt1', '1차 금액', 96, 'L g1', 'cv', '', '', 1],
     ['b', 'B %', 54, 'L g2', 'in', 'r', 'decimal', 1], ['p2', '최종 단가', 100, 'L g2', 'in', 'r', 'numeric'], ['amt2', '최종 금액', 96, 'L g2', 'cv', '', '', 1],
@@ -881,8 +907,25 @@ const TWO = (() => {
     return O;
   }
   /* ---------- 견적서 두 장 ---------- */
+  /* 기업용 양식 (공급자 / 공급받는자 · 작성일 · 순번 · 단위 · 공급가액 · 부가세 · 합계) */
+  const docD = w => w === 1 ? T.d1 : Object.assign({}, T.d2, { site: s_(T.d2.site) || T.d1.site, date: T.d2.date || T.d1.date });
+  function corpHtml(w, O) {
+    const D = docD(w), A = w === 1 ? SUP() : T.sup2, B = w === 1 ? T.sup2 : Object.assign({}, T.cust, { name: s_(T.cust.name) || D.to });
+    const dd = (D.date || '').split('-'), rows = []; let sv = 0, sa = 0, st = 0;
+    O.res.forEach((r, i) => { if (r.skip || r.err) return; const l = T.lines[i], p = w === 1 ? r.p1 : r.p2, a = w === 1 ? r.amt1 : r.amt2, inc = w === 1 ? r.inc1 : r.inc2, v = inc - a; sa += a; sv += v; st += inc;
+      rows.push('<tr><td class="c">' + (rows.length + 1) + '</td><td>' + esc(l.n) + '</td><td>' + esc(l.sp) + '</td><td class="c">' + esc(l.u) + '</td><td class="r">' + fmtQ(r.q) + '</td><td class="r">' + won(p) + '</td><td class="r">' + won(a) + '</td><td class="r">' + won(v) + '</td><td class="r">' + won(inc) + '</td><td class="c">' + esc(l.m) + '</td></tr>'); });
+    while (rows.length < 10) rows.push('<tr><td class="c">' + (rows.length + 1) + '</td><td></td><td></td><td></td><td></td><td></td><td class="r">-</td><td class="r">-</td><td class="r">-</td><td></td></tr>');
+    const box = (lab, X, seal) => '<table class="cbx"><tr><th class="vl" rowspan="5">' + lab.split('').join('<br>') + '</th><th>사업자명</th><td colspan="3" class="nm">' + esc(X.name) + (seal ? '<img class="seal" src="' + seal + '" alt="">' : '') + '</td></tr><tr><th>사업자번호</th><td>' + esc(X.biz) + '</td><th>대표자</th><td>' + esc(X.ceo) + '</td></tr><tr><th>주소</th><td colspan="3">' + esc(X.addr) + '</td></tr><tr><th>전화번호</th><td>' + esc(X.tel) + '</td><th>팩 스</th><td>' + esc(X.fax) + '</td></tr><tr><th>업 태</th><td>' + esc(X.btype) + '</td><th>업 종</th><td>' + esc(X.bitem) + '</td></tr></table>';
+    return '<div class="cdoc"><div class="chd"><div></div><h1>견 적 서</h1><div class="clogo">' + (D.logo ? '<span class="eu">EUGENE</span><span class="ac"><b>ACE</b><i>Hardware</i></span>' : '') + '</div></div>' +
+      '<div class="cbs">' + box('공급자', A, w === 1 ? A.seal : '') + box('공급받는자', B, '') + '</div>' +
+      '<table class="csum"><tr><th style="width:62px">작성년</th><th style="width:40px">월</th><th style="width:40px">일</th><th>합계금액</th><th>공급가액</th><th>세액</th><th>현 장 명</th></tr><tr><td class="c"><b>' + esc(dd[0] || '') + '</b></td><td class="c"><b>' + (dd[1] ? Number(dd[1]) : '') + '</b></td><td class="c"><b>' + (dd[2] ? Number(dd[2]) : '') + '</b></td><td class="r"><b>' + won(st) + '</b></td><td class="r"><b>' + won(sa) + '</b></td><td class="r"><b>' + won(sv) + '</b></td><td class="c"><b>' + esc(D.site) + '</b></td></tr></table>' +
+      '<table class="cit"><tr><th style="width:36px">순번</th><th>제 품 명</th><th style="width:118px">규격</th><th style="width:40px">단위</th><th style="width:48px">수량</th><th style="width:62px">단가</th><th style="width:78px">공급가액</th><th style="width:66px">부가세</th><th style="width:80px">합계</th><th style="width:96px">비 고</th></tr>' + rows.join('') +
+      '<tr class="ctot"><td colspan="6" class="c">총 &nbsp; &nbsp; &nbsp; 계</td><td class="r">' + won(sa) + '</td><td class="r">' + won(sv) + '</td><td class="r">' + won(st) + '</td><td></td></tr></table>' +
+      '<div class="cmemo"><span>비고</span><span>' + esc(D.memo) + '</span></div></div>';
+  }
   function docHtml(w, O) {
-    const D = w === 1 ? T.d1 : T.d2, S = w === 1 ? SUP() : T.sup2, dd = D.date ? D.date.split('-') : null, ds = dd ? dd[0] + '. ' + Number(dd[1]) + '. ' + Number(dd[2]) + '.' : '';
+    if ((w === 1 ? T.d1 : T.d2).form === 'corp') return corpHtml(w, O);
+    const D = docD(w), S = w === 1 ? SUP() : T.sup2, dd = D.date ? D.date.split('-') : null, ds = dd ? dd[0] + '. ' + Number(dd[1]) + '. ' + Number(dd[2]) + '.' : '';
     const rows = [];
     O.res.forEach((r, i) => { if (r.skip || r.err) return; const l = T.lines[i], p = w === 1 ? r.p1 : r.p2, a = w === 1 ? r.amt1 : r.amt2, inc = w === 1 ? r.inc1 : r.inc2;
       rows.push('<tr><td class="c">' + esc(l.code) + '</td><td class="c">' + esc(l.n) + '</td><td class="c">' + esc(l.br) + '</td><td class="c">' + esc(l.sp) + '</td><td class="r">' + won(p) + '</td><td class="c">' + fmtQ(r.q) + (l.u ? ' ' + esc(l.u) : '') + '</td><td class="r">' + won(a) + '</td><td class="r">' + won(inc) + '</td><td class="c" style="font-size:11px">' + esc(l.m) + '</td></tr>'); });
@@ -900,15 +943,23 @@ const TWO = (() => {
     [1, 2].forEach(w => {
       const D = w === 1 ? T.d1 : T.d2, f = (k, t, ty) => '<div><label class="f">' + t + '</label><input type="' + (ty || 'text') + '" data-doc="' + w + '" data-f="' + k + '" maxlength="80"></div>';
       const box = document.querySelector('.dfm[data-doc="' + w + '"]'), box2 = document.querySelector('.dfm2[data-doc="' + w + '"]');
-      box.innerHTML = f('to', w === 1 ? '받는 분 (중간 업체)' : '받는 분 (최종 고객)') + f('site', '현장명') + f('date', '견적일', 'date');
-      box2.innerHTML = f('cman', '담당자') + f('ctel', '연락처') + '<div><label class="f">비고 (견적서 아래 칸)</label><input type="text" data-doc="' + w + '" data-f="memo" maxlength="200"></div><label class="ckl"><input type="checkbox" data-doc="' + w + '" data-f="logo"> ACE Hardware 글자 넣기</label>';
-      [box, box2].forEach(b => b.querySelectorAll('input[type=text],input[type=date]').forEach(x => { x.value = D[x.dataset.f] || ''; }));
+      box.innerHTML = f('to', w === 1 ? '받는 분 (중간 기업)' : '받는 분 (최종 업체)') + f('site', '현장명') + f('date', '견적일', 'date');
+      if (w === 2) box.querySelector('[data-f="site"]').placeholder = '비우면 1차와 같음';
+      box2.innerHTML = '<div><label class="f">견적서 양식</label><select data-doc="' + w + '" data-f="form"><option value="corp">기업용 (공급자 · 공급받는자)</option><option value="home">홈센터 기본 (엑셀 모양)</option></select></div>' + f('cman', '담당자') + f('ctel', '연락처') +
+        '<div style="grid-column:1/-1"><label class="f">비고 (견적서 아래 칸, 여러 줄 가능) <button type="button" class="btn ghost sm" data-act="memo" data-w="' + w + '" style="min-height:28px;margin-left:6px">기본 문구 넣기</button></label><textarea data-doc="' + w + '" data-f="memo" maxlength="600" rows="4"></textarea></div><label class="ckl"><input type="checkbox" data-doc="' + w + '" data-f="logo"> 로고 넣기 (EUGENE · ACE Hardware)</label>';
+      [box, box2].forEach(b => b.querySelectorAll('input[type=text],input[type=date],textarea,select').forEach(x => { x.value = D[x.dataset.f] || (x.tagName === 'SELECT' ? 'home' : ''); }));
       box2.querySelector('input[type=checkbox]').checked = !!D.logo;
       document.querySelector('[data-acts="' + w + '"]').innerHTML = '<button class="btn big" data-act="simg" data-w="' + w + '">📤 보내기 (사진)</button><button class="btn big" data-act="spdf" data-w="' + w + '">📄 PDF</button><button class="btn ghost" data-act="copy" data-w="' + w + '">📋 사진 복사</button><button class="btn ghost" data-act="png" data-w="' + w + '">🖼 사진 저장</button><button class="btn ghost" data-act="print" data-w="' + w + '">🖨 인쇄</button>';
     });
-    const sf = [['name', '상호 (법인명)'], ['tel', '전화번호'], ['mgr', '담당자'], ['biz', '사업자번호'], ['addr', '사업장 주소'], ['fax', 'FAX'], ['email', 'E-MAIL']];
+    const sf = [['name', '사업자명 (상호)'], ['biz', '사업자번호'], ['ceo', '대표자'], ['addr', '주소'], ['tel', '전화번호'], ['fax', '팩스'], ['btype', '업태'], ['bitem', '업종'], ['mgr', '담당자'], ['email', 'E-MAIL']];
     $('tSup2').innerHTML = sf.map(([k, t]) => '<div><label class="f">' + t + '</label><input type="text" data-s2="' + k + '" maxlength="120"></div>').join('');
     $('tSup2').querySelectorAll('input').forEach(x => { x.value = T.sup2[x.dataset.s2] || ''; });
+    const cf = sf.filter(([k]) => k !== 'mgr' && k !== 'email');
+    $('tCust').innerHTML = cf.map(([k, t]) => '<div><label class="f">' + t + '</label><input type="text" data-cu="' + k + '" maxlength="120"' + (k === 'name' ? ' placeholder="비우면 위 받는 분"' : '') + '></div>').join('');
+    $('tCust').querySelectorAll('input').forEach(x => { x.value = T.cust[x.dataset.cu] || ''; });
+    const S1 = SUP();
+    $('tSup1').innerHTML = sf.map(([k, t]) => '<div><label class="f">' + t + '</label><input type="text" data-s1="' + k + '" maxlength="120"></div>').join('');
+    $('tSup1').querySelectorAll('input').forEach(x => { x.value = S1[x.dataset.s1] || ''; });
   }
   function showStep(n) {
     T.step = n; save();
@@ -967,6 +1018,7 @@ const TWO = (() => {
     else if (a === 'copy') copy(w, b);
     else if (a === 'png') busy(b, async () => { const f = await makeFile(w, 'png'); if (f) { saveBlob(f, f.name); toast('사진으로 저장했어요: ' + f.name); } });
     else if (a === 'pdf') busy(b, async () => { const f = await makeFile(w, 'pdf'); if (f) { saveBlob(f, f.name); toast('PDF로 저장했어요: ' + f.name); } });
+    else if (a === 'memo') { const D = w === 1 ? T.d1 : T.d2; if (s_(D.memo) && !confirm('지금 비고를 기본 문구로 바꿀까요?')) return; D.memo = MEMO_CORP; save(); renderForms(); update(); }
     else if (a === 'print') { const O = ready(w); if (!O) return; $('tPrint').innerHTML = docHtml(w, O); document.body.classList.add('print2'); window.print(); setTimeout(() => { document.body.classList.remove('print2'); $('tPrint').innerHTML = ''; }, 500); }
   });
   /* ---------- 입력 이벤트 ---------- */
@@ -975,13 +1027,25 @@ const TWO = (() => {
   $('tAQ').addEventListener('click', e => { const b = e.target.closest('[data-qa]'); if (!b) return; T.a = b.dataset.qa; $('tA').value = T.a; save(); renderHead(); update(); });
   $('tBQ').addEventListener('click', e => { const b = e.target.closest('[data-qb]'); if (!b) return; T.b = b.dataset.qb; $('tB').value = T.b; save(); renderHead(); update(); });
   $('tSheet').addEventListener('input', e => { const t = e.target; if (!t.dataset.l) return; const l = T.lines[+t.closest('tr').dataset.i]; l[t.dataset.l] = t.value; if (t.dataset.l === 'p1' || t.dataset.l === 'p2') t.classList.remove('auto'); save(); update(); });
+  /* 엑셀에서 여러 칸을 복사해 붙여넣기: 누른 칸부터 오른쪽·아래로 채움 (보이는 입력 칸 순서) */
+  $('tSheet').addEventListener('paste', e => {
+    const t = e.target; if (!t.dataset.l) return;
+    const txt = (e.clipboardData || window.clipboardData).getData('text') || '';
+    if (!/[\t\n]/.test(txt.replace(/\s+$/, ''))) return;
+    e.preventDefault();
+    const rows = txt.replace(/\r/g, '').replace(/\n+$/, '').split('\n').map(r => r.split('\t'));
+    const keys = cols().filter(d => d[4] === 'in').map(d => d[0]), c0 = keys.indexOf(t.dataset.l), r0 = +t.closest('tr').dataset.i;
+    if (c0 < 0) return;
+    rows.forEach((r, ri) => { while (T.lines.length <= r0 + ri) T.lines.push(blank()); r.forEach((v, ci) => { const k = keys[c0 + ci]; if (k) T.lines[r0 + ri][k] = v.trim(); }); });
+    save(); renderSheet(); toast(rows.length + '줄을 붙여 넣었어요. 빨간 칸이 있으면 확인해 주세요.');
+  });
   $('tSheet').addEventListener('focusin', e => { const t = e.target, k = t.dataset.l; if ((k === 'p1' || k === 'p2') && t.classList.contains('auto')) { const r = totals().res[+t.closest('tr').dataset.i]; const v = r && r[k === 'p1' ? 'a1' : 'a2']; if (v != null) { t.value = String(v); t.select(); } } });
   $('tSheet').addEventListener('focusout', e => { const k = e.target.dataset.l; if (k === 'p1' || k === 'p2') setTimeout(update, 0); });
   $('tSheet').addEventListener('keydown', e => { const t = e.target; if (e.key !== 'Enter' || !t.dataset.l || e.isComposing) return; e.preventDefault(); const i = +t.closest('tr').dataset.i, f = t.dataset.l; if (i + 1 >= T.lines.length) { T.lines.push(blank()); save(); renderSheet(); } const nx = $('tSheet').querySelector('tr[data-i="' + (i + 1) + '"] [data-l="' + f + '"]'); if (nx) nx.focus(); });
   $('tSheet').addEventListener('click', e => { const b = e.target.closest('[data-ldel]'); if (!b) return; const i = +b.dataset.ldel; if (!empty(T.lines[i]) && !confirm((i + 1) + '번 줄을 지울까요?')) return; T.lines.splice(i, 1); if (!T.lines.length) T.lines.push(blank()); save(); renderSheet(); });
   $('tAdd').addEventListener('click', () => { T.lines.push(blank()); save(); renderSheet(); });
   $('tAdd5').addEventListener('click', () => { for (let k = 0; k < 5; k++) T.lines.push(blank()); save(); renderSheet(); });
-  $('t-two').addEventListener('input', e => { const t = e.target; if (t.closest('#tSheet')) return; if (t.dataset.s2) { T.sup2[t.dataset.s2] = t.value; save(); update(); return; } if (!t.dataset.doc || t.type === 'checkbox') return; (t.dataset.doc === '1' ? T.d1 : T.d2)[t.dataset.f] = t.value; save(); update(); });
+  $('t-two').addEventListener('input', e => { const t = e.target; if (t.closest('#tSheet')) return; if (t.dataset.cu) { T.cust[t.dataset.cu] = t.value; save(); update(); return; } if (t.dataset.s1) { const S = LS.get('supplier', null) || {}; S[t.dataset.s1] = t.value; LS.set('supplier', S); update(); return; } if (t.dataset.s2) { T.sup2[t.dataset.s2] = t.value; save(); update(); return; } if (!t.dataset.doc || t.type === 'checkbox') return; (t.dataset.doc === '1' ? T.d1 : T.d2)[t.dataset.f] = t.value; save(); update(); });
   $('t-two').addEventListener('change', e => { const t = e.target; if (t.id === 'tDetail') { T.detail = t.checked; save(); renderSheet(); return; } if (t.type !== 'checkbox' || !t.dataset.doc) return; (t.dataset.doc === '1' ? T.d1 : T.d2).logo = t.checked; save(); update(); });
   let undoT = null, undoV = null;
   $('tClear').addEventListener('click', () => {
