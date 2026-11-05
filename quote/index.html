@@ -356,10 +356,14 @@ body.wideq .wrap { max-width: 1530px; }
 .cdoc .cmemo span:first-child { border-right: 1px solid #000; display: flex; align-items: center; justify-content: center; }
 .cdoc .cmemo span:last-child { padding: 8px 10px; white-space: pre-wrap; line-height: 2.1; letter-spacing: .02em; }
 body.print2 #tPrint .cdoc { border: 0; padding: 0; width: 100%; }
+.imp { border: 2px dashed #9fb7d8; background: #f4f8fd; border-radius: 16px; padding: 12px 14px; }
+.imph { font-weight: 900; font-size: 1.08em; color: #1d4f91; }
+.imps { margin: 6px 0 8px; padding-left: 20px; font-size: .92em; color: var(--ink2); } .imps li { margin: 2px 0; }
+.imp textarea { min-height: 64px; background: #fff; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-06f';
+const BUILD = '2026-11-06g';
 (function () {
   let busy = false;
   async function check() {
@@ -431,15 +435,34 @@ const BUILD = '2026-11-06f';
   </section>
   <section id="t-two" class="hide">
     <div class="steps2" id="tSteps">
-      <button data-st="1"><b>1</b><span>% 정하기</span></button>
-      <button data-st="2"><b>2</b><span>품목 넣기</span></button>
+      <button data-st="1"><b>1</b><span>품목 넣기</span></button>
+      <button data-st="2"><b>2</b><span>% 정하기</span></button>
       <button data-st="3"><b>3</b><span>1차 견적서</span></button>
       <button data-st="4"><b>4</b><span>최종 견적서</span></button>
     </div>
     <div class="sumbar" id="tBar"></div>
 
-    <div class="card stp" data-step="1">
-      <h2>1. 마진 % 정하기</h2>
+    <div class="card xcard stp" data-step="1">
+      <h2>1. 품목 넣기 <span class="muted" id="tCnt"></span></h2>
+      <div class="imp">
+        <div class="imph">📥 업체 견적서 그대로 불러오기</div>
+        <ol class="imps"><li>업체가 보낸 <b>엑셀 견적서</b>를 열어요</li><li><b>Ctrl+A</b> (전체 선택) → <b>Ctrl+C</b> (복사)</li><li>아래 칸을 누르고 <b>Ctrl+V</b> (붙여넣기) — 끝!</li></ol>
+        <textarea id="tImp" rows="3" placeholder="여기를 누르고 Ctrl+V 하면 품목이 자동으로 들어가요 (휴대폰은 길게 눌러 붙여넣기)"></textarea>
+        <div id="tImpMsg"></div>
+      </div>
+      <p class="muted" style="margin:12px 0 6px"><b>또는</b> 아래 표에 직접 쓰기 — 업체 단가는 <b>매입단가</b> 칸에 넣으면 돼요.</p>
+      <p class="muted" style="margin:0 0 8px">2단계에서 %를 정하면 <b class="c1">1차 단가</b>와 <b class="c2">최종 단가</b>가 자동으로 채워져요. 단가를 이미 알면 그 칸에 바로 써도 돼요. Enter 키 = 아래 칸.</p>
+      <label class="ckl"><input type="checkbox" id="tDetail"> 자세히 보기 (코드·브랜드 · 줄마다 % · 금액 · 마진)</label>
+      <div class="xwrap" id="tSheet"></div>
+      <div class="btns"><button class="btn ghost sm" id="tAdd">＋ 줄 추가</button><button class="btn ghost sm" id="tAdd5">＋ 5줄 추가</button><button class="btn ghost sm" id="tSave">💾 저장</button><button class="btn ghost sm" id="tClear" style="color:var(--bad);border-color:#f3c4c9">🗑 전체 지우기</button></div>
+      <div id="tUndo"></div><div id="tErr"></div>
+      <div class="cards4" id="tIn"></div>
+      <details class="more"><summary>저장한 2단계 견적 불러오기</summary><div class="saved" id="tSaved" style="margin-top:8px"></div></details>
+      <div class="nextbar"><button class="btn" data-go="2">다음 ▶ 마진 % 정하기</button></div>
+    </div>
+
+    <div class="card stp" data-step="2">
+      <h2>2. 마진 % 정하기 <span class="muted">— 넣은 품목을 우리 몫 · 중간 업체 몫으로 나눠요</span></h2>
       <div class="pp">
         <div class="pbox g1"><label for="tA">우리 마진 <small>(1차 견적서)</small></label><div class="pin"><input type="text" id="tA" inputmode="decimal"><span>%</span></div><div class="mrq" id="tAQ"></div></div>
         <div class="pbox g2"><label for="tB">중간 업체 마진 <small>(최종 견적서)</small></label><div class="pin"><input type="text" id="tB" inputmode="decimal"><span>%</span></div><div class="mrq" id="tBQ"></div></div>
@@ -451,19 +474,7 @@ const BUILD = '2026-11-06f';
           <div><label class="f" for="tRu">단가 끝자리</label><select id="tRu"><option value="10u">10원 단위 올림</option><option value="100u">100원 단위 올림</option><option value="1u">1원 단위 올림</option><option value="10r">10원 단위 반올림</option></select></div>
         </div>
       </details>
-      <div class="nextbar"><button class="btn" data-go="2">다음 ▶ 품목 넣기</button></div>
-    </div>
-
-    <div class="card xcard stp" data-step="2">
-      <h2>2. 품목 넣기 <span class="muted" id="tCnt"></span></h2>
-      <p class="muted" style="margin:0 0 8px">제품명 · 수량 · <b>매입단가</b>만 넣으면 <b class="c1">1차 단가</b>와 <b class="c2">최종 단가</b>가 자동으로 나와요. 단가를 이미 알면 그 칸에 바로 쓰면 돼요. <b>엑셀에서 여러 줄을 복사해 제품명 칸에 붙여 넣으면</b> 한 번에 들어가요 (제품명 · 규격 · 단위 · 수량 · 매입단가 순서). Enter 키 = 아래 칸.</p>
-      <label class="ckl"><input type="checkbox" id="tDetail"> 자세히 보기 (코드·브랜드 · 줄마다 % · 금액 · 마진)</label>
-      <div class="xwrap" id="tSheet"></div>
-      <div class="btns"><button class="btn ghost sm" id="tAdd">＋ 줄 추가</button><button class="btn ghost sm" id="tAdd5">＋ 5줄 추가</button><button class="btn ghost sm" id="tSave">💾 저장</button><button class="btn ghost sm" id="tClear" style="color:var(--bad);border-color:#f3c4c9">🗑 전체 지우기</button></div>
-      <div id="tUndo"></div><div id="tErr"></div>
-      <div class="cards4" id="tIn"></div>
-      <details class="more"><summary>저장한 2단계 견적 불러오기</summary><div class="saved" id="tSaved" style="margin-top:8px"></div></details>
-      <div class="nextbar"><button class="btn ghost" data-go="1">◀ 이전</button><button class="btn" data-go="3">다음 ▶ 1차 견적서</button></div>
+      <div class="nextbar"><button class="btn ghost" data-go="1">◀ 이전 (품목)</button><button class="btn" data-go="3">다음 ▶ 1차 견적서</button></div>
     </div>
 
     <div class="card stp doc1" data-step="3">
@@ -474,7 +485,7 @@ const BUILD = '2026-11-06f';
       <div class="btns sendbar" data-acts="1"></div>
       <div id="tReady1"></div>
       <div class="docbox"><div id="tDoc1"></div></div>
-      <div class="nextbar"><button class="btn ghost" data-go="2">◀ 이전</button><button class="btn" data-go="4">다음 ▶ 최종 견적서</button></div>
+      <div class="nextbar"><button class="btn ghost" data-go="2">◀ 이전 (%)</button><button class="btn" data-go="4">다음 ▶ 최종 견적서</button></div>
     </div>
 
     <div class="card stp doc2" data-step="4">
@@ -971,8 +982,8 @@ const TWO = (() => {
   /* ---------- 내보내기 (사진 · PDF · 인쇄) ---------- */
   function ready(w) {
     const O = totals();
-    if (O.errs.length) { toast('품목에 확인할 곳이 있어요. 빨간 칸을 고쳐 주세요.'); showStep(2); return null; }
-    if (!O.n) { toast('품목을 하나 이상 적어 주세요.'); showStep(2); return null; }
+    if (O.errs.length) { toast('품목에 확인할 곳이 있어요. 빨간 칸을 고쳐 주세요.'); showStep(1); return null; }
+    if (!O.n) { toast('품목을 하나 이상 적어 주세요.'); showStep(1); return null; }
     const D = w === 1 ? T.d1 : T.d2;
     if (!s_(D.to)) { toast((w === 1 ? '1차' : '최종') + ' 견적서의 받는 분을 적어 주세요.'); showStep(w === 1 ? 3 : 4); const x = document.querySelector('.dfm[data-doc="' + w + '"] [data-f="to"]'); if (x) x.focus(); return null; }
     return O;
@@ -1027,12 +1038,59 @@ const TWO = (() => {
   $('tAQ').addEventListener('click', e => { const b = e.target.closest('[data-qa]'); if (!b) return; T.a = b.dataset.qa; $('tA').value = T.a; save(); renderHead(); update(); });
   $('tBQ').addEventListener('click', e => { const b = e.target.closest('[data-qb]'); if (!b) return; T.b = b.dataset.qb; $('tB').value = T.b; save(); renderHead(); update(); });
   $('tSheet').addEventListener('input', e => { const t = e.target; if (!t.dataset.l) return; const l = T.lines[+t.closest('tr').dataset.i]; l[t.dataset.l] = t.value; if (t.dataset.l === 'p1' || t.dataset.l === 'p2') t.classList.remove('auto'); save(); update(); });
-  /* 엑셀에서 여러 칸을 복사해 붙여넣기: 누른 칸부터 오른쪽·아래로 채움 (보이는 입력 칸 순서) */
+  /* ---------- 업체 견적서 통째로 불러오기 (엑셀 전체 복사 → 붙여넣기) ---------- */
+  const nz = c => String(c || '').replace(/\s+/g, '').replace(/\(.*?\)/g, '');
+  const cellNum = c => { const v = String(c || '').trim(); if (v === '' || /^[-–—]+$/.test(v)) return null; return numIn(v); };
+  function parseQuote(txt) {
+    const rows = String(txt || '').replace(/\r/g, '').split('\n').map(r => r.split('\t').map(c => c.trim()));
+    const find = (re, from, to) => { for (let r = from || 0; r < (to == null ? rows.length : to); r++) { const c = rows[r].findIndex(x => re.test(nz(x))); if (c >= 0) return [r, c]; } return null; };
+    let h = -1;
+    for (let r = 0; r < rows.length; r++) { const z = rows[r].map(nz); if (z.some(x => /^(제품명|품명|품목|상품명|자재명|품목명)$/.test(x)) && z.some(x => /^수량$/.test(x))) { h = r; break; } }
+    if (h < 0) return { err: '제목 줄(제품명 · 수량)을 찾지 못했어요. 엑셀 견적서에서 표 제목 줄까지 함께 복사해 주세요.' };
+    const z = rows[h].map(nz), col = re => z.findIndex(x => re.test(x));
+    const C = { n: col(/^(제품명|품명|품목|상품명|자재명|품목명)$/), sp: col(/^(규격|사양|규격및사양)$/), u: col(/^단위$/), q: col(/^수량$/), p: col(/^(단가|매입단가|공급단가|판매단가)$/), a: col(/^(공급가액|금액)$/), m: col(/^비고$/), br: col(/^브랜드$/), code: col(/^(NO|코드|상품코드|품번)$/i) };
+    if (C.p < 0) return { err: '단가 칸을 찾지 못했어요. 제목 줄에 "단가"가 있는지 확인해 주세요.' };
+    const lines = [], warn = []; let sum = 0;
+    for (let r = h + 1; r < rows.length; r++) {
+      const row = rows[r], g = k => C[k] >= 0 ? (row[C[k]] || '').trim() : '';
+      if (row.slice(0, Math.max(3, C.n + 2)).some(x => /^(총계|합계|소계|총합계|계)$/.test(nz(x)))) break;
+      if (!g('n')) continue;
+      const q = cellNum(g('q')), p = cellNum(g('p')), a = cellNum(g('a'));
+      if (q === null && p === null) continue;
+      const nm = g('n') + (g('sp') ? ' ' + g('sp') : '');
+      if (q === null || Number.isNaN(q)) warn.push(nm + ': 수량 "' + g('q') + '"을(를) 읽지 못했어요.');
+      if (p === null || Number.isNaN(p)) warn.push(nm + ': 단가 "' + g('p') + '"을(를) 읽지 못했어요.');
+      else if (q !== null && !Number.isNaN(q)) { const amt = Math.round(Math.round(q * 100) * p / 100); sum += amt; if (a !== null && !Number.isNaN(a) && a !== amt) warn.push(nm + ': 업체 공급가액 ' + won(a) + '원 ≠ 수량×단가 ' + won(amt) + '원'); }
+      lines.push(Object.assign(blank(), { n: g('n'), sp: g('sp'), u: g('u'), q: g('q').replace(/,/g, ''), cost: g('p'), m: g('m'), br: g('br'), code: /^\d{1,3}$/.test(g('code')) ? '' : g('code') }));
+    }
+    const below = (re, to) => { const f = find(re, 0, to); if (!f) return ''; const [r, c] = f; const nx = rows[r + 1] && rows[r + 1][c]; if (nx && !re.test(nz(nx))) return nx; return (rows[r].slice(c + 1).find(x => x) || ''); };
+    const site = below(/^현장명$/, h), vendor = (() => { const f = find(/^(사업자명|상호|상호명|업체명|회사명)$/, 0, h); return f ? (rows[f[0]].slice(f[1] + 1).find(x => x) || '') : ''; })(), tot = cellNum(below(/^공급가액$/, h));
+    return { lines, warn, sum, site, vendor, tot: tot === null || Number.isNaN(tot) ? null : tot };
+  }
+  function applyImport(R0) {
+    const box = $('tImpMsg');
+    if (R0.err) { box.innerHTML = '<div class="err">' + esc(R0.err) + '</div>'; return false; }
+    if (!R0.lines.length) { box.innerHTML = '<div class="err">품목 줄을 찾지 못했어요.</div>'; return false; }
+    const has = T.lines.some(l => !empty(l));
+    const replace = !has || confirm('지금 있는 품목을 지우고 업체 견적서로 바꿀까요?\n\n확인 = 바꾸기 · 취소 = 뒤에 이어 붙이기');
+    const keep = replace ? [] : T.lines.filter(l => !empty(l));
+    T.lines = keep.concat(R0.lines); while (T.lines.length < 10) T.lines.push(blank());
+    if (R0.site && (replace || !s_(T.d1.site))) T.d1.site = R0.site;
+    save(); renderSheet(); renderForms();
+    const chk = R0.tot !== null ? (R0.tot === R0.sum ? '<br>✅ 업체 견적 공급가액 <b>' + won(R0.tot) + '원</b> = 불러온 수량×단가 합계 <b>' + won(R0.sum) + '원</b> (맞아요)' : '<br>⚠ 업체 견적 공급가액 ' + won(R0.tot) + '원 ≠ 불러온 합계 ' + won(R0.sum) + '원 — 빠진 줄이 없는지 확인해 주세요') : '';
+    box.innerHTML = '<div class="' + (R0.warn.length || (R0.tot !== null && R0.tot !== R0.sum) ? 'note' : 'ok') + '"><b>' + R0.lines.length + '줄을 불러왔어요</b>' + (R0.vendor ? ' (업체: ' + esc(R0.vendor) + ')' : '') + ' · 업체 단가 → <b>매입단가</b> 칸' + (R0.site ? ' · 현장명: ' + esc(R0.site) : '') + chk + (R0.warn.length ? '<br>' + R0.warn.map(esc).join('<br>') : '') + '<br>이제 <b>다음 ▶ 마진 % 정하기</b>를 누르세요.</div>';
+    $('tImp').value = '';
+    return true;
+  }
+  $('tImp').addEventListener('paste', e => { const txt = (e.clipboardData || window.clipboardData).getData('text') || ''; if (!txt.trim()) return; e.preventDefault(); applyImport(parseQuote(txt)); });
+  $('tImp').addEventListener('input', () => { const v = $('tImp').value; if (/\t/.test(v) && /\n/.test(v)) applyImport(parseQuote(v)); });
+  /* 엑셀에서 여러 칸을 복사해 붙여넣기: 견적서 제목 줄이 있으면 통째로 불러오기, 아니면 누른 칸부터 오른쪽·아래로 채움 */
   $('tSheet').addEventListener('paste', e => {
     const t = e.target; if (!t.dataset.l) return;
     const txt = (e.clipboardData || window.clipboardData).getData('text') || '';
     if (!/[\t\n]/.test(txt.replace(/\s+$/, ''))) return;
     e.preventDefault();
+    const PQ = parseQuote(txt); if (!PQ.err && PQ.lines.length) { applyImport(PQ); return; }
     const rows = txt.replace(/\r/g, '').replace(/\n+$/, '').split('\n').map(r => r.split('\t'));
     const keys = cols().filter(d => d[4] === 'in').map(d => d[0]), c0 = keys.indexOf(t.dataset.l), r0 = +t.closest('tr').dataset.i;
     if (c0 < 0) return;
@@ -1051,7 +1109,7 @@ const TWO = (() => {
   $('tClear').addEventListener('click', () => {
     if (T.lines.every(empty) && !['to', 'site', 'cman', 'ctel', 'memo'].some(k => s_(T.d1[k]) || s_(T.d2[k]))) { toast('지울 내용이 없어요.'); return; }
     if (!confirm('입력한 품목과 두 견적서의 받는 분·현장·비고를 전체 지울까요?\n(마진 %, 중간 업체 정보, 저장한 견적은 그대로 남아요)')) return;
-    undoV = JSON.parse(JSON.stringify(T)); T = Object.assign(newT(), { a: T.a, b: T.b, mode: T.mode, ru: T.ru, sup2: T.sup2, detail: T.detail, step: 2 }); save(); render();
+    undoV = JSON.parse(JSON.stringify(T)); T = Object.assign(newT(), { a: T.a, b: T.b, mode: T.mode, ru: T.ru, sup2: T.sup2, detail: T.detail, step: 1 }); save(); render();
     $('tUndo').innerHTML = '<div class="ok" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">전체 지웠어요. <button class="btn sm" id="tUndoBtn">↩ 되돌리기</button></div>';
     $('tUndoBtn').addEventListener('click', () => { if (!undoV) return; T = norm(undoV); undoV = null; save(); render(); $('tUndo').innerHTML = ''; toast('되돌렸어요.'); });
     clearTimeout(undoT); undoT = setTimeout(() => { undoV = null; $('tUndo').innerHTML = ''; }, 10000);
