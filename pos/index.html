@@ -1204,7 +1204,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-03a';
+var BUILD = '2026-11-06a';
 (function () {
   var busy = false;
   function typing() {
@@ -1669,6 +1669,7 @@ async function loadBase(force) {
   if (S.daily && S.targets && S.settings && !force) return;
   const [dSnap, tSnap, cSnap] = await Promise.all([getDocs(collection(db, C.daily)), getDocs(collection(db, C.targets)), getDoc(doc(db, C.config, 'settings'))]);
   S.daily = {}; dSnap.forEach(s => { S.daily[Number(s.id)] = s.data().days || {}; });
+  S.loadedAt = Date.now(); S.loadedDay = todayInt();
   S.targets = {}; tSnap.forEach(s => { const x = s.data(); S.targets[Number(s.id)] = { total: x.total ?? null, n: x.n ?? null, o: x.o ?? null, gp: x.gp ?? null, gr: x.gr ?? null }; });
   const c = cSnap.exists() ? cSnap.data() : {};
   S.settings = { holidays: Array.isArray(c.holidays) ? c.holidays.map(Number).filter(Boolean) : [], smsVat: c.smsVat === 'incl' ? 'incl' : 'excl', consTarget: Number(c.consTarget) > 0 ? Number(c.consTarget) : 28, consScope: c.consScope === 'all' ? 'all' : 'bath', consBasis: c.consBasis === 'cons' ? 'cons' : 'sale', workUrl: safeUrl(c.workUrl) };
@@ -2386,7 +2387,7 @@ function alerts(d) {
   const a = [];
   if (d.last && !d.ended && d.ym === ymOf(d.today)) {
     const gap = Math.round((Date.UTC(Math.floor(d.today / 10000), Math.floor(d.today / 100) % 100 - 1, d.today % 100) - Date.UTC(Math.floor(d.last / 10000), Math.floor(d.last / 100) % 100 - 1, d.last % 100)) / 86400000);
-    if (gap >= 2) a.push('마지막 등록일이 ' + gap + '일 전입니다. 최신 판매 내역을 올려 주세요.');
+    if (gap >= 2) a.push('마지막 등록일이 ' + dLabel(d.last).slice(5) + ' (' + gap + '일 전)입니다. 최신 판매 내역을 올려 주세요. 다른 기기에서 이미 올렸다면 제목 옆 새로고침(⟳)을 눌러 주세요.');
   }
   if (d.missing.length) a.push('등록되지 않은 날짜: ' + d.missing.slice(0, 6).map(x => dLabel(x).slice(5)).join(', ') + (d.missing.length > 6 ? ' 외 ' + (d.missing.length - 6) + '일' : ''));
   if (d.months.length && !d.target) a.push('이 달의 목표가 등록되지 않았습니다.');
@@ -2658,6 +2659,11 @@ $('brandBtn').addEventListener('click', () => {
 });
 $('homeMonth').addEventListener('change', function () { loadHome(Number(this.value)); });
 $('homeRefresh').addEventListener('click', () => loadHome(S.ym, true));
+/* 앱을 켜 둔 채 다른 기기에서 매출을 올린 경우: 다시 볼 때 (5분 지났거나 날짜가 바뀌었으면) 최신 자료를 다시 불러옴 */
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || S.view !== 'home' || !S.loadedAt) return;
+  if (Date.now() - S.loadedAt > 5 * 60 * 1000 || S.loadedDay !== todayInt()) { invalidate(); loadHome(S.ym, true); }
+});
 $('homePrint').addEventListener('click', () => window.print());
 
 function renderHome(d) {
