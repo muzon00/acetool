@@ -72,6 +72,31 @@ label.f { display: block; font-size: .85em; font-weight: 600; color: var(--ink2)
 #phDlg img { display: block; max-width: 100%; max-height: 78vh; border-radius: 10px; }
 #phDlg p { margin: 8px 4px 2px; font-weight: 700; }
 #phDlg::backdrop { background: rgba(0,0,0,.6); }
+.figc { margin: 6px 0 18px; }
+.figc h4 { margin: 0 0 6px; font-size: .95em; }
+.figw { overflow-x: auto; }
+.swipe { display: none; margin: 0 0 4px; font-size: .78em; color: var(--ink3); }
+@media (max-width: 620px) { .swipe { display: block; } }
+.fg { width: 100%; min-width: 580px; height: auto; display: block; background: #fff; border: 1px solid var(--line); border-radius: 12px; font-family: "Pretendard Variable", Pretendard, sans-serif; }
+.fg .sl { fill: #e8e8e8; stroke: #a0a0a0; } .fg .sh { stroke: #bdbdbd; stroke-width: 1; }
+.fg .st { fill: #d5dde2; stroke: #455a64; stroke-width: 1.3; stroke-linejoin: round; }
+.fg .bd { fill: #f4efe4; stroke: #a1887f; } .fg .op { opacity: .94; }
+.fg .dk { fill: #37474f; } .fg .wh { fill: #fff; }
+.fg .ln { stroke: #37474f; stroke-width: 1.6; fill: none; } .fg .th { stroke: #37474f; stroke-width: 1; }
+.fg .cl { stroke: #1f7a4d; stroke-width: 2.6; fill: none; stroke-linejoin: round; }
+.fg .nb circle { fill: #1f7a4d; } .fg .nb text { fill: #fff; font-weight: 800; font-size: 12px; }
+.fg .ld { stroke: #1f7a4d; stroke-width: 1.2; stroke-dasharray: 3 2; fill: none; }
+.fg .dm { stroke: #e8590c; stroke-width: 1.3; fill: none; } .fg .dt { fill: #c2410c; font-weight: 700; font-size: 12px; }
+.fg .tt { font-weight: 800; font-size: 13px; fill: #191f28; } .fg .sm { font-weight: 500; font-size: 11.5px; fill: #4e5968; }
+.fg .pin { stroke: #c62828; stroke-width: 3; } .fg .wl { fill: #f9e7a1; stroke: #c9a227; } .fg .wv { stroke: #c9a227; stroke-width: 1.3; fill: none; }
+.fg .bead { stroke: #37474f; stroke-width: 4; stroke-dasharray: 3 3; } .fg .pn { fill: #fafbfc; stroke: #e5e8eb; }
+.fg .jt { fill: #1f7a4d; fill-opacity: .3; stroke: #1f7a4d; stroke-width: 1.5; }
+.fg .tl { fill: #f4f1ea; } .fg .tl2 { fill: #f4f1ea; stroke: #a1887f; } .fg .tc { stroke: #78909c; stroke-width: 2; } .fg .tm { stroke: #37474f; stroke-width: 4.5; } .fg .mo { fill: none; stroke: #1f7a4d; stroke-width: 5; }
+.steps { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 6px; }
+@media (min-width: 900px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; } }
+.steps li { display: flex; gap: 8px; align-items: flex-start; font-size: .9em; color: var(--ink2); }
+.steps .sn { flex: none; width: 22px; height: 22px; border-radius: 50%; background: #1f7a4d; color: #fff; font-weight: 800; font-size: .78em; display: inline-flex; align-items: center; justify-content: center; margin-top: 1px; }
+.steps b { color: var(--ink); }
 .pic .a { fill: #d3e8db; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
 .pic .w { fill: #fff; stroke: currentColor; stroke-width: 1.6; }
 .pic .k { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
@@ -168,7 +193,7 @@ mark { background: #fff1a8; color: inherit; border-radius: 3px; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-05e';
+const BUILD = '2026-11-05f';
 (function () {
   let busy = false;
   async function check() {
@@ -404,6 +429,83 @@ const PHOTOS = {"외압관 1종": "hume.jpg", "외압관 2종": "hume.jpg", "끝
 const CREDITS = {"hume.jpg": {"artist": "TUBS", "lic": "CC BY-SA 4.0", "licurl": "https://creativecommons.org/licenses/by-sa/4.0", "page": "https://commons.wikimedia.org/wiki/File:Betonwerk_Bieren_002.jpg"}, "headwall.jpg": {"artist": "Michael Trolove", "lic": "CC BY-SA 2.0", "licurl": "https://creativecommons.org/licenses/by-sa/2.0", "page": "https://commons.wikimedia.org/wiki/File:Headwall_-_geograph.org.uk_-_911044.jpg"}, "pe.jpg": {"artist": "Andrew Krizhanovsky", "lic": "Public domain", "licurl": "", "page": "https://commons.wikimedia.org/wiki/File:PXL_20220830_083_Corrugated_pipe_on_the_road_near_a_ditch_with_water.jpg"}, "mhcover.jpg": {"artist": "pasa (Flickr)", "lic": "CC BY 2.0", "licurl": "https://creativecommons.org/licenses/by/2.0", "page": "https://commons.wikimedia.org/wiki/File:Round_cast_iron_Manhole_cover.jpg"}, "mhstep.jpg": {"artist": "Silenzio76", "lic": "CC BY-SA 4.0", "licurl": "https://creativecommons.org/licenses/by-sa/4.0", "page": "https://commons.wikimedia.org/wiki/File:Sewer_MH_Steps.jpg"}, "inlet.jpg": {"artist": "Oxfordian Kissuth", "lic": "CC BY 3.0", "licurl": "https://creativecommons.org/licenses/by/3.0", "page": "https://commons.wikimedia.org/wiki/File:Gullydeckel_in_Hemel_Hempstead.jpg"}, "lgutter.jpg": {"artist": "미국 연방재난관리청(FEMA)", "lic": "Public domain", "licurl": "", "page": "https://commons.wikimedia.org/wiki/File:Biloxi,_MS,_May_6,_2015_-_A_construction_worker_from_Oscar_Renda_Contracting_finishes_concrete_preparation_related_to_curb_and_gutter_replacement_after_the_installation_of_new_water_-_DPLA_-_d6469b4b0c875710562f8ac816863916.jpg"}, "slabcover.jpg": {"artist": "Fumikas Sagisavas", "lic": "CC0", "licurl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en", "page": "https://commons.wikimedia.org/wiki/File:Concrete_trench_cover_(2).jpg"}, "steelgrat.jpg": {"artist": "Belt777", "lic": "CC BY-SA 3.0", "licurl": "https://creativecommons.org/licenses/by-sa/3.0", "page": "https://commons.wikimedia.org/wiki/File:Press_grating.jpg"}, "ckerb.jpg": {"artist": "Oto Zapletal", "lic": "CC0", "licurl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en", "page": "https://commons.wikimedia.org/wiki/File:Concrete_Curbs_-_PREFA_Su%C4%8Dany_-_Slovakia_05.jpg"}, "kerb.jpg": {"artist": "Ezekielf", "lic": "CC0", "licurl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en", "page": "https://commons.wikimedia.org/wiki/File:Long_gradual_sidewalk_ramp_to_tactile_paving_and_curb_cut_in_Colchester_VT.jpg"}, "dropkerb.jpg": {"artist": "Ezekielf", "lic": "CC0", "licurl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en", "page": "https://commons.wikimedia.org/wiki/File:Sidewalk_ramp_to_flush_curb_with_flat_tactile_paving_in_Winooski_VT.jpg"}, "curvekerb.jpg": {"artist": "Ezekielf", "lic": "CC0", "licurl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en", "page": "https://commons.wikimedia.org/wiki/File:Sidewalk_ramp_to_lowered_curb_and_flat_tactile_paving_in_Colchester_VT.jpg"}, "graniteslab.jpg": {"artist": "Kai Kemmann", "lic": "CC BY-SA 4.0", "licurl": "https://creativecommons.org/licenses/by-sa/4.0", "page": "https://commons.wikimedia.org/wiki/File:Granite_pavers,_Kirschbergstra%C3%9Fe,_08451_Crimmitschau,_Germany_01.jpg"}, "setts.jpg": {"artist": "kim traynor", "lic": "CC BY-SA 2.0", "licurl": "https://creativecommons.org/licenses/by-sa/2.0", "page": "https://commons.wikimedia.org/wiki/File:Granite_setts_in_Kyle_Place,_Abbeyhill_-_geograph.org.uk_-_1731064.jpg"}, "tactile.jpg": {"artist": "Mx. Granger", "lic": "CC0", "licurl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en", "page": "https://commons.wikimedia.org/wiki/File:Tactile_paving_in_China_2.jpg"}, "geogrid.jpg": {"artist": "Tomasz Beszczyński (Efr)", "lic": "Public domain", "licurl": "", "page": "https://commons.wikimedia.org/wiki/File:Geosiatka.Polyfelt.GX.80-30.jpg"}, "sand.jpg": {"artist": "W.carter", "lic": "CC BY-SA 4.0", "licurl": "https://creativecommons.org/licenses/by-sa/4.0", "page": "https://commons.wikimedia.org/wiki/File:Pile_of_sand_by_the_soccer_fields_at_Brastad_Arena.jpg"}, "mortar.jpg": {"artist": "Kebabknight", "lic": "CC BY-SA 4.0", "licurl": "https://creativecommons.org/licenses/by-sa/4.0", "page": "https://commons.wikimedia.org/wiki/File:Sand-cement-render.jpg"}, "concpour.jpg": {"artist": "Imprezzive1 at English Wikipedia", "lic": "Public domain", "licurl": "", "page": "https://commons.wikimedia.org/wiki/File:Slip_form_curb_under_construction.jpg"}, "stud.jpg": {"artist": "MTA Capital Construction Mega Projects", "lic": "CC BY 2.0", "licurl": "https://creativecommons.org/licenses/by/2.0", "page": "https://commons.wikimedia.org/wiki/File:Metal_stud_framing_for_the_engineering_rooms_located_in_the_LIRR_concourse_area._(CM014B,_07-18-2018)_(28645816477).jpg"}, "gypsum.jpg": {"artist": "Amaxson at English Wikipedia", "lic": "Public domain", "licurl": "", "page": "https://commons.wikimedia.org/wiki/File:Drywall.jpg"}, "screw.jpg": {"artist": "DaRy on sv.wikipedia", "lic": "CC BY-SA 3.0", "licurl": "http://creativecommons.org/licenses/by-sa/3.0/", "page": "https://commons.wikimedia.org/wiki/File:Skruvar_part4.jpg"}, "glasswool.jpg": {"artist": "Original uploader was Radomil at pl.wikipedia", "lic": "CC BY-SA 3.0", "licurl": "http://creativecommons.org/licenses/by-sa/3.0/", "page": "https://commons.wikimedia.org/wiki/File:Glass_wool_insulation.jpg"}, "anchor.jpg": {"artist": "Dmitry G", "lic": "CC BY-SA 3.0", "licurl": "https://creativecommons.org/licenses/by-sa/3.0", "page": "https://commons.wikimedia.org/wiki/File:Ancor_bolt_for_concrete.JPG"}, "rod.jpg": {"artist": "Taylor 49", "lic": "CC BY-SA 4.0", "licurl": "https://creativecommons.org/licenses/by-sa/4.0", "page": "https://commons.wikimedia.org/wiki/File:Threaded_rods_of_different_sizes.png"}, "tbarceil.jpg": {"artist": "Adamantios", "lic": "CC BY-SA 3.0", "licurl": "http://creativecommons.org/licenses/by-sa/3.0/", "page": "https://commons.wikimedia.org/wiki/File:Suspended-ceiling-0a.jpg"}};
 const pic = k => '<svg class="pic" viewBox="0 0 64 48" aria-hidden="true">' + (PIC[k] || '') + '</svg>';
 
+/* 조립 그림 (경량철골) — 번호는 아래 설명 순서와 같음 */
+const FIG = (() => {
+  const nb = (n, x, y) => '<g class="nb"><circle cx="' + x + '" cy="' + y + '" r="10"/><text x="' + x + '" y="' + (y + 4) + '" text-anchor="middle">' + n + '</text></g>';
+  const ld = (x1, y1, x2, y2) => '<path class="ld" d="M' + x1 + ' ' + y1 + 'L' + x2 + ' ' + y2 + '"/>';
+  const dim = (x1, x2, y, t) => '<path class="dm" d="M' + x1 + ' ' + (y - 5) + 'v10M' + x2 + ' ' + (y - 5) + 'v10M' + x1 + ' ' + y + 'H' + x2 + 'M' + (x1 + 7) + ' ' + (y - 4) + 'L' + x1 + ' ' + y + 'l7 4M' + (x2 - 7) + ' ' + (y - 4) + 'L' + x2 + ' ' + y + 'l-7 4"/><text class="dt" x="' + ((x1 + x2) / 2) + '" y="' + (y - 8) + '" text-anchor="middle">' + t + '</text>';
+  const slab = (x, y, w, h) => { let s = '<rect class="sl" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '"/><path class="sh" d="'; for (let i = x + 6; i < x + w - 4; i += 14) s += 'M' + i + ' ' + (y + h - 3) + 'l8 -' + (h - 6); return s + '"/>'; };
+  const rod = (x, y1, y2) => { let s = '<path class="ln" d="M' + x + ' ' + y1 + 'V' + y2 + '"/><path class="th" d="'; for (let y = y1 + 4; y < y2 - 2; y += 6) s += 'M' + (x - 3) + ' ' + y + 'l6 2'; return s + '"/>'; };
+  const nut = (x, y) => '<path class="dk" d="M' + (x - 8) + ' ' + y + 'h16l3 4-3 4h-16l-3-4z"/>';
+  const box = (vb, body, label) => '<svg class="fg" viewBox="' + vb + '" role="img" aria-label="' + label + '">' + body + '</svg>';
+
+  /* ① 천장틀 전체 (옆에서 본 모습) */
+  let c = slab(20, 12, 640, 38) + '<text class="tt" x="30" y="36">콘크리트 슬래브 (위층 바닥)</text>';
+  const hx = [190, 350, 510];
+  hx.forEach(x => { c += '<rect class="dk" x="' + (x - 6) + '" y="42" width="12" height="12"/>' + rod(x, 54, 160) + nut(x, 150) + '<path class="st" d="M' + (x - 5) + ' 158h10v40h-10z"/><circle class="wh" cx="' + x + '" cy="166" r="2.5"/>'; });
+  c += '<rect class="st" x="40" y="182" width="600" height="13"/>';
+  const mx = []; for (let x = 66; x <= 620; x += 52) mx.push(x);
+  mx.forEach(x => { c += '<path class="st" d="M' + (x - 10) + ' 212h4v-12h12v12h4v-3h-2v-11h-16v11h-2z"/><path class="cl" d="M' + (x - 9) + ' 210V179h18V210"/>'; });
+  c += '<rect class="bd" x="40" y="213" width="600" height="13"/>';
+  mx.forEach(x => { c += '<path class="ln" d="M' + x + ' 226V204"/><rect class="dk" x="' + (x - 4) + '" y="225" width="8" height="3"/>'; });
+  c += dim(190, 350, 92, '행거 간격 900') + dim(mx[5], mx[6], 262, 'M-BAR 간격 300');
+  c += nb(1, 166, 70) + ld(176, 66, 186, 54) + nb(2, 222, 120) + ld(212, 120, 192, 120) + nb(3, 246, 142) + ld(237, 147, 197, 168) + nb(4, 600, 168) + ld(600, 178, 600, 183) +
+    nb(5, 404, 160) + ld(404, 170, mx[7], 180) + nb(6, 560, 250) + ld(560, 240, mx[9] + 2, 211) + nb(7, 90, 250) + ld(90, 240, 100, 226) + nb(8, 236, 250) + ld(240, 240, mx[4] - 2, 228);
+  const ceil = box('0 0 680 280', c, '경량 천장틀을 옆에서 본 그림');
+
+  /* ② 연결부 확대 3가지 */
+  let j = '<rect class="pn" x="6" y="6" width="216" height="232" rx="10"/><rect class="pn" x="232" y="6" width="216" height="232" rx="10"/><rect class="pn" x="458" y="6" width="216" height="232" rx="10"/>';
+  j += '<text class="tt" x="20" y="30">ⓐ 캐링 행거</text><text class="tt" x="246" y="30">ⓑ M-BAR 클립</text><text class="tt" x="472" y="30">ⓒ 조인트 (이음)</text>';
+  /* ⓐ 행거볼트 + 너트 2개 + 행거 + 캐링 */
+  j += rod(110, 44, 128) + nut(110, 92) + '<path class="st" d="M96 101h28v6h-6v62h-8v-62h-14z"/>' + nut(110, 108) + '<path class="st" d="M88 170h44v30h-44z" style="fill:#fff"/><path class="st" d="M92 174h36v4h-32v18h32v4h-36z"/><path class="cl" d="M118 160v12h14v32h-48v-32h14"/>';
+  j += '<text class="sm" x="138" y="96">너트</text><text class="sm" x="138" y="114">너트</text><text class="sm" x="140" y="190">캐링 찬넬</text><text class="sm" x="140" y="204">(자른 면)</text><text class="sm" x="18" y="70">행거볼트</text><path class="ld" d="M60 66L106 70"/>';
+  j += '<text class="sm" x="18" y="226">너트로 위아래를 조여 높이 맞춤</text>';
+  /* ⓑ 캐링(자른 면) 위에 클립을 걸고 M-BAR를 감쌈 */
+  j += '<path class="st" d="M320 72h40v4h-36v10h36v4h-40z"/>';
+  j += '<path class="st" d="M250 128h10v-22h160v22h10v4h-14v-22h-152v22h-14z"/>';
+  j += '<path class="cl" d="M318 132V66h44V132M318 132h6M362 132h-6"/>';
+  j += '<text class="sm" x="366" y="70">캐링 찬넬</text><text class="sm" x="366" y="82">(자른 면)</text><text class="sm" x="258" y="152">M-BAR (길게 지나감)</text><text class="sm" x="246" y="58">클립</text><path class="ld" d="M268 60L316 80"/>';
+  j += '<text class="sm" x="246" y="210">캐링 위에 걸고, 다리로</text><text class="sm" x="246" y="226">M-BAR 날개를 감싸 끼움</text>';
+  /* ⓒ 조인트 */
+  j += '<rect class="st" x="470" y="96" width="98" height="14"/><rect class="st" x="572" y="96" width="94" height="14"/><rect class="jt" x="540" y="90" width="60" height="26" rx="3"/>';
+  j += '<path class="dm" d="M520 140h40M552 134l8 6-8 6M624 140h-40M592 134l-8 6 8 6"/><text class="sm" x="530" y="84">조인트를 씌움</text>';
+  j += '<text class="sm" x="472" y="194">끝을 맞대고 조인트로 이음.</text><text class="sm" x="472" y="210">이음 자리는 행거 가까이,</text><text class="sm" x="472" y="226">옆줄과 엇갈리게</text>';
+  const joint = box('0 0 680 244', j, '캐링 행거, M-BAR 클립, 조인트 연결부 확대 그림');
+
+  /* ③ 벽체 (앞에서 본 모습) */
+  let w = slab(20, 8, 640, 28) + slab(20, 300, 640, 28);
+  w += '<rect class="st" x="40" y="36" width="600" height="11"/><rect class="st" x="40" y="289" width="600" height="11"/>';
+  [90, 230, 370, 510, 610].forEach(x => { w += '<path class="pin" d="M' + x + ' 30v14M' + x + ' 292v14"/>'; });
+  const sx = []; for (let x = 60; x <= 600; x += 78) sx.push(x);
+  sx.forEach(x => { w += '<rect class="st" x="' + (x - 5) + '" y="47" width="10" height="242"/>'; });
+  w += '<rect class="wl" x="' + (sx[3] + 5) + '" y="47" width="' + (sx[4] - sx[3] - 10) + '" height="242"/><path class="wv" d="M' + (sx[3] + 10) + ' 70q8-8 16 0t16 0t16 0t16 0M' + (sx[3] + 10) + ' 130q8-8 16 0t16 0t16 0t16 0M' + (sx[3] + 10) + ' 190q8-8 16 0t16 0t16 0t16 0M' + (sx[3] + 10) + ' 250q8-8 16 0t16 0t16 0t16 0"/>';
+  w += '<rect class="bd op" x="' + sx[4] + '" y="47" width="' + (640 - sx[4]) + '" height="242"/><path class="ln" d="M' + sx[6] + ' 47v242"/>';
+  [sx[4], sx[5], sx[6]].forEach(x => { for (let y = 64; y < 285; y += 36) w += '<circle class="dk" cx="' + x + '" cy="' + y + '" r="2.2"/>'; });
+  w += '<path class="bead" d="M637 47v242"/>';
+  /* 위에서 본 모습 (작은 그림) */
+  w += '<rect class="pn" x="72" y="96" width="196" height="118" rx="8"/><text class="sm" x="84" y="114">위에서 본 모습</text><rect class="bd" x="88" y="148" width="164" height="8"/><rect class="bd" x="88" y="186" width="164" height="8"/><path class="st" d="M150 156h40v4h-36v22h36v4h-40z"/><path class="ln" d="M170 136v22M170 206v-22"/><text class="sm" x="196" y="140">보드 피스</text><text class="sm" x="196" y="174">스터드</text><text class="sm" x="96" y="210">석고보드 양면</text>';
+  w += dim(sx[1], sx[2], 276, '스터드 간격 450');
+  w += nb(1, 150, 66) + ld(150, 56, 150, 47) + nb(2, sx[3], 80) + nb(3, (sx[3] + sx[4]) / 2, 160) + nb(4, 560, 120) + nb(5, sx[5] + 18, 208) + ld(sx[5] + 10, 205, sx[5] + 3, 208) + nb(6, 624, 250) + nb(7, 230, 258) + ld(230, 268, 230, 292);
+  const wall = box('0 0 680 334', w, '경량 벽체를 앞에서 본 그림');
+
+  /* ④ T-BAR 천장 */
+  let t = '<rect class="pn" x="6" y="6" width="320" height="270" rx="10"/><text class="tt" x="20" y="30">밑에서 올려다본 모습</text>';
+  t += '<rect class="tl" x="30" y="44" width="272" height="216"/>';
+  for (let x = 84; x < 302; x += 54) t += '<path class="tc" d="M' + x + ' 44v216"/>';
+  [116, 188].forEach(y => { t += '<path class="tc" d="M30 ' + y + 'h272"/>'; });
+  [80, 152, 224].forEach(y => { t += '<path class="tm" d="M30 ' + y + 'h272"/>'; });
+  t += '<rect class="mo" x="30" y="44" width="272" height="216"/>';
+  t += nb(1, 302, 250) + nb(2, 111, 62) + ld(111, 72, 111, 79) + nb(3, 248, 170) + ld(248, 180, 248, 187) + nb(4, 57, 134);
+  t += '<rect class="pn" x="336" y="6" width="338" height="270" rx="10"/><text class="tt" x="350" y="30">자른 면 (옆에서)</text>';
+  t += slab(344, 40, 322, 26) + '<rect class="sl" x="344" y="66" width="18" height="190"/>';
+  t += rod(540, 66, 150) + '<path class="st" d="M534 150h12v14h-12z"/><path class="st" d="M504 186h72v5h-72zM537 164h6v22h-6z"/>';
+  t += '<path class="st" d="M362 186h26v5h-21v-30h-5z"/>';
+  t += '<rect class="tl2" x="368" y="178" width="134" height="9"/><rect class="tl2" x="578" y="178" width="86" height="9"/>';
+  t += '<text class="sm" x="560" y="110">행거</text><text class="sm" x="430" y="212">텍스 (보드에 얹기만 함)</text><text class="sm" x="370" y="150">벽 몰딩</text><path class="ld" d="M392 152L372 168"/><text class="sm" x="580" y="212">메인 T-BAR</text><path class="ld" d="M592 202L560 192"/>';
+  const tbar = box('0 0 680 282', t, 'T-BAR 천장 그림');
+  return { ceil, joint, wall, tbar };
+})();
+
 /* 제품 자료 — 같은 것이 두 번 나오지 않도록 정리 (기초 모래·콘크리트·몰탈 등은 '공통 자재' 한 곳에만) */
 const PROD = [
   { id: 'hume', name: '⭕ 흄관', groups: [
@@ -585,6 +687,38 @@ const PROD = [
       { n: '코너비드', p: 'bead', d: '석고보드 모서리를 보호하고 곧게 마감.' }
     ] },
     { t: '스터드 · 런너 규격 (폭, mm)', chips: ['50', '65', '75', '100'], foot: '두께는 0.8t 안팎이 많아요. 길이는 층고에 맞춰 주문하는 경우가 많으니 거래처에 확인하세요.' },
+    { t: '조립 방법 · 연결부 (그림)', figs: [
+      { k: 'ceil', t: '1. M-BAR 천장틀 — 옆에서 본 모습', steps: [
+        ['1', '인서트 · 앵커', '콘크리트 슬래브에 행거 간격(보통 900)으로 박아 둠.'],
+        ['2', '행거볼트', '인서트에 돌려 끼워 아래로 내림. 천장 높이에 맞춰 길이를 자름.'],
+        ['3', '캐링 행거', '행거볼트 끝에 끼우고 위아래 너트로 조여 천장 높이(수평)를 맞춤.'],
+        ['4', '캐링 찬넬', '행거 아래 고리에 걸어 끼움. 900 간격으로 나란히. 길이가 모자라면 조인트로 이음.'],
+        ['5', 'M-BAR 클립', '캐링과 M-BAR가 엇갈리는 곳마다 1개씩 걸어 고정.'],
+        ['6', 'M-BAR', '캐링과 직각 방향으로 300 간격. 석고보드 두 장이 만나는 자리는 더블 M-BAR.'],
+        ['7', '석고보드', 'M-BAR 아래에 대고 붙임. 보드 긴 변이 M-BAR와 직각이 되게.'],
+        ['8', '피스', '석고보드를 M-BAR에 박아 고정. 가장자리에서 조금 안쪽에 일정한 간격으로.']
+      ] },
+      { k: 'joint', t: '2. 연결부 확대 — 무엇이 어디에 끼워지나', steps: [
+        ['ⓐ', '캐링 행거', '행거볼트에 너트 → 행거 → 너트 순서로 끼우고, 두 너트로 조여 높이를 고정. 아래 고리에 캐링 찬넬을 끼움.'],
+        ['ⓑ', 'M-BAR 클립', '캐링 찬넬 위에 걸쳐 놓고, 양쪽 다리를 M-BAR 날개(양옆 턱)에 눌러 끼움.'],
+        ['ⓒ', '조인트', '바 끝을 맞대고 조인트를 씌워 이음. 이음 자리는 행거 가까이, 옆줄 이음과 엇갈리게.']
+      ] },
+      { k: 'wall', t: '3. 경량 벽체 (칸막이) — 앞에서 본 모습', steps: [
+        ['1', '런너', '바닥과 천장에 먹줄을 맞춰 대고 고정.'],
+        ['7', '타정 핀 · 콘크리트 못', '런너를 콘크리트에 박아 고정 (일정한 간격으로).'],
+        ['2', '스터드', '위아래 런너 안에 끼워 세우고 450(또는 300·600) 간격으로 맞춤. 길이는 층고보다 조금 짧게.'],
+        ['3', '흡음재', '스터드 사이에 끼워 채움 (소리·열을 막을 때).'],
+        ['4', '석고보드', '세로로 세워 스터드에 붙임. 보드 이음은 스터드 위에서. 양면이면 반대쪽 이음과 엇갈리게.'],
+        ['5', '보드 피스', '스터드마다 위아래로 일정한 간격으로 박음.'],
+        ['6', '코너비드', '바깥 모서리에 대고 고정한 뒤 퍼티로 마감.']
+      ] },
+      { k: 'tbar', t: '4. T-BAR 천장 (텍스 천장)', steps: [
+        ['1', '벽 몰딩', '벽 둘레에 천장 높이로 수평을 맞춰 고정.'],
+        ['2', '메인 T-BAR (굵은 줄)', '행거로 매달아 보통 1200 간격으로 나란히, 수평을 맞춤.'],
+        ['3', '크로스 T-BAR (가는 줄)', '메인 T-BAR 옆 구멍(슬롯)에 끼워 600×600 또는 600×1200 격자를 만듦.'],
+        ['4', '텍스', '격자 안으로 비스듬히 넣어 T-BAR 날개 위에 얹음. 따로 고정하지 않음.']
+      ] }
+    ] },
     { t: '고정 철물', items: [
       { n: '경량 피스 · 석고보드 피스', p: 'screw', d: '바끼리, 또는 보드를 바에 고정하는 나사.', sp: '통·봉지 단위' },
       { n: '타정 핀 · 콘크리트 못', p: 'pin', d: '런너를 바닥·천장 콘크리트에 고정.' }
@@ -620,6 +754,11 @@ function renderProd() {
         const its = g.items.filter(it => has(g.t) || has(it.n) || has(it.d) || has(it.sp || ''));
         if (its.length) gh = '<div class="items">' + its.map(it => '<div class="it">' + (PHOTOS[it.n] ? '<button class="phb" data-ph="' + esc(PHOTOS[it.n]) + '" data-nm="' + esc(it.n) + '" aria-label="' + esc(it.n) + ' 사진 크게 보기"><img class="ph" src="img/' + esc(PHOTOS[it.n]) + '" alt="' + esc(it.n) + '" loading="lazy"></button>' : pic(it.p)) + '<div class="tx"><b>' + hl(it.n, q) + '</b><p>' + hl(it.d, q) + '</p>' + (it.sp ? '<div class="sp">' + hl(it.sp, q) + '</div>' : '') + '</div></div>').join('') + '</div>';
         hits += its.length;
+      }
+      if (g.figs) {
+        const fs = g.figs.filter(f => has(g.t) || has(f.t) || f.steps.some(st => has(st[1]) || has(st[2])));
+        if (fs.length) gh = fs.map(f => '<div class="figc"><h4>' + hl(f.t, q) + '</h4><p class="swipe">↔ 그림을 옆으로 밀어서 보세요</p><div class="figw">' + FIG[f.k] + '</div><ol class="steps">' + f.steps.map(st => '<li><span class="sn">' + st[0] + '</span><span><b>' + hl(st[1], q) + '</b> ' + hl(st[2], q) + '</span></li>').join('') + '</ol></div>').join('');
+        hits += fs.length;
       }
       if (g.chips && (has(g.t) || g.chips.some(has))) { gh = '<div class="chips">' + g.chips.map(x => '<span>' + hl(x, q) + '</span>').join('') + '</div>'; hits++; }
       if (gh) ch += '<h3>' + hl(g.t, q) + '</h3>' + gh + (g.foot ? '<p class="muted" style="margin:6px 0 0">' + esc(g.foot) + '</p>' : '');
