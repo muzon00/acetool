@@ -63,7 +63,15 @@ label.f { display: block; font-size: .85em; font-weight: 600; color: var(--ink2)
 .cats button.on { background: var(--s1); color: #fff; border-color: var(--s1); }
 .items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 @media (max-width: 640px) { .items { grid-template-columns: 1fr; } }
-.it { border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: var(--surface2); }
+.it { border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: var(--surface2); display: flex; gap: 12px; align-items: flex-start; }
+.it .tx { flex: 1; min-width: 0; }
+.pic { width: 76px; height: 57px; flex: none; color: #1f5a3d; background: #fff; border: 1px solid var(--line); border-radius: 10px; }
+.pic .a { fill: #d3e8db; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
+.pic .w { fill: #fff; stroke: currentColor; stroke-width: 1.6; }
+.pic .k { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.pic .d { fill: currentColor; }
+.pic .r { fill: none; stroke: #2f3a35; stroke-width: 6; }
+.pic .t { font: 800 12px sans-serif; fill: currentColor; }
 .it b { display: block; }
 .it p { margin: 2px 0 0; font-size: .9em; color: var(--ink2); }
 .it .sp { margin-top: 6px; font-size: .84em; color: var(--chip-ink); font-weight: 600; }
@@ -148,7 +156,7 @@ mark { background: #fff1a8; color: inherit; border-radius: 3px; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-05b';
+const BUILD = '2026-11-05c';
 (function () {
   let busy = false;
   async function check() {
@@ -168,7 +176,7 @@ const BUILD = '2026-11-05b';
 <body>
 <div class="wrap">
   <div class="top">
-    <div class="r1"><h1>수주팀 · 부대토목</h1><span class="sub">흄관 · 그레이팅 · 경계석</span></div>
+    <div class="r1"><h1>수주팀 · 부대토목</h1><span class="sub">흄관 · PE관 · 맨홀 · 수로관 · 그레이팅 · 경계석 · 화강블럭 · 보강토</span></div>
     <div class="tabs" id="tabs">
       <button data-t="prod"><i>📚 </i>제품 종류</button>
       <button data-t="check"><i>📝 </i>발주 체크</button>
@@ -289,105 +297,242 @@ function numIn(v) {
 }
 
 /* ===================== 제품 자료 ===================== */
+/* 제품 그림 (간단한 단면·모양 그림, 64×48) */
+const PIC = {
+  pipe: '<rect class="a" x="12" y="15" width="38" height="18"/><ellipse class="a" cx="12" cy="24" rx="4" ry="9"/><ellipse class="w" cx="50" cy="24" rx="4" ry="9"/>',
+  pipe2: '<rect class="a" x="12" y="13" width="38" height="22"/><ellipse class="a" cx="12" cy="24" rx="4.5" ry="11"/><ellipse class="d" cx="50" cy="24" rx="4.5" ry="11"/><ellipse class="w" cx="50" cy="24" rx="2.5" ry="7"/>',
+  pipeP: '<rect class="a" x="12" y="15" width="38" height="18"/><ellipse class="a" cx="12" cy="24" rx="4" ry="9"/><ellipse class="w" cx="50" cy="24" rx="4" ry="9"/><path class="k" d="M24 24h14M33 20l5 4-5 4"/>',
+  sock: '<rect class="a" x="8" y="16" width="36" height="16"/><ellipse class="a" cx="8" cy="24" rx="3.5" ry="8"/><path class="a" d="M42 16l4-5h6v26h-6l-4-5z"/><ellipse class="w" cx="52" cy="24" rx="4" ry="13"/>',
+  collar: '<rect class="a" x="8" y="16" width="48" height="16"/><ellipse class="a" cx="8" cy="24" rx="3.5" ry="8"/><rect class="d" x="27" y="12" width="10" height="24" rx="2"/>',
+  ring: '<ellipse class="r" cx="32" cy="24" rx="17" ry="13"/>',
+  can: '<rect class="a" x="22" y="14" width="20" height="26" rx="3"/><rect class="k" x="27" y="9" width="10" height="5"/><path class="k" d="M26 25h12"/>',
+  bag: '<path class="a" d="M18 14h28l2 26H16z"/><path class="k" d="M18 14l3-4h22l3 4"/><text class="t" x="32" y="32" text-anchor="middle">M</text>',
+  saddle: '<circle class="a" cx="32" cy="20" r="12"/><circle class="w" cx="32" cy="20" r="7"/><path class="a" d="M12 42V31h9q11 8 22 0h9v11z"/>',
+  coupler: '<rect class="a" x="6" y="17" width="24" height="14"/><rect class="a" x="34" y="14" width="24" height="20"/><rect class="d" x="26" y="11" width="12" height="26" rx="2"/>',
+  wing: '<path class="a" d="M6 40l12-26h28l12 26z"/><circle class="w" cx="32" cy="29" r="8"/>',
+  corr: '<rect class="a" x="8" y="14" width="42" height="20"/><path class="k" d="M13 14v20M18 14v20M23 14v20M28 14v20M33 14v20M38 14v20M43 14v20"/><ellipse class="w" cx="50" cy="24" rx="4" ry="10"/>',
+  perf: '<rect class="a" x="8" y="14" width="42" height="20"/><path class="k" d="M15 14v20M24 14v20M33 14v20M42 14v20"/><g class="d"><circle cx="19.5" cy="20" r="1.6"/><circle cx="28.5" cy="28" r="1.6"/><circle cx="37.5" cy="20" r="1.6"/><circle cx="19.5" cy="28" r="1.6"/><circle cx="28.5" cy="20" r="1.6"/><circle cx="37.5" cy="28" r="1.6"/></g><ellipse class="w" cx="50" cy="24" rx="4" ry="10"/>',
+  ruler: '<rect class="a" x="8" y="18" width="48" height="12" rx="2"/><path class="k" d="M14 18v5M20 18v4M26 18v5M32 18v4M38 18v5M44 18v4M50 18v5"/>',
+  mh: '<rect class="a" x="16" y="33" width="32" height="9"/><rect class="a" x="16" y="23" width="32" height="10"/><path class="a" d="M16 23l8-10h16l8 10z"/><rect class="d" x="22" y="9" width="20" height="4" rx="1"/>',
+  mhsq: '<rect class="a" x="14" y="30" width="36" height="12"/><rect class="a" x="14" y="18" width="36" height="12"/><rect class="a" x="14" y="12" width="36" height="6"/><rect class="d" x="24" y="8" width="16" height="4" rx="1"/>',
+  conc: '<rect class="a" x="10" y="16" width="44" height="22"/><path class="k" d="M10 28l12-12M10 38l22-22M20 38l22-22M30 38l22-22M40 38l14-14"/>',
+  mhBase: '<path class="a" d="M14 14h8v18h20V14h8v26H14z"/><path class="k" d="M24 30q8-6 16 0"/>',
+  mhWall: '<ellipse class="a" cx="32" cy="34" rx="16" ry="5"/><rect class="a" x="16" y="14" width="32" height="20" style="stroke:none"/><path class="k" d="M16 14v20M48 14v20"/><ellipse class="w" cx="32" cy="14" rx="16" ry="5"/>',
+  mhCone: '<path class="a" d="M12 38l10-24h20l10 24z"/><path class="k" d="M12 38h40"/><ellipse class="w" cx="32" cy="14" rx="10" ry="3"/>',
+  mhSlab: '<path class="a" d="M8 30l10-10h38l-10 10z"/><path class="a" d="M8 30h38v6H8zM46 30l10-10v6l-10 10z"/><ellipse class="w" cx="30" cy="25" rx="8" ry="3"/>',
+  adj: '<path class="a" d="M12 22v6a20 7 0 0 0 40 0v-6"/><ellipse class="a" cx="32" cy="22" rx="20" ry="7"/><ellipse class="w" cx="32" cy="22" rx="12" ry="4"/>',
+  hole: '<rect class="a" x="14" y="8" width="36" height="34"/><circle class="w" cx="32" cy="27" r="8"/><path class="k" d="M4 27h16M16 23l4 4-4 4"/>',
+  cover: '<circle class="a" cx="32" cy="24" r="17"/><circle class="k" cx="32" cy="24" r="12"/><path class="k" d="M23 24h18M32 15v18M26 18l12 12M38 18L26 30"/>',
+  ladder: '<path class="k" d="M18 8v34M14 42h36"/><path class="k" d="M18 13h14v4M18 23h14v4M18 33h14v4"/>',
+  inlet: '<rect class="a" x="12" y="18" width="30" height="24"/><path class="a" d="M12 18l8-8h30l-8 8z"/><path class="a" d="M42 18l8-8v24l-8 8z"/><path class="k" d="M19 16l7-7M25 16l7-7M31 16l7-7M37 16l7-7"/>',
+  box: '<rect class="a" x="12" y="18" width="30" height="24"/><path class="a" d="M12 18l8-8h30l-8 8z"/><path class="a" d="M42 18l8-8v24l-8 8z"/><path class="k" d="M16 34h22" stroke-dasharray="3 2"/>',
+  pile: '<path class="a" d="M6 40q26-36 52 0z"/><g class="d"><circle cx="24" cy="32" r="1.5"/><circle cx="32" cy="26" r="1.5"/><circle cx="40" cy="33" r="1.5"/><circle cx="30" cy="35" r="1.5"/></g>',
+  water: '<path class="a" d="M32 8c8 12 14 18 14 25a14 14 0 0 1-28 0c0-7 6-13 14-25z"/>',
+  u: '<path class="a" d="M12 10h8v22h24V10h8v30H12z"/>',
+  bench: '<path class="a" d="M10 8h8v6h4v18h20V14h4V8h8v32H10z"/><rect class="d" x="18" y="10.5" width="28" height="3.5"/>',
+  uside: '<path class="a" d="M12 14h8v18h24V14h8v26H12z"/><path class="k" d="M20 11h24M23 8v6M28 8v6M33 8v6M38 8v6M43 8v6"/>',
+  l: '<path class="a" d="M8 40V18h10v14h38v8z"/>',
+  trench: '<path class="a" d="M6 34l10-10h44l-10 10z"/><path class="a" d="M6 34h44v6H6zM50 34l10-10v6l-10 10z"/><path class="k" d="M14 30l8-6M20 30l8-6M26 30l8-6M32 30l8-6M38 30l8-6"/>',
+  slab: '<path class="a" d="M8 28l10-10h38l-10 10z"/><path class="a" d="M8 28h38v6H8zM46 28l10-10v6l-10 10z"/>',
+  grat: '<rect class="a" x="8" y="12" width="48" height="24"/><path class="k" d="M14 12v24M20 12v24M26 12v24M32 12v24M38 12v24M44 12v24M50 12v24M8 24h48"/>',
+  heel: '<rect class="a" x="8" y="12" width="48" height="24"/><path class="k" d="M12 12v24M16 12v24M20 12v24M24 12v24M28 12v24M32 12v24M36 12v24M40 12v24M44 12v24M48 12v24M52 12v24" style="stroke-width:1.2"/>',
+  serr: '<rect class="a" x="8" y="18" width="48" height="20"/><path class="k" d="M8 18l3-4 3 4 3-4 3 4 3-4 3 4 3-4 3 4 3-4 3 4 3-4 3 4 3-4 3 4 3-4 3 4"/><path class="k" d="M16 18v20M24 18v20M32 18v20M40 18v20M48 18v20"/>',
+  cast: '<rect class="a" x="8" y="10" width="48" height="28" rx="2"/><g class="k"><circle cx="18" cy="19" r="3"/><circle cx="32" cy="19" r="3"/><circle cx="46" cy="19" r="3"/><circle cx="18" cy="30" r="3"/><circle cx="32" cy="30" r="3"/><circle cx="46" cy="30" r="3"/></g>',
+  plas: '<rect class="a" x="8" y="10" width="48" height="28" rx="3"/><g class="w"><rect x="12" y="14" width="8" height="8" rx="2"/><rect x="24" y="14" width="8" height="8" rx="2"/><rect x="36" y="14" width="8" height="8" rx="2"/><rect x="12" y="26" width="8" height="8" rx="2"/><rect x="24" y="26" width="8" height="8" rx="2"/><rect x="36" y="26" width="8" height="8" rx="2"/></g>',
+  sus: '<rect class="a" x="8" y="12" width="48" height="24"/><path class="k" d="M14 12v24M20 12v24M26 12v24M32 12v24M38 12v24M44 12v24M50 12v24"/><path d="M12 32l14-18" stroke="#fff" stroke-width="3" opacity=".9"/>',
+  walk: '<circle class="d" cx="32" cy="11" r="4"/><path class="k" d="M32 16v13M32 20l-7 6M32 20l7 5M32 29l-6 11M32 29l6 11"/>',
+  car: '<path class="a" d="M8 32v-6l6-2 6-8h20l8 8 8 2v6z"/><circle class="w" cx="18" cy="33" r="4"/><circle class="w" cx="46" cy="33" r="4"/>',
+  truck: '<rect class="a" x="6" y="12" width="32" height="20"/><path class="a" d="M38 18h10l8 8v6H38z"/><circle class="w" cx="15" cy="34" r="4"/><circle class="w" cx="28" cy="34" r="4"/><circle class="w" cx="47" cy="34" r="4"/>',
+  width: '<path class="a" d="M12 14h8v18h24V14h8v26H12z"/><path class="k" d="M22 10h20M22 7v6M42 7v6"/>',
+  angle: '<path class="a" d="M16 10h8v22h26v8H16z"/>',
+  bolt: '<path class="a" d="M24 8h16l4 7-4 7H24l-4-7z"/><rect class="a" x="28" y="22" width="8" height="20"/><path class="k" d="M28 26l8 2M28 31l8 2M28 36l8 2"/>',
+  hinge: '<rect class="a" x="8" y="14" width="22" height="20"/><rect class="a" x="34" y="14" width="22" height="20"/><rect class="d" x="29" y="12" width="6" height="24" rx="3"/>',
+  cut: '<circle class="k" cx="16" cy="34" r="6"/><circle class="k" cx="16" cy="14" r="6"/><path class="k" d="M21 30l33-20M21 18l33 20"/>',
+  curb: '<path class="a" d="M8 22h36v18H8z"/><path class="a" d="M8 22l8-8h36l-8 8z"/><path class="a" d="M44 22l8-8v18l-8 8z"/>',
+  curbLow: '<path class="a" d="M8 40V30l36-8v18z"/><path class="a" d="M8 30l8-8 36-8-8 8z"/><path class="a" d="M44 22l8-8v18l-8 8z"/>',
+  curbCurve: '<path class="a" d="M8 42a34 34 0 0 1 34-34v11a23 23 0 0 0-23 23z"/>',
+  corner: '<path class="a" d="M10 10h12v20h22v12H10z"/>',
+  garden: '<path class="a" d="M8 30h40v10H8z"/><path class="a" d="M8 30l6-6h40l-6 6z"/><path class="a" d="M48 30l6-6v10l-6 6z"/><path class="k" d="M18 22l2-8M26 22l-1-9M34 22l3-8"/>',
+  stone: '<rect class="a" x="10" y="12" width="44" height="24" rx="2"/><g class="d"><circle cx="18" cy="18" r="1.2"/><circle cx="27" cy="27" r="1.2"/><circle cx="35" cy="17" r="1.2"/><circle cx="44" cy="29" r="1.2"/><circle cx="22" cy="31" r="1.2"/><circle cx="48" cy="18" r="1.2"/><circle cx="38" cy="24" r="1.2"/></g>',
+  swatch: '<rect class="a" x="8" y="14" width="14" height="20" rx="2"/><rect class="d" x="25" y="14" width="14" height="20" rx="2" opacity=".55"/><rect class="d" x="42" y="14" width="14" height="20" rx="2"/>',
+  paver: '<rect class="a" x="6" y="8" width="25" height="10"/><rect class="a" x="31" y="8" width="25" height="10"/><rect class="a" x="6" y="18" width="12" height="10"/><rect class="a" x="18" y="18" width="25" height="10"/><rect class="a" x="43" y="18" width="13" height="10"/><rect class="a" x="6" y="28" width="25" height="10"/><rect class="a" x="31" y="28" width="25" height="10"/>',
+  cube: '<path class="a" d="M14 26h14v14H14z"/><path class="a" d="M14 26l6-6h14l-6 6z"/><path class="a" d="M28 26l6-6v14l-6 6z"/><path class="a" d="M34 26h14v14H34z"/><path class="a" d="M34 26l6-6h14l-6 6z"/><path class="a" d="M48 26l6-6v14l-6 6z"/>',
+  tactile: '<rect class="a" x="10" y="8" width="44" height="32" rx="2"/><g class="d"><circle cx="18" cy="16" r="2.5"/><circle cx="28" cy="16" r="2.5"/><circle cx="38" cy="16" r="2.5"/><circle cx="48" cy="16" r="2.5"/><circle cx="18" cy="32" r="2.5"/><circle cx="28" cy="32" r="2.5"/><circle cx="38" cy="32" r="2.5"/><circle cx="48" cy="32" r="2.5"/><circle cx="23" cy="24" r="2.5"/><circle cx="33" cy="24" r="2.5"/><circle cx="43" cy="24" r="2.5"/></g>',
+  tex1: '<rect class="a" x="10" y="10" width="44" height="28" rx="2"/><path class="k" d="M15 16h2M23 16h2M31 16h2M39 16h2M47 16h2M19 22h2M27 22h2M35 22h2M43 22h2M15 28h2M23 28h2M31 28h2M39 28h2M47 28h2M19 34h2M27 34h2M35 34h2M43 34h2"/>',
+  tex2: '<rect class="a" x="10" y="10" width="44" height="28" rx="2"/><path class="k" d="M14 18q5-4 9 0t9 0 9 0 9 0M14 26q5-4 9 0t9 0 9 0 9 0M14 34q5-4 9 0t9 0 9 0 9 0" style="stroke-width:1.3"/>',
+  tex3: '<path class="a" d="M10 38V16q6-8 12-2t10-4 10 3 12-3v28z"/>',
+  tex4: '<rect class="a" x="10" y="10" width="44" height="28" rx="2"/><path d="M16 32l16-18M26 34l14-16" stroke="#fff" stroke-width="3"/>',
+  wall: '<rect class="a" x="10" y="32" width="16" height="9"/><rect class="a" x="26" y="32" width="16" height="9"/><rect class="a" x="13" y="23" width="16" height="9"/><rect class="a" x="29" y="23" width="16" height="9"/><rect class="a" x="16" y="14" width="16" height="9"/><rect class="a" x="32" y="14" width="16" height="9"/>',
+  geo: '<path class="a" d="M8 20h48l-6 14H2z" style="stroke-dasharray:0"/><path class="k" d="M14 20l-6 14M22 20l-6 14M30 20l-6 14M38 20l-6 14M46 20l-6 14M54 20l-6 14M6 27h47"/>',
+  capb: '<rect class="d" x="12" y="14" width="40" height="6" rx="1"/><rect class="a" x="14" y="20" width="18" height="9"/><rect class="a" x="32" y="20" width="18" height="9"/><rect class="a" x="14" y="29" width="18" height="9"/><rect class="a" x="32" y="29" width="18" height="9"/>',
+  gravel: '<rect class="a" x="10" y="12" width="44" height="26"/><g class="w"><circle cx="18" cy="19" r="3"/><circle cx="28" cy="18" r="2.5"/><circle cx="38" cy="20" r="3"/><circle cx="47" cy="18" r="2.5"/><circle cx="22" cy="29" r="2.5"/><circle cx="32" cy="30" r="3"/><circle cx="43" cy="30" r="2.5"/></g>',
+  pad: '<rect class="a" x="8" y="30" width="48" height="10"/><rect class="w" x="14" y="20" width="18" height="10"/><rect class="w" x="32" y="20" width="18" height="10"/>',
+  doc: '<path class="a" d="M18 6h20l8 8v28H18z"/><path class="k" d="M38 6v8h8M23 22h18M23 28h18M23 34h12"/>'
+};
+const pic = k => '<svg class="pic" viewBox="0 0 64 48" aria-hidden="true">' + (PIC[k] || '') + '</svg>';
+
+/* 제품 자료 — 같은 것이 두 번 나오지 않도록 정리 (기초 모래·콘크리트·몰탈 등은 '공통 자재' 한 곳에만) */
 const PROD = [
-  { id: 'hume', name: '⭕ 흄관 · 부속', groups: [
+  { id: 'hume', name: '⭕ 흄관', groups: [
     { t: '흄관 종류 (원심력 철근콘크리트관 · KS F 4403)', items: [
-      { n: '외압관 1종', d: '보통 하중용. 보도 밑·녹지·얕게 묻는 우수관에 많이 씀.' },
-      { n: '외압관 2종', d: '1종보다 튼튼함. 차도 밑, 흙을 깊게 덮는 곳, 차량이 다니는 곳.', sp: '설계도의 종별 표기를 꼭 확인' },
-      { n: '내압관', d: '관 안에 물 압력이 걸리는 곳용. 부대토목에서는 드묾.', sp: '주문 전 설계자에게 확인' },
-      { n: '대체품: PE 이중벽관 · 고강성 PVC관', d: '가볍고 시공이 빠름. 설계에서 허용할 때만 바꿔 제안.' }
+      { n: '외압관 1종', p: 'pipe', d: '보통 하중용. 보도 밑·녹지·얕게 묻는 우수관에 많이 씀.' },
+      { n: '외압관 2종', p: 'pipe2', d: '1종보다 튼튼함. 차도 밑, 흙을 깊게 덮는 곳, 차량이 다니는 곳.', sp: '설계도의 종별 표기를 꼭 확인' },
+      { n: '내압관', p: 'pipeP', d: '관 안에 물 압력이 걸리는 곳용. 부대토목에서는 드묾.', sp: '주문 전 설계자에게 확인' }
     ] },
     { t: '이음 방식', items: [
-      { n: 'B형 (소켓관 · 고무링 이음)', d: '한쪽 끝이 넓은 소켓. 고무링을 끼우고 밀어 넣어 연결. 물이 잘 안 새서 많이 씀.', sp: '부속: 고무링 · 활제' },
-      { n: 'C형 (칼라 이음)', d: '양쪽 끝이 같은 모양. 맞댄 자리에 칼라를 씌우고 몰탈로 채움.', sp: '부속: 칼라 · 이음 몰탈' }
+      { n: 'B형 (소켓관 · 고무링 이음)', p: 'sock', d: '한쪽 끝이 넓은 소켓. 고무링을 끼우고 밀어 넣어 연결. 물이 잘 안 새서 많이 씀.', sp: '부속: 고무링 · 활제' },
+      { n: 'C형 (칼라 이음)', p: 'collar', d: '양쪽 끝이 같은 모양. 맞댄 자리에 칼라를 씌우고 몰탈로 채움.', sp: '부속: 칼라 · 몰탈' }
     ] },
-    { t: '호칭지름 (안지름, mm)', chips: ['250', '300', '350', '400', '450', '500', '600', '700', '800', '900', '1000', '1100', '1200', '1350', '1500', '1650', '1800', '2000'], foot: '1본 길이는 보통 2.5m. 구경·제조사에 따라 다를 수 있음.' },
+    { t: '호칭지름 (안지름, mm)', id: 'dia', chips: ['250', '300', '350', '400', '450', '500', '600', '700', '800', '900', '1000', '1100', '1200', '1350', '1500', '1650', '1800', '2000'], foot: '1본 길이는 보통 2.5m. 구경·제조사에 따라 다를 수 있음.' },
     { t: '흄관과 같이 들어가는 부품', items: [
-      { n: '고무링', d: 'B형 이음 한 곳에 1개. 관 구경에 맞춰야 함.', sp: '관에 붙어서 나오는지, 따로 사는지 거래처에 확인' },
-      { n: '활제 (고무링 윤활제)', d: '고무링이 잘 밀려 들어가도록 바름. 통 단위로 주문.' },
-      { n: '칼라', d: 'C형 이음 한 곳에 1개. 관 구경에 맞춤.' },
-      { n: '이음 몰탈 · 코킹재', d: 'C형 칼라 안쪽, 관과 맨홀이 만나는 곳을 메움.' },
-      { n: '흄관 받침 (관 받침대)', d: '관 밑에 받쳐 높이와 기울기를 맞춤.', sp: '보통 1본에 2개 (현장 시방 확인)' },
-      { n: '연결관 · 고무 커플러', d: '흄관과 PE·PVC관을 잇거나 옆에서 들어오는 관(지관)을 연결.', sp: '양쪽 관의 바깥지름을 모두 확인' },
-      { n: '끝벽 · 날개벽', d: '관이 개울이나 수로로 나가는 끝을 막아 흙이 쓸려 나가지 않게 함.' }
+      { n: '고무링', p: 'ring', d: 'B형 이음 한 곳에 1개. 관 구경에 맞춰야 함.', sp: '관에 붙어서 나오는지, 따로 사는지 거래처에 확인' },
+      { n: '활제 (고무링 윤활제)', p: 'can', d: '고무링이 잘 밀려 들어가도록 바름. 통 단위로 주문.' },
+      { n: '칼라', p: 'collar', d: 'C형 이음 한 곳에 1개. 관 구경에 맞춤.' },
+      { n: '흄관 받침 (관 받침대)', p: 'saddle', d: '관 밑에 받쳐 높이와 기울기를 맞춤.', sp: '보통 1본에 2개 (현장 시방 확인)' },
+      { n: '연결관 · 고무 커플러', p: 'coupler', d: '흄관과 PE·PVC관을 잇거나 옆에서 들어오는 관(지관)을 연결.', sp: '양쪽 관의 바깥지름을 모두 확인' },
+      { n: '끝벽 · 날개벽', p: 'wing', d: '관이 개울이나 수로로 나가는 끝을 막아 흙이 쓸려 나가지 않게 함.' }
+    ] }
+  ] },
+  { id: 'pe', name: '〰 PE 이중벽관', groups: [
+    { t: '종류', items: [
+      { n: 'PE 이중벽관', p: 'corr', d: '바깥은 주름, 안은 매끈한 두 겹 관. 가볍고 길어서 이음이 적음. 우수·오수관.', sp: '흄관 대신 쓰려면 설계에서 허용해야 함' },
+      { n: 'PE 이중벽 유공관', p: 'perf', d: '관에 구멍이 뚫려 땅속 물을 모아 빼는 관. 보강토 뒤·운동장·옹벽 배수.' }
     ] },
-    { t: '맨홀 · 빗물받이 · 집수정', items: [
-      { n: '조립식 원형맨홀', d: '바닥(하부) + 직벽 + 사벽(위가 좁아지는 부분) + 상판을 쌓아 높이를 맞춤.', sp: '안지름 Ø900 · Ø1200 · Ø1500 등' },
-      { n: '높이 조절링', d: '맨홀 윗면을 도로 높이에 딱 맞출 때 씀. 여러 두께가 있음.' },
-      { n: '맨홀 뚜껑', d: '주철(덕타일). 보도용·차도용 하중 구분, 잠금형·경첩형이 있음.', sp: '뚜껑 지름과 하중 등급 확인' },
-      { n: '발디딤 (사다리)', d: '맨홀 안을 오르내리는 디딤. 깊은 맨홀에 필요.' },
-      { n: '빗물받이 (우수받이)', d: '도로 가장자리에서 빗물을 받는 통 + 위에 그레이팅 덮개.' },
-      { n: '집수정', d: '물을 모으는 사각 통. 크기·깊이·덮개(그레이팅·콘크리트·주철)를 함께 확인.' }
+    { t: '이음 방식', items: [
+      { n: '소켓 이음 (고무링)', p: 'sock', d: '한쪽 끝 소켓에 고무링을 끼워 밀어 넣음. 고무링이 함께 나오는 제품이 많음.' },
+      { n: '커플러 · 밴드 이음', p: 'coupler', d: '맞댄 두 관을 커플러(밴드)로 감싸 조임.' }
     ] },
-    { t: '바닥 · 기초 (같이 물어보는 자재)', items: [
-      { n: '기초 모래 · 쇄석', d: '관 밑에 깔아 고르게 받침.' },
-      { n: '기초 · 보호 콘크리트', d: '차도 밑이나 얕게 묻을 때 관을 감싸 보호.' }
+    { t: '호칭지름 (안지름, mm)', chips: ['100', '150', '200', '250', '300', '350', '400', '450', '500', '600', '700', '800', '1000', '1200'], foot: '1본 길이는 보통 6m (제조사 확인). 강성 등급은 설계도에 적힌 것과 맞춰 주문하세요.' },
+    { t: '주문 전에 알아 둘 점', items: [
+      { n: '강성 등급', p: 'ruler', d: '관이 흙 무게에 눌리지 않고 버티는 정도. 설계도에 적힌 등급으로.' },
+      { n: '되메우기 다짐', p: 'pile', d: '가벼운 관이라 옆 흙을 잘 다져야 모양이 유지됨. 현장에 안내.' }
+    ] }
+  ] },
+  { id: 'mh', name: '◎ 맨홀 · 조립식 맨홀', groups: [
+    { t: '종류', items: [
+      { n: '조립식 원형맨홀', p: 'mh', d: '공장에서 만든 원형 조각을 쌓아 높이를 맞춤. 시공이 빠름.', sp: '안지름 Ø900 · Ø1200 · Ø1500 등' },
+      { n: '조립식 사각맨홀', p: 'mhsq', d: '사각 조각을 쌓는 맨홀. 관이 여러 방향에서 들어올 때.' },
+      { n: '현장 타설 맨홀', p: 'conc', d: '현장에서 거푸집을 짜고 콘크리트를 부어 만듦. 특수 크기·깊이.' }
+    ] },
+    { t: '조립식 맨홀 구성 (아래에서 위로)', items: [
+      { n: '하부 (바닥)', p: 'mhBase', d: '맨 아래 바닥 조각. 물길(인버트)이 있는 것도 있음.' },
+      { n: '직벽', p: 'mhWall', d: '곧은 원통 조각. 높이별로 있어 조합해서 깊이를 맞춤.' },
+      { n: '사벽 (편심 콘)', p: 'mhCone', d: '위로 갈수록 좁아지는 조각. 뚜껑 크기로 줄여 줌.' },
+      { n: '상판 (슬래브)', p: 'mhSlab', d: '사벽 대신 평평한 판으로 덮을 때. 얕은 맨홀.' },
+      { n: '높이 조절링', p: 'adj', d: '맨홀 윗면을 도로 높이에 딱 맞출 때. 여러 두께가 있음.' },
+      { n: '관 들어오는 구멍 (천공)', p: 'hole', d: '관이 들어오는 높이·방향·구경을 미리 알려 주면 공장에서 구멍을 뚫어 옴.', sp: '도면의 관 높이(관저고)를 받아 두기' }
+    ] },
+    { t: '뚜껑 · 부속', items: [
+      { n: '맨홀 뚜껑', p: 'cover', d: '주철(덕타일). 보도용·차도용 하중 구분, 잠금형·경첩형이 있음.', sp: '뚜껑 지름과 하중 등급 확인' },
+      { n: '발디딤 (사다리)', p: 'ladder', d: '맨홀 안을 오르내리는 디딤. 깊은 맨홀에 필요.' }
+    ] }
+  ] },
+  { id: 'ch', name: '⊔ 수로관 · 벤치플륨 · 측구', groups: [
+    { t: '종류', items: [
+      { n: 'U형 수로관', p: 'u', d: 'U자 모양 콘크리트 수로. 땅 위나 얕게 묻어 물길을 만듦.' },
+      { n: '벤치플륨관', p: 'bench', d: 'U형 수로관 윗부분에 덮개를 얹는 턱(벤치)이 있는 제품. 덮개를 딱 맞게 올림.', sp: '덮개(콘크리트·그레이팅)를 같은 회사 규격으로' },
+      { n: 'U형 측구 (측구 수로관)', p: 'uside', d: '도로 가장자리에 묻는 U형 배수로. 위에 그레이팅이나 덮개를 덮음.' },
+      { n: 'L형 측구', p: 'l', d: '경계석과 배수 측구가 한 몸인 제품. 도로 가장자리 물을 모아 흘림.' },
+      { n: '횡단 수로관 · 트렌치', p: 'trench', d: '주차장 입구처럼 차가 가로질러 지나가는 곳의 배수로.', sp: '덮개 하중 등급을 높게' },
+      { n: '빗물받이 (우수받이)', p: 'inlet', d: '도로 가장자리에서 빗물을 받아 관으로 보내는 통 + 위 그레이팅.' },
+      { n: '집수정', p: 'box', d: '물을 모으는 사각 통. 크기·깊이·덮개(그레이팅·콘크리트·주철)를 함께 확인.' }
+    ] },
+    { t: '대표 규격 (안쪽 폭 × 높이, mm)', chips: ['300×300', '400×400', '500×500', '600×600', '800×800', '1000×1000'], foot: '한 개 길이는 보통 1m·2m 등 제조사마다 달라요. 벤치플륨은 같은 크기라도 덮개 턱 치수가 회사마다 달라요.' },
+    { t: '덮개', items: [
+      { n: '콘크리트 덮개', p: 'slab', d: '수로관·벤치플륨 위에 얹는 콘크리트 판. 사람·차가 안 지나는 곳.' },
+      { n: '그레이팅 덮개', p: 'grat', d: '물이 들어가야 하는 곳. 종류는 그레이팅 칸을 보세요.' }
     ] }
   ] },
   { id: 'grat', name: '▦ 그레이팅', groups: [
     { t: '재질', items: [
-      { n: '스틸 (아연도금)', d: '가장 많이 씀. 평강을 용접하고 녹 방지 아연도금.', sp: '값이 싸고 종류가 많음' },
-      { n: '스테인리스 (SUS304)', d: '녹이 안 슬고 깔끔함. 건물 출입구·보도·실내 배수로.', sp: '스틸보다 비쌈' },
-      { n: '주철 (덕타일)', d: '무겁고 튼튼함. 차도·횡단배수로, 무늬형 디자인.', sp: '무게가 많이 나가 운반·하차 확인' },
-      { n: 'PE · FRP (플라스틱)', d: '가볍고 녹이 없음. 보도·조경·약품 쓰는 곳.', sp: '차량 하중에는 등급 확인 필수' }
-    ] },
-    { t: '쓰는 곳', items: [
-      { n: '측구용 (U형 측구 덮개)', d: '도로 옆 U형 측구 위에 덮음.', sp: '측구 안쪽 폭을 실측' },
-      { n: '집수정 · 빗물받이 덮개', d: '사각 통 위에 올리는 한 장짜리.', sp: '가로 × 세로 실측' },
-      { n: '트렌치 (배수로) 덮개', d: '주차장 입구·건물 앞 긴 배수로.' },
-      { n: '횡단 배수로', d: '차가 가로질러 지나가는 곳. 하중 등급을 높게.' }
+      { n: '스틸 (아연도금)', p: 'grat', d: '가장 많이 씀. 평강을 용접하고 녹 방지 아연도금.', sp: '값이 싸고 종류가 많음' },
+      { n: '스테인리스 (SUS304)', p: 'sus', d: '녹이 안 슬고 깔끔함. 건물 출입구·보도·실내 배수로.', sp: '스틸보다 비쌈' },
+      { n: '주철 (덕타일)', p: 'cast', d: '무겁고 튼튼함. 차도·횡단 배수로, 무늬형 디자인.', sp: '무게가 많이 나가 운반·하차 확인' },
+      { n: 'PE · FRP (플라스틱)', p: 'plas', d: '가볍고 녹이 없음. 보도·조경·약품 쓰는 곳.', sp: '차량 하중에는 등급 확인 필수' }
     ] },
     { t: '모양', items: [
-      { n: '일반형 (평강)', d: '평강을 일정 간격으로 세워 용접.' },
-      { n: '힐가드형', d: '간격이 촘촘해 하이힐·유모차·자전거 바퀴가 안 끼임. 보도·출입구.' },
-      { n: '미끄럼방지형 (톱니)', d: '윗면이 톱니 모양. 경사로·비 오는 곳.' },
-      { n: '무늬형 · 디자인형', d: '주철·스테인리스 무늬. 조경·상가 앞.' }
+      { n: '일반형 (평강)', p: 'grat', d: '평강을 일정 간격으로 세워 용접.' },
+      { n: '힐가드형', p: 'heel', d: '간격이 촘촘해 하이힐·유모차·자전거 바퀴가 안 끼임. 보도·출입구.' },
+      { n: '미끄럼방지형 (톱니)', p: 'serr', d: '윗면이 톱니 모양. 경사로·비 오는 곳.' },
+      { n: '무늬형 · 디자인형', p: 'cast', d: '주철·스테인리스 무늬. 조경·상가 앞.' }
     ] },
     { t: '하중 등급 (대표 표기)', items: [
-      { n: '보도용', d: '사람·자전거만 다니는 곳.' },
-      { n: '경차량용', d: '승용차가 가끔 지나가는 곳.' },
-      { n: 'T-14', d: '일반 차량이 다니는 곳.' },
-      { n: 'T-20 · T-25', d: '대형 트럭·중차량이 다니는 곳.' }
+      { n: '보도용', p: 'walk', d: '사람·자전거만 다니는 곳.' },
+      { n: '경차량용', p: 'car', d: '승용차가 가끔 지나가는 곳.' },
+      { n: 'T-14', p: 'car', d: '일반 차량이 다니는 곳.' },
+      { n: 'T-20 · T-25', p: 'truck', d: '대형 트럭·중차량이 다니는 곳.' }
     ], foot: '등급 이름은 제조사마다 조금씩 달라요. 카탈로그의 하중 표를 함께 확인하세요.' },
     { t: '치수 읽는 법', items: [
-      { n: '내폭', d: '측구·배수로 안쪽 폭. 현장에서 실측하는 값.' },
-      { n: '거치 폭 (외폭)', d: '받침에 걸치는 그레이팅 실제 폭. 내폭보다 넓음.' },
-      { n: '길이', d: '한 장 길이. 보통 1m 안팎 (500 · 995 · 1000mm 등).' },
-      { n: '높이 (두께)', d: '평강 높이. 높을수록 튼튼함 (25 · 32 · 38 · 44 · 50 · 65mm 등).' }
+      { n: '내폭', p: 'width', d: '측구·배수로 안쪽 폭. 현장에서 실측하는 값.' },
+      { n: '거치 폭 (외폭)', p: 'bench', d: '받침에 걸치는 그레이팅 실제 폭. 내폭보다 넓음.' },
+      { n: '길이', p: 'ruler', d: '한 장 길이. 보통 1m 안팎 (500 · 995 · 1000mm 등).' },
+      { n: '높이 (두께)', p: 'serr', d: '평강 높이. 높을수록 튼튼함 (25 · 32 · 38 · 44 · 50 · 65mm 등).' }
     ] },
     { t: '같이 들어가는 부품', items: [
-      { n: '받침틀 (앵글 프레임)', d: '측구 양쪽 윗면에 묻어 그레이팅을 받침.', sp: '연장 × 2줄 (양쪽)' },
-      { n: '고정 볼트 · 잠금장치', d: '덜컹거림·도난·들림 방지.' },
-      { n: '경첩 · 체인', d: '집수정 덮개를 열고 닫는 곳.' },
-      { n: '맞춤 제작', d: '끝에 남는 자투리 길이나 특수 폭은 따로 제작.', sp: '납기가 길어질 수 있음' }
+      { n: '받침틀 (앵글 프레임)', p: 'angle', d: '측구 양쪽 윗면에 묻어 그레이팅을 받침.', sp: '연장 × 2줄 (양쪽)' },
+      { n: '고정 볼트 · 잠금장치', p: 'bolt', d: '덜컹거림·도난·들림 방지.' },
+      { n: '경첩 · 체인', p: 'hinge', d: '집수정 덮개를 열고 닫는 곳.' },
+      { n: '맞춤 제작', p: 'cut', d: '끝에 남는 자투리 길이나 특수 폭은 따로 제작.', sp: '납기가 길어질 수 있음' }
     ] }
   ] },
   { id: 'curb', name: '▭ 경계석', groups: [
     { t: '재질', items: [
-      { n: '화강석 (국산)', d: '단단하고 오래감. 색이 고름.', sp: '수입산보다 비쌈' },
-      { n: '화강석 (수입산)', d: '값이 싸고 많이 씀. 색·무늬 차이가 있을 수 있음.' },
-      { n: '콘크리트 경계석', d: '값이 가장 쌈. 공장 제품이라 크기가 일정함.' },
-      { n: '컬러 · 인조석 경계석', d: '색을 넣은 콘크리트. 조경·단지 안.' }
+      { n: '화강석 경계석', p: 'stone', d: '단단하고 오래감. 국산은 색이 고르고 비싸며, 수입산은 싸고 많이 씀.', sp: '마감 종류는 화강블럭 칸 참고' },
+      { n: '콘크리트 경계석', p: 'curb', d: '값이 가장 쌈. 공장 제품이라 크기가 일정함.' },
+      { n: '컬러 · 인조석 경계석', p: 'swatch', d: '색을 넣은 콘크리트. 조경·단지 안.' }
     ] },
     { t: '종류', items: [
-      { n: '보차도 경계석', d: '보도와 차도 사이. 차도 쪽으로 높이 차이를 둠.' },
-      { n: '도로 경계석', d: '도로 가장자리 마감.' },
-      { n: '화단 · 식재 경계석', d: '화단·잔디 가장자리. 낮고 얇은 것을 씀.' },
-      { n: '진입로 낮춤 경계석', d: '차가 들어가는 곳을 비스듬히 낮춤.', sp: '진입부 개수를 따로 셈' },
-      { n: '곡선 경계석', d: '모퉁이를 둥글게. 반지름(R)별로 따로 만듦.', sp: 'R값과 개수를 도면에서 확인' },
-      { n: '코너석', d: '꺾이는 모서리용.' },
-      { n: 'L형 측구', d: '경계석과 배수 측구가 한 몸인 제품.' }
+      { n: '보차도 · 도로 경계석', p: 'curb', d: '보도와 차도 사이, 도로 가장자리. 차도 쪽으로 높이 차이를 둠.' },
+      { n: '화단 · 식재 경계석', p: 'garden', d: '화단·잔디 가장자리. 낮고 얇은 것을 씀.' },
+      { n: '진입로 낮춤 경계석', p: 'curbLow', d: '차가 들어가는 곳을 비스듬히 낮춤.', sp: '진입부 개수를 따로 셈' },
+      { n: '곡선 경계석', p: 'curbCurve', d: '모퉁이를 둥글게. 반지름(R)별로 따로 만듦.', sp: 'R값과 개수를 도면에서 확인' },
+      { n: '코너석', p: 'corner', d: '꺾이는 모서리용.' }
     ] },
-    { t: '화강석 마감', items: [
-      { n: '잔다듬', d: '잔잔한 정 자국. 가장 흔함, 미끄럼 적음.' },
-      { n: '버너 (화염)', d: '불로 그을려 거칠게. 미끄럼 적고 깔끔함.' },
-      { n: '혹두기', d: '울퉁불퉁 자연스러운 면. 조경용.' },
-      { n: '물갈기', d: '반들반들. 미끄러워 바닥 쪽엔 잘 안 씀.' }
+    { t: '대표 규격 (폭 × 높이 × 길이, mm)', chips: ['150×150×1000', '150×200×1000', '180×250×1000', '200×250×1000', '200×300×1000', '100×200×1000 (화단)', '120×120×1000 (화단)'], foot: '현장 도면의 규격이 우선입니다. 석재는 길이가 600~1000mm로 섞여 나오기도 해요.' }
+  ] },
+  { id: 'gb', name: '▤ 화강블럭', groups: [
+    { t: '종류', items: [
+      { n: '화강 판석', p: 'slab', d: '얇고 넓은 판. 보도·광장·건물 앞 바닥.', sp: '얇은 것은 몰탈 위에 붙여 시공' },
+      { n: '화강 블럭 (보도용)', p: 'paver', d: '두께가 있는 직사각 블럭. 모래 위에 깔기도 함.' },
+      { n: '사고석 · 큐브석', p: 'cube', d: '정육면체에 가까운 작은 돌. 차량 진입부·포인트 바닥.' },
+      { n: '점자블럭 (유도블럭)', p: 'tactile', d: '시각장애인 안내용 점·선 무늬 블럭. 화강석·콘크리트 제품이 있음.' }
     ] },
-    { t: '대표 규격 (폭 × 높이 × 길이, mm)', chips: ['150×150×1000', '150×200×1000', '180×250×1000', '200×250×1000', '200×300×1000', '100×200×1000 (화단)', '120×120×1000 (화단)'], foot: '현장 도면의 규격이 우선입니다. 석재는 길이가 600~1000mm로 섞여 나오기도 해요.' },
-    { t: '같이 들어가는 자재', items: [
-      { n: '기초 콘크리트', d: '경계석 밑과 뒤를 받치는 콘크리트.', sp: '연장 × 폭 × 두께로 계산' },
-      { n: '붙임 몰탈 · 줄눈', d: '경계석을 앉히고 이음매를 메움.' }
+    { t: '대표 규격 (가로 × 세로 × 두께, mm)', chips: ['300×300×30', '300×300×50', '400×400×50', '200×200×50', '200×100×60', '100×100×100 (사고석)'], foot: '차가 다니는 곳은 두꺼운 것을 씀 (설계 두께 확인). 도면 규격이 우선이에요.' },
+    { t: '화강석 마감 (경계석도 같음)', items: [
+      { n: '잔다듬', p: 'tex1', d: '잔잔한 정 자국. 가장 흔함, 미끄럼 적음.' },
+      { n: '버너 (화염)', p: 'tex2', d: '불로 그을려 거칠게. 미끄럼 적고 깔끔함.' },
+      { n: '혹두기', p: 'tex3', d: '울퉁불퉁 자연스러운 면. 조경·옆면용.' },
+      { n: '물갈기', p: 'tex4', d: '반들반들. 미끄러워 바닥에는 잘 안 씀.' }
+    ] },
+    { t: '색 · 산지', items: [
+      { n: '국산 · 수입산', p: 'swatch', d: '같은 이름이라도 색이 달라요. 큰 물량은 샘플이나 사진으로 먼저 확인.', sp: '나눠서 받을 때 색 차이 주의' }
+    ] }
+  ] },
+  { id: 'rw', name: '▥ 보강토', groups: [
+    { t: '보강토 옹벽 구성', items: [
+      { n: '보강토 블록', p: 'wall', d: '앞면에 쌓는 콘크리트 블록. 조금씩 뒤로 물려 쌓음.', sp: '블록 크기·무게는 제조사 카탈로그로' },
+      { n: '지오그리드 (보강재)', p: 'geo', d: '블록 사이에서 흙 속으로 길게 깔아 벽을 잡아 줌.', sp: '등급·길이·층 간격은 설계대로' },
+      { n: '캡블록', p: 'capb', d: '맨 위에 덮는 마감 블록.' },
+      { n: '뒷채움 쇄석 (배수층)', p: 'gravel', d: '블록 바로 뒤에 채우는 자갈. 물이 빠지게 함.' },
+      { n: '배수관 (유공관)', p: 'perf', d: '맨 아래에 깔아 벽 뒤 물을 빼냄. PE 유공관을 많이 씀.' },
+      { n: '기초 패드', p: 'pad', d: '첫 단 블록을 수평으로 앉히는 쇄석·콘크리트 바닥.' }
+    ] },
+    { t: '블록 종류', items: [
+      { n: '대형 · 중형 · 소형 블록', p: 'wall', d: '높은 옹벽은 큰 블록. 높이와 설계에 따라 고름.' },
+      { n: '곡선 · 코너 블록', p: 'corner', d: '휘어지거나 꺾이는 곳. 일반 블록과 따로 셈.' },
+      { n: '앞면 무늬', p: 'tex3', d: '석재 무늬·평면 등. 색과 함께 확인.' }
+    ] },
+    { t: '주문 전에 알아 둘 점', items: [
+      { n: '설계도 · 구조 계산서', p: 'doc', d: '높이·지오그리드 길이와 등급이 다 여기에 있음. 꼭 받아서 물량을 셈.' },
+      { n: '물량 세는 법', p: 'ruler', d: '벽 면적(m²) × m²당 블록 수(제조사 기준) + 캡블록은 길이(m)로.' }
+    ] }
+  ] },
+  { id: 'base', name: '🧱 공통 자재', groups: [
+    { t: '기초 · 마감 (여러 제품에 함께 쓰는 것)', items: [
+      { n: '기초 모래 · 쇄석', p: 'pile', d: '관·수로관·경계석·블럭 밑에 깔아 고르게 받침.' },
+      { n: '기초 · 보호 콘크리트', p: 'conc', d: '경계석 밑과 뒤, 차도 밑 관을 감싸 보호.', sp: '연장 × 폭 × 두께로 계산' },
+      { n: '몰탈 (이음 · 붙임 · 줄눈)', p: 'bag', d: '흄관 C형 칼라, 수로관 이음, 경계석·판석 붙임과 줄눈.' },
+      { n: '지수재', p: 'water', d: '관과 맨홀·집수정이 만나는 틈으로 물이 새지 않게 막음.' }
     ] }
   ] }
 ];
@@ -410,7 +555,7 @@ function renderProd() {
       let gh = '';
       if (g.items) {
         const its = g.items.filter(it => has(g.t) || has(it.n) || has(it.d) || has(it.sp || ''));
-        if (its.length) gh = '<div class="items">' + its.map(it => '<div class="it"><b>' + hl(it.n, q) + '</b><p>' + hl(it.d, q) + '</p>' + (it.sp ? '<div class="sp">' + hl(it.sp, q) + '</div>' : '') + '</div>').join('') + '</div>';
+        if (its.length) gh = '<div class="items">' + its.map(it => '<div class="it">' + pic(it.p) + '<div class="tx"><b>' + hl(it.n, q) + '</b><p>' + hl(it.d, q) + '</p>' + (it.sp ? '<div class="sp">' + hl(it.sp, q) + '</div>' : '') + '</div></div>').join('') + '</div>';
         hits += its.length;
       }
       if (g.chips && (has(g.t) || g.chips.some(has))) { gh = '<div class="chips">' + g.chips.map(x => '<span>' + hl(x, q) + '</span>').join('') + '</div>'; hits++; }
@@ -565,7 +710,7 @@ function renderCalc() {
   let h = '<div class="card" data-calc="' + c + '"><h2>' + CNAME[c] + ' 양산출</h2>';
   if (c === 'hume') {
     h += '<div class="grid3">' +
-      '<div><label class="f" for="c_hume_dia">구경 (mm)</label><select id="c_hume_dia" data-k="dia">' + PROD[0].groups[2].chips.map(d => '<option' + (C.dia === d ? ' selected' : '') + '>' + d + '</option>').join('') + '</select></div>' +
+      '<div><label class="f" for="c_hume_dia">구경 (mm)</label><select id="c_hume_dia" data-k="dia">' + PROD[0].groups.find(g => g.id === 'dia').chips.map(d => '<option' + (C.dia === d ? ' selected' : '') + '>' + d + '</option>').join('') + '</select></div>' +
       '<div><label class="f" for="c_hume_joint">이음</label><select id="c_hume_joint" data-k="joint"><option value="B"' + (C.joint === 'B' ? ' selected' : '') + '>B형 (고무링)</option><option value="C"' + (C.joint === 'C' ? ' selected' : '') + '>C형 (칼라)</option></select></div>' +
       fld(c, 'pl', '1본 길이 (m)', '2.5') + fld(c, 'base', '1본당 받침 (개)', '2') + fld(c, 'mh', '맨홀 개수 (비우면 구간 수 + 1)', '자동') + fld(c, 'spare', '여유분 관 (본)', '0') + '</div>';
     h += '<div style="margin-top:12px">' + segHtml(c) + '</div><p class="muted">맨홀과 맨홀 사이를 한 구간으로 적어 주세요. 구간마다 따로 올림해서 셉니다.</p>';
