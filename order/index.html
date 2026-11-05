@@ -292,7 +292,7 @@ body.wideq .wrap { max-width: 1530px; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-06e';
+const BUILD = '2026-11-06f';
 (function () {
   let busy = false;
   async function check() {
@@ -438,7 +438,7 @@ const BUILD = '2026-11-06e';
         <button class="btn ghost" id="hQPdf">📄 PDF로 저장</button>
       </div>
       <div id="hQReady"></div>
-      <p class="muted" style="margin:8px 0 0">휴대폰: <b>바로 보내기</b>를 누르면 카톡·문자·메일을 고르는 창이 떠요. PC: <b>사진 복사</b> 후 카톡 대화창에서 Ctrl+V, 또는 PDF로 저장해서 메일에 붙이세요.</p>
+      <p class="muted" style="margin:8px 0 0"><b>휴대폰</b>: 바로 보내기를 누르면 카톡·문자·메일을 고르는 창이 떠요 (파일이 따로 남지 않아요). <b>PC</b>: 바로 보내기(사진)는 사진이 <b>복사</b>되니 카톡 대화창에서 Ctrl+V 하세요. 바로 보내기(PDF)는 PDF가 <b>한 개</b> 저장돼요.</p>
       <h3>그 밖에</h3>
       <div class="btns" style="margin-top:0">
         <button class="btn ghost" id="hQPrint">🖨 인쇄</button>
@@ -1691,7 +1691,10 @@ async function canvasPdf(c) {
   pdf.setProperties({ title: fileBase(), creator: SUP.name || '' });
   return pdf.output('blob');
 }
-function saveBlob(b, name) { const a = document.createElement('a'), u = URL.createObjectURL(b); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 8000); }
+/* 같은 파일을 짧은 시간에 두 번 저장하지 않음 */
+let lastSave = { n: '', t: 0 };
+const isPhone = () => (window.matchMedia && matchMedia('(pointer: coarse)').matches) || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+function saveBlob(b, name) { if (lastSave.n === name && Date.now() - lastSave.t < 6000) return; lastSave = { n: name, t: Date.now() }; const a = document.createElement('a'), u = URL.createObjectURL(b); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 8000); }
 async function makeFile(kind) {
   const T = ready(); if (!T) return null;
   const c = await docCanvas(T);
@@ -1709,21 +1712,22 @@ async function shareFile(f) {
     if (e && e.name === 'AbortError') return;
     /* 만드는 데 시간이 걸려 한 번 더 눌러야 하는 기기 (아이폰 등) */
     $('hQReady').innerHTML = '<div class="ok" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">준비됐어요. 아래 버튼을 한 번 더 눌러 주세요. <button class="btn sm" id="hQGo">📤 ' + esc(f.name.endsWith('.pdf') ? 'PDF' : '사진') + ' 보내기</button></div>';
-    $('hQGo').addEventListener('click', () => navigator.share({ files: [f], title: fileBase() }).then(() => { $('hQReady').innerHTML = ''; }).catch(err => { if (!err || err.name !== 'AbortError') { saveBlob(f, f.name); toast('보내기 창을 열지 못해 파일로 저장했어요.'); } }));
+    $('hQGo').addEventListener('click', ev => { ev.currentTarget.disabled = true; navigator.share({ files: [f], title: fileBase() }).then(() => { $('hQReady').innerHTML = ''; }).catch(err => { $('hQReady').innerHTML = ''; if (!err || err.name !== 'AbortError') { saveBlob(f, f.name); toast('보내기 창을 열지 못해 파일로 저장했어요.'); } }); });
   }
 }
-$('hQShareImg').addEventListener('click', e => busy(e.currentTarget, async () => { const f = await makeFile('png'); if (f) await shareFile(f); }));
-$('hQSharePdf').addEventListener('click', e => busy(e.currentTarget, async () => { const f = await makeFile('pdf'); if (f) await shareFile(f); }));
+/* 휴대폰: 카톡·문자 보내기 창 / PC: 사진은 복사(파일 안 만듦), PDF는 한 개만 저장 */
+$('hQShareImg').addEventListener('click', e => { if (!isPhone()) { copyImg(e.currentTarget); return; } busy(e.currentTarget, async () => { const f = await makeFile('png'); if (f) await shareFile(f); }); });
+$('hQSharePdf').addEventListener('click', e => busy(e.currentTarget, async () => { const f = await makeFile('pdf'); if (!f) return; if (isPhone()) await shareFile(f); else { saveBlob(f, f.name); toast('PDF를 저장했어요 (' + f.name + '). 카톡·메일에 첨부해 보내세요.'); } }));
 $('hQPng').addEventListener('click', e => busy(e.currentTarget, async () => { const f = await makeFile('png'); if (f) { saveBlob(f, f.name); toast('사진으로 저장했어요: ' + f.name); } }));
 $('hQPdf').addEventListener('click', e => busy(e.currentTarget, async () => { const f = await makeFile('pdf'); if (f) { saveBlob(f, f.name); toast('PDF로 저장했어요: ' + f.name); } }));
-$('hQCopy').addEventListener('click', e => {
+$('hQCopy').addEventListener('click', e => copyImg(e.currentTarget));
+function copyImg(btn) {
   const T = ready(); if (!T) return;
-  const btn = e.currentTarget;
   if (!(navigator.clipboard && window.ClipboardItem)) { busy(btn, async () => { const f = await makeFile('png'); if (f) { saveBlob(f, f.name); toast('이 브라우저는 사진 복사가 안 돼서 파일로 저장했어요.'); } }); return; }
   /* 누른 순간 바로 복사를 시작해야 브라우저가 허락함 → 사진은 약속(Promise)으로 넘김 */
   const pngP = docCanvas(T).then(canvasPng);
-  busy(btn, async () => { await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngP })]); toast('사진을 복사했어요. 카톡 대화창에서 Ctrl+V (맥은 ⌘V) 하세요.'); }).catch(() => {});
-});
+  busy(btn, async () => { await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngP })]); toast('사진을 복사했어요. 카톡 대화창에서 Ctrl+V (맥은 ⌘V) 하면 보내져요.'); }).catch(() => {});
+}
 function savedList() { return LS.get('hsaved', []); }
 function renderSaved() {
   const L = savedList();
