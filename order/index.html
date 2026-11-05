@@ -292,7 +292,7 @@ body.wideq .wrap { max-width: 1530px; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-06d';
+const BUILD = '2026-11-06e';
 (function () {
   let busy = false;
   async function check() {
@@ -428,14 +428,24 @@ const BUILD = '2026-11-06d';
       <p class="muted" style="margin:8px 0 0">금액 = 단가 × 수량 · 부가세 포함 금액 = 줄마다 금액 × 1.1 (원 미만 반올림) 의 합 · 우리 회사 정보(사업자번호 등)는 한 번 적으면 이 기기에 남아요.</p>
     </div>
     <div class="card">
-      <h2>내보내기</h2>
+      <h2>거래처에 보내기 <span class="tag">마진 칸 빠짐 · 고칠 수 없는 파일</span></h2>
+      <p class="muted" style="margin:0 0 8px">왼쪽 견적서 부분만 <b>사진(PNG)</b>이나 <b>PDF</b>로 만들어요. 오른쪽 매입단가·마진은 들어가지 않고, 엑셀처럼 거래처가 숫자를 고칠 수 없어요.</p>
       <div class="btns" style="margin-top:0">
-        <button class="btn" id="hQPrint">🖨 인쇄 · PDF 저장</button>
-        <button class="btn ghost" id="hQDl">⬇ 파일로 받기 (다른 PC에서 출력)</button>
+        <button class="btn" id="hQShareImg">📤 바로 보내기 (사진)</button>
+        <button class="btn" id="hQSharePdf">📤 바로 보내기 (PDF)</button>
+        <button class="btn ghost" id="hQCopy">📋 사진 복사 → 카톡 PC에 붙여넣기</button>
+        <button class="btn ghost" id="hQPng">🖼 사진으로 저장</button>
+        <button class="btn ghost" id="hQPdf">📄 PDF로 저장</button>
+      </div>
+      <div id="hQReady"></div>
+      <p class="muted" style="margin:8px 0 0">휴대폰: <b>바로 보내기</b>를 누르면 카톡·문자·메일을 고르는 창이 떠요. PC: <b>사진 복사</b> 후 카톡 대화창에서 Ctrl+V, 또는 PDF로 저장해서 메일에 붙이세요.</p>
+      <h3>그 밖에</h3>
+      <div class="btns" style="margin-top:0">
+        <button class="btn ghost" id="hQPrint">🖨 인쇄</button>
         <button class="btn ghost" id="hQSave">💾 견적 저장</button>
         <button class="btn ghost" id="hQNew">새 견적</button>
       </div>
-      <p class="muted" style="margin:8px 0 0">인쇄·파일에는 오른쪽 매입단가·마진 칸이 들어가지 않아요. PDF는 인쇄 창에서 "PDF로 저장"을 고르면 돼요. 저장한 견적은 이 기기에만 남아요.</p>
+      <p class="muted" style="margin:8px 0 0">저장한 견적은 이 기기에만 남아요.</p>
       <h3>저장한 견적</h3>
       <div class="saved" id="hQSaved"></div>
     </div>
@@ -1604,15 +1614,15 @@ function renderTotals() {
 function docHtml(T) {
   const d = Q.date ? Q.date.split('-') : null, ds = d ? d[0] + '. ' + Number(d[1]) + '. ' + Number(d[2]) + '.' : '';
   const rows = [];
-  T.res.forEach((r, i) => { if (r.skip || r.err) return; const l = Q.lines[i]; rows.push('<tr><td class="c">' + esc(l.code || String(rows.length + 1)) + '</td><td class="c">' + esc(l.n) + '</td><td class="c">' + esc(l.br) + '</td><td class="c">' + esc(l.sp) + '</td><td class="r">' + won(r.p) + '</td><td class="c">' + fmtQ(r.q) + (l.u ? ' ' + esc(l.u) : '') + '</td><td class="r">' + won(r.amt) + '</td><td class="r">' + won(r.incl) + '</td><td class="c" style="font-size:11px">' + esc(l.m) + '</td></tr>'); });
+  T.res.forEach((r, i) => { if (r.skip || r.err) return; const l = Q.lines[i]; rows.push('<tr><td class="c">' + esc(l.code || '') + '</td><td class="c">' + esc(l.n) + '</td><td class="c">' + esc(l.br) + '</td><td class="c">' + esc(l.sp) + '</td><td class="r">' + won(r.p) + '</td><td class="c">' + fmtQ(r.q) + (l.u ? ' ' + esc(l.u) : '') + '</td><td class="r">' + won(r.amt) + '</td><td class="r">' + won(r.incl) + '</td><td class="c" style="font-size:11px">' + esc(l.m) + '</td></tr>'); });
   while (rows.length < 15) rows.push('<tr><td>&nbsp;</td><td></td><td></td><td></td><td class="r">-</td><td></td><td class="r">-</td><td class="r">-</td><td></td></tr>');
   const memo = Q.memo || '';
   const kv = (k, v) => '<div class="kv"><span>' + k + '</span><span>' + esc(v) + '</span></div>';
   return '<div class="hdoc"><div class="qhd"><div class="logo"><b>ACE</b> <i>Hardware</i></div><h1>견 적 서</h1><div></div></div>' +
-    '<div class="top"><div class="l"><div class="to">' + esc(Q.to || '(받는 분)') + '</div>' + kv('견적일 :', ds) + kv('현장명 :', Q.site) + kv('담당자 :', Q.cman) + kv('연락처 :', Q.ctel) + '<div class="say">아래와 같이 견적합니다.</div></div>' +
+    '<div class="qtop"><div class="l"><div class="to">' + esc(Q.to || '(받는 분)') + '</div>' + kv('견적일 :', ds) + kv('현장명 :', Q.site) + kv('담당자 :', Q.cman) + kv('연락처 :', Q.ctel) + '<div class="say">아래와 같이 견적합니다.</div></div>' +
     '<table><tr><th>사업자번호</th><td>' + esc(SUP.biz) + '</td></tr><tr><th>상호 (법인명)</th><td>' + esc(SUP.name) + (SUP.seal ? '<img class="seal" src="' + SUP.seal + '" alt="직인">' : '') + '</td></tr><tr><th>사업장 주소</th><td>' + esc(SUP.addr) + '</td></tr><tr><th>담 당 자</th><td>' + esc(SUP.mgr) + '</td></tr><tr><th>전화번호</th><td>' + esc(SUP.tel) + '</td></tr><tr><th>F A X</th><td>' + esc(SUP.fax) + '</td></tr><tr><th>E-MAIL</th><td>' + esc(SUP.email) + '</td></tr></table></div>' +
     '<div class="amtline">금 &nbsp; 액 &nbsp; : <span>일금 ' + hangulWon(T.total) + '원정</span> <span>(₩' + won(T.total) + '/부가세 포함)</span></div>' +
-    '<table class="items"><tr><th style="width:70px">NO</th><th>제품명</th><th style="width:64px">브랜드</th><th style="width:74px">규격</th><th style="width:66px">단가<small>(vat별도)</small></th><th style="width:44px">수량</th><th class="y" style="width:78px">금액(vat 별도)</th><th class="y" style="width:78px">금액(vat 포함)</th><th style="width:112px">비고</th></tr>' + rows.join('') +
+    '<table class="qitems"><tr><th style="width:70px">NO</th><th>제품명</th><th style="width:64px">브랜드</th><th style="width:74px">규격</th><th style="width:66px">단가<small>(vat별도)</small></th><th style="width:44px">수량</th><th class="y" style="width:78px">금액(vat 별도)</th><th class="y" style="width:78px">금액(vat 포함)</th><th style="width:112px">비고</th></tr>' + rows.join('') +
     '<tr class="sum"><th colspan="6">합 &nbsp; &nbsp; 계</th><td class="r">' + won(T.supply) + '</td><td class="r">' + won(T.total) + '</td><td></td></tr></table>' +
     '<div class="memo"><span>비고</span><span>' + esc(memo) + '</span></div></div>';
 }
@@ -1655,13 +1665,64 @@ function ready() {
   return T;
 }
 $('hQPrint').addEventListener('click', () => { const T = ready(); if (!T) return; renderDoc(T); window.print(); });
-$('hQDl').addEventListener('click', () => {
+/* 거래처에 보내기: 견적서 부분만 그림(PNG)·PDF로 — 마진 칸 없음, 고칠 수 없음 */
+const LIBP = {};
+function lib(src, ok) {
+  if (ok()) return Promise.resolve();
+  if (!LIBP[src]) LIBP[src] = new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = src; sc.onload = () => ok() ? res() : rej(new Error('x')); sc.onerror = () => { LIBP[src] = null; rej(new Error('도구를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.')); }; document.head.appendChild(sc); });
+  return LIBP[src];
+}
+const fileBase = () => '견적서_' + String(Q.to || '거래처').replace(/[\\/:*?"<>|\s]+/g, '_') + '_' + (Q.date || today());
+async function docCanvas(T) {
+  await lib('vendor/html2canvas.min.js?v=1.4.1', () => window.html2canvas);
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed;left:-12000px;top:0;width:820px;background:#fff;';
+  box.innerHTML = docHtml(T); document.body.appendChild(box);
+  const el = box.firstElementChild; el.style.border = '0';
+  try { if (document.fonts && document.fonts.ready) await document.fonts.ready; return await window.html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: false }); }
+  finally { box.remove(); }
+}
+const canvasPng = c => new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('사진을 만들지 못했어요.')), 'image/png'));
+async function canvasPdf(c) {
+  await lib('vendor/jspdf.umd.min.js?v=2.5.1', () => window.jspdf && window.jspdf.jsPDF);
+  const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', compress: true }), W = 190, PH = 277, imgH = c.height * W / c.width;
+  if (imgH <= PH) pdf.addImage(c, 'PNG', 10, 10, W, imgH);
+  else { const sl = Math.floor(c.width * PH / W); for (let y = 0, pg = 0; y < c.height; y += sl, pg++) { const part = document.createElement('canvas'); part.width = c.width; part.height = Math.min(sl, c.height - y); part.getContext('2d').drawImage(c, 0, y, c.width, part.height, 0, 0, c.width, part.height); if (pg) pdf.addPage(); pdf.addImage(part, 'PNG', 10, 10, W, part.height * W / c.width); } }
+  pdf.setProperties({ title: fileBase(), creator: SUP.name || '' });
+  return pdf.output('blob');
+}
+function saveBlob(b, name) { const a = document.createElement('a'), u = URL.createObjectURL(b); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 8000); }
+async function makeFile(kind) {
+  const T = ready(); if (!T) return null;
+  const c = await docCanvas(T);
+  if (kind === 'pdf') return new File([await canvasPdf(c)], fileBase() + '.pdf', { type: 'application/pdf' });
+  return new File([await canvasPng(c)], fileBase() + '.png', { type: 'image/png' });
+}
+async function busy(btn, job) {
+  if (btn.disabled) return; const t = btn.textContent; btn.disabled = true; btn.textContent = '만드는 중…';
+  try { await job(); } catch (e) { if (e && e.name === 'AbortError') return; toast((e && e.message) || '만들지 못했어요.'); } finally { btn.disabled = false; btn.textContent = t; }
+}
+async function shareFile(f) {
+  if (!(navigator.canShare && navigator.canShare({ files: [f] }))) { saveBlob(f, f.name); toast('이 기기는 바로 보내기가 안 돼서 파일로 저장했어요. 카톡·메일에 붙여 보내세요.'); return; }
+  try { await navigator.share({ files: [f], title: fileBase() }); $('hQReady').innerHTML = ''; }
+  catch (e) {
+    if (e && e.name === 'AbortError') return;
+    /* 만드는 데 시간이 걸려 한 번 더 눌러야 하는 기기 (아이폰 등) */
+    $('hQReady').innerHTML = '<div class="ok" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">준비됐어요. 아래 버튼을 한 번 더 눌러 주세요. <button class="btn sm" id="hQGo">📤 ' + esc(f.name.endsWith('.pdf') ? 'PDF' : '사진') + ' 보내기</button></div>';
+    $('hQGo').addEventListener('click', () => navigator.share({ files: [f], title: fileBase() }).then(() => { $('hQReady').innerHTML = ''; }).catch(err => { if (!err || err.name !== 'AbortError') { saveBlob(f, f.name); toast('보내기 창을 열지 못해 파일로 저장했어요.'); } }));
+  }
+}
+$('hQShareImg').addEventListener('click', e => busy(e.currentTarget, async () => { const f = await makeFile('png'); if (f) await shareFile(f); }));
+$('hQSharePdf').addEventListener('click', e => busy(e.currentTarget, async () => { const f = await makeFile('pdf'); if (f) await shareFile(f); }));
+$('hQPng').addEventListener('click', e => busy(e.currentTarget, async () => { const f = await makeFile('png'); if (f) { saveBlob(f, f.name); toast('사진으로 저장했어요: ' + f.name); } }));
+$('hQPdf').addEventListener('click', e => busy(e.currentTarget, async () => { const f = await makeFile('pdf'); if (f) { saveBlob(f, f.name); toast('PDF로 저장했어요: ' + f.name); } }));
+$('hQCopy').addEventListener('click', e => {
   const T = ready(); if (!T) return;
-  const css = [...document.styleSheets[document.styleSheets.length - 1].cssRules].filter(r => r.selectorText && r.selectorText.includes('.hdoc')).map(r => r.cssText).join('\n');
-  const html = '<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>견적서 ' + esc(Q.to) + '</title><style>body{margin:0;background:#fff}' + css + '@page{size:A4;margin:10mm}@media print{.hdoc{border:0;padding:0;width:100%}.pb{display:none}}.pb{display:block;margin:16px auto;padding:10px 20px;font-size:16px}</style></head><body><button class="pb" onclick="print()">인쇄</button>' + docHtml(T) + '</body></html>';
-  const a = document.createElement('a'), u = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-  a.href = u; a.download = '견적서_' + (Q.to || '거래처').replace(/[\\/:*?"<>|\s]+/g, '_') + '_' + Q.date + '.html'; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(u), 5000); toast('파일을 받았어요. 다른 PC에서 열고 인쇄를 누르면 돼요.');
+  const btn = e.currentTarget;
+  if (!(navigator.clipboard && window.ClipboardItem)) { busy(btn, async () => { const f = await makeFile('png'); if (f) { saveBlob(f, f.name); toast('이 브라우저는 사진 복사가 안 돼서 파일로 저장했어요.'); } }); return; }
+  /* 누른 순간 바로 복사를 시작해야 브라우저가 허락함 → 사진은 약속(Promise)으로 넘김 */
+  const pngP = docCanvas(T).then(canvasPng);
+  busy(btn, async () => { await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngP })]); toast('사진을 복사했어요. 카톡 대화창에서 Ctrl+V (맥은 ⌘V) 하세요.'); }).catch(() => {});
 });
 function savedList() { return LS.get('hsaved', []); }
 function renderSaved() {
@@ -1682,7 +1743,7 @@ $('hQSaved').addEventListener('click', e => {
 $('hQNew').addEventListener('click', () => { if (!confirm('지금 쓰던 견적을 비우고 새로 쓸까요? (저장한 견적은 그대로 남아요)')) return; const keep = { mr: Q.mr, mode: Q.mode, ru: Q.ru }; Q = Object.assign(newQuote(), keep); qSaveDraft(); renderQuoteForm(); });
 
 
-  return { render() { renderQuoteForm(); renderSaved(); }, add(lines) { Q.lines = Q.lines.filter(l => !lineEmpty(l)); lines.forEach(l => Q.lines.push(Object.assign(blankLine(), { n: l.n, sp: l.sp, u: l.u, q: String(l.q) }))); qSaveDraft(); }, qTotals, autoPrice, hangulWon, get Q() { return Q; }, set Q(v) { Q = v; } };
+  return { render() { renderQuoteForm(); renderSaved(); }, add(lines) { Q.lines = Q.lines.filter(l => !lineEmpty(l)); lines.forEach(l => Q.lines.push(Object.assign(blankLine(), { n: l.n, sp: l.sp, u: l.u, q: String(l.q) }))); qSaveDraft(); }, qTotals, autoPrice, hangulWon, makeFile, get Q() { return Q; }, set Q(v) { Q = v; } };
 })();
 
 /* ===================== 탭 ===================== */
