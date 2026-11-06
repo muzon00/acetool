@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self' blob: data:; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <title>홈센터 견적서 · ACE</title>
@@ -360,10 +360,13 @@ body.print2 #tPrint .cdoc { border: 0; padding: 0; width: 100%; }
 .imph { font-weight: 900; font-size: 1.08em; color: #1d4f91; }
 .imps { margin: 6px 0 8px; padding-left: 20px; font-size: .92em; color: var(--ink2); } .imps li { margin: 2px 0; }
 .imp textarea { min-height: 64px; background: #fff; }
+.imp.over { border-color: #3182f6; background: #eef5ff; }
+.imglink { color: #1d4f91; font-weight: 800; text-decoration: underline; cursor: pointer; }
+.ocrraw { white-space: pre-wrap; font-size: .8em; background: var(--surface2); border-radius: 8px; padding: 8px; max-height: 240px; overflow: auto; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-06g';
+const BUILD = '2026-11-06h';
 (function () {
   let busy = false;
   async function check() {
@@ -446,8 +449,9 @@ const BUILD = '2026-11-06g';
       <h2>1. 품목 넣기 <span class="muted" id="tCnt"></span></h2>
       <div class="imp">
         <div class="imph">📥 업체 견적서 그대로 불러오기</div>
-        <ol class="imps"><li>업체가 보낸 <b>엑셀 견적서</b>를 열어요</li><li><b>Ctrl+A</b> (전체 선택) → <b>Ctrl+C</b> (복사)</li><li>아래 칸을 누르고 <b>Ctrl+V</b> (붙여넣기) — 끝!</li></ol>
-        <textarea id="tImp" rows="3" placeholder="여기를 누르고 Ctrl+V 하면 품목이 자동으로 들어가요 (휴대폰은 길게 눌러 붙여넣기)"></textarea>
+        <ol class="imps"><li><b>엑셀 견적서</b>: 열어서 <b>Ctrl+A → Ctrl+C</b>, 아래 칸에 <b>Ctrl+V</b></li><li><b>캡처 · 사진 견적서</b>: 캡처한 그림을 아래 칸에 <b>Ctrl+V</b>, 또는 <label for="tImg" class="imglink">📷 사진 파일 고르기</label> · 칸에 끌어다 놓기</li></ol>
+        <input type="file" id="tImg" accept="image/*" class="hide">
+        <textarea id="tImp" rows="3" placeholder="여기를 누르고 Ctrl+V — 엑셀 표든 캡처 그림이든 품목이 자동으로 들어가요 (휴대폰은 길게 눌러 붙여넣기)"></textarea>
         <div id="tImpMsg"></div>
       </div>
       <p class="muted" style="margin:12px 0 6px"><b>또는</b> 아래 표에 직접 쓰기 — 업체 단가는 <b>매입단가</b> 칸에 넣으면 돼요.</p>
@@ -1082,7 +1086,129 @@ const TWO = (() => {
     $('tImp').value = '';
     return true;
   }
-  $('tImp').addEventListener('paste', e => { const txt = (e.clipboardData || window.clipboardData).getData('text') || ''; if (!txt.trim()) return; e.preventDefault(); applyImport(parseQuote(txt)); });
+  /* ---------- 캡처 · 사진 견적서 읽기 (브라우저 안에서 글자 인식 — 견적서가 밖으로 나가지 않음) ---------- */
+  let OCRP = null;
+  function ocrWorker(onP) {
+    if (!OCRP) OCRP = lib('vendor/ocr/tesseract.min.js', () => window.Tesseract).then(() => window.Tesseract.createWorker('kor+eng', 1, {
+      workerPath: 'vendor/ocr/worker.min.js', corePath: 'vendor/ocr/', langPath: 'vendor/ocr', gzip: true, workerBlobURL: false,
+      logger: m => { if (OCRP && OCRP.onP && m && typeof m.progress === 'number') OCRP.onP(m); }
+    })).catch(e => { OCRP = null; throw e; });
+    OCRP.onP = onP; return OCRP;
+  }
+  /* 글자 인식 결과 → 품목: 줄마다 '수량 × 단가 = 공급가액'이 맞는 숫자 세 개를 찾아야 넣음 (잘못 읽은 줄이 조용히 들어가지 않게) */
+  function parseOcr(text) {
+    const UNITS = /^(M|EA|ea|개|본|장|매|롤|통|포|대|식|SET|set|kg|KG|톤|㎡|m2|M2|㎥|m3|M3|BOX|box|박스|조|짝)$/;
+    /* 숫자 읽기: 쉼표·점 천 단위(2,610 · 17.920 · 1.892000)도 숫자로. 소수는 점 뒤 1~2자리만 */
+    const toN = t => { let x = t.replace(/[Oo]/g, '0').replace(/[lI]/g, '1').replace(/^[_\-~]+|[_~]+$/g, '');
+      if (/^\d{1,3}(,\d{3})+$/.test(x)) x = x.replace(/,/g, ''); else if (/^\d+(\.\d{3,})+$/.test(x)) x = x.replace(/\./g, ''); else if (/^\d{1,3}(,\d{3})*(\.\d{1,2})?$/.test(x)) x = x.replace(/,/g, '');
+      return /^\d+(\.\d{1,2})?$/.test(x) ? Number(x) : NaN; };
+    const rows = [], skipped = []; let tot = null;
+    /* 칸 순서: 제목 줄에서 '단가'가 '수량'보다 앞이면 단가 → 수량 → 금액 */
+    const hdr = String(text || '').split('\n').find(l => /수량/.test(l) && /단가/.test(l)) || '';
+    const pFirst = hdr && hdr.search(/단가/) < hdr.search(/수량/);
+    String(text || '').replace(/\r/g, '').split('\n').forEach(raw => {
+      let ln = raw.replace(/[|｜ㅣ\]\[「」、。“”‘’]/g, ' ').replace(/\s+/g, ' ').trim(); if (!ln) return;
+      if (/^[^가-힣]{0,4}[총종합]\s*계(?!금액)|공급가[액엑]|합계금액/.test(ln)) { if (/^[^가-힣]{0,4}[총종합]\s*계(?!금액)/.test(ln)) { const ns = ln.split(' ').map(toN).filter(n => n >= 1000); if (ns.length) tot = ns[0]; } return; }
+      ln = ln.replace(/\(?(\d+\.\d)[1lImT]\)/g, '($1T)');
+      const tk = ln.split(' '), nums = [];
+      tk.forEach((t, i) => { const n = toN(t.replace(/원$/, '')); if (!Number.isNaN(n)) nums.push({ i, n }); });
+      let hit = null;
+      const ok = (q, p, am) => q > 0 && p >= 10 && Number.isInteger(p) && Math.abs(Math.round(q * 100) * p / 100 - am) < 1;
+      for (let a = 0; a + 2 < nums.length && !hit; a++) {
+        for (const [b, c] of [[a + 1, a + 2], [a + 1, a + 3]]) {
+          if (!nums[c]) continue; const x = nums[a].n, y = nums[b].n, am = nums[c].n;
+          if (pFirst ? ok(y, x, am) : ok(x, y, am)) { hit = { qi: nums[a].i, q: pFirst ? y : x, p: pFirst ? x : y, a: am }; break; }
+        }
+      }
+      if (!hit) {
+        /* 단가 글자가 흐린 줄: 공급가액 다음 칸이 부가세(10%)나 부가세 포함(110%)이면 단가 = 공급가액 ÷ 수량 */
+        for (let k = 1; k + 1 < nums.length && !hit; k++) {
+          const am = nums[k].n, nx = nums[k + 1].n, q = nums[k - 1].n;
+          if (am >= 100 && (Math.abs(Math.round(am / 10) - nx) <= 1 || Math.abs(Math.round(am * 1.1) - nx) <= 1) && q > 0 && Number.isInteger(q) && am % q === 0 && am / q >= 10 && nums[k].i - nums[k - 1].i <= 2) hit = { qi: nums[k - 1].i, q, p: am / q, a: am, guessed: true, dropPrev: pFirst };
+        }
+      }
+      if (!hit) { if (nums.length >= 2 && /[가-힣]{2,}/.test(ln) && !/^20\d\d\b/.test(ln) && !/작성|견적일|사업자|전화|팩스|주소/.test(ln)) skipped.push(ln); return; }
+      const head = tk.slice(0, hit.qi); let u = '', no = null, code = '';
+      if (hit.dropPrev && head.length && /\d/.test(head[head.length - 1])) head.pop();   /* 흐려서 못 읽은 단가 칸 */
+      if (head.length && /^[Mm]{1,2}$/.test(head[head.length - 1])) { head.pop(); u = 'M'; }
+      else if (head.length && UNITS.test(head[head.length - 1])) u = head.pop();
+      if (head.length > 1 && /^\d{1,3}$/.test(head[0])) no = Number(head.shift());   /* 맨 앞 순번 */
+      else if (head.length > 1 && /^\d{5,}$/.test(head[0])) code = head.shift();   /* 맨 앞 상품코드 */
+      const fi = head.findIndex(t => /\d|[*×xX]/.test(t) && !/^[가-힣]+$/.test(t));
+      const n = (fi > 0 ? head.slice(0, fi) : head).join(' ').replace(/^[^가-힣A-Za-z0-9]+/, ''), sp = fi > 0 ? head.slice(fi).join(' ') : '';
+      if (!n) { skipped.push(ln); return; }
+      rows.push({ no, code, n, sp, u, q: hit.q, p: hit.p, guessed: !!hit.guessed });
+    });
+    return { rows, skipped, tot };
+  }
+  /* 두 번 읽은 결과 합치기: 수량·단가가 같은 줄은 하나로, 순번이 있으면 순번 차례로 */
+  function mergeOcr(A, B) {
+    /* 같은 줄을 두 번 읽으면 이름이 조금 달라도 수량·단가는 같음 → 수량·단가별 줄 수가 첫 번째 읽기보다 많을 때만 더함 */
+    const key = r => r.q + '|' + r.p, cnt = X => { const m = {}; (X ? X.rows : []).forEach(r => { m[key(r)] = (m[key(r)] || 0) + 1; }); return m; };
+    const cA = cnt(A), cB = cnt(B), used = {};
+    let rows = (A ? A.rows : []).slice();
+    (B ? B.rows : []).forEach(r => { const k = key(r); used[k] = (used[k] || 0) + 1; if (used[k] > (cA[k] || 0)) rows.push(r); });
+    if (!A || !A.rows.length) rows = (B ? B.rows : []).slice();
+    if (rows.every(r => r.no !== null)) rows.sort((a, b) => a.no - b.no);
+    rows.forEach((r, i) => { if (i && !/[가-힣]{2,}/.test(r.n) && /[가-힣]{2,}/.test(rows[i - 1].n)) { r.n = rows[i - 1].n; r.fixedName = true; } });
+    const notes = [];
+    const g = rows.filter(r => r.guessed).length, fn = rows.filter(r => r.fixedName).length;
+    if (g) notes.push('단가 글자가 흐려서 공급가액 ÷ 수량으로 계산한 줄 ' + g + '개');
+    if (fn) notes.push('제품명이 흐려서 윗줄 제품명을 쓴 줄 ' + fn + '개');
+    const sum = rows.reduce((t, r) => t + Math.round(Math.round(r.q * 100) * r.p / 100), 0);
+    const tot = (A && A.tot) || (B && B.tot) || null;
+    const skipped = (A && A.skipped || []).filter(l => !rows.some(r => l.includes(String(r.p))));
+    const warn = notes.slice(); if (skipped.length) warn.push('검산(수량×단가=공급가액)이 맞지 않아 넣지 않은 줄 ' + skipped.length + '개 — 아래 표에 직접 넣어 주세요: ' + skipped.slice(0, 4).join(' / '));
+    return { lines: rows.map(r => Object.assign(blank(), { code: r.code || '', n: r.n, sp: r.sp, u: r.u, q: String(r.q), cost: String(r.p) })), warn, sum, site: '', vendor: '', tot, ocr: true };
+  }
+  /* 읽기 전 손질: 2~3배 키우기 · 흑백 · 표 선 지우기 (작은 글씨와 칸 선 때문에 잘못 읽는 것을 줄임) */
+  async function prepImage(blob) {
+    const url = URL.createObjectURL(blob), im = new Image(); im.src = url; await im.decode(); URL.revokeObjectURL(url);
+    const SC = Math.max(1, Math.min(3, 6000 / Math.max(im.width, 1))), c = document.createElement('canvas');
+    c.width = Math.round(im.width * SC); c.height = Math.round(im.height * SC);
+    const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, c.width, c.height);
+    const d = x.getImageData(0, 0, c.width, c.height), a = d.data, W = c.width, H = c.height, g = new Uint8Array(W * H);
+    for (let i = 0; i < W * H; i++) g[i] = (0.299 * a[i * 4] + 0.587 * a[i * 4 + 1] + 0.114 * a[i * 4 + 2]) < 160 ? 0 : 255;
+    const minH = Math.round(W * 0.25), minV = Math.round(H * 0.12);
+    for (let y = 0; y < H; y++) { let run = 0; for (let xx = 0; xx <= W; xx++) { if (xx < W && g[y * W + xx] === 0) run++; else { if (run >= minH) for (let k = xx - run; k < xx; k++) g[y * W + k] = 255; run = 0; } } }
+    for (let xx = 0; xx < W; xx++) { let run = 0; for (let y = 0; y <= H; y++) { if (y < H && g[y * W + xx] === 0) run++; else { if (run >= minV) for (let k = y - run; k < y; k++) g[k * W + xx] = 255; run = 0; } } }
+    for (let i = 0; i < W * H; i++) { a[i * 4] = a[i * 4 + 1] = a[i * 4 + 2] = g[i]; a[i * 4 + 3] = 255; }
+    x.putImageData(d, 0, 0); return c;
+  }
+  async function readImage(blob) {
+    const box = $('tImpMsg');
+    box.innerHTML = '<div class="note">📷 그림에서 글자를 읽는 중… <b id="ocrPct">준비 중</b><br><span class="muted">처음 한 번은 글자 인식 도구를 불러오느라 10~30초 걸려요.</span></div>';
+    try {
+      const w = await ocrWorker(m => { const el = $('ocrPct'); if (el) el.textContent = (m.status === 'recognizing text' ? '읽는 중 ' : '준비 중 ') + Math.round(m.progress * 100) + '%'; });
+      const c = await prepImage(blob);
+      await w.setParameters({ tessedit_pageseg_mode: '4', preserve_interword_spaces: '1' });
+      const r1 = await w.recognize(c), A = parseOcr(r1.data.text || '');
+      let B = null, raw = r1.data.text || '';
+      const sumA = A.rows.reduce((t, r) => t + Math.round(Math.round(r.q * 100) * r.p / 100), 0);
+      if (!A.rows.length || A.tot === null || sumA !== A.tot) {
+        const el = $('ocrPct'); if (el) el.textContent = '한 번 더 읽는 중';
+        await w.setParameters({ tessedit_pageseg_mode: '6' });
+        const r2 = await w.recognize(c); B = parseOcr(r2.data.text || ''); raw += '\n----- 두 번째 읽기 -----\n' + (r2.data.text || '');
+      }
+      const R0 = mergeOcr(A, B);
+      if (!R0.lines.length) { box.innerHTML = '<div class="err">그림에서 품목 줄을 찾지 못했어요. 표가 화면에 크게 보이게 다시 캡처하거나, 엑셀이 있으면 엑셀로 복사해 주세요.</div><details class="more"><summary>읽은 글자 보기</summary><pre class="ocrraw">' + esc(raw) + '</pre></details>'; return; }
+      if (applyImport(R0)) $('tImpMsg').insertAdjacentHTML('beforeend', '<div class="note">📷 캡처에서 읽은 값이에요. 수량·단가는 <b>공급가액과 검산이 맞은 줄만</b> 넣었고, <b>제품명 · 규격 글자는 한 번 확인</b>해 주세요.</div><details class="more"><summary>읽은 글자 전체 보기</summary><pre class="ocrraw">' + esc(raw) + '</pre></details>');
+    } catch (e) { box.innerHTML = '<div class="err">글자 인식을 하지 못했어요: ' + esc((e && e.message) || e) + '</div>'; }
+  }
+  $('tImg').addEventListener('change', e => { const f = e.target.files[0]; if (f) readImage(f); e.target.value = ''; });
+  const impBox = document.querySelector('#t-two .imp');
+  impBox.addEventListener('dragover', e => { e.preventDefault(); impBox.classList.add('over'); });
+  impBox.addEventListener('dragleave', () => impBox.classList.remove('over'));
+  impBox.addEventListener('drop', e => { e.preventDefault(); impBox.classList.remove('over'); const f = [...(e.dataTransfer.files || [])].find(x => /^image\//.test(x.type)); if (f) readImage(f); });
+  $('tImp').addEventListener('paste', e => {
+    const cd = e.clipboardData || window.clipboardData;
+    const img = cd && cd.items ? [...cd.items].find(it => it.kind === 'file' && /^image\//.test(it.type)) : null;
+    if (img) { e.preventDefault(); const f = img.getAsFile(); if (f) readImage(f); return; }
+    const txt = cd.getData('text') || ''; if (!txt.trim()) return; e.preventDefault();
+    const PQ = parseQuote(txt);
+    /* 제목 줄이 없는 글(예: 맥에서 그림 속 글자를 복사한 것)은 줄마다 검산으로 읽기 */
+    applyImport(PQ.err && !/\t/.test(txt) ? mergeOcr(parseOcr(txt), null) : PQ);
+  });
   $('tImp').addEventListener('input', () => { const v = $('tImp').value; if (/\t/.test(v) && /\n/.test(v)) applyImport(parseQuote(v)); });
   /* 엑셀에서 여러 칸을 복사해 붙여넣기: 견적서 제목 줄이 있으면 통째로 불러오기, 아니면 누른 칸부터 오른쪽·아래로 채움 */
   $('tSheet').addEventListener('paste', e => {
