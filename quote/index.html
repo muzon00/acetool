@@ -366,7 +366,7 @@ body.print2 #tPrint .cdoc { border: 0; padding: 0; width: 100%; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-06i';
+const BUILD = '2026-11-06j';
 (function () {
   let busy = false;
   async function check() {
@@ -1049,12 +1049,12 @@ const TWO = (() => {
     const rows = String(txt || '').replace(/\r/g, '').split('\n').map(r => r.split('\t').map(c => c.trim()));
     const find = (re, from, to) => { for (let r = from || 0; r < (to == null ? rows.length : to); r++) { const c = rows[r].findIndex(x => re.test(nz(x))); if (c >= 0) return [r, c]; } return null; };
     let h = -1;
-    for (let r = 0; r < rows.length; r++) { const z = rows[r].map(nz); if (z.some(x => /^(제품명|품명|품목|상품명|자재명|품목명)$/.test(x)) && z.some(x => /^수량$/.test(x))) { h = r; break; } }
+    for (let r = 0; r < rows.length; r++) { const z = rows[r].map(nz); if (z.some(x => /^(제품명|품명|품목|상품명|자재명|품목명|공종|명칭)$/.test(x)) && z.some(x => /^수량$/.test(x))) { h = r; break; } }
     if (h < 0) return { err: '제목 줄(제품명 · 수량)을 찾지 못했어요. 엑셀 견적서에서 표 제목 줄까지 함께 복사해 주세요.' };
     const z = rows[h].map(nz), col = re => z.findIndex(x => re.test(x));
-    const C = { n: col(/^(제품명|품명|품목|상품명|자재명|품목명)$/), sp: col(/^(규격|사양|규격및사양)$/), u: col(/^단위$/), q: col(/^수량$/), p: col(/^(단가|매입단가|공급단가|판매단가)$/), a: col(/^(공급가액|금액)$/), m: col(/^비고$/), br: col(/^브랜드$/), code: col(/^(NO|코드|상품코드|품번)$/i) };
+    const C = { n: col(/^(제품명|품명|품목|상품명|자재명|품목명|공종|명칭)$/), sp: col(/^(규격|사양|규격및사양)$/), u: col(/^단위$/), q: col(/^수량$/), p: col(/^(단가|매입단가|공급단가|판매단가)$/), a: col(/^(공급가액|금액)$/), m: col(/^비고$/), br: col(/^브랜드$/), code: col(/^(NO|코드|상품코드|품번)$/i) };
     if (C.p < 0) return { err: '단가 칸을 찾지 못했어요. 제목 줄에 "단가"가 있는지 확인해 주세요.' };
-    const lines = [], warn = []; let sum = 0;
+    const lines = [], warn = []; let sum = 0, blankP = 0;
     for (let r = h + 1; r < rows.length; r++) {
       const row = rows[r], g = k => C[k] >= 0 ? (row[C[k]] || '').trim() : '';
       if (row.slice(0, Math.max(3, C.n + 2)).some(x => /^(총계|합계|소계|총합계|계)$/.test(nz(x)))) break;
@@ -1063,10 +1063,12 @@ const TWO = (() => {
       if (q === null && p === null) continue;
       const nm = g('n') + (g('sp') ? ' ' + g('sp') : '');
       if (q === null || Number.isNaN(q)) warn.push(nm + ': 수량 "' + g('q') + '"을(를) 읽지 못했어요.');
-      if (p === null || Number.isNaN(p)) warn.push(nm + ': 단가 "' + g('p') + '"을(를) 읽지 못했어요.');
+      if (p === null) blankP++;
+      else if (Number.isNaN(p)) warn.push(nm + ': 단가 "' + g('p') + '"을(를) 읽지 못했어요.');
       else if (q !== null && !Number.isNaN(q)) { const amt = Math.round(Math.round(q * 100) * p / 100); sum += amt; if (a !== null && !Number.isNaN(a) && a !== amt) warn.push(nm + ': 업체 공급가액 ' + won(a) + '원 ≠ 수량×단가 ' + won(amt) + '원'); }
       lines.push(Object.assign(blank(), { n: g('n'), sp: g('sp'), u: g('u'), q: g('q').replace(/,/g, ''), cost: g('p'), m: g('m'), br: g('br'), code: /^\d{1,3}$/.test(g('code')) ? '' : g('code') }));
     }
+    if (blankP) warn.unshift('단가가 비어 있는 물량표예요 — 매입단가 칸(빨간 칸)에 업체 단가를 넣어 주세요 (' + blankP + '줄)');
     const below = (re, to) => { const f = find(re, 0, to); if (!f) return ''; const [r, c] = f; const nx = rows[r + 1] && rows[r + 1][c]; if (nx && !re.test(nz(nx))) return nx; return (rows[r].slice(c + 1).find(x => x) || ''); };
     const site = below(/^현장명$/, h), vendor = (() => { const f = find(/^(사업자명|상호|상호명|업체명|회사명)$/, 0, h); return f ? (rows[f[0]].slice(f[1] + 1).find(x => x) || '') : ''; })(), tot = cellNum(below(/^공급가액$/, h));
     return { lines, warn, sum, site, vendor, tot: tot === null || Number.isNaN(tot) ? null : tot };
