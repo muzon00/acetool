@@ -338,6 +338,12 @@ details > summary.up-h { cursor: pointer; margin: 6px 0; font-weight: 700; }
 .tr-seg { display: inline-flex; background: var(--bg); border-radius: 10px; padding: 3px; }
 .tr-seg button { border: 0; background: transparent; color: var(--ink2); font: inherit; font-weight: 600; font-size: .9em; padding: 5px 12px; border-radius: 8px; cursor: pointer; }
 details.acct { border-top: 1px solid var(--line); padding: 8px 0; } details.acct summary { cursor: pointer; line-height: 1.6; } details.acct .scroll { margin-top: 8px; }
+/* 담당 거래처 표: 표 안에서 스크롤 — 제목 줄은 위에, 거래처 칸은 왼쪽에 고정 */
+#acOut .scroll { max-height: 75vh; overflow: auto; border: 1px solid var(--line); border-radius: 10px; }
+#acOut table { border-collapse: separate; border-spacing: 0; }
+#acOut th { position: sticky; top: 0; z-index: 2; background: var(--surface2, var(--surface)); box-shadow: 0 1px 0 var(--line); }
+#acOut th:first-child, #acOut td:first-child { position: sticky; left: 0; background: var(--surface); z-index: 1; max-width: 220px; white-space: normal; }
+#acOut th:first-child { z-index: 3; background: var(--surface2, var(--surface)); }
 .tr-seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
 .tr-grid { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; align-items: start; }
 @media (max-width: 1000px) { .tr-grid { grid-template-columns: 1fr; } }
@@ -1218,7 +1224,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-06h';
+var BUILD = '2026-11-06i';
 (function () {
   var busy = false;
   function typing() {
