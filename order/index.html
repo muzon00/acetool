@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; connect-src 'self' https://*.googleapis.com https://www.gstatic.com; frame-src https://acetool-923f6.firebaseapp.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <title>수주팀 · 부대토목</title>
@@ -67,6 +67,15 @@ label.f { display: block; font-size: .85em; font-weight: 600; color: var(--ink2)
 .it { border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: var(--surface2); display: flex; gap: 12px; align-items: flex-start; }
 .it .tx { flex: 1; min-width: 0; }
 .pic { width: 76px; height: 57px; flex: none; color: #1f5a3d; background: #fff; border: 1px solid var(--line); border-radius: 10px; }
+.vlog { margin-bottom: 10px; }
+.vlog .vbox { background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; padding: 10px 12px; font-size: .9em; }
+.vlog summary { cursor: pointer; font-weight: 700; color: var(--ink2); }
+.vlog .vrowf { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; } .vlog input { max-width: 240px; min-height: 40px; }
+.vstrip { border: 1px solid #f2d7a6; background: #fffaf0; border-radius: 14px; padding: 8px 10px; margin: 0 0 12px; }
+.vstrip .vh { font-weight: 800; font-size: .9em; color: #8a5a00; margin-bottom: 6px; } .vstrip .vh span { font-weight: 600; font-size: .8em; background: #fde7c0; border-radius: 999px; padding: 1px 8px; margin-left: 4px; }
+.vrow { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.vph { flex: none; width: 128px; border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: 0; cursor: zoom-in; overflow: hidden; text-align: left; }
+.vph img { width: 128px; height: 102px; object-fit: cover; display: block; } .vph span { display: block; font-size: .78em; padding: 4px 6px; line-height: 1.3; color: var(--ink); }
 .phb { flex: none; padding: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; cursor: zoom-in; width: 96px; height: 72px; }
 .phb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 #phDlg { border: 0; border-radius: 16px; padding: 10px; max-width: min(92vw, 900px); }
@@ -302,7 +311,7 @@ body.wideq .wrap { max-width: 1530px; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-06h';
+const BUILD = '2026-11-06i';
 (function () {
   let busy = false;
   async function check() {
@@ -334,6 +343,7 @@ const BUILD = '2026-11-06h';
 
   <!-- 제품 종류 -->
   <section id="t-prod">
+    <div id="vLog" class="vlog"></div>
     <input type="search" class="search" id="pq" placeholder="찾기 (예: 고무링, 힐가드, 화강석)" aria-label="제품 찾기">
     <div class="cats" id="pcats"></div>
     <div id="plist"></div>
@@ -934,6 +944,9 @@ function renderProd() {
       if (g.chips && (has(g.t) || g.chips.some(has))) { gh = '<div class="chips">' + g.chips.map(x => '<span>' + hl(x, q) + '</span>').join('') + '</div>'; hits++; }
       if (gh) ch += '<h3>' + hl(g.t, q) + '</h3>' + gh + (g.foot ? '<p class="muted" style="margin:6px 0 0">' + esc(g.foot) + '</p>' : '');
     });
+    /* 🔒 매입처 사진 (관리자 로그인했을 때만, 사진은 Firebase 관리자 전용 저장소에서 옴) */
+    const VP = (window.VEN && window.VEN.photos || []).filter(v => v.cat === c.id && (!q || has(v.t) || has(v.vc || '')));
+    if (VP.length) { ch = '<div class="vstrip"><div class="vh">📷 매입처 사진 · ' + esc(window.VEN.src || '') + ' <span>나만 보기</span></div><div class="vrow">' + VP.map(v => '<button class="vph" data-vid="' + esc(v.id) + '" type="button"><img src="' + v.data + '" alt="' + esc(v.t) + '" loading="lazy"><span>' + hl(v.t, q) + '</span></button>').join('') + '</div></div>' + ch; hits += VP.length; }
     if (ch) h += '<div class="card"><h2>' + esc(c.name) + '</h2>' + ch + '</div>';
   });
   const used = [...new Set(Object.values(PHOTOS))];
@@ -942,7 +955,8 @@ function renderProd() {
 }
 $('pq').addEventListener('input', renderProd);
 function credHtml(f) { const c = CREDITS[f]; if (!c) return ''; return '사진: ' + esc(c.artist) + ' · <a href="' + esc(c.licurl || c.page) + '" target="_blank" rel="noopener">' + esc(c.lic) + '</a> · <a href="' + esc(c.page) + '" target="_blank" rel="noopener">위키미디어 공용</a>'; }
-$('plist').addEventListener('click', e => { const b = e.target.closest('.phb'); if (!b) return; $('phImg').src = 'img/' + b.dataset.ph; $('phImg').alt = b.dataset.nm; $('phNm').textContent = b.dataset.nm; $('phCr').innerHTML = credHtml(b.dataset.ph); $('phDlg').showModal(); });
+$('plist').addEventListener('click', e => { const v = e.target.closest('.vph'); if (v) { const x = (window.VEN.photos || []).find(p => p.id === v.dataset.vid); if (x) { $('phImg').src = x.data; $('phImg').alt = x.t; $('phNm').textContent = x.t; $('phCr').textContent = '매입처: ' + (window.VEN.src || '') + (x.vc ? ' · ' + x.vc : '') + ' · 나만 보기'; $('phDlg').showModal(); } return; }
+  const b = e.target.closest('.phb'); if (!b) return; $('phImg').src = 'img/' + b.dataset.ph; $('phImg').alt = b.dataset.nm; $('phNm').textContent = b.dataset.nm; $('phCr').innerHTML = credHtml(b.dataset.ph); $('phDlg').showModal(); });
 $('phX').addEventListener('click', () => $('phDlg').close());
 $('phDlg').addEventListener('click', e => { if (e.target === $('phDlg')) $('phDlg').close(); });
 $('pcats').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; ST.pcat = b.dataset.c; renderProd(); });
@@ -1523,6 +1537,56 @@ function go(t) {
 $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) go(b.dataset.t); });
 window.__ord = { numIn, calcRun, qTotals, hangulWon, lineCalc, CALC, get Q() { return Q; }, set Q(v) { Q = v; } };
 go(['prod', 'check', 'calc', 'quote'].includes(ST.tab) ? ST.tab : 'prod');
+</script>
+<script type="module">
+/* 🔒 매입처 사진: 매출 현황 관리자 계정으로 로그인했을 때만 Firestore(ord_photos, 관리자만 읽기)에서 불러옴 */
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getFirestore, collection, getDocs, doc, writeBatch, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+const app = initializeApp({ apiKey: 'AIzaSyCIL_n5H8sYTEWb4jhISM5yS_6y_ci5Rnk', authDomain: 'acetool-923f6.firebaseapp.com', projectId: 'acetool-923f6', storageBucket: 'acetool-923f6.firebasestorage.app', messagingSenderId: '961124023870', appId: '1:961124023870:web:8753a14fa706f34255db6f' }, 'ord');
+const auth = getAuth(app), db = getFirestore(app);
+const $ = id => document.getElementById(id), esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const V = window.VEN = { photos: [], src: '', user: null, msg: '' };
+const CATS = ['hume', 'pe', 'mh', 'ch', 'grat', 'curb', 'gb', 'rw', 'lgs', 'base'];
+const refresh = () => { try { if (typeof renderProd === 'function') renderProd(); } catch (e) { } };
+function draw() {
+  const el = $('vLog'); if (!el) return;
+  if (!V.user) {
+    let em = ''; try { em = localStorage.getItem('pos.loginEmail') || ''; } catch (e) { }
+    el.innerHTML = '<details class="vbox"><summary>🔒 매입처 사진 보기 (관리자 로그인)</summary><div class="vrowf"><input type="email" id="vEm" placeholder="이메일" autocomplete="username" value="' + esc(em) + '"><input type="password" id="vPw" placeholder="비밀번호" inputmode="numeric" autocomplete="current-password"><button class="btn sm" id="vIn" type="button">로그인</button></div><p class="muted" style="margin:6px 0 0">매출 현황 관리자 계정으로 로그인하면 각 제품 칸에 매입처 사진이 나와요. 다른 사람에게는 보이지 않아요.</p><div id="vMsg" class="muted"></div></details>';
+    const go = async () => { $('vMsg').textContent = '로그인 중…'; try { await signInWithEmailAndPassword(auth, $('vEm').value.trim(), $('vPw').value); try { localStorage.setItem('pos.loginEmail', $('vEm').value.trim()); } catch (e) { } } catch (e) { $('vMsg').textContent = '로그인하지 못했어요 (이메일·비밀번호 확인)'; } };
+    $('vIn').addEventListener('click', go); $('vPw').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+    return;
+  }
+  el.innerHTML = '<div class="vbox">🔓 <b>매입처 사진 보기 중</b> · ' + V.photos.length + '장' + (V.src ? ' (' + esc(V.src) + ')' : '') + (V.msg ? ' · <span style="color:var(--bad)">' + esc(V.msg) + '</span>' : '') +
+    '<div class="vrowf"><label class="btn ghost sm" for="vFile" style="display:inline-flex;align-items:center">📥 매입처 사진 파일 넣기</label><input type="file" id="vFile" accept=".json,application/json" class="hide"><button class="btn ghost sm" id="vOut" type="button">로그아웃</button><span id="vMsg" class="muted"></span></div></div>';
+  $('vOut').addEventListener('click', () => signOut(auth));
+  $('vFile').addEventListener('change', e => { const f = e.target.files[0]; if (f) importFile(f); e.target.value = ''; });
+}
+async function load() {
+  V.msg = '';
+  try { const sn = await getDocs(collection(db, 'ord_photos')); V.photos = []; sn.forEach(d => { const x = d.data(); V.photos.push({ id: d.id, cat: x.cat, t: x.t, vc: x.vc || '', data: x.data }); V.src = x.src || V.src; }); V.photos.sort((a, b) => a.id.localeCompare(b.id, 'en', { numeric: true })); }
+  catch (e) { V.photos = []; V.msg = /permission/i.test(e.code || e.message || '') ? '권한이 없어요 (관리자 계정인지, Firebase 규칙을 게시했는지 확인)' : '불러오지 못했어요'; }
+  draw(); refresh();
+}
+/* 매입처 사진 파일(.json) → Firestore. 모양을 하나하나 확인한 뒤 20장씩 저장 */
+async function importFile(f) {
+  const msg = t => { const m = $('vMsg'); if (m) m.textContent = t; };
+  let J; try { J = JSON.parse(await f.text()); } catch (e) { msg('파일을 읽지 못했어요'); return; }
+  const items = (J && J.items || []).filter(x => /^[a-z0-9_]{1,40}$/.test(x.id) && CATS.includes(x.cat) && typeof x.t === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(x.data || '') && x.data.length < 900000);
+  if (!items.length) { msg('넣을 사진이 없어요 (매입처 사진 파일이 맞는지 확인)'); return; }
+  if (!confirm(items.length + '장을 넣을까요? (같은 사진은 새 내용으로 바뀌어요)')) return;
+  try {
+    for (let i = 0; i < items.length; i += 20) {
+      const b = writeBatch(db);
+      items.slice(i, i + 20).forEach(x => b.set(doc(db, 'ord_photos', x.id), { cat: x.cat, t: x.t.slice(0, 80), vc: String(x.vc || '').slice(0, 40), src: String(J.src || '').slice(0, 40), data: x.data, at: serverTimestamp() }));
+      await b.commit(); msg('저장 중… ' + Math.min(i + 20, items.length) + '/' + items.length);
+    }
+    msg(items.length + '장을 넣었어요'); await load();
+  } catch (e) { msg(/permission/i.test(e.code || e.message || '') ? '저장 권한이 없어요 (Firebase 규칙을 먼저 게시해 주세요)' : '저장하지 못했어요: ' + (e.message || e)); }
+}
+onAuthStateChanged(auth, u => { V.user = u; if (u) load(); else { V.photos = []; V.src = ''; draw(); refresh(); } });
+draw();
 </script>
 </body>
 </html>
