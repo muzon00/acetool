@@ -366,7 +366,7 @@ body.print2 #tPrint .cdoc { border: 0; padding: 0; width: 100%; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-06h';
+const BUILD = '2026-11-06i';
 (function () {
   let busy = false;
   async function check() {
@@ -1141,6 +1141,57 @@ const TWO = (() => {
     });
     return { rows, skipped, tot };
   }
+  /* 칸 위치로 읽기 (가격 없는 물량표 등): 제목 줄의 공종·규격·수량·단위·단가 위치를 찾아, 단어마다 x 위치로 칸에 넣음 */
+  function parseByColumns(data) {
+    const lines = [];
+    (data.blocks || []).forEach(b => (b.paragraphs || []).forEach(p => (p.lines || []).forEach(l => lines.push((l.words || []).map(w => ({ t: String(w.text || '').trim(), x0: w.bbox.x0, x1: w.bbox.x1 })).filter(w => w.t)))));
+    const KEYS = [['n', /^(공종|품명|제품명|품목|명칭|자재명|품목명|규격및명칭)$/], ['sp', /^(규격|사양|규격및사양)$/], ['q', /^(수량)$/], ['u', /^(단위)$/], ['p', /^(단가|매입단가|공급단가)$/], ['a', /^(금액|공급가액)$/], ['m', /^(비고)$/]];
+    let hi = -1, cols = [];
+    for (let i = 0; i < lines.length && hi < 0; i++) {
+      const ws = lines[i], found = [];
+      /* 글자 사이가 띄어진 제목(예: '수 량')도 이어 붙여 찾음 */
+      for (let a = 0; a < ws.length; a++) for (let b = a; b < Math.min(ws.length, a + 3); b++) {
+        const txt = ws.slice(a, b + 1).map(w => w.t).join('').replace(/[^가-힣A-Za-z]/g, '');
+        const k = KEYS.find(([, re]) => re.test(txt));
+        if (k && !found.some(f => f.k === k[0])) { found.push({ k: k[0], x: (ws[a].x0 + ws[b].x1) / 2 }); break; }
+      }
+      if (found.some(f => f.k === 'q') && found.length >= 2) { hi = i; cols = found.sort((a, b) => a.x - b.x); }
+    }
+    if (hi < 0) return null;
+    const colOf = x => { let best = 0; cols.forEach((c, k) => { if (Math.abs(c.x - x) < Math.abs(cols[best].x - x)) best = k; }); return cols[best].k; };
+    /* 제품명·규격 제목을 못 읽은 표: 수량 칸 왼쪽 글자를 가장 넓게 띄어진 곳에서 제품명 / 규격으로 나눔 */
+    const hasN = cols.some(c => c.k === 'n'), hasS = cols.some(c => c.k === 'sp');
+    const qi = cols.findIndex(c => c.k === 'q'), qx = cols[qi].x, nx = cols[qi + 1] ? cols[qi + 1].x : qx + 200, leftB = qx - (nx - qx) / 2;
+    const rows = [], skipped = []; let sec = '', lastU = '';
+    const goodName = t => /[가-힣]{2,}/.test(t) && !/[A-Za-z]{3,}/.test(t.replace(/PC|PVC|PE|HDPE|SUS|FRP|EA|PP|KS/gi, ''));
+    lines.slice(hi + 1).forEach(ws => {
+      const cell = {};
+      if (hasN && hasS) ws.forEach(w => { const k = colOf((w.x0 + w.x1) / 2); cell[k] = (cell[k] ? cell[k] + ' ' : '') + w.t; });
+      else {
+        const L = ws.filter(w => (w.x0 + w.x1) / 2 < leftB && !/^[|\[\]_=]+$/.test(w.t)), Rr = ws.filter(w => (w.x0 + w.x1) / 2 >= leftB);
+        Rr.forEach(w => { const k = colOf((w.x0 + w.x1) / 2); cell[k] = (cell[k] ? cell[k] + ' ' : '') + w.t; });
+        if (L.length) { let gi = -1, gmax = 0; for (let k = 1; k < L.length; k++) { const g = L[k].x0 - L[k - 1].x1; if (g > gmax) { gmax = g; gi = k; } }
+          const split = gi > 0 && gmax > 30 ? gi : L.length; cell.n = L.slice(0, split).map(w => w.t).join(' '); cell.sp = L.slice(split).map(w => w.t).join(' '); }
+      }
+      const txt = ws.map(w => w.t).join(' ').replace(/[|\[\]]/g, ' ').replace(/\s+/g, ' ').trim();
+      if (/^[^가-힣]{0,4}[총종합소]\s*계/.test(txt)) return;
+      /* 구분 줄 (예: 9.3 흄관): 수량이 없고 앞에 번호 → 아래 줄 제품명이 흐리면 이 이름을 씀 */
+      const sm = /^[^가-힣A-Za-z]{0,3}\d{1,2}[.,]\d{1,2}\s*(.+)$/.exec(txt);
+      const qm = /(\d+(?:\.\d{1,2})?)/.exec(String(cell.q || '').replace(/,/g, '').replace(/[Oo]/g, '0'));
+      if (sm && !qm) { const nm = sm[1].replace(/[|\[\]_]/g, '').trim(); if (/[가-힣]{2,}/.test(nm)) sec = nm.replace(/\s+/g, ' '); return; }
+      if (!qm) { if (cell.q) skipped.push(txt); return; }
+      let n = String(cell.n || '').replace(/[|\[\]_]/g, ' ').replace(/\s+/g, ' ').trim(), sp = String(cell.sp || '').replace(/[|\[\]_]/g, ' ').replace(/\s+/g, ' ').trim();
+      if (!n && !sp) return;
+      let fixed = false;
+      if (!goodName(n) && sec) { n = sec; fixed = true; }
+      const ps = String(cell.p || '').replace(/[,\s원]/g, ''), p = /^\d+$/.test(ps) ? Number(ps) : null;
+      let u = String(cell.u || '').trim();
+      u = /E\s*A/i.test(u) ? 'EA' : /본/.test(u) ? '본' : /[Mm]/.test(u) ? 'M' : /개/.test(u) ? '개' : /장/.test(u) ? '장' : lastU;
+      if (u) lastU = u;
+      rows.push({ no: null, code: '', n: n || sp, sp: n ? sp : '', u, q: Number(qm[1]), p, m: String(cell.m || '').trim(), fixedName: fixed });
+    });
+    return { rows, skipped, tot: null, cols: cols.map(c => c.k) };
+  }
   /* 두 번 읽은 결과 합치기: 수량·단가가 같은 줄은 하나로, 순번이 있으면 순번 차례로 */
   function mergeOcr(A, B) {
     /* 같은 줄을 두 번 읽으면 이름이 조금 달라도 수량·단가는 같음 → 수량·단가별 줄 수가 첫 번째 읽기보다 많을 때만 더함 */
@@ -1162,13 +1213,13 @@ const TWO = (() => {
     return { lines: rows.map(r => Object.assign(blank(), { code: r.code || '', n: r.n, sp: r.sp, u: r.u, q: String(r.q), cost: String(r.p) })), warn, sum, site: '', vendor: '', tot, ocr: true };
   }
   /* 읽기 전 손질: 2~3배 키우기 · 흑백 · 표 선 지우기 (작은 글씨와 칸 선 때문에 잘못 읽는 것을 줄임) */
-  async function prepImage(blob) {
+  async function prepImage(blob, scale, th) {
     const url = URL.createObjectURL(blob), im = new Image(); im.src = url; await im.decode(); URL.revokeObjectURL(url);
-    const SC = Math.max(1, Math.min(3, 6000 / Math.max(im.width, 1))), c = document.createElement('canvas');
+    const SC = scale || Math.max(1, Math.min(3, 6000 / Math.max(im.width, 1))), c = document.createElement('canvas');
     c.width = Math.round(im.width * SC); c.height = Math.round(im.height * SC);
     const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, c.width, c.height);
     const d = x.getImageData(0, 0, c.width, c.height), a = d.data, W = c.width, H = c.height, g = new Uint8Array(W * H);
-    for (let i = 0; i < W * H; i++) g[i] = (0.299 * a[i * 4] + 0.587 * a[i * 4 + 1] + 0.114 * a[i * 4 + 2]) < 160 ? 0 : 255;
+    for (let i = 0; i < W * H; i++) g[i] = (0.299 * a[i * 4] + 0.587 * a[i * 4 + 1] + 0.114 * a[i * 4 + 2]) < (th || 160) ? 0 : 255;
     const minH = Math.round(W * 0.25), minV = Math.round(H * 0.12);
     for (let y = 0; y < H; y++) { let run = 0; for (let xx = 0; xx <= W; xx++) { if (xx < W && g[y * W + xx] === 0) run++; else { if (run >= minH) for (let k = xx - run; k < xx; k++) g[y * W + k] = 255; run = 0; } } }
     for (let xx = 0; xx < W; xx++) { let run = 0; for (let y = 0; y <= H; y++) { if (y < H && g[y * W + xx] === 0) run++; else { if (run >= minV) for (let k = y - run; k < y; k++) g[k * W + xx] = 255; run = 0; } } }
@@ -1180,19 +1231,40 @@ const TWO = (() => {
     box.innerHTML = '<div class="note">📷 그림에서 글자를 읽는 중… <b id="ocrPct">준비 중</b><br><span class="muted">처음 한 번은 글자 인식 도구를 불러오느라 10~30초 걸려요.</span></div>';
     try {
       const w = await ocrWorker(m => { const el = $('ocrPct'); if (el) el.textContent = (m.status === 'recognizing text' ? '읽는 중 ' : '준비 중 ') + Math.round(m.progress * 100) + '%'; });
-      const c = await prepImage(blob);
-      await w.setParameters({ tessedit_pageseg_mode: '4', preserve_interword_spaces: '1' });
-      const r1 = await w.recognize(c), A = parseOcr(r1.data.text || '');
-      let B = null, raw = r1.data.text || '';
-      const sumA = A.rows.reduce((t, r) => t + Math.round(Math.round(r.q * 100) * r.p / 100), 0);
-      if (!A.rows.length || A.tot === null || sumA !== A.tot) {
-        const el = $('ocrPct'); if (el) el.textContent = '한 번 더 읽는 중';
-        await w.setParameters({ tessedit_pageseg_mode: '6' });
-        const r2 = await w.recognize(c); B = parseOcr(r2.data.text || ''); raw += '\n----- 두 번째 읽기 -----\n' + (r2.data.text || '');
+      /* 글씨 크기에 따라 맞는 배율이 달라서: 자동 배율 → 원래 크기 → 1.6배 순서로, 품목을 찾으면 멈춤 */
+      let R0 = { lines: [] }, raw = '';
+      let best = null, bestScore = -1;
+      for (const [sc, th] of [[0, 160], [1, 110], [1.5, 120], [1, 160]]) {
+        const el = $('ocrPct'); if (el && sc) el.textContent = '다른 방식으로 다시 읽는 중';
+        const c = await prepImage(blob, sc || undefined, th);
+        await w.setParameters({ tessedit_pageseg_mode: '4', preserve_interword_spaces: '1' });
+        const r1 = await w.recognize(c, {}, { text: true, blocks: true }), A = parseOcr(r1.data.text || '');
+        let B = null; raw += (raw ? '\n----- 다시 읽기 -----\n' : '') + (r1.data.text || '');
+        const sumA = A.rows.reduce((t, r) => t + Math.round(Math.round(r.q * 100) * r.p / 100), 0);
+        if (!A.rows.length || A.tot === null || sumA !== A.tot) {
+          await w.setParameters({ tessedit_pageseg_mode: '6' });
+          const r2 = await w.recognize(c); B = parseOcr(r2.data.text || ''); raw += '\n----- 두 번째 읽기 -----\n' + (r2.data.text || '');
+        }
+        R0 = mergeOcr(A, B);
+        if (R0.lines.length) break;   /* 가격 검산으로 찾았으면 그걸로 */
+        {
+          const Cc = parseByColumns(r1.data);
+          const score = Cc ? Cc.rows.filter(r => r.q > 0 && r.u && !r.fixedName).length * 2 + Cc.rows.filter(r => r.q > 0).length : -1;
+          if (Cc && Cc.rows.length && score > bestScore) {
+            bestScore = score;
+            const noPrice = Cc.rows.filter(r => r.p === null).length;
+            R0 = { lines: Cc.rows.map(r => Object.assign(blank(), { n: r.n, sp: r.sp, u: r.u, q: String(r.q), cost: r.p === null ? '' : String(r.p), m: r.m })), sum: 0, tot: null, site: '', vendor: '', ocr: true,
+              warn: [(noPrice ? '단가가 비어 있는 물량표예요 — 매입단가 칸(빨간 칸)에 업체 단가를 넣어 주세요 (' + noPrice + '줄)' : '칸 위치로 읽었어요'), '수량 · 단위 · 규격을 한 번 확인해 주세요'].concat(Cc.rows.some(r => r.fixedName) ? ['제품명이 흐려서 구분 줄 이름(예: 흄관)을 넣은 줄 ' + Cc.rows.filter(r => r.fixedName).length + '개'] : []).concat(Cc.skipped.length ? ['수량을 읽지 못해 넣지 않은 줄 ' + Cc.skipped.length + '개: ' + Cc.skipped.slice(0, 3).join(' / ')] : []) };
+            best = R0;
+          }
+          R0 = { lines: [] };
+          /* 모든 줄이 수량·단위·이름까지 잘 읽혔으면 더 읽지 않음 */
+          if (Cc && Cc.rows.length && Cc.rows.every(r => r.q > 0 && r.u && !r.fixedName)) break;
+        }
       }
-      const R0 = mergeOcr(A, B);
+      if (!R0.lines.length && best) R0 = best;
       if (!R0.lines.length) { box.innerHTML = '<div class="err">그림에서 품목 줄을 찾지 못했어요. 표가 화면에 크게 보이게 다시 캡처하거나, 엑셀이 있으면 엑셀로 복사해 주세요.</div><details class="more"><summary>읽은 글자 보기</summary><pre class="ocrraw">' + esc(raw) + '</pre></details>'; return; }
-      if (applyImport(R0)) $('tImpMsg').insertAdjacentHTML('beforeend', '<div class="note">📷 캡처에서 읽은 값이에요. 수량·단가는 <b>공급가액과 검산이 맞은 줄만</b> 넣었고, <b>제품명 · 규격 글자는 한 번 확인</b>해 주세요.</div><details class="more"><summary>읽은 글자 전체 보기</summary><pre class="ocrraw">' + esc(raw) + '</pre></details>');
+      if (applyImport(R0)) $('tImpMsg').insertAdjacentHTML('beforeend', '<div class="note">📷 캡처에서 읽은 값이에요. ' + (R0.sum ? '수량·단가는 <b>공급가액과 검산이 맞은 줄만</b> 넣었고, ' : '표의 칸 위치로 읽었어요. <b>수량 · 단위</b>와 ') + '<b>제품명 · 규격 글자는 한 번 확인</b>해 주세요.</div><details class="more"><summary>읽은 글자 전체 보기</summary><pre class="ocrraw">' + esc(raw) + '</pre></details>');
     } catch (e) { box.innerHTML = '<div class="err">글자 인식을 하지 못했어요: ' + esc((e && e.message) || e) + '</div>'; }
   }
   $('tImg').addEventListener('change', e => { const f = e.target.files[0]; if (f) readImage(f); e.target.value = ''; });
