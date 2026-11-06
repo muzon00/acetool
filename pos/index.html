@@ -337,6 +337,7 @@ details > summary.up-h { cursor: pointer; margin: 6px 0; font-weight: 700; }
 #upFileBox + #upPasteBox, #upPasteBox + #upFileBox { border-top: 1px dashed var(--line); margin-top: 18px; }
 .tr-seg { display: inline-flex; background: var(--bg); border-radius: 10px; padding: 3px; }
 .tr-seg button { border: 0; background: transparent; color: var(--ink2); font: inherit; font-weight: 600; font-size: .9em; padding: 5px 12px; border-radius: 8px; cursor: pointer; }
+details.acct { border-top: 1px solid var(--line); padding: 8px 0; } details.acct summary { cursor: pointer; line-height: 1.6; } details.acct .scroll { margin-top: 8px; }
 .tr-seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
 .tr-grid { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; align-items: start; }
 @media (max-width: 1000px) { .tr-grid { grid-template-columns: 1fr; } }
@@ -778,6 +779,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
         <button class="pill" data-tab="sga">판관비·BEP</button>
         <button class="pill" data-tab="close">월마감 체크</button>
         <button class="pill" data-tab="plans">예정 매출</button>
+        <button class="pill" data-tab="acct">담당 거래처</button>
         <button class="pill" data-tab="download">다운로드</button>
         <button class="pill" data-tab="settings">목표·설정</button>
         <button class="pill" data-tab="tree">매출 구조</button>
@@ -946,6 +948,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
     <div id="a-sga" class="hide"></div>
     <div id="a-close" class="hide"></div>
     <div id="a-vip" class="hide"></div>
+    <div id="a-acct" class="hide"></div>
     <div id="a-members" class="hide"></div>
 
     <div id="a-help" class="hide">
@@ -1215,7 +1218,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-06g';
+var BUILD = '2026-11-06h';
 (function () {
   var busy = false;
   function typing() {
@@ -2771,7 +2774,7 @@ window.addEventListener('resize', () => {
 
 /* ===================== 관리자: 탭 ===================== */
 document.querySelectorAll('#adminTabs .pill').forEach(b => b.addEventListener('click', () => showAdminTab(b.dataset.tab)));
-const ATABS = ['upload', 'eval', 'sga', 'close', 'plans', 'download', 'settings', 'tree', 'vip', 'members', 'help'];
+const ATABS = ['upload', 'eval', 'sga', 'close', 'plans', 'acct', 'download', 'settings', 'tree', 'vip', 'members', 'help'];
 function showAdminTab(t) {
   if (!ATABS.includes(t)) t = 'upload';
   S.adminTab = t;
@@ -2786,6 +2789,7 @@ function showAdminTab(t) {
   if (t === 'sga') loadSga();
   if (t === 'close') loadClose();
   if (t === 'vip') loadMembersList();
+  if (t === 'acct') loadAcct();
   if (t === 'members') loadMembers();
   if (t === 'upload') renderDataStatus();
 }
@@ -4284,6 +4288,89 @@ async function renderDownloads() {
     X.writeFile(wb, '매출현황_' + rangeTag() + '_' + stamp() + '.xlsx');
   });
   rpMount(el);
+}
+
+/* ===================== 담당 거래처 (외판 · B2B만, POS 내판 결제는 빼고) =====================
+   pos_detail의 외판 줄(g:'o')을 담당자 → 거래처로 묶어 25년 · 26년 합계와 월평균을 보여 줌
+   월평균 = 그 해 합계 ÷ 그 해 자료가 있는 달 수 (자료가 중간까지인 마지막 달은 들어 있는 날짜만큼만 셈 — 예: 11/5까지면 5/30달) */
+const ACCT_Y = [2025, 2026];
+const acctF = { by: 'mgr', q: '', sort: 'y2' };
+function acctMonths(Y) {
+  const yms = Object.keys(S.detail || {}).map(Number).filter(ym => Math.floor(ym / 100) === Y && Object.keys(S.detail[ym] || {}).length).sort((a, b) => a - b);
+  // 마지막 달만 자료가 있는 날까지 비율로 셈 (그 앞 달은 한 달로)
+  let n = 0; yms.forEach((ym, i) => { const last = Math.max(...Object.keys(S.detail[ym]).map(Number)); n += i < yms.length - 1 ? 1 : Math.min(1, last / dimOf(ym)); });
+  return { n, yms, last: yms.length ? yms[yms.length - 1] * 100 + Math.max(...Object.keys(S.detail[yms[yms.length - 1]]).map(Number)) : 0 };
+}
+function acctData() {
+  const C = {}, mgrSet = {};  // C[거래처키] = { names:{원래 이름:횟수}, y:{2025:{s,r}}, mg:{담당자:{2025:s}}, days:Set, last }
+  ACCT_Y.forEach(Y => Object.keys(S.detail || {}).map(Number).filter(ym => Math.floor(ym / 100) === Y).forEach(ym => Object.entries(S.detail[ym]).forEach(([day, rs]) => (rs || []).forEach(x => {
+    if (x.g !== 'o') return;
+    const nm = x.c || '(거래처 미기재)', key = custKey(nm) || nm, m = x.m || '(미지정)', v = Number(x.n) || 0, d = ym * 100 + Number(day);
+    const o = C[key] || (C[key] = { key, names: {}, y: {}, mg: {}, days: {}, last: 0 });
+    o.names[nm] = (o.names[nm] || 0) + 1;
+    const yy = o.y[Y] || (o.y[Y] = { s: 0, r: 0 }); yy.s += v; yy.r += Number(x.r) || 0;
+    const mm = o.mg[m] || (o.mg[m] = { last: 0 }); mm[Y] = (mm[Y] || 0) + v; mm['r' + Y] = (mm['r' + Y] || 0) + (Number(x.r) || 0); if (v > 0 && d > mm.last) mm.last = d;
+    o.days[d] = 1; if (v > 0 && d > o.last) o.last = d; mgrSet[m] = 1;
+  }))));
+  Object.values(C).forEach(o => { o.name = Object.entries(o.names).sort((a, b) => b[1] - a[1])[0][0]; o.nDays = Object.keys(o.days).length; });
+  return { C, mgrs: Object.keys(mgrSet) };
+}
+async function loadAcct() {
+  const el = $('a-acct');
+  el.innerHTML = '<div class="card muted">불러오는 중…</div>';
+  try { await loadDetail(); } catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
+  const M = {}; ACCT_Y.forEach(Y => { M[Y] = acctMonths(Y); });
+  const { C, mgrs } = acctData(), all = Object.values(C);
+  if (!all.length) { el.innerHTML = '<div class="card"><h2>🤝 담당 거래처</h2><p class="muted" style="margin:0">25년 · 26년 외판(B2B) 자료가 아직 없습니다. 업로드 탭에 POS 판매 내역을 올려 주세요.</p></div>'; return; }
+  const [Y1, Y2] = ACCT_Y, avg = (s, Y) => M[Y].n ? s / M[Y].n : 0;
+  const sOf = (o, Y, m) => m ? ((o.mg[m] || {})[Y] || 0) : ((o.y[Y] || {}).s || 0);
+  const mLbl = Y => M[Y].yms.length ? (M[Y].n % 1 ? M[Y].n.toFixed(1) : M[Y].n) + '개월 (' + (M[Y].yms[0] % 100) + '월 ~ ' + mdLabel(M[Y].last) + ')' : '자료 없음';
+  const tot = Y => all.reduce((t, o) => t + sOf(o, Y), 0);
+  let h = '<div class="card"><h2>🤝 담당 거래처 <small class="muted">외판(B2B)만 · POS 내판 결제 제외</small></h2>' +
+    '<p class="muted" style="margin-top:0">월평균 = 그 해 외판 합계 ÷ 자료가 있는 달 수. ' + Y1 + '년 ' + mLbl(Y1) + ', ' + Y2 + '년 ' + mLbl(Y2) + ' 기준입니다. 거래처 이름은 (주) · 주식회사 · 띄어쓰기를 빼고 같은 곳으로 묶었어요.</p>' +
+    '<div class="kpis">' + kpi('담당자', mgrs.filter(m => m !== '(미지정)').length + '명', mgrs.includes('(미지정)') ? '담당자 빈칸 포함' : '') +
+    kpi('거래처', all.length + '곳', Y2 + '년 거래 ' + all.filter(o => sOf(o, Y2)).length + '곳') +
+    kpi(Y1 + '년 외판 월평균', won(avg(tot(Y1), Y1)), '합계 ' + won(tot(Y1))) +
+    kpi(Y2 + '년 외판 월평균', won(avg(tot(Y2), Y2)), '합계 ' + won(tot(Y2)), true) + '</div>' +
+    '<div class="row" style="align-items:center;margin:4px 0 10px"><div class="tr-seg" id="acBy"><button type="button" data-by="mgr"' + (acctF.by === 'mgr' ? ' class="on"' : '') + '>직원별</button><button type="button" data-by="cust"' + (acctF.by === 'cust' ? ' class="on"' : '') + '>거래처 전체</button></div>' +
+    '<div class="tr-seg" id="acSort"><button type="button" data-s="y2"' + (acctF.sort === 'y2' ? ' class="on"' : '') + '>' + Y2 + '년 많은 순</button><button type="button" data-s="y1"' + (acctF.sort === 'y1' ? ' class="on"' : '') + '>' + Y1 + '년 많은 순</button><button type="button" data-s="last"' + (acctF.sort === 'last' ? ' class="on"' : '') + '>최근 거래 순</button></div>' +
+    '<input type="text" id="acQ" placeholder="거래처 · 담당자 검색" value="' + esc(acctF.q) + '" style="flex:1;min-width:160px"><button class="btn ghost sm" id="acCsv">CSV 내려받기</button></div><div id="acOut"></div></div>';
+  el.innerHTML = h;
+  const head = ['거래처', Y1 + '년 합계', Y1 + '년 월평균', Y2 + '년 합계', Y2 + '년 월평균', '월평균 증감', Y2 + '년 마진율', '마지막 거래'];
+  const line = (o, m) => {
+    const a = sOf(o, Y1, m), b = sOf(o, Y2, m), aa = avg(a, Y1), bb = avg(b, Y2), r2 = m ? (o.mg[m]['r' + Y2] || 0) : (o.y[Y2] || {}).r || 0, s2 = b, last = m ? o.mg[m].last : o.last;
+    const others = Object.keys(o.mg).filter(x => x !== m);
+    const tag = !b && a ? ' <span class="tag" style="background:#fdecee;color:var(--bad)">' + Y2 + '년 거래 없음</span>' : b && !a ? ' <span class="tag" style="background:#e8f6ee;color:#1f7a4d">' + Y2 + '년 신규</span>' : '';
+    return ['<b>' + esc(o.name) + '</b>' + tag + (m && others.length ? '<br><small class="muted">함께 담당: ' + others.map(esc).join(', ') + '</small>' : !m ? '<br><small class="muted">' + Object.keys(o.mg).map(esc).join(', ') + '</small>' : ''),
+      a ? won(a) : '-', a ? won(aa) : '-', b ? won(b) : '-', b ? '<b>' + won(bb) + '</b>' : '-',
+      a && b ? '<span style="color:' + (bb >= aa ? '#1f7a4d' : 'var(--bad)') + '">' + (bb >= aa ? '▲ ' : '▼ ') + pct(Math.abs(bb / aa - 1), 0) + '</span>' : '-',
+      s2 ? pct(r2 / s2) : '-', last ? dLabel(last) : '-'];
+  };
+  const sorter = m => (x, y) => acctF.sort === 'last' ? y.last - x.last : acctF.sort === 'y1' ? sOf(y, Y1, m) - sOf(x, Y1, m) || sOf(y, Y2, m) - sOf(x, Y2, m) : sOf(y, Y2, m) - sOf(x, Y2, m) || sOf(y, Y1, m) - sOf(x, Y1, m);
+  const hit = (o, m) => { if (!sOf(o, Y1, m) && !sOf(o, Y2, m)) return false; const q = custKey(acctF.q.trim()).toLowerCase(); return !q || custKey(o.name).toLowerCase().includes(q) || (m ? custKey(m).toLowerCase().includes(q) : Object.keys(o.mg).some(x => custKey(x).toLowerCase().includes(q))); };
+  const groups = () => {
+    if (acctF.by === 'cust') return [{ m: '', list: all.filter(o => hit(o, '')).sort(sorter('')) }];
+    return mgrs.map(m => ({ m, list: all.filter(o => o.mg[m] && hit(o, m)).sort(sorter(m)) })).filter(g => g.list.length)
+      .sort((a, b) => (a.m === '(미지정)') - (b.m === '(미지정)') || b.list.reduce((t, o) => t + sOf(o, Y2, b.m), 0) - a.list.reduce((t, o) => t + sOf(o, Y2, a.m), 0));
+  };
+  const draw = () => {
+    const G = groups();
+    $('acOut').innerHTML = !G.length ? '<p class="muted">찾는 거래처가 없습니다.</p>' : G.map(g => {
+      const a = g.list.reduce((t, o) => t + sOf(o, Y1, g.m), 0), b = g.list.reduce((t, o) => t + sOf(o, Y2, g.m), 0), act = g.list.filter(o => sOf(o, Y2, g.m)).length;
+      const body = table(head, g.list.map(o => line(o, g.m)));
+      if (!g.m) return '<p class="muted" style="margin:0 0 6px">거래처 ' + g.list.length + '곳 (거래처 아래 작은 글씨 = 담당자)</p>' + body;
+      return '<details class="acct"' + (G.length <= 3 || acctF.q ? ' open' : '') + '><summary><b>👤 ' + esc(g.m) + '</b> · 거래처 ' + g.list.length + '곳 (' + Y2 + '년 거래 ' + act + '곳) · ' + Y1 + '년 월평균 ' + won(avg(a, Y1)) + ' → ' + Y2 + '년 월평균 <b>' + won(avg(b, Y2)) + '</b></summary>' + body + '</details>';
+    }).join('');
+  };
+  draw();
+  $('acBy').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { acctF.by = b.dataset.by; $('acBy').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); draw(); }));
+  $('acSort').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { acctF.sort = b.dataset.s; $('acSort').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); draw(); }));
+  $('acQ').addEventListener('input', e => { acctF.q = e.target.value; draw(); });
+  $('acCsv').addEventListener('click', () => {
+    const out = [['담당자', '거래처', Y1 + '년 합계', Y1 + '년 월평균', Y2 + '년 합계', Y2 + '년 월평균', Y2 + '년 마진율', '마지막 거래일', '함께 담당']];
+    groups().forEach(g => g.list.forEach(o => { const m = g.m, a = sOf(o, Y1, m), b = sOf(o, Y2, m), r2 = m ? (o.mg[m]['r' + Y2] || 0) : (o.y[Y2] || {}).r || 0, last = m ? o.mg[m].last : o.last; out.push([m || Object.keys(o.mg).join(' / '), o.name, a, Math.round(avg(a, Y1)), b, Math.round(avg(b, Y2)), b ? pct(r2 / b) : '', last ? dLabel(last) : '', m ? Object.keys(o.mg).filter(x => x !== m).join(' / ') : '']); }));
+    downloadCsv('담당거래처_외판_' + todayInt() + '.csv', out);
+  });
 }
 
 /* ===================== 본사 일레포트 (.xlsb) — 매출현황과 1원까지 대조 =====================
