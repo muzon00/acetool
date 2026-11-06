@@ -68,6 +68,30 @@ label.f { display: block; font-size: .85em; font-weight: 600; color: var(--ink2)
 .it .tx { flex: 1; min-width: 0; }
 .pic { width: 76px; height: 57px; flex: none; color: #1f5a3d; background: #fff; border: 1px solid var(--line); border-radius: 10px; }
 .vlog { margin-bottom: 10px; }
+.vjump { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; } .vjump a { text-decoration: none; color: var(--ink); background: var(--bg); border-radius: 999px; padding: 5px 12px; font-size: .88em; } .vjump a b { color: #8a5a00; }
+.vgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.vcard { width: auto; border: 1px solid var(--line); border-radius: 14px; background: #fff; padding: 0 0 8px; cursor: pointer; overflow: hidden; text-align: left; display: flex; flex-direction: column; }
+.vcard img { width: 100%; aspect-ratio: 5 / 4; object-fit: cover; display: block; background: #f5f5f5; }
+.vcard b { padding: 8px 10px 0; font-size: .95em; color: var(--ink); } .vcard small { padding: 2px 10px 0; color: var(--ink3); font-size: .8em; line-height: 1.35; }
+.vcard:hover { border-color: #e0b05c; }
+#vdDlg { width: min(96vw, 1000px); max-height: 92vh; border: 0; border-radius: 18px; padding: 0; }
+#vdDlg::backdrop { background: rgba(0,0,0,.55); }
+#vdDlg .vdh { position: sticky; top: 0; background: #fff; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); z-index: 1; }
+#vdDlg .vdh b { font-size: 1.12em; }
+#vdB { padding: 14px 16px 18px; }
+#vdB .vdtop { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 680px) { #vdB .vdtop { grid-template-columns: 1fr; } }
+#vdB .vdtop img { width: 100%; border-radius: 12px; border: 1px solid var(--line); }
+#vdB .vdtxt { font-size: .93em; line-height: 1.6; color: var(--ink2); white-space: pre-wrap; }
+#vdB .vdtag { display: inline-block; background: #fde7c0; color: #8a5a00; border-radius: 999px; padding: 2px 10px; font-size: .8em; font-weight: 700; margin-bottom: 6px; }
+#vdB h4 { margin: 16px 0 6px; font-size: .98em; }
+#vdB .vdtw { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 10px; }
+#vdB table { border-collapse: collapse; font-size: .82em; min-width: 100%; font-variant-numeric: tabular-nums; }
+#vdB th, #vdB td { border: 1px solid #d9dde3; padding: 4px 7px; text-align: center; white-space: nowrap; }
+#vdB th { background: #fff7df; font-weight: 700; }
+#vdB tr:nth-child(even) td { background: #fafbfc; }
+#vdB table tr:first-child td { background: #fff7df; font-weight: 700; }
+#vdB .vdfig { width: 100%; border-radius: 10px; border: 1px solid var(--line); margin-bottom: 8px; background: #fff; }
 .vlog .vbox { background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; padding: 10px 12px; font-size: .9em; }
 .vlog summary { cursor: pointer; font-weight: 700; color: var(--ink2); }
 .vlog .vrowf { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; } .vlog input { max-width: 240px; min-height: 40px; }
@@ -311,7 +335,7 @@ body.wideq .wrap { max-width: 1530px; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-06i';
+const BUILD = '2026-11-06j';
 (function () {
   let busy = false;
   async function check() {
@@ -430,6 +454,7 @@ const BUILD = '2026-11-06i';
 </div>
 <div class="fab-bar"><a class="fab" href="../sch/">📅 근무표</a></div>
 <div id="toast"></div>
+<dialog id="vdDlg"><div class="vdh"><b id="vdT"></b><button class="btn ghost sm" id="vdX" type="button">닫기 ✕</button></div><div id="vdB"></div></dialog>
 <dialog id="phDlg"><img id="phImg" alt=""><p id="phNm"></p><p id="phCr" class="muted" style="font-weight:500;font-size:.8em"></p><button class="btn ghost sm" id="phX" style="width:100%">닫기</button></dialog>
 
 <script>
@@ -922,9 +947,20 @@ function hl(s, q) {
 }
 function renderProd() {
   const q = $('pq').value.trim();
-  $('pcats').innerHTML = [['all', '전체']].concat(PROD.map(c => [c.id, c.name])).map(([id, n]) => '<button data-c="' + id + '" class="' + (ST.pcat === id ? 'on' : '') + '">' + esc(n) + '</button>').join('');
+  const VEN = window.VEN || {}, vOn = !!(VEN.user && VEN.photos && VEN.photos.length);
+  if (!vOn && ST.pcat === 'ven') ST.pcat = 'all';
+  $('pcats').innerHTML = [['all', '전체']].concat(vOn ? [['ven', '🏭 매입처 카탈로그']] : []).concat(PROD.map(c => [c.id, c.name])).map(([id, n]) => '<button data-c="' + id + '" class="' + (ST.pcat === id ? 'on' : '') + '">' + esc(n) + '</button>').join('');
   const has = (t) => !q || String(t).toLowerCase().includes(q.toLowerCase());
   let h = '', hits = 0;
+  /* 🏭 매입처 카탈로그: 매입처 홈페이지 분류 그대로, 사진 카드 → 누르면 규격표·치수 그림 */
+  if (ST.pcat === 'ven' && vOn) {
+    const groups = {}; VEN.photos.filter(v => !q || has(v.t) || has(v.vc || '') || has(v.kw || '')).forEach(v => { (groups[v.vc || '기타'] = groups[v.vc || '기타'] || []).push(v); });
+    const ks = Object.keys(groups);
+    $('plist').innerHTML = '<div class="card vcat"><h2>🏭 매입처 카탈로그 · ' + esc(VEN.src || '') + ' <span class="tag">나만 보기</span></h2><p class="muted" style="margin:0 0 6px">' + VEN.photos.length + '개 제품 · 카드를 누르면 규격표와 치수 그림이 나와요. 위 검색창으로 찾을 수도 있어요.</p>' +
+      '<div class="vjump">' + ks.map(k => '<a href="#vg_' + esc(k) + '">' + esc(k) + ' <b>' + groups[k].length + '</b></a>').join('') + '</div>' +
+      ks.map(k => '<h3 id="vg_' + esc(k) + '">' + esc(k) + '</h3><div class="vgrid">' + groups[k].map(v => '<button class="vcard vph" data-vid="' + esc(v.id) + '" type="button"><img src="' + v.data + '" alt="" loading="lazy"><b>' + hl(v.t, q) + '</b>' + (v.sum ? '<small>' + esc(v.sum) + '</small>' : '') + '</button>').join('') + '</div>').join('') + (ks.length ? '' : '<p class="muted">"' + esc(q) + '"에 맞는 제품이 없어요.</p>') + '</div>';
+    return;
+  }
   PROD.forEach(c => {
     if (ST.pcat !== 'all' && ST.pcat !== c.id) return;
     let ch = '';
@@ -955,7 +991,7 @@ function renderProd() {
 }
 $('pq').addEventListener('input', renderProd);
 function credHtml(f) { const c = CREDITS[f]; if (!c) return ''; return '사진: ' + esc(c.artist) + ' · <a href="' + esc(c.licurl || c.page) + '" target="_blank" rel="noopener">' + esc(c.lic) + '</a> · <a href="' + esc(c.page) + '" target="_blank" rel="noopener">위키미디어 공용</a>'; }
-$('plist').addEventListener('click', e => { const v = e.target.closest('.vph'); if (v) { const x = (window.VEN.photos || []).find(p => p.id === v.dataset.vid); if (x) { $('phImg').src = x.data; $('phImg').alt = x.t; $('phNm').textContent = x.t; $('phCr').textContent = '매입처: ' + (window.VEN.src || '') + (x.vc ? ' · ' + x.vc : '') + ' · 나만 보기'; $('phDlg').showModal(); } return; }
+$('plist').addEventListener('click', e => { const v = e.target.closest('.vph'); if (v && window.VEN.openDetail) { window.VEN.openDetail(v.dataset.vid); return; } if (v) { const x = (window.VEN.photos || []).find(p => p.id === v.dataset.vid); if (x) { $('phImg').src = x.data; $('phImg').alt = x.t; $('phNm').textContent = x.t; $('phCr').textContent = '매입처: ' + (window.VEN.src || '') + (x.vc ? ' · ' + x.vc : '') + ' · 나만 보기'; $('phDlg').showModal(); } return; }
   const b = e.target.closest('.phb'); if (!b) return; $('phImg').src = 'img/' + b.dataset.ph; $('phImg').alt = b.dataset.nm; $('phNm').textContent = b.dataset.nm; $('phCr').innerHTML = credHtml(b.dataset.ph); $('phDlg').showModal(); });
 $('phX').addEventListener('click', () => $('phDlg').close());
 $('phDlg').addEventListener('click', e => { if (e.target === $('phDlg')) $('phDlg').close(); });
@@ -1542,7 +1578,7 @@ go(['prod', 'check', 'calc', 'quote'].includes(ST.tab) ? ST.tab : 'prod');
 /* 🔒 매입처 사진: 매출 현황 관리자 계정으로 로그인했을 때만 Firestore(ord_photos, 관리자만 읽기)에서 불러옴 */
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { getFirestore, collection, getDocs, doc, writeBatch, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getFirestore, collection, getDocs, getDoc, doc, writeBatch, serverTimestamp, query, where } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 const app = initializeApp({ apiKey: 'AIzaSyCIL_n5H8sYTEWb4jhISM5yS_6y_ci5Rnk', authDomain: 'acetool-923f6.firebaseapp.com', projectId: 'acetool-923f6', storageBucket: 'acetool-923f6.firebasestorage.app', messagingSenderId: '961124023870', appId: '1:961124023870:web:8753a14fa706f34255db6f' }, 'ord');
 const auth = getAuth(app), db = getFirestore(app);
 const $ = id => document.getElementById(id), esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1565,7 +1601,7 @@ function draw() {
 }
 async function load() {
   V.msg = '';
-  try { const sn = await getDocs(collection(db, 'ord_photos')); V.photos = []; sn.forEach(d => { const x = d.data(); V.photos.push({ id: d.id, cat: x.cat, t: x.t, vc: x.vc || '', data: x.data }); V.src = x.src || V.src; }); V.photos.sort((a, b) => a.id.localeCompare(b.id, 'en', { numeric: true })); }
+  try { const sn = await getDocs(query(collection(db, 'ord_photos'), where('kind', '==', 'photo'))); V.photos = []; V.det = {}; sn.forEach(d => { const x = d.data(); V.photos.push({ id: d.id, cat: x.cat, t: x.t, vc: x.vc || '', data: x.data, sum: x.sum || '', kw: x.kw || '', hasD: !!x.hasD }); V.src = x.src || V.src; }); V.photos.sort((a, b) => a.id.localeCompare(b.id, 'en', { numeric: true })); }
   catch (e) { V.photos = []; V.msg = /permission/i.test(e.code || e.message || '') ? '권한이 없어요 (관리자 계정인지, Firebase 규칙을 게시했는지 확인)' : '불러오지 못했어요'; }
   draw(); refresh();
 }
@@ -1573,18 +1609,64 @@ async function load() {
 async function importFile(f) {
   const msg = t => { const m = $('vMsg'); if (m) m.textContent = t; };
   let J; try { J = JSON.parse(await f.text()); } catch (e) { msg('파일을 읽지 못했어요'); return; }
-  const items = (J && J.items || []).filter(x => /^[a-z0-9_]{1,40}$/.test(x.id) && CATS.includes(x.cat) && typeof x.t === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(x.data || '') && x.data.length < 900000);
+  const items = (J && J.items || []).filter(x => /^[a-z0-9_]{1,38}$/.test(x.id) && CATS.includes(x.cat) && typeof x.t === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(x.data || '') && x.data.length < 900000);
   if (!items.length) { msg('넣을 사진이 없어요 (매입처 사진 파일이 맞는지 확인)'); return; }
-  if (!confirm(items.length + '장을 넣을까요? (같은 사진은 새 내용으로 바뀌어요)')) return;
-  try {
-    for (let i = 0; i < items.length; i += 20) {
-      const b = writeBatch(db);
-      items.slice(i, i + 20).forEach(x => b.set(doc(db, 'ord_photos', x.id), { cat: x.cat, t: x.t.slice(0, 80), vc: String(x.vc || '').slice(0, 40), src: String(J.src || '').slice(0, 40), data: x.data, at: serverTimestamp() }));
-      await b.commit(); msg('저장 중… ' + Math.min(i + 20, items.length) + '/' + items.length);
+  const nd = items.filter(x => x.det).length;
+  if (!confirm(items.length + '개 제품을 넣을까요?' + (nd ? '\n(규격표·치수 그림 ' + nd + '개 포함)' : '') + '\n같은 제품은 새 내용으로 바뀌어요.')) return;
+  /* 문서 하나 1MB 제한: 상세는 넘치면 뒤쪽 그림부터 뺌. 한 번에 보내는 양은 약 7MB까지 */
+  const docs = [];
+  items.forEach(x => {
+    let det = null;
+    if (x.det) {
+      const figs = (x.det.figs || []).filter(f => /^data:image\/(jpeg|png);base64,/.test(f) && f.length < 900000);
+      det = { kind: 'detail', t: x.t.slice(0, 80), text: (x.det.text || []).map(t => String(t).slice(0, 300)).slice(0, 40), tables: (x.det.tables || []).filter(t => typeof t === 'string' && SAFE_TABLE.test(t) && t.length < 120000), figs: [], parts: 1, at: serverTimestamp() };
+      while (JSON.stringify(det).length > 900000 && det.tables.length) det.tables.pop();
+      /* 그림을 앞 칸부터 채우고, 넘치면 다음 칸(d_아이디_2 …)으로 */
+      let cur = det, base = JSON.stringify(det).length, extra = [];
+      figs.forEach(f => { if (base + f.length > 930000) { cur = { kind: 'detailpart', figs: [], at: serverTimestamp() }; extra.push(cur); base = 200; } cur.figs.push(f); base += f.length + 3; });
+      det.parts = 1 + extra.length;
+      extra.forEach((e, k) => docs.push(['d_' + x.id + '_' + (k + 2), e]));
     }
-    msg(items.length + '장을 넣었어요'); await load();
+    docs.push([x.id, { kind: 'photo', cat: x.cat, t: x.t.slice(0, 80), vc: String(x.vc || '').slice(0, 40), src: String(J.src || '').slice(0, 40), sum: String(x.sum || '').slice(0, 120), kw: String(x.kw || '').slice(0, 600), hasD: !!det, data: x.data, at: serverTimestamp() }]);
+    if (det) docs.push(['d_' + x.id, det]);
+  });
+  try {
+    let b = writeBatch(db), sz = 0, n = 0, done = 0;
+    for (const [id, data] of docs) {
+      const z = JSON.stringify(data).length;
+      if (n && (sz + z > 7000000 || n >= 400)) { await b.commit(); done += n; msg('저장 중… ' + done + '/' + docs.length); b = writeBatch(db); sz = 0; n = 0; }
+      b.set(doc(db, 'ord_photos', id), data); sz += z; n++;
+    }
+    if (n) await b.commit();
+    msg(items.length + '개 제품을 넣었어요'); await load();
   } catch (e) { msg(/permission/i.test(e.code || e.message || '') ? '저장 권한이 없어요 (Firebase 규칙을 먼저 게시해 주세요)' : '저장하지 못했어요: ' + (e.message || e)); }
 }
+/* 제품 상세: 규격표·치수 그림은 따로 저장(d_아이디)해 누를 때만 불러옴. 표는 table/tr/td/th + rowspan·colspan만 허용 */
+const SAFE_TABLE = /^(?:<\/?(?:table|tr|td|th)(?: (?:rowspan|colspan)="\d{1,3}")*>|[^<])*$/;
+V.openDetail = async id => {
+  const p = V.photos.find(x => x.id === id); if (!p) return;
+  const dlg = $('vdDlg'); $('vdT').textContent = p.t;
+  const head = '<div class="vdtop"><img src="' + p.data + '" alt=""><div><span class="vdtag">' + esc(V.src) + (p.vc ? ' · ' + esc(p.vc) : '') + '</span><div class="vdtxt" id="vdTxt">' + (p.hasD ? '불러오는 중…' : '') + '</div></div></div>';
+  $('vdB').innerHTML = head; if (!dlg.open) dlg.showModal();
+  if (!p.hasD) return;
+  try {
+    if (!V.det[id]) {
+      const sn = await getDoc(doc(db, 'ord_photos', 'd_' + id)), D0 = sn.exists() ? sn.data() : {}, n = Math.min(Number(D0.parts) || 1, 20);
+      const more = n > 1 ? await Promise.all(Array.from({ length: n - 1 }, (_, k) => getDoc(doc(db, 'ord_photos', 'd_' + id + '_' + (k + 2))))) : [];
+      D0.figs = (D0.figs || []).concat(...more.map(m => m.exists() ? (m.data().figs || []) : []));
+      V.det[id] = D0;
+    }
+    const D = V.det[id];
+    let h = head.replace('불러오는 중…', esc((D.text || []).join('\n')));
+    const tbs = (D.tables || []).filter(t => typeof t === 'string' && SAFE_TABLE.test(t));
+    if (tbs.length) h += '<h4>📏 규격표</h4><p class="swipe" style="display:block;margin:0 0 4px">↔ 표가 넓으면 옆으로 밀어 보세요</p>' + tbs.map(t => '<div class="vdtw">' + t + '</div>').join('');
+    const fg = (D.figs || []).filter(f => /^data:image\/(jpeg|png);base64,/.test(f));
+    if (fg.length) h += '<h4>📐 치수 · 형상 그림</h4>' + fg.map(f => '<img class="vdfig" src="' + f + '" alt="">').join('');
+    $('vdB').innerHTML = h;
+  } catch (e) { const t = $('vdTxt'); if (t) t.textContent = '자세한 내용을 불러오지 못했어요.'; }
+};
+$('vdX').addEventListener('click', () => $('vdDlg').close());
+$('vdDlg').addEventListener('click', e => { if (e.target === $('vdDlg')) $('vdDlg').close(); });
 onAuthStateChanged(auth, u => { V.user = u; if (u) load(); else { V.photos = []; V.src = ''; draw(); refresh(); } });
 draw();
 </script>
