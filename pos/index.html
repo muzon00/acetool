@@ -485,6 +485,8 @@ svg.chart { width: 100%; height: auto; display: block; }
 @media (max-width: 760px) { .upslots { grid-template-columns: 1fr 1fr; } }
 .upslots .slot { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px 10px; text-align: center; cursor: pointer; }
 .upslots .slot .si { font-size: 1.8em; line-height: 1; } .upslots .slot b { font-size: 1.08em; color: var(--ink); } .upslots .slot small { color: var(--ink3); line-height: 1.4; }
+.fl-r .undone { color: var(--ok-ink, #0b7a3e); font-weight: 700; }
+.fl-r [data-undo] { margin-top: 4px; min-height: 30px; padding: 0 10px; font-size: .82em; }
 .upslots .slot.on { outline: 3px solid #3182f6; outline-offset: -3px; }
 .drop.over { border-color: var(--accent); }
 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
@@ -1213,7 +1215,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-06d';
+var BUILD = '2026-11-06f';
 (function () {
   var busy = false;
   function typing() {
@@ -1808,7 +1810,7 @@ async function loadLogs(force) {
   const s = await getDocs(query(collection(db, C.logs), orderBy('at', 'desc'), limit(150)));
   S.logs = []; s.forEach(x => S.logs.push(x.data()));
 }
-function kindOfLog(l) { const f = String(l.file || ''); return f.startsWith('[시공]') ? 'cons' : f.startsWith('[채권]') ? 'ar' : f.startsWith('[문자]') ? 'sms' : f.startsWith('[참고') ? 'ref' : 'sales'; }
+function kindOfLog(l) { const f = String(l.file || ''); return /^\[시공 (정리|되돌림)\]/.test(f) ? 'fix' : f.startsWith('[시공]') ? 'cons' : f.startsWith('[채권]') ? 'ar' : f.startsWith('[문자]') ? 'sms' : f.startsWith('[참고') ? 'ref' : 'sales'; }
 /* 📁 올린 파일: 폴더처럼 파일명 · 올린 시간 · 올린 사람 · 자료 기간 (이름순 / 시간순 정렬) */
 const FL_KIND = { all: ['📁', '전체'], sales: ['💰', '매출'], cons: ['🛁', '시공'], ar: ['💳', '채권'], ref: ['📚', '참고자료'], sms: ['💬', '문자'] };
 function renderFiles() {
@@ -1818,7 +1820,9 @@ function renderFiles() {
   const nameOf = l => String(l.file || '').replace(/^\[[^\]]+\]\s*/, '') || '(이름 없음)';
   // 같은 파일을 다시 올리면 한 줄로 묶고 가장 최근 올린 시간을 보여 줌
   const seen = {}, uniq = [];
-  S.logs.forEach(l => { const key = kindOfLog(l) + '|' + nameOf(l); if (seen[key]) { seen[key].times++; return; } seen[key] = Object.assign({ times: 1 }, l); uniq.push(seen[key]); });
+  /* 정리·되돌림 기록은 목록에 따로 줄로 내지 않고, 되돌린 시공 파일에 '↩ 되돌림' 표시만 */
+  const undone = {}; S.logs.forEach(l => { const m = /^\[시공 되돌림\]\s*(.*)$/.exec(String(l.file || '')); if (m) undone[m[1]] = l; });
+  S.logs.forEach(l => { if (kindOfLog(l) === 'fix') return; const key = kindOfLog(l) + '|' + nameOf(l); if (seen[key]) { seen[key].times++; return; } seen[key] = Object.assign({ times: 1 }, l); uniq.push(seen[key]); });
   const list = uniq.filter(l => ui.f === 'all' || kindOfLog(l) === ui.f).slice()
     .sort((a, b) => ui.k === 'name' ? ui.dir * nameOf(a).localeCompare(nameOf(b), 'ko') || atMs(b) - atMs(a) : ui.dir * (atMs(a) - atMs(b)));
   const cnt = k => k === 'all' ? uniq.length : uniq.filter(l => kindOfLog(l) === k).length;
@@ -1829,15 +1833,20 @@ function renderFiles() {
   h += list.length ? '<ul class="fl">' + list.map(l => {
     const k = kindOfLog(l), rng = l.from ? mdLabel(l.from) + (l.to && l.to !== l.from ? ' ~ ' + mdLabel(l.to) : '') : '';
     return '<li><span class="fl-i">' + FL_KIND[k][0] + '</span><div class="fl-m"><b>' + esc(nameOf(l)) + '</b><small>' + FL_KIND[k][1] + (rng ? ' · 자료 ' + rng : '') + (l.usedRows ? ' · ' + Number(l.usedRows).toLocaleString('ko-KR') + '줄' : '') + '</small></div>' +
-      '<div class="fl-r"><span>' + whenTxt(l.at) + '</span><small>' + esc(String(l.by || '').split('@')[0]) + (l.times > 1 ? ' · ' + l.times + '번 올림' : '') + (l.match === false ? ' · ⚠️ 검산 불일치' : '') + '</small></div></li>';
+      '<div class="fl-r"><span>' + whenTxt(l.at) + '</span><small>' + esc(String(l.by || '').split('@')[0]) + (l.times > 1 ? ' · ' + l.times + '번 올림' : '') + (l.match === false ? ' · ⚠️ 검산 불일치' : '') + '</small>' +
+      (k === 'cons' ? (undone[nameOf(l)] ? '<small class="undone">↩ 되돌림 (' + whenTxt(undone[nameOf(l)].at) + ')</small>' : '<button class="btn ghost sm" data-undo="' + esc(nameOf(l)) + '" type="button">되돌리기</button>') : '') + '</div></li>';
   }).join('') + '</ul>' : '<p class="muted">아직 올린 파일이 없습니다.</p>';
   el.innerHTML = h + '<p class="muted" style="margin:8px 0 0">파일 자체는 서버에 보관하지 않고, 읽은 내용만 저장합니다. (매출·거래처 정보 보호)</p></div>';
   el.querySelectorAll('[data-fs]').forEach(b => b.addEventListener('click', () => {
     const k = b.dataset.fs; if (ui.k === k) ui.dir = -ui.dir; else { ui.k = k; ui.dir = k === 'name' ? 1 : -1; } renderFiles();
   }));
   el.querySelectorAll('[data-ff]').forEach(b => b.addEventListener('click', () => { ui.f = b.dataset.ff; renderFiles(); }));
+  el.querySelectorAll('[data-undo]').forEach(b => b.addEventListener('click', () => { const l = list.find(x => kindOfLog(x) === 'cons' && nameOf(x) === b.dataset.undo); if (l) undoConsUpload(l, b); }));
 }
-function lastLog(kind) { return (S.logs || []).find(l => kindOfLog(l) === kind) || null; }
+function lastLog(kind) {
+  const L = S.logs || [], undone = {}; L.forEach(l => { const m = /^\[시공 되돌림\]\s*(.*)$/.exec(String(l.file || '')); if (m) undone[m[1]] = 1; });
+  return L.find(l => kindOfLog(l) === kind && !(kind === 'cons' && undone[String(l.file || '').replace(/^\[[^\]]+\]\s*/, '')])) || null;
+}
 function whenTxt(at) {
   const t = at && at.toDate ? at.toDate() : null;
   if (!t) return '-';
@@ -3941,20 +3950,41 @@ function consJunkCard() {
   return '<div class="card"><div class="banner warn"><b>⚠ 시공 정보가 하나도 없는 시공 건 ' + J.length + '건</b> — 판매 파일이 시공으로 잘못 들어간 자료로 보여요 (시공일자·시공상태·패키지·시공 품목·시공비가 모두 비어 있음).<br>' +
     Object.keys(byD).sort().map(d => dLabel(Number(d)) + ' ' + byD[d] + '건').join(' · ') + '</div><button class="btn danger" id="junkBtn" type="button">이 ' + J.length + '건 지우기</button> <span id="junkMsg" class="muted"></span></div>';
 }
+/* 시공 건 지우기 (판매번호 목록). 진짜 시공 정보가 있는 건은 다시 확인해서 지우지 않음 */
+async function deleteConsNos(recs) {
+  const byY = {}; recs.forEach(r => { const y = String(Math.floor(r.d / 10000)); (byY[y] = byY[y] || []).push(r.no); });
+  let n = 0;
+  for (const y of Object.keys(byY)) n += await runTransaction(db, async tx => {
+    const ref = doc(db, C.cons, y), sn = await tx.get(ref); if (!sn.exists()) return 0;
+    const cur = Object.assign({}, sn.data().recs || {}); let k = 0;
+    byY[y].forEach(no => { if (cur[no] && consJunk(cur[no])) { delete cur[no]; k++; } });
+    tx.set(ref, { year: Number(y), recs: cur, updatedAt: serverTimestamp() }); return k;
+  });
+  await loadCons(true); await rebuildConsSummary();
+  return n;
+}
+/* 잘못 올린 시공 업로드 되돌리기: 그 파일의 날짜 범위에서 '시공 정보가 하나도 없는 건'만 지움 */
+async function undoConsUpload(l, btn) {
+  const name = String(l.file || '').replace(/^\[[^\]]+\]\s*/, ''), from = Number(l.from) || 0, to = Number(l.to) || from;
+  await loadCons().catch(() => { });
+  const J = (S.cons || []).filter(r => consJunk(r) && r.d >= from && r.d <= to);
+  const rng = from ? dLabel(from) + (to !== from ? ' ~ ' + dLabel(to) : '') : '';
+  if (!J.length) {
+    if (!confirm('"' + name + '" 업로드로 들어간 잘못된 시공 건(시공 정보가 없는 건)이 지금은 없어요 (이미 정리했거나 진짜 시공 파일이에요).\n\n목록에 "되돌림"으로만 표시할까요?')) return;
+  } else if (!confirm('"' + name + '" 업로드를 되돌릴까요?\n\n' + rng + ' 사이의 시공 정보가 하나도 없는 시공 건 ' + J.length + '건을 지워요.\n(시공일자·상태·품목이 있는 진짜 시공 건은 지우지 않아요)')) return;
+  btn.disabled = true; btn.textContent = '되돌리는 중…';
+  try {
+    const n = J.length ? await deleteConsNos(J) : 0;
+    await addDoc(collection(db, C.logs), { at: serverTimestamp(), by: S.user.email || '', file: '[시공 되돌림] ' + cleanText(name, 110), from, to, usedRows: n, fileNet: 0, savedNet: 0, match: true, bad: [] });
+    invalidate(); S.logs = null; toast(n ? n + '건을 지우고 되돌렸어요' : '되돌림으로 표시했어요'); renderDataStatus();
+  } catch (e) { btn.disabled = false; btn.textContent = '되돌리기'; toast('되돌리지 못했어요: ' + errMsg(e)); }
+}
 async function clearConsJunk() {
   const J = (S.cons || []).filter(consJunk); if (!J.length) return;
   if (!confirm('시공 정보가 하나도 없는 시공 건 ' + J.length + '건을 지울까요?\n(진짜 시공 건은 시공일자·상태·품목 중 하나라도 있어서 지워지지 않아요)')) return;
   $('junkBtn').disabled = true; $('junkMsg').textContent = '지우는 중…';
   try {
-    const byY = {}; J.forEach(r => { (byY[String(Math.floor(r.d / 10000))] = byY[String(Math.floor(r.d / 10000))] || []).push(r.no); });
-    let n = 0;
-    for (const y of Object.keys(byY)) n += await runTransaction(db, async tx => {
-      const ref = doc(db, C.cons, y), sn = await tx.get(ref); if (!sn.exists()) return 0;
-      const cur = Object.assign({}, sn.data().recs || {}); let k = 0;
-      byY[y].forEach(no => { if (cur[no] && consJunk(cur[no])) { delete cur[no]; k++; } });
-      tx.set(ref, { year: Number(y), recs: cur, updatedAt: serverTimestamp() }); return k;
-    });
-    await loadCons(true); await rebuildConsSummary();
+    const n = await deleteConsNos(J);
     await addDoc(collection(db, C.logs), { at: serverTimestamp(), by: S.user.email || '', file: '[시공 정리] 시공 정보 없는 건 삭제', from: 0, to: 0, usedRows: n, fileNet: 0, savedNet: 0, match: true, bad: [] });
     invalidate(); S.logs = null; toast(n + '건을 지웠어요'); renderDataStatus();
   } catch (e) { $('junkMsg').textContent = '실패: ' + errMsg(e); $('junkBtn').disabled = false; }
