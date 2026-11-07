@@ -7,7 +7,10 @@
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <title>근무표 · 일산점</title>
-<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico?v=3" sizes="16x16 32x32 48x48 256x256">
+<link rel="icon" href="icon-32.png?v=3" type="image/png" sizes="32x32">
+<link rel="icon" href="icon-192.png?v=3" type="image/png" sizes="192x192">
+<link rel="icon" href="icon.svg?v=3" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -226,7 +229,8 @@ body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .
   .dl small { font-size: .78em; }
   .emp { flex-direction: column; padding: 3px 1px; font-size: .64em; letter-spacing: -.5px; text-align: center; gap: 0; border-radius: 5px; }
   .emp b, .emp i { max-width: 100%; overflow: hidden; }
-  .fab-bar { right: 10px; bottom: 10px; }
+  .fab-bar { right: 10px; bottom: 10px; left: 10px; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+  .fab { padding: 8px 12px; font-size: .85em; }
 }
 /* 스크롤 막대: 매출 현황과 같게 얇고 둥글게 */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -362,7 +366,7 @@ body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .
   </div>
 </dialog>
 
-<div class="fab-bar"><a class="fab" href="../todo/">✅ 할 일</a><a class="fab" href="../pos/">📊 매출 현황</a><button class="fab admin-btn hide" id="adminFab">🔒 관리자 모드</button><a class="fab" href="../quote/">🏪 홈센터 견적서</a></div>
+<div class="fab-bar"><a class="fab" href="../todo/">✅ 할 일</a><a class="fab" href="../pos/">📊 매출 현황</a><button class="fab admin-btn hide" id="adminFab">🔒 관리자 모드</button><a class="fab" href="../quote/">🏪 홈센터 견적서</a><a class="fab" href="../order/">🏗️ 수주팀</a></div>
 <div id="toast" role="status"></div>
 
 <script>
@@ -377,7 +381,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-06a';
+const BUILD = '2026-11-07a';
 (function () {
   let busy = false;
   async function check() {
