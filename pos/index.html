@@ -1688,11 +1688,13 @@ function buildDetail(detail, ym, lastDay) {
 /* ===================== Firestore 읽기/쓰기 ===================== */
 // https 주소만 허용 (javascript: 같은 위험한 링크 차단)
 function safeUrl(u) { try { const x = new URL(String(u || '').trim()); return x.protocol === 'https:' ? x.href : ''; } catch (e) { return ''; } }
-function invalidate() { S.daily = null; S.targets = null; S.settings = null; S.smsCache = {}; S.detail = null; S.cons = null; S.consSum = null; S.plans = null; S.planSum = null; S.ar = null; S.ev = null; S.ref = null; S.members = null; S.sga = null; S.close = null; }
+function invalidate() { S.detailSig = null; S.daily = null; S.targets = null; S.settings = null; S.smsCache = {}; S.detail = null; S.cons = null; S.consSum = null; S.plans = null; S.planSum = null; S.ar = null; S.ev = null; S.ref = null; S.members = null; S.sga = null; S.close = null; }
 async function loadBase(force) {
   if (S.daily && S.targets && S.settings && !force) return;
   const [dSnap, tSnap, cSnap] = await Promise.all([getDocs(collection(db, C.daily)), getDocs(collection(db, C.targets)), getDoc(doc(db, C.config, 'settings'))]);
   S.daily = {}; dSnap.forEach(s => { S.daily[Number(s.id)] = s.data().days || {}; });
+  // 일별 합계와 상세 자료는 한 번에 같이 저장됨 → 일별 합계의 저장 시각이 그대로면 상세 자료도 그대로
+  S.dailySig = dSnap.docs.map(s => { const u = s.data().updatedAt; return s.id + ':' + (u && u.toMillis ? u.toMillis() : 0); }).sort().join(',');
   S.loadedAt = Date.now(); S.loadedDay = todayInt();
   S.targets = {}; tSnap.forEach(s => { const x = s.data(); S.targets[Number(s.id)] = { total: x.total ?? null, n: x.n ?? null, o: x.o ?? null, gp: x.gp ?? null, gr: x.gr ?? null }; });
   const c = cSnap.exists() ? cSnap.data() : {};
@@ -1704,11 +1706,25 @@ async function loadSms(ym, force) {
   S.smsCache[ym] = s.exists() ? Object.values(s.data().recs || {}) : [];
   return S.smsCache[ym];
 }
+/* 상세 자료(전체 달)는 크니까: 이미 받아 둔 것이 있고 그 뒤로 매출 자료가 바뀌지 않았으면 다시 받지 않음.
+   동시에 여러 곳에서 불러도 한 번만 받음 */
+let detailP = null;
 async function loadDetail(force) {
-  if (S.detail && !force) return;
-  const snap = await getDocs(collection(db, C.detail));
-  S.detail = {}; snap.forEach(s => { S.detail[Number(s.id)] = s.data().days || {}; });
+  if (!force && S.detail) {
+    if (!S.daily) await loadBase();
+    if (S.detailSig && S.detailSig === S.dailySig) return;
+  }
+  if (detailP) return detailP;
+  detailP = (async () => {
+    if (!S.daily) await loadBase();
+    const sig = S.dailySig, snap = await getDocs(collection(db, C.detail)), D = {};
+    snap.forEach(s => { D[Number(s.id)] = s.data().days || {}; });
+    S.detail = D; S.detailSig = sig;
+  })().finally(() => { detailP = null; });
+  return detailP;
 }
+/* 화면으로 돌아오거나 새로고침 버튼: 작은 자료는 새로 받고, 상세 자료는 바뀌었을 때만 */
+function softInvalidate() { const d = S.detail, sg = S.detailSig; invalidate(); S.detail = d; S.detailSig = sg; }
 async function summaryFor(ym, force) {
   await loadBase(force);
   const months = Object.keys(S.daily).map(Number).filter(m => Object.keys(S.daily[m]).length).sort((a, b) => a - b);
@@ -1897,6 +1913,37 @@ function dataStrip() {
   }
   return '<div class="data-strip" id="dataStrip"><span class="ds-t">📦 자료 기준</span>' + parts.join('') + '</div>';
 }
+/* 📅 최근 14일 중 매출(POS) 자료가 빠진 날 (휴무일 빼고, 어제까지) */
+function gapBanner() {
+  const hol = {}; ((S.settings || {}).holidays || []).forEach(h => { hol[h] = 1; });
+  const has = d => !!((S.daily || {})[ymOf(d)] || {})[dayOf(d)], t = todayInt(), miss = [];
+  for (let k = 14; k >= 1; k--) { const d = addDaysInt(t, -k); if (!hol[d] && !has(d)) miss.push(d); }
+  const y = addDaysInt(t, -1), lbl = d => mdLabel(d) + '(' + DOWK[dowOf(d)] + ')';
+  const today = has(t) ? ' · 오늘(' + lbl(t) + ') 자료도 있어요' : '';
+  if (!miss.length) return '<div class="banner ok">📅 최근 14일 매출 자료가 어제(' + lbl(y) + ')까지 모두 있어요' + today + '.</div>';
+  return '<div class="banner warn"><b>📅 매출 자료가 빠진 날 ' + miss.length + '일</b>: ' + miss.map(lbl).join(', ') + '<br>그날 POS 판매 파일을 아래 <b>💰 매출</b> 칸에 올려 주세요. 영업하지 않은 날이면 목표·설정 › 휴무일에 넣으면 여기서 빠져요.</div>';
+}
+/* 💾 전체 백업: 지금 저장된 모든 매출 상세 자료를 CSV 하나로 (업로드 탭에 그대로 다시 올릴 수 있는 형식) */
+async function fullBackup() {
+  await loadBase(); await loadDetail();
+  const raw = [['일자', '구분', '담당자', '거래처', '대분류', '순매출', '마진']];
+  Object.keys(S.detail).map(Number).sort((a, b) => a - b).forEach(ym => Object.keys(S.detail[ym]).map(Number).sort((a, b) => a - b).forEach(day => {
+    (S.detail[ym][day] || []).forEach(r => raw.push([ym * 100 + day, r.g === 'n' ? '내판' : '외판', r.m || '', r.c || '', r.k || '', Number(r.n) || 0, Number(r.r) || 0]));
+  }));
+  if (raw.length < 2) throw new Error('백업할 매출 자료가 없습니다');
+  downloadCsv('매출_전체백업_' + todayInt() + '.csv', raw);
+  await setDoc(doc(db, C.config, 'backup'), { at: serverTimestamp(), by: (S.user && S.user.email) || '', rows: raw.length - 1, from: raw[1][0], to: raw[raw.length - 1][0] });
+  return raw.length - 1;
+}
+function backupBanner(bk) {
+  const at = bk && bk.at && bk.at.toMillis ? bk.at.toMillis() : 0, days = at ? Math.floor((Date.now() - at) / 86400000) : null;
+  const btn = '<button class="btn ' + (days === null || days >= 30 ? 'primary' : 'ghost') + ' sm" id="bkBtn" type="button">💾 지금 전체 백업 받기</button>';
+  const what = '모든 달의 매출 상세 자료를 CSV 한 파일로 받아요. 자료가 지워지거나 잘못 덮어써졌을 때 이 파일을 💰 매출 칸에 다시 올리면 돼요. 받은 파일은 USB나 다른 곳에도 한 부 보관해 두세요.';
+  if (days === null) return '<div class="banner warn"><b>💾 아직 전체 백업을 받은 적이 없어요.</b> Firebase 무료 요금제는 자동 백업이 없어요. ' + btn + '<br><small>' + what + '</small></div>';
+  const when = whenTxt(bk.at) + (bk.rows ? ' · ' + Number(bk.rows).toLocaleString('ko-KR') + '줄' : '') + (bk.to ? ' · ' + dLabel(bk.to) + '까지' : '');
+  if (days >= 30) return '<div class="banner warn"><b>💾 마지막 백업이 ' + days + '일 전이에요</b> (' + esc(when) + '). 한 달에 한 번은 받아 두세요. ' + btn + '<br><small>' + what + '</small></div>';
+  return '<div class="banner ok">💾 마지막 전체 백업: ' + esc(when) + ' (' + (days ? days + '일 전' : '오늘') + ') ' + btn + '</div>';
+}
 // 업로드 탭 맨 위: 자료 종류별 현황 표
 async function renderDataStatus() {
   const el = $('dataStatus'); if (!el) return;
@@ -1912,7 +1959,8 @@ async function renderDataStatus() {
     ['💳 채권', S.ar && S.ar.length ? '<b>' + dLabel(S.ar[0].date) + ' 기준</b>' + (S.ar[1] ? ' (이전 ' + dLabel(S.ar[1].date) + ')' : '') : '아직 없음', lastLog('ar')],
     ['📚 본사 참고자료', S.ref && S.ref.length ? S.ref.map(x => (x.kind === 'mix' ? '매출유형' : x.kind === 'elr' ? '일레포트' : 'PB') + ' ' + esc(x.store) + ' <b>' + (x.basis ? dLabel(x.basis) : '-') + '</b>').join(' · ') : '아직 없음', lastLog('ref')]
   ];
-  el.innerHTML = '<div class="card"><h2>📦 자료 현황 · 언제, 어디까지 올렸나</h2>' + table(['자료', '들어 있는 기간', '마지막 업로드', '올린 사람', '파일'],
+  let bk = null; try { const b = await getDoc(doc(db, C.config, 'backup')); bk = b.exists() ? b.data() : null; } catch (e) { bk = null; }
+  el.innerHTML = gapBanner() + backupBanner(bk) + '<div class="card"><h2>📦 자료 현황 · 언제, 어디까지 올렸나</h2>' + table(['자료', '들어 있는 기간', '마지막 업로드', '올린 사람', '파일'],
     rows.map(([k, range, l]) => [k, range, l ? whenTxt(l.at) : '-', l ? esc(String(l.by || '').split('@')[0]) : '-', l ? esc(String(l.file || '').replace(/^\[[^\]]+\]\s*/, '')) + (l.from ? ' <small class="muted">(' + mdLabel(l.from) + (l.to && l.to !== l.from ? '~' + mdLabel(l.to) : '') + ')</small>' : '') : '-'])) +
     '<p class="muted" style="margin:8px 0 0">"들어 있는 기간"은 지금 저장된 자료 기준, "파일" 옆 괄호는 그 업로드에 들어 있던 날짜입니다. 전체 이력은 다운로드 › 등록 이력 CSV에서 볼 수 있어요.</p></div>' +
     '<div id="elrBox"></div>' + consJunkCard() +
@@ -1925,9 +1973,10 @@ async function renderDataStatus() {
     $('intBtn').disabled = false;
   });
   const jb = $('junkBtn'); if (jb) jb.addEventListener('click', clearConsJunk);
+  const bb = $('bkBtn'); if (bb) bb.addEventListener('click', async () => { bb.disabled = true; bb.textContent = '만드는 중…'; try { const n = await fullBackup(); toast('전체 백업을 저장했어요 (' + n.toLocaleString('ko-KR') + '줄)'); renderDataStatus(); } catch (e) { toast('백업 실패: ' + errMsg(e)); bb.disabled = false; bb.textContent = '💾 지금 전체 백업 받기'; } });
   // 본사 일레포트 대조: 볼 때마다 지금 매출현황 자료로 다시 계산
   const E = (S.ref || []).find(x => x.kind === 'elr');
-  if (E) loadDetail(true).then(() => { const b = $('elrBox'); if (b) b.innerHTML = elrHtml(E, elrCompare(E)); }).catch(e => { const b = $('elrBox'); if (b) b.innerHTML = '<div class="banner bad">본사 일레포트 대조: ' + esc(errMsg(e)) + '</div>'; });
+  if (E) loadDetail().then(() => { const b = $('elrBox'); if (b) b.innerHTML = elrHtml(E, elrCompare(E)); }).catch(e => { const b = $('elrBox'); if (b) b.innerHTML = '<div class="banner bad">본사 일레포트 대조: ' + esc(errMsg(e)) + '</div>'; });
   renderFiles();
 }
 
@@ -2062,6 +2111,21 @@ function show(v) {
 }
 // 로그인: 이메일 + 숫자 6자리 비밀번호 (근무표 관리자와 같은 계정). 이메일은 이 기기에 기억
 const LOGIN_EMAIL_KEY = 'pos.loginEmail';
+/* 자동 로그아웃: 2시간 동안 이 기기에서 쓰지 않으면 (창을 닫아 두었다가 나중에 열어도) 다시 비밀번호를 물음 */
+const ACT_KEY = 'pos.lastAct', AUTO_OUT = 2 * 60 * 60 * 1000;
+const lastAct = () => { try { return Number(localStorage.getItem(ACT_KEY)) || 0; } catch (e) { return 0; } };
+let actT = 0;
+function markAct(force) { const n = Date.now(); if (!force && n - actT < 60000) return; actT = n; try { localStorage.setItem(ACT_KEY, String(n)); } catch (e) { } }
+function autoOut() {
+  if (!S.user || Date.now() - lastAct() <= AUTO_OUT) return false;
+  invalidate(); S.role = null; const hb = $('homeBody'); if (hb) hb.innerHTML = '';
+  signOut(auth).catch(() => { });
+  loginMsg('2시간 넘게 쓰지 않아 자동으로 로그아웃했어요. 다시 로그인해 주세요.');
+  return true;
+}
+['click', 'keydown', 'touchstart', 'scroll'].forEach(ev => document.addEventListener(ev, () => { if (S.user && !autoOut()) markAct(); }, { passive: true }));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') autoOut(); });
+setInterval(autoOut, 60 * 1000);
 try { $('loginEmail').value = localStorage.getItem(LOGIN_EMAIL_KEY) || ''; } catch (e) { }
 function loginMsg(t) { $('loginMsg').textContent = t; $('loginMsg').classList.toggle('hide', !t); }
 $('loginForm').addEventListener('submit', async ev => {
@@ -2070,6 +2134,7 @@ $('loginForm').addEventListener('submit', async ev => {
   if (!email) return loginMsg('이메일을 입력해 주세요.');
   if (!/^\d{6}$/.test(pw)) return loginMsg('비밀번호는 숫자 6자리입니다.');
   loginMsg(''); $('loginBtn').disabled = true;
+  markAct(true);
   try { await signInWithEmailAndPassword(auth, email, pw); try { localStorage.setItem(LOGIN_EMAIL_KEY, email); } catch (e) { } $('loginPw').value = ''; }
   catch (e) {
     const c = (e && e.code) || '';
@@ -2160,6 +2225,8 @@ $('addHome').addEventListener('click', async () => {
 
 onAuthStateChanged(auth, user => {
   S.user = user; S.role = null; invalidate();
+  if (user && autoOut()) return;
+  if (user) markAct(true);
   $('visitCount').textContent = '';
   if (!user) {
     $('userbox').classList.add('hide');
@@ -2698,7 +2765,7 @@ $('homeRefresh').addEventListener('click', () => loadHome(S.ym, true));
 /* 앱을 켜 둔 채 다른 기기에서 매출을 올린 경우: 다시 볼 때 (5분 지났거나 날짜가 바뀌었으면) 최신 자료를 다시 불러옴 */
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible' || S.view !== 'home' || !S.loadedAt) return;
-  if (Date.now() - S.loadedAt > 5 * 60 * 1000 || S.loadedDay !== todayInt()) { invalidate(); loadHome(S.ym, true); }
+  if (Date.now() - S.loadedAt > 5 * 60 * 1000 || S.loadedDay !== todayInt()) { softInvalidate(); loadHome(S.ym, true); }
 });
 $('homePrint').addEventListener('click', () => window.print());
 
@@ -2802,7 +2869,7 @@ function showAdminTab(t) {
   if (t === 'members') loadMembers();
   if (t === 'upload') renderDataStatus();
 }
-$('adminRefresh').addEventListener('click', () => { invalidate(); showAdminTab(S.adminTab); });
+$('adminRefresh').addEventListener('click', () => { softInvalidate(); showAdminTab(S.adminTab); });
 // 업로드 뒤 "보기" 버튼: 홈으로 가서 해당 칸으로 스크롤
 async function goHomeSec(ym, sec) {
   show('home');
@@ -4525,7 +4592,7 @@ async function handleElr(found, name) {
   if (E.error) { $('preview').innerHTML = kindBanner('elr', name) + '<div class="banner bad">' + esc(E.error) + '</div>'; return; }
   if (E.stats.bad) { $('preview').innerHTML = kindBanner('elr', name) + '<div class="banner bad">일산점 줄 중 날짜·금액을 읽을 수 없는 줄이 ' + E.stats.bad + '개 있어 저장하지 않았어요.<br>' + E.stats.badS.map(esc).join('<br>') + '</div>'; return; }
   $('preview').innerHTML = kindBanner('elr', name) + '<div class="card muted">매출현황 자료와 맞춰 보는 중…</div>';
-  try { await loadDetail(true); } catch (e) { $('preview').innerHTML = '<div class="banner bad">매출현황 자료를 불러오지 못했습니다: ' + esc(errMsg(e)) + '</div>'; return; }
+  try { await loadDetail(); } catch (e) { $('preview').innerHTML = '<div class="banner bad">매출현황 자료를 불러오지 못했습니다: ' + esc(errMsg(e)) + '</div>'; return; }
   const C0 = elrCompare(E);
   $('preview').innerHTML = kindBanner('elr', name) + '<p class="muted">전 지점 ' + (E.stats.used + E.stats.other).toLocaleString('ko-KR') + '줄 중 <b>일산점(P936) ' + E.stats.used.toLocaleString('ko-KR') + '줄</b>만 읽었어요. 다른 지점 줄과 상품 줄은 저장하지 않습니다.</p>' + elrHtml(E, C0, { preview: true }) +
     '<div class="card"><button class="btn primary" id="elrSave">저장 — 볼 때마다 다시 대조</button> <span class="muted" id="elrMsg">저장하면 관리자 › 업로드의 자료 현황 아래에서, 매출현황 자료가 바뀔 때마다 이 본사 숫자와 다시 맞춰 보여 줍니다. 새 일레포트를 올리면 교체됩니다.</span></div>';
@@ -5212,7 +5279,7 @@ function rpSheet(wb, D, T, boss) {
 
 /* ===================== 관리자: 목표·설정 ===================== */
 async function loadSettings() {
-  try { await loadBase(true); await loadDetail(true); } catch (e) { $('tMsg').textContent = errMsg(e); return; }
+  try { await loadBase(true); await loadDetail(); } catch (e) { $('tMsg').textContent = errMsg(e); return; }
   const list = Object.keys(S.targets).map(Number).sort((a, b) => b - a);
   const t = $('tTable'), cur = ymOf(todayInt());
   const prog = (v, tg) => tg ? '<br><small class="muted">' + pct(v / tg, 1) + '</small>' : '';

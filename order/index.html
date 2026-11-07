@@ -338,7 +338,7 @@ body.wideq .wrap { max-width: 1530px; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-07c';
+const BUILD = '2026-11-07d';
 (function () {
   let busy = false;
   async function check() {
@@ -1593,7 +1593,7 @@ function draw() {
   if (!V.user) {
     let em = ''; try { em = localStorage.getItem('pos.loginEmail') || ''; } catch (e) { }
     el.innerHTML = '<details class="vbox"><summary>🔒 매입처 사진 보기 (관리자 로그인)</summary><div class="vrowf"><input type="email" id="vEm" placeholder="이메일" autocomplete="username" value="' + esc(em) + '"><input type="password" id="vPw" placeholder="비밀번호" inputmode="numeric" autocomplete="current-password"><button class="btn sm" id="vIn" type="button">로그인</button></div><p class="muted" style="margin:6px 0 0">매출 현황 관리자 계정으로 로그인하면 각 제품 칸에 매입처 사진이 나와요. 다른 사람에게는 보이지 않아요.</p><div id="vMsg" class="muted"></div></details>';
-    const go = async () => { $('vMsg').textContent = '로그인 중…'; try { await signInWithEmailAndPassword(auth, $('vEm').value.trim(), $('vPw').value); try { localStorage.setItem('pos.loginEmail', $('vEm').value.trim()); } catch (e) { } } catch (e) { $('vMsg').textContent = '로그인하지 못했어요 (이메일·비밀번호 확인)'; } };
+    const go = async () => { $('vMsg').textContent = '로그인 중…'; oMark(true); try { await signInWithEmailAndPassword(auth, $('vEm').value.trim(), $('vPw').value); try { localStorage.setItem('pos.loginEmail', $('vEm').value.trim()); } catch (e) { } } catch (e) { $('vMsg').textContent = '로그인하지 못했어요 (이메일·비밀번호 확인)'; } };
     $('vIn').addEventListener('click', go); $('vPw').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
     return;
   }
@@ -1670,7 +1670,16 @@ V.openDetail = async id => {
 };
 $('vdX').addEventListener('click', () => $('vdDlg').close());
 $('vdDlg').addEventListener('click', e => { if (e.target === $('vdDlg')) $('vdDlg').close(); });
-onAuthStateChanged(auth, u => { V.user = u; if (u) load(); else { V.photos = []; V.src = ''; draw(); refresh(); } });
+/* 자동 로그아웃: 2시간 동안 쓰지 않으면 (창을 닫았다가 나중에 열어도) 매입처 자료를 닫고 다시 비밀번호를 물음 */
+const OACT = 'ord.lastAct', OOUT = 2 * 60 * 60 * 1000;
+const oLast = () => { try { return Number(localStorage.getItem(OACT)) || 0; } catch (e) { return 0; } };
+let oT = 0;
+const oMark = f => { const n = Date.now(); if (!f && n - oT < 60000) return; oT = n; try { localStorage.setItem(OACT, String(n)); } catch (e) { } };
+const oOut = () => { if (!V.user || Date.now() - oLast() <= OOUT) return false; V.user = null; V.photos = []; V.det = {}; signOut(auth).catch(() => { }); return true; };
+['click', 'keydown', 'touchstart', 'scroll'].forEach(ev => document.addEventListener(ev, () => { if (V.user && !oOut()) oMark(); }, { passive: true }));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') oOut(); });
+setInterval(oOut, 60 * 1000);
+onAuthStateChanged(auth, u => { V.user = u; if (u && oOut()) return; if (u) { oMark(true); load(); } else { V.photos = []; V.src = ''; draw(); refresh(); } });
 draw();
 </script>
 <!-- 💻 바탕화면에 설치: 크롬 앱 설치 창을 바로 띄움 (안 되면 방법 안내) -->
