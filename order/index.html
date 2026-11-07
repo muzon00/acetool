@@ -338,7 +338,7 @@ body.wideq .wrap { max-width: 1530px; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-07b';
+const BUILD = '2026-11-07c';
 (function () {
   let busy = false;
   async function check() {
@@ -1405,7 +1405,7 @@ function renderCalcOut() {
   });
   /* 홈센터 견적서 앱(같은 사이트, 같은 저장소)에 줄을 넣고 그 앱으로 이동 */
   $('cToH').addEventListener('click', () => {
-    const H = LS.get('hquote', null) || { id: 'q' + Date.now(), to: '', site: '', cman: '', ctel: '', date: '', memo: '', mr: '10', mode: 'sale', ru: '10u', lines: [] };
+    const H = LS.get('hquote', null) || { id: 'q' + Date.now(), to: '', site: '', cman: '', ctel: '', date: '', memo: '', mr: '10', mode: 'markup', ru: '10u', lines: [] };
     const blank = () => ({ code: '', n: '', br: '', sp: '', u: '', q: '', cost: '', mr: '', p: '', m: '' });
     const nonEmpty = (H.lines || []).filter(l => ['code', 'n', 'br', 'sp', 'q', 'cost', 'p'].some(k => String(l[k] == null ? '' : l[k]).trim()));
     const P = priceCalc();

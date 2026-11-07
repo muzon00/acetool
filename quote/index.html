@@ -369,7 +369,7 @@ body.print2 #tPrint .cdoc { border: 0; padding: 0; width: 100%; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-07b';
+const BUILD = '2026-11-07c';
 (function () {
   let busy = false;
   async function check() {
@@ -397,7 +397,7 @@ const BUILD = '2026-11-07b';
       <h2>마진 정하기 <span class="tag gray">우리만 보는 칸 · 인쇄 안 됨</span></h2>
       <div class="grid3">
         <div><label class="f" for="hQMr">기본 마진율 (%)</label><input type="text" id="hQMr" inputmode="decimal" placeholder="10"><div class="mrq" id="hQMrQ"></div></div>
-        <div><label class="f" for="hQMode">계산 방법</label><select id="hQMode"><option value="sale">판매가 기준 — 매입가 ÷ (1 − 마진율)</option><option value="markup">매입가 기준 — 매입가 × (1 + 마진율)</option></select></div>
+        <div><label class="f" for="hQMode">계산 방법</label><select id="hQMode"><option value="markup">매입가 기준 — 매입가 × (1 + 마진율)</option><option value="sale">판매가 기준 — 매입가 ÷ (1 − 마진율) (엑셀과 같음)</option></select></div>
         <div><label class="f" for="hQRu">단가 끝자리</label><select id="hQRu"><option value="10u">10원 단위 올림</option><option value="100u">100원 단위 올림</option><option value="1u">1원 단위 올림</option><option value="10r">10원 단위 반올림</option></select></div>
       </div>
       <p class="muted" style="margin:8px 0 0" id="hQMrEx"></p>
@@ -477,7 +477,7 @@ const BUILD = '2026-11-07b';
       <div class="flow" id="tFlow"></div>
       <details class="more"><summary>계산 방법 · 끝자리 바꾸기</summary>
         <div class="grid2" style="margin-top:8px">
-          <div><label class="f" for="tMode">계산 방법</label><select id="tMode"><option value="sale">판매가 기준 — 가격 ÷ (1 − 마진율) (엑셀과 같음)</option><option value="markup">매입가 기준 — 가격 × (1 + 마진율)</option></select></div>
+          <div><label class="f" for="tMode">계산 방법</label><select id="tMode"><option value="markup">매입가 기준 — 가격 × (1 + 마진율)</option><option value="sale">판매가 기준 — 가격 ÷ (1 − 마진율) (엑셀과 같음)</option></select></div>
           <div><label class="f" for="tRu">단가 끝자리</label><select id="tRu"><option value="10u">10원 단위 올림</option><option value="100u">100원 단위 올림</option><option value="1u">1원 단위 올림</option><option value="10r">10원 단위 반올림</option></select></div>
         </div>
       </details>
@@ -522,6 +522,8 @@ const LS = {
   get(k, d) { try { const v = localStorage.getItem('ord.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem('ord.' + k, JSON.stringify(v)); return true; } catch (e) { return false; } }
 };
+/* 2026-11-07 기본 계산 방법을 매입가 기준으로: 쓰던 견적(한 장 · 2단계)도 한 번만 바꿈 (저장해 둔 견적은 그대로) */
+if (!LS.get('mdef', 0)) { ['hquote', 'h2quote'].forEach(k => { const v = LS.get(k, null); if (v && v.mode === 'sale') { v.mode = 'markup'; LS.set(k, v); } }); LS.set('mdef', 1); }
 const won = n => Math.round(n).toLocaleString('ko-KR');
 const fmtQ = n => Number.isInteger(n) ? n.toLocaleString('ko-KR') : n.toLocaleString('ko-KR', { maximumFractionDigits: 2 });
 /* 숫자 엄격 읽기: 빈칸 → null, 읽을 수 없으면 NaN (조용히 0으로 바꾸지 않음) */
@@ -540,7 +542,7 @@ function numIn(v) {
 const HOME = (() => {
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const blankLine = () => ({ code: '', n: '', br: '', sp: '', u: '', q: '', cost: '', mr: '', p: '', m: '' });
-const newQuote = () => ({ id: 'q' + Date.now(), to: '', site: '', cman: '', ctel: '', date: today(), valid: '', due: '', pay: '', ship: '', memo: '', mr: '10', mode: 'sale', ru: '10u', lines: Array.from({ length: 10 }, blankLine) });
+const newQuote = () => ({ id: 'q' + Date.now(), to: '', site: '', cman: '', ctel: '', date: today(), valid: '', due: '', pay: '', ship: '', memo: '', mr: '10', mode: 'markup', ru: '10u', lines: Array.from({ length: 10 }, blankLine) });
 function normQ(q) { const b = newQuote(); const o = Object.assign(b, q); if (!o.mr && o.mr !== '0') o.mr = '10'; o.lines = (o.lines || []).map(l => Object.assign(blankLine(), l)); if (!o.lines.length) o.lines.push(blankLine()); return o; }
 let Q = normQ((LS.get('hquote', null) || ((LS.get('quote', null) || {}).mode ? LS.get('quote', null) : null)) || newQuote());
 let SUP = Object.assign({ name: 'ACE 일산점', biz: '', addr: '', mgr: '', tel: '', fax: '', email: '', seal: '' }, LS.get('supplier', null) || {});
@@ -818,7 +820,7 @@ const TWO = (() => {
   const blank = () => ({ code: '', n: '', br: '', sp: '', u: '', q: '', cost: '', a: '', p1: '', b: '', p2: '', m: '' });
   const newDoc = (logo, form) => ({ to: '', site: '', cman: '', ctel: '', date: today(), memo: form === 'corp' ? MEMO_CORP : '', logo, form });
   const MEMO_CORP = '위 견적은 도착도 견적입니다. / 발주 요청시 약 7일정도 재고확보 시간이 필요합니다. 참고부탁드립니다.\n제품명, 규격 수량 확인 필수 부탁드립니다.\n위 견적은 견적일로부터, 7일간 유효합니다.\n위 상품은 반품이 불가하오니, 참고부탁드립니다.';
-  const newT = () => ({ id: 't' + Date.now(), a: '10', b: '5', mode: 'sale', ru: '10u', d1: newDoc(true, 'corp'), d2: newDoc(true, 'corp'), sup2: { name: '', biz: '', ceo: '', addr: '', mgr: '', tel: '', fax: '', email: '', btype: '', bitem: '' }, cust: { name: '', biz: '', ceo: '', addr: '', tel: '', fax: '', btype: '', bitem: '' }, lines: Array.from({ length: 10 }, blank) });
+  const newT = () => ({ id: 't' + Date.now(), a: '10', b: '5', mode: 'markup', ru: '10u', d1: newDoc(true, 'corp'), d2: newDoc(true, 'corp'), sup2: { name: '', biz: '', ceo: '', addr: '', mgr: '', tel: '', fax: '', email: '', btype: '', bitem: '' }, cust: { name: '', biz: '', ceo: '', addr: '', tel: '', fax: '', btype: '', bitem: '' }, lines: Array.from({ length: 10 }, blank) });
   function norm(t) { const b = newT(), o = Object.assign(b, t || {}); o.d1 = Object.assign(newDoc(true, 'corp'), (t || {}).d1 || {}); o.d2 = Object.assign(newDoc(true, 'corp'), (t || {}).d2 || {}); o.cust = Object.assign(newT().cust, (t || {}).cust || {}); o.sup2 = Object.assign(newT().sup2, (t || {}).sup2 || {}); o.lines = (o.lines || []).map(l => Object.assign(blank(), l)); if (!o.lines.length) o.lines.push(blank()); return o; }
   let T = norm(LS.get('h2quote', null));
   const SUP = () => Object.assign({ name: 'ACE 일산점', biz: '', ceo: '', addr: '', mgr: '', tel: '', fax: '', email: '', btype: '', bitem: '', seal: '' }, LS.get('supplier', null) || {});
