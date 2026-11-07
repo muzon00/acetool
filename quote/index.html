@@ -234,6 +234,7 @@ body.wideq .wrap { max-width: 1530px; }
 .xs .hd .rr:last-child { border-bottom: 0; }
 .xs .hd .rr span { border-right: 1px solid #000; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 600; letter-spacing: .12em; }
 .xs .hd .rr div { position: relative; height: 100%; } .xs .hd .rr input { text-align: center; }
+.xs .hd .rr input.addr { font-size: 10.5px; letter-spacing: -.3px; padding: 0 4px; }
 .xs .hd .seal { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); height: 40px; pointer-events: none; opacity: .9; }
 .xs .amt { border: 2px solid #000; padding: 8px 12px; font-size: 15px; font-weight: 800; }
 .xs .amt span { margin-left: 14px; }
@@ -369,7 +370,7 @@ body.print2 #tPrint .cdoc { border: 0; padding: 0; width: 100%; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-07c';
+const BUILD = '2026-11-07d';
 (function () {
   let busy = false;
   async function check() {
@@ -545,7 +546,10 @@ const blankLine = () => ({ code: '', n: '', br: '', sp: '', u: '', q: '', cost: 
 const newQuote = () => ({ id: 'q' + Date.now(), to: '', site: '', cman: '', ctel: '', date: today(), valid: '', due: '', pay: '', ship: '', memo: '', mr: '10', mode: 'markup', ru: '10u', lines: Array.from({ length: 10 }, blankLine) });
 function normQ(q) { const b = newQuote(); const o = Object.assign(b, q); if (!o.mr && o.mr !== '0') o.mr = '10'; o.lines = (o.lines || []).map(l => Object.assign(blankLine(), l)); if (!o.lines.length) o.lines.push(blankLine()); return o; }
 let Q = normQ((LS.get('hquote', null) || ((LS.get('quote', null) || {}).mode ? LS.get('quote', null) : null)) || newQuote());
-let SUP = Object.assign({ name: 'ACE 일산점', biz: '', addr: '', mgr: '', tel: '', fax: '', email: '', seal: '' }, LS.get('supplier', null) || {});
+/* 우리 회사 기본 정보: 비어 있으면 처음부터 채워 둠 (고쳐 적으면 그 값이 이 기기에 남음) */
+const SUP_DEF = { name: 'ACE 일산점', biz: '572-85-01118', addr: '경기도 고양시 일산서구 일중로 15번길 128, 상가동 B201-B219호(일산동,유진스웰아파트)' };
+const supFill = o => { Object.keys(SUP_DEF).forEach(k => { if (!String(o[k] == null ? '' : o[k]).trim()) o[k] = SUP_DEF[k]; }); return o; };
+let SUP = supFill(Object.assign({ name: 'ACE 일산점', biz: '', addr: '', mgr: '', tel: '', fax: '', email: '', seal: '' }, LS.get('supplier', null) || {}));
 const QF = { hQMr: 'mr', hQMode: 'mode', hQRu: 'ru' };
 function qSaveDraft() { LS.set('hquote', Q); }
 const lineEmpty = l => !['code', 'n', 'br', 'sp', 'q', 'cost', 'p'].some(k => String(l[k] == null ? '' : l[k]).trim());
@@ -614,7 +618,7 @@ function renderSheet() {
   const RG = '<td class="G"></td><td class="G" colspan="7"></td>';
   const kv = (k, inner) => '<div class="kv"><span>' + k + '</span>' + inner + '</div>';
   const hq = (k, ph, type) => '<input type="' + (type || 'text') + '" data-hq="' + k + '" placeholder="' + esc(ph || '') + '" maxlength="80">';
-  const rr = (k, f, extra) => '<div class="rr"><span>' + k + '</span><div><input type="text" data-hs="' + f + '" maxlength="120">' + (extra || '') + '</div></div>';
+  const rr = (k, f, extra) => '<div class="rr"><span>' + k + '</span><div><input type="text" data-hs="' + f + '" maxlength="120"' + (f === 'addr' ? ' class="addr" title="사업장 주소"' : '') + '>' + (extra || '') + '</div></div>';
   let h = '<table class="xs"><colgroup>' + XCOLS.map(w => '<col style="width:' + w + 'px">').join('') + '</colgroup>';
   h += '<tr><td colspan="9" class="ttl"><div class="ttlbox"><div class="logo"><b>ACE</b> <i>Hardware</i></div><h3>견 적 서</h3><div></div></div></td>' + RG + '</tr>';
   h += '<tr><td colspan="9"><div class="hd"><div class="l"><div class="to">' + hq('to', '받는 분 (예: 박세익과장님)') + '</div>' + kv('견 적 일 :', hq('date', '', 'date')) + kv('현 장 명 :', hq('site')) + kv('담 당 자 :', hq('cman')) + kv('연 락 처 :', hq('ctel')) + '<div class="say">아래와 같이 견적합니다.</div></div><div>' +
@@ -823,7 +827,7 @@ const TWO = (() => {
   const newT = () => ({ id: 't' + Date.now(), a: '10', b: '5', mode: 'markup', ru: '10u', d1: newDoc(true, 'corp'), d2: newDoc(true, 'corp'), sup2: { name: '', biz: '', ceo: '', addr: '', mgr: '', tel: '', fax: '', email: '', btype: '', bitem: '' }, cust: { name: '', biz: '', ceo: '', addr: '', tel: '', fax: '', btype: '', bitem: '' }, lines: Array.from({ length: 10 }, blank) });
   function norm(t) { const b = newT(), o = Object.assign(b, t || {}); o.d1 = Object.assign(newDoc(true, 'corp'), (t || {}).d1 || {}); o.d2 = Object.assign(newDoc(true, 'corp'), (t || {}).d2 || {}); o.cust = Object.assign(newT().cust, (t || {}).cust || {}); o.sup2 = Object.assign(newT().sup2, (t || {}).sup2 || {}); o.lines = (o.lines || []).map(l => Object.assign(blank(), l)); if (!o.lines.length) o.lines.push(blank()); return o; }
   let T = norm(LS.get('h2quote', null));
-  const SUP = () => Object.assign({ name: 'ACE 일산점', biz: '', ceo: '', addr: '', mgr: '', tel: '', fax: '', email: '', btype: '', bitem: '', seal: '' }, LS.get('supplier', null) || {});
+  const SUP = () => supFill(Object.assign({ name: 'ACE 일산점', biz: '', ceo: '', addr: '', mgr: '', tel: '', fax: '', email: '', btype: '', bitem: '', seal: '' }, LS.get('supplier', null) || {}));
   const save = () => LS.set('h2quote', T);
   const s_ = v => String(v == null ? '' : v).trim();
   const empty = l => !['code', 'n', 'br', 'sp', 'q', 'cost', 'p1', 'p2'].some(k => s_(l[k]));
