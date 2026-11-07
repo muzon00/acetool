@@ -27,7 +27,7 @@ button, input, select, textarea { font: inherit; color: var(--ink); }
 .wrap { max-width: 980px; margin: 0 auto; padding: 0 12px 96px; }
 .hide { display: none !important; }
 .top { background: var(--top); color: #fff; border-radius: 0 0 24px 24px; margin: 0 -12px 14px; padding: 18px 18px 12px; position: sticky; top: 0; z-index: 30; }
-.top .r1 { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.top .r1 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .top h1 { margin: 0; font-size: 1.35em; font-weight: 900; letter-spacing: -.01em; }
 .top .sub { font-size: .85em; opacity: .8; }
 .tabs { display: grid; grid-template-columns: repeat(5, minmax(0, max-content)); gap: 6px; margin-top: 12px; }
@@ -369,7 +369,7 @@ body.print2 #tPrint .cdoc { border: 0; padding: 0; width: 100%; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-07a';
+const BUILD = '2026-11-07b';
 (function () {
   let busy = false;
   async function check() {
@@ -389,7 +389,7 @@ const BUILD = '2026-11-07a';
 <body class="wideq">
 <div class="wrap">
   <div class="top">
-    <div class="r1"><h1>홈센터 견적서</h1><span class="sub">매입원가를 넣으면 단가가 자동으로 · 거래처에는 견적서만 보내요</span></div>
+    <div class="r1"><h1>홈센터 견적서</h1><span class="sub">매입원가를 넣으면 단가가 자동으로 · 거래처에는 견적서만 보내요</span><button type="button" class="instbtn" id="instBtn" title="바탕화면 · 시작 메뉴에 앱 아이콘 만들기">💻 바탕화면에 설치</button></div>
     <div class="qmode" id="qmode"><button data-m="one" class="on">📄 견적서 (한 장)</button><button data-m="two">📑 2단계 견적서 (1차 · 최종)</button></div>
   </div>
   <section id="t-hq">
@@ -1335,6 +1335,39 @@ $('qmode').addEventListener('click', e => { const b = e.target.closest('button')
 
 window.__qt = { HOME, TWO };
 showMode(LS.get('qmode', 'one') === 'two' ? 'two' : 'one');
+</script>
+<!-- 💻 바탕화면에 설치: 크롬 앱 설치 창을 바로 띄움 (안 되면 방법 안내) -->
+<style>
+.instbtn { margin-left: auto; min-height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,.4); background: rgba(255,255,255,.12); color: #fff; font: inherit; font-weight: 700; font-size: .88em; cursor: pointer; white-space: nowrap; }
+.instbtn:hover { background: rgba(255,255,255,.22); }
+.instov { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.instbox { background: #fff; color: #191f28; border-radius: 16px; max-width: 460px; width: 100%; padding: 20px; box-shadow: 0 20px 50px rgba(0,0,0,.3); line-height: 1.6; }
+.instbox h3 { margin: 0 0 8px; } .instbox ol { margin: 8px 0 12px; padding-left: 20px; } .instbox b { color: #1d4f91; }
+.instbox .ib-r { text-align: right; } .instbox button { min-height: 40px; padding: 0 18px; border-radius: 10px; border: 0; background: #1d3557; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+@media print { .instbtn, .instov { display: none !important; } }
+</style>
+<script>
+(function () {
+  const btn = document.getElementById('instBtn'); if (!btn) return;
+  const alone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  if (alone()) { btn.remove(); return; }
+  let ev = null;
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); ev = e; });
+  addEventListener('appinstalled', () => { ev = null; btn.textContent = '✅ 설치됨'; });
+  const help = () => {
+    const ov = document.createElement('div'); ov.className = 'instov';
+    ov.innerHTML = '<div class="instbox" role="dialog" aria-modal="true"><h3>💻 바탕화면에 아이콘 만들기</h3>' +
+      '<ol><li>크롬 오른쪽 위 <b>⋮</b> 누르기</li><li><b>전송, 저장, 공유</b> → <b>바로가기 만들기…</b><br><small>(크롬 버전에 따라 <b>도구 더보기</b> 안에 있어요)</small></li><li><b>창으로 열기</b> 체크 → <b>만들기</b></li></ol>' +
+      '<p style="margin:0 0 12px;font-size:.9em;color:#4e5968">이미 설치돼 있으면 이 창이 나와요. 바탕화면에 아이콘이 없으면 위 방법으로 한 번 더 만들어 주세요. 북마크를 끌어다 놓은 바로가기는 익스플로러 모양이니 지워 주세요.</p>' +
+      '<div class="ib-r"><button type="button">확인</button></div></div>';
+    ov.addEventListener('click', e => { if (e.target === ov || e.target.tagName === 'BUTTON') ov.remove(); });
+    document.body.appendChild(ov);
+  };
+  btn.addEventListener('click', async () => {
+    if (ev) { ev.prompt(); const r = await ev.userChoice.catch(() => null); ev = null; if (r && r.outcome === 'accepted') return; }
+    help();
+  });
+})();
 </script>
 </body>
 </html>
