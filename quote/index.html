@@ -336,6 +336,21 @@ body.wideq .wrap { max-width: 1530px; }
 .qmode button { min-height: 40px; padding: 0 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.08); color: #fff; font-weight: 700; cursor: pointer; }
 .qmode button.on { background: #fff; color: var(--top); border-color: #fff; }
 #tPrint { display: none; }
+.dkrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; }
+.dkseg { display: inline-flex; background: var(--surface2); border: 1px solid var(--line); border-radius: 12px; padding: 3px; }
+.dkseg button { border: 0; background: transparent; font: inherit; font-weight: 700; padding: 7px 14px; border-radius: 9px; cursor: pointer; color: var(--ink2); }
+.dkseg button.on { background: var(--top); color: #fff; }
+.pvov { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 150; background: rgba(15,23,42,.55); display: flex; align-items: flex-start; justify-content: center; padding: 12px 0; overflow: hidden; }
+.pvbox { background: var(--surface); border-radius: 16px; width: min(900px, calc(100vw - 24px)); min-width: 0; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.35); display: flex; flex-direction: column; max-height: calc(100vh - 32px); }
+.pvhd { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.pvnote { padding: 8px 16px; background: #fff6e5; color: #8a5300; font-size: .9em; }
+.pvbody { overflow-x: hidden; overflow-y: auto; padding: 12px; background: #e9edf2; flex: 1; min-width: 0; }
+.pvfit { overflow: hidden; }
+.pvscale { transform-origin: 0 0; background: #fff; width: max-content; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+.pvscale > div { margin: 0 !important; }
+.pvft { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 16px; border-top: 1px solid var(--line); }
+body.pvopen { overflow: hidden; }
+@media print { .pvov { display: none !important; } }
 @media print { body.print2 #tPrint { display: block; visibility: visible; position: absolute; left: 0; top: 0; width: 100%; } body.print2 #tPrint * { visibility: visible; } body.print2 #tPrint .hdoc { border: 0; padding: 0; width: 100%; } }
 /* 기업용 견적서 양식 */
 .cdoc { width: 820px; background: #fff; color: #000; padding: 18px 20px; border: 1px solid var(--line); font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Pretendard Variable", sans-serif; font-size: 12px; line-height: 1.35; margin: 0 auto; }
@@ -370,7 +385,7 @@ body.print2 #tPrint .cdoc { border: 0; padding: 0; width: 100%; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-07d';
+const BUILD = '2026-11-07e';
 (function () {
   let busy = false;
   async function check() {
@@ -405,6 +420,7 @@ const BUILD = '2026-11-07d';
     </div>
     <div class="card xcard">
       <h2>견적서 쓰기 <span class="muted" id="hQCnt"></span></h2>
+      <div class="dkrow"><span id="hQDkBox"></span><button type="button" class="btn sm" id="hQPv">👁 미리보기</button><span class="muted" style="font-size:.88em">견적서 ↔ 거래명세표는 제목 · 날짜 이름 · 문구만 바뀌어요 (숫자는 같음)</span></div>
       <p class="muted" style="margin:0 0 8px">엑셀처럼 칸을 눌러 바로 쓰세요. 오른쪽 <b>회색 칸</b>(매입단가 · 마진)은 우리만 보고 인쇄되지 않아요. <b>매입단가</b>를 넣으면 단가가 파란 글씨로 자동으로 나오고, 단가 칸에 직접 쓰면 그 값이 우선이에요. Enter 키를 누르면 아래 칸으로 내려가요.</p>
       <p class="swipe" style="display:block">↔ 표를 옆으로 밀면 오른쪽 매입원가 칸이 보여요</p>
       <div class="xwrap" id="hQSheet"></div>
@@ -422,7 +438,14 @@ const BUILD = '2026-11-07d';
         <button class="btn ghost" id="hQCopy">📋 사진 복사 → 카톡 PC에 붙여넣기</button>
         <button class="btn ghost" id="hQPng">🖼 사진으로 저장</button>
         <button class="btn ghost" id="hQPdf">📄 PDF로 저장</button>
+        <button class="btn ghost" id="hQPv2">👁 미리보기</button>
       </div>
+      <h3>📗 엑셀로 저장</h3>
+      <div class="btns" style="margin-top:0">
+        <button class="btn ghost" id="hQXls">📗 엑셀 (거래처용)</button>
+        <button class="btn ghost" id="hQXlsIn">📗 엑셀 (우리 보관용 · 매입가 · 마진 포함)</button>
+      </div>
+      <p class="muted" style="margin:6px 0 0"><b>거래처용</b>은 사진 · PDF와 같은 모양 · 같은 숫자예요 (매입가 · 마진 없음). <b>우리 보관용</b>은 품목마다 매입단가 · 마진율 · 마진이 든 표와 거래처용 시트가 함께 들어가요 — 거래처에 보내지 마세요.</p>
       <div id="hQReady"></div>
       <p class="muted" style="margin:8px 0 0"><b>휴대폰</b>: 바로 보내기를 누르면 카톡·문자·메일을 고르는 창이 떠요 (파일이 따로 남지 않아요). <b>PC</b>: 바로 보내기(사진)는 사진이 <b>복사</b>되니 카톡 대화창에서 Ctrl+V 하세요. 바로 보내기(PDF)는 PDF가 <b>한 개</b> 저장돼요.</p>
       <h3>그 밖에</h3>
@@ -540,15 +563,167 @@ function numIn(v) {
 /* ===================== 제품 자료 ===================== */
 
 /* ===================== 홈센터 견적서 폼 (엑셀 양식) — 따로 떨어진 영역 ===================== */
-const HOME = (() => {
-const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
-const blankLine = () => ({ code: '', n: '', br: '', sp: '', u: '', q: '', cost: '', mr: '', p: '', m: '' });
-const newQuote = () => ({ id: 'q' + Date.now(), to: '', site: '', cman: '', ctel: '', date: today(), valid: '', due: '', pay: '', ship: '', memo: '', mr: '10', mode: 'markup', ru: '10u', lines: Array.from({ length: 10 }, blankLine) });
-function normQ(q) { const b = newQuote(); const o = Object.assign(b, q); if (!o.mr && o.mr !== '0') o.mr = '10'; o.lines = (o.lines || []).map(l => Object.assign(blankLine(), l)); if (!o.lines.length) o.lines.push(blankLine()); return o; }
-let Q = normQ((LS.get('hquote', null) || ((LS.get('quote', null) || {}).mode ? LS.get('quote', null) : null)) || newQuote());
+/* ===================== 함께 쓰는 것: 문서 종류(견적서 · 거래명세표) · 미리보기 · 엑셀로 저장 ===================== */
 /* 우리 회사 기본 정보: 비어 있으면 처음부터 채워 둠 (고쳐 적으면 그 값이 이 기기에 남음) */
 const SUP_DEF = { name: 'ACE 일산점', biz: '572-85-01118', addr: '경기도 고양시 일산서구 일중로 15번길 128, 상가동 B201-B219호(일산동,유진스웰아파트)' };
 const supFill = o => { Object.keys(SUP_DEF).forEach(k => { if (!String(o[k] == null ? '' : o[k]).trim()) o[k] = SUP_DEF[k]; }); return o; };
+const DKL = k => k === 'stmt'
+  ? { t: '거 래 명 세 표', h: '거래명세표', d: '거래일', d2: '거 래 일 :', say: '아래와 같이 계산합니다.' }
+  : { t: '견 적 서', h: '견적서', d: '견적일', d2: '견 적 일 :', say: '아래와 같이 견적합니다.' };
+const dkSeg = (id, cur) => '<div class="dkseg" id="' + id + '" role="group" aria-label="문서 종류"><button type="button" data-dk="quote"' + (cur !== 'stmt' ? ' class="on"' : '') + '>📄 견적서</button><button type="button" data-dk="stmt"' + (cur === 'stmt' ? ' class="on"' : '') + '>🧾 거래명세표</button></div>';
+function xHangul(n) {
+  if (n === 0) return '영';
+  const D = ['', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'], S4 = ['', '십', '백', '천'], B = ['', '만', '억', '조']; let out = '', g = 0;
+  while (n > 0) { const part = n % 10000; n = Math.floor(n / 10000); if (part) { let s = '', p = part; for (let k = 0; k < 4; k++) { const d = p % 10; p = Math.floor(p / 10); if (d) s = D[d] + S4[k] + s; } out = s + B[g] + out; } g++; }
+  return out;
+}
+/* 👁 미리보기: 거래처에 나가는 모양 그대로 (화면 폭에 맞춰 줄임) */
+function showPreview(title, html, note, acts) {
+  const old = document.querySelector('.pvov'); if (old) old.remove();
+  const ov = document.createElement('div'); ov.className = 'pvov';
+  ov.innerHTML = '<div class="pvbox" role="dialog" aria-modal="true" aria-label="' + esc(title) + '"><div class="pvhd"><b>👁 ' + esc(title) + '</b><button type="button" class="btn ghost sm" data-pvx>닫기 ✕</button></div>' +
+    (note ? '<div class="pvnote">' + note + '</div>' : '') + '<div class="pvbody"><div class="pvfit"><div class="pvscale">' + html + '</div></div></div>' +
+    '<div class="pvft">' + acts.map((a, i) => '<button type="button" class="btn' + (i ? ' ghost' : '') + '" data-pva="' + i + '">' + a[0] + '</button>').join('') + '</div></div>';
+  document.body.appendChild(ov); document.body.classList.add('pvopen');
+  const sc = ov.querySelector('.pvscale'), fit = () => { const W = ov.querySelector('.pvbody').clientWidth - 24, w0 = sc.offsetWidth || 820, s = Math.min(1, W / w0); sc.style.transform = 'scale(' + s + ')'; sc.parentElement.style.width = Math.ceil(w0 * s) + 'px'; sc.parentElement.style.height = Math.ceil(sc.offsetHeight * s) + 'px'; sc.parentElement.style.margin = '0 auto'; };
+  const close = () => { ov.remove(); document.body.classList.remove('pvopen'); removeEventListener('resize', fit); removeEventListener('keydown', key); };
+  const key = e => { if (e.key === 'Escape') close(); };
+  addEventListener('resize', fit); addEventListener('keydown', key); requestAnimationFrame(fit);
+  ov.addEventListener('click', e => { if (e.target === ov || e.target.closest('[data-pvx]')) { close(); return; } const b = e.target.closest('[data-pva]'); if (b) { close(); acts[+b.dataset.pva][1](); } });
+}
+/* ---------- 📗 엑셀로 저장 (이 페이지 안의 도구로 만듦 — 내용이 밖으로 나가지 않음) ---------- */
+let XLP = null;
+function xlLib() {
+  if (window.ExcelJS) return Promise.resolve(window.ExcelJS);
+  if (!XLP) XLP = new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'vendor/exceljs.min.js?v=4.4.0'; s.onload = () => window.ExcelJS ? res(window.ExcelJS) : rej(new Error('엑셀 도구를 불러오지 못했어요.')); s.onerror = () => { XLP = null; rej(new Error('엑셀 도구를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.')); }; document.head.appendChild(s); });
+  return XLP;
+}
+const XF = '맑은 고딕', XBD = { style: 'thin', color: { argb: 'FF000000' } }, XBOX = { top: XBD, left: XBD, bottom: XBD, right: XBD };
+const xNum = '#,##0', xQf = (q, u) => (Number.isInteger(q) ? '#,##0' : '#,##0.##') + (u ? '"' + String(u).replace(/["\\]/g, '') + '"' : '');
+/* 칸 하나(또는 합친 칸)에 값 · 글꼴 · 정렬 · 테두리 */
+function xPut(ws, r1, c1, r2, c2, v, o) {
+  o = o || {};
+  if (r2 !== r1 || c2 !== c1) ws.mergeCells(r1, c1, r2, c2);
+  const c = ws.getCell(r1, c1);
+  c.value = v === undefined || v === null ? '' : v;
+  c.font = Object.assign({ name: XF, size: 10 }, o.font || {});
+  c.alignment = { vertical: 'middle', horizontal: o.h || 'left', wrapText: o.wrap !== false, indent: o.ind || 0 };
+  if (o.fmt) c.numFmt = o.fmt;
+  for (let r = r1; r <= r2; r++) for (let k = c1; k <= c2; k++) {
+    const x = ws.getCell(r, k);
+    if (o.box) x.border = XBOX;
+    if (o.fill) x.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: o.fill } };
+  }
+  return c;
+}
+const xDate = s => { const d = String(s || '').split('-'); return d.length === 3 ? d[0] + '. ' + Number(d[1]) + '. ' + Number(d[2]) + '.' : ''; };
+function xSeal(wb, ws, seal, col, row) {
+  if (!/^data:image\/(png|jpe?g);base64,/.test(seal || '')) return;
+  const ext = /^data:image\/png/.test(seal) ? 'png' : 'jpeg', id = wb.addImage({ base64: seal, extension: ext });
+  ws.addImage(id, { tl: { col, row }, ext: { width: 46, height: 46 }, editAs: 'oneCell' });
+}
+function xPage(ws) { ws.pageSetup = { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0, horizontalCentered: true, margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } }; ws.views = [{ showGridLines: false }]; }
+/* 거래처에 나가는 문서 한 장 (홈센터 기본 모양 / 기업용 공급자·공급받는자 모양) — 사진·PDF와 같은 숫자
+   S = { dk, form, to, date, site, cman, ctel, memo, sup, cust, seal, rows:[{ code, n, br, sp, u, q, p, amt, inc, m }], supply, total } */
+function xlDoc(wb, name, S) {
+  const L = DKL(S.dk), ws = wb.addWorksheet(name); xPage(ws);
+  const sup = S.sup || {}, H = { font: { bold: true }, h: 'center', box: true, fill: 'FFF2F2F2' }, V = { box: true, h: 'center' };
+  if (S.form === 'corp') {
+    ws.columns = [6, 28, 15, 7, 9, 11, 13, 11, 13, 14].map(w => ({ width: w }));
+    xPut(ws, 1, 1, 1, 10, L.t, { font: { size: 22, bold: true }, h: 'center' }); ws.getRow(1).height = 40;
+    const box = (c0, lab, X) => {
+      xPut(ws, 3, c0, 7, c0, lab.split('').join('\n'), { font: { bold: true }, h: 'center', box: true, fill: 'FFF2F2F2' });
+      xPut(ws, 3, c0 + 1, 3, c0 + 1, '사업자명', H); xPut(ws, 3, c0 + 2, 3, c0 + 4, X.name, { box: true, font: { bold: true, size: 11 }, ind: 1 });
+      xPut(ws, 4, c0 + 1, 4, c0 + 1, '사업자번호', H); xPut(ws, 4, c0 + 2, 4, c0 + 2, X.biz, V); xPut(ws, 4, c0 + 3, 4, c0 + 3, '대표자', H); xPut(ws, 4, c0 + 4, 4, c0 + 4, X.ceo, V);
+      xPut(ws, 5, c0 + 1, 5, c0 + 1, '주소', H); xPut(ws, 5, c0 + 2, 5, c0 + 4, X.addr, { box: true, font: { size: 8.5 }, ind: 1 });
+      xPut(ws, 6, c0 + 1, 6, c0 + 1, '전화번호', H); xPut(ws, 6, c0 + 2, 6, c0 + 2, X.tel, V); xPut(ws, 6, c0 + 3, 6, c0 + 3, '팩 스', H); xPut(ws, 6, c0 + 4, 6, c0 + 4, X.fax, V);
+      xPut(ws, 7, c0 + 1, 7, c0 + 1, '업 태', H); xPut(ws, 7, c0 + 2, 7, c0 + 2, X.btype, V); xPut(ws, 7, c0 + 3, 7, c0 + 3, '업 종', H); xPut(ws, 7, c0 + 4, 7, c0 + 4, X.bitem, V);
+    };
+    box(1, '공급자', sup); box(6, '공급받는자', S.cust || {});
+    for (let r = 3; r <= 7; r++) ws.getRow(r).height = r === 5 ? 30 : 22;
+    xSeal(wb, ws, S.seal, 4.3, 2.05);
+    const vat = S.total - S.supply;
+    [['작성일', xDate(S.date)], ['합계금액', S.total], ['공급가액', S.supply], ['세액', vat], ['현장명', S.site]].forEach(([k, v], i) => {
+      xPut(ws, 9, i * 2 + 1, 9, i * 2 + 2, k, H);
+      xPut(ws, 10, i * 2 + 1, 10, i * 2 + 2, v, { box: true, h: typeof v === 'number' ? 'right' : 'center', fmt: typeof v === 'number' ? xNum : undefined, font: { bold: true } });
+    });
+    ws.getRow(10).height = 22;
+    const hd = ['순번', '제 품 명', '규격', '단위', '수량', '단가', '공급가액', '부가세', '합계', '비 고'];
+    hd.forEach((t, k) => xPut(ws, 12, k + 1, 12, k + 1, t, H)); ws.getRow(12).height = 22;
+    let r = 13;
+    S.rows.forEach((x, i) => {
+      [[i + 1, 'center'], [x.n, 'left'], [x.sp, 'center'], [x.u, 'center'], [x.q, 'right', xQf(x.q)], [x.p, 'right', xNum], [x.amt, 'right', xNum], [x.inc - x.amt, 'right', xNum], [x.inc, 'right', xNum], [x.m, 'center']]
+        .forEach(([v, h, f], k) => xPut(ws, r, k + 1, r, k + 1, v, { box: true, h, fmt: f }));
+      r++;
+    });
+    while (r < 23) { for (let k = 1; k <= 10; k++) xPut(ws, r, k, r, k, k === 1 ? r - 12 : '', { box: true, h: 'center' }); r++; }
+    xPut(ws, r, 1, r, 6, '총          계', { box: true, h: 'center', font: { bold: true }, fill: 'FFEAF1FB' });
+    [[7, S.supply], [8, vat], [9, S.total]].forEach(([k, v]) => xPut(ws, r, k, r, k, v, { box: true, h: 'right', fmt: xNum, font: { bold: true }, fill: 'FFEAF1FB' }));
+    xPut(ws, r, 10, r, 10, '', { box: true, fill: 'FFEAF1FB' }); r += 1;
+    xPut(ws, r, 1, r, 1, '비고', H); xPut(ws, r, 2, r, 10, S.memo, { box: true, font: { size: 9 }, ind: 1 });
+    ws.getRow(r).height = Math.max(30, String(S.memo || '').split('\n').length * 14 + 8);
+    return ws;
+  }
+  /* 홈센터 기본 모양 */
+  ws.columns = [10, 30, 11, 13, 12, 9, 14, 14, 18].map(w => ({ width: w }));
+  xPut(ws, 1, 1, 1, 2, 'ACE Hardware', { font: { bold: true, italic: true, size: 14, color: { argb: 'FFD71920' } } });
+  xPut(ws, 1, 3, 1, 7, L.t, { font: { size: 22, bold: true }, h: 'center' }); ws.getRow(1).height = 42;
+  xPut(ws, 3, 1, 3, 4, (S.to || '') + (S.to ? ' 귀하' : ''), { font: { size: 13, bold: true, underline: true }, h: 'center' });
+  [[L.d, xDate(S.date)], ['현장명', S.site], ['담당자', S.cman], ['연락처', S.ctel]].forEach(([k, v], i) => { xPut(ws, 4 + i, 1, 4 + i, 1, k, { h: 'center' }); xPut(ws, 4 + i, 2, 4 + i, 4, v, { ind: 1 }); });
+  xPut(ws, 8, 1, 8, 4, L.say, { h: 'center' });
+  [['사업자번호', sup.biz], ['상호 (법인명)', sup.name], ['사업장 주소', sup.addr], ['담 당 자', sup.mgr], ['전화번호', sup.tel], ['F A X', sup.fax], ['E-MAIL', sup.email]].forEach(([k, v], i) => {
+    xPut(ws, 3 + i, 5, 3 + i, 6, k, H); xPut(ws, 3 + i, 7, 3 + i, 9, v, { box: true, h: 'center', font: { size: k === '사업장 주소' ? 8 : 10 } });
+  });
+  for (let r = 3; r <= 9; r++) ws.getRow(r).height = r === 5 ? 28 : 20;
+  xSeal(wb, ws, S.seal, 8.25, 3.0);
+  xPut(ws, 11, 1, 11, 9, '금   액  :   일금 ' + xHangul(S.total) + '원정   (₩' + won(S.total) + ' / 부가세 포함)', { box: true, font: { bold: true, size: 12 }, ind: 1 });
+  ws.getRow(11).height = 26;
+  const hd = ['NO', '제품명', '브랜드', '규격', '단가\n(vat별도)', '수량', '금액\n(vat 별도)', '금액\n(vat 포함)', '비고'];
+  hd.forEach((t, k) => xPut(ws, 13, k + 1, 13, k + 1, t, Object.assign({}, H, k === 6 || k === 7 ? { fill: 'FFFFF200' } : {}))); ws.getRow(13).height = 30;
+  let r = 14;
+  S.rows.forEach(x => {
+    [[x.code, 'center'], [x.n, 'center'], [x.br, 'center'], [x.sp, 'center'], [x.p, 'right', xNum], [x.q, 'center', xQf(x.q, x.u)], [x.amt, 'right', xNum], [x.inc, 'right', xNum], [x.m, 'center']]
+      .forEach(([v, h, f], k) => xPut(ws, r, k + 1, r, k + 1, v, { box: true, h, fmt: f, font: k === 8 ? { size: 9 } : {} }));
+    r++;
+  });
+  while (r < 29) { for (let k = 1; k <= 9; k++) xPut(ws, r, k, r, k, '', { box: true }); r++; }
+  xPut(ws, r, 1, r, 6, '합      계', { box: true, h: 'center', font: { bold: true }, fill: 'FFEAF1FB' });
+  xPut(ws, r, 7, r, 7, S.supply, { box: true, h: 'right', fmt: xNum, font: { bold: true }, fill: 'FFEAF1FB' });
+  xPut(ws, r, 8, r, 8, S.total, { box: true, h: 'right', fmt: xNum, font: { bold: true }, fill: 'FFEAF1FB' });
+  xPut(ws, r, 9, r, 9, '', { box: true, fill: 'FFEAF1FB' }); r++;
+  xPut(ws, r, 1, r, 1, '비고', H); xPut(ws, r, 2, r, 9, S.memo, { box: true, font: { size: 9 }, ind: 1 });
+  ws.getRow(r).height = Math.max(36, String(S.memo || '').split('\n').length * 14 + 8);
+  return ws;
+}
+/* 우리 보관용 표: 머리(정보 줄) + 표 + 합계 — cols: [[제목, 폭, 숫자형식]], rows: [[값…]], sum: [값 또는 null…] */
+function xlTable(wb, name, title, info, cols, rows, sum) {
+  const ws = wb.addWorksheet(name); ws.views = [{ state: 'frozen', ySplit: info.length + 3 }];
+  ws.pageSetup = { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
+  ws.columns = cols.map(c => ({ width: c[1] }));
+  xPut(ws, 1, 1, 1, cols.length, title, { font: { size: 15, bold: true } }); ws.getRow(1).height = 28;
+  info.forEach(([k, v], i) => { xPut(ws, 2 + i, 1, 2 + i, 2, k, { font: { bold: true, color: { argb: 'FF5B6472' } } }); xPut(ws, 2 + i, 3, 2 + i, Math.min(cols.length, 8), v); });
+  const h = info.length + 3;
+  cols.forEach((c, k) => xPut(ws, h, k + 1, h, k + 1, c[0], { box: true, h: 'center', font: { bold: true }, fill: c[3] || 'FFF2F2F2' })); ws.getRow(h).height = 32;
+  rows.forEach((row, i) => row.forEach((v, k) => xPut(ws, h + 1 + i, k + 1, h + 1 + i, k + 1, v, { box: true, h: typeof v === 'number' ? 'right' : 'left', fmt: typeof v === 'number' ? (typeof cols[k][2] === 'function' ? cols[k][2](v) : cols[k][2]) : undefined, wrap: false })));
+  const sr = h + 1 + rows.length;
+  sum.forEach((v, k) => xPut(ws, sr, k + 1, sr, k + 1, v === null ? '' : v, { box: true, h: typeof v === 'number' ? 'right' : 'center', fmt: typeof v === 'number' ? (typeof cols[k][2] === 'function' ? cols[k][2](v) : cols[k][2]) : undefined, font: { bold: true }, fill: 'FFEAF1FB', wrap: false }));
+  return ws;
+}
+async function xlSave(wb, name) {
+  const buf = await wb.xlsx.writeBuffer(), f = new File([buf], name, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const phone = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (phone && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: name }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  const a = document.createElement('a'), u = URL.createObjectURL(f); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 8000);
+  toast('엑셀로 저장했어요: ' + name);
+}
+const xPct = '0.0%';
+
+const HOME = (() => {
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const blankLine = () => ({ code: '', n: '', br: '', sp: '', u: '', q: '', cost: '', mr: '', p: '', m: '' });
+const newQuote = () => ({ id: 'q' + Date.now(), to: '', site: '', cman: '', ctel: '', date: today(), valid: '', due: '', pay: '', ship: '', memo: '', mr: '10', mode: 'markup', ru: '10u', dk: 'quote', lines: Array.from({ length: 10 }, blankLine) });
+function normQ(q) { const b = newQuote(); const o = Object.assign(b, q); if (!o.mr && o.mr !== '0') o.mr = '10'; o.lines = (o.lines || []).map(l => Object.assign(blankLine(), l)); if (!o.lines.length) o.lines.push(blankLine()); return o; }
+let Q = normQ((LS.get('hquote', null) || ((LS.get('quote', null) || {}).mode ? LS.get('quote', null) : null)) || newQuote());
 let SUP = supFill(Object.assign({ name: 'ACE 일산점', biz: '', addr: '', mgr: '', tel: '', fax: '', email: '', seal: '' }, LS.get('supplier', null) || {}));
 const QF = { hQMr: 'mr', hQMode: 'mode', hQRu: 'ru' };
 function qSaveDraft() { LS.set('hquote', Q); }
@@ -611,6 +786,7 @@ function renderMrHead() {
 }
 function renderQuoteForm() {
   Object.entries(QF).forEach(([id, k]) => { $(id).value = Q[k] == null ? '' : Q[k]; });
+  $('hQDkBox').innerHTML = dkSeg('hQDk', Q.dk);
   renderSeal(); renderMrHead(); renderSheet();
 }
 const XCOLS = [80, 200, 80, 90, 84, 54, 92, 92, 150, 18, 84, 90, 66, 96, 80, 64, 36];
@@ -620,8 +796,8 @@ function renderSheet() {
   const hq = (k, ph, type) => '<input type="' + (type || 'text') + '" data-hq="' + k + '" placeholder="' + esc(ph || '') + '" maxlength="80">';
   const rr = (k, f, extra) => '<div class="rr"><span>' + k + '</span><div><input type="text" data-hs="' + f + '" maxlength="120"' + (f === 'addr' ? ' class="addr" title="사업장 주소"' : '') + '>' + (extra || '') + '</div></div>';
   let h = '<table class="xs"><colgroup>' + XCOLS.map(w => '<col style="width:' + w + 'px">').join('') + '</colgroup>';
-  h += '<tr><td colspan="9" class="ttl"><div class="ttlbox"><div class="logo"><b>ACE</b> <i>Hardware</i></div><h3>견 적 서</h3><div></div></div></td>' + RG + '</tr>';
-  h += '<tr><td colspan="9"><div class="hd"><div class="l"><div class="to">' + hq('to', '받는 분 (예: 박세익과장님)') + '</div>' + kv('견 적 일 :', hq('date', '', 'date')) + kv('현 장 명 :', hq('site')) + kv('담 당 자 :', hq('cman')) + kv('연 락 처 :', hq('ctel')) + '<div class="say">아래와 같이 견적합니다.</div></div><div>' +
+  h += '<tr><td colspan="9" class="ttl"><div class="ttlbox"><div class="logo"><b>ACE</b> <i>Hardware</i></div><h3>' + DKL(Q.dk).t + '</h3><div></div></div></td>' + RG + '</tr>';
+  h += '<tr><td colspan="9"><div class="hd"><div class="l"><div class="to">' + hq('to', '받는 분 (예: 박세익과장님)') + '</div>' + kv(DKL(Q.dk).d2, hq('date', '', 'date')) + kv('현 장 명 :', hq('site')) + kv('담 당 자 :', hq('cman')) + kv('연 락 처 :', hq('ctel')) + '<div class="say">' + DKL(Q.dk).say + '</div></div><div>' +
     rr('사업자번호', 'biz') + rr('상호 (법인명)', 'name', SUP.seal ? '<img class="seal" src="' + SUP.seal + '" alt="">' : '') + rr('사업장 주소', 'addr') + rr('담 당 자', 'mgr') + rr('전화번호', 'tel') + rr('F A X', 'fax') + rr('E-MAIL', 'email') + '</div></div></td>' +
     '<td class="G"></td><td class="G" colspan="7" style="vertical-align:top"><div class="rcap">← 왼쪽 검은 칸 = 거래처에 나가는 견적서<br>아래 회색 칸 = 우리만 보는 매입원가 · 마진 (인쇄 안 됨)</div></td></tr>';
   h += '<tr><td colspan="9"><div class="amt" id="hXAmt"></div></td>' + RG + '</tr>';
@@ -674,8 +850,9 @@ function docHtml(T) {
   while (rows.length < 15) rows.push('<tr><td>&nbsp;</td><td></td><td></td><td></td><td class="r">-</td><td></td><td class="r">-</td><td class="r">-</td><td></td></tr>');
   const memo = Q.memo || '';
   const kv = (k, v) => '<div class="kv"><span>' + k + '</span><span>' + esc(v) + '</span></div>';
-  return '<div class="hdoc"><div class="qhd"><div class="logo"><b>ACE</b> <i>Hardware</i></div><h1>견 적 서</h1><div></div></div>' +
-    '<div class="qtop"><div class="l"><div class="to">' + esc(Q.to || '(받는 분)') + '</div>' + kv('견적일 :', ds) + kv('현장명 :', Q.site) + kv('담당자 :', Q.cman) + kv('연락처 :', Q.ctel) + '<div class="say">아래와 같이 견적합니다.</div></div>' +
+  const L = DKL(Q.dk);
+  return '<div class="hdoc"><div class="qhd"><div class="logo"><b>ACE</b> <i>Hardware</i></div><h1>' + L.t + '</h1><div></div></div>' +
+    '<div class="qtop"><div class="l"><div class="to">' + esc(Q.to || '(받는 분)') + '</div>' + kv(L.d + ' :', ds) + kv('현장명 :', Q.site) + kv('담당자 :', Q.cman) + kv('연락처 :', Q.ctel) + '<div class="say">' + L.say + '</div></div>' +
     '<table><tr><th>사업자번호</th><td>' + esc(SUP.biz) + '</td></tr><tr><th>상호 (법인명)</th><td>' + esc(SUP.name) + (SUP.seal ? '<img class="seal" src="' + SUP.seal + '" alt="직인">' : '') + '</td></tr><tr><th>사업장 주소</th><td>' + esc(SUP.addr) + '</td></tr><tr><th>담 당 자</th><td>' + esc(SUP.mgr) + '</td></tr><tr><th>전화번호</th><td>' + esc(SUP.tel) + '</td></tr><tr><th>F A X</th><td>' + esc(SUP.fax) + '</td></tr><tr><th>E-MAIL</th><td>' + esc(SUP.email) + '</td></tr></table></div>' +
     '<div class="amtline">금 &nbsp; 액 &nbsp; : <span>일금 ' + hangulWon(T.total) + '원정</span> <span>(₩' + won(T.total) + '/부가세 포함)</span></div>' +
     '<table class="qitems"><tr><th style="width:70px">NO</th><th>제품명</th><th style="width:64px">브랜드</th><th style="width:74px">규격</th><th style="width:66px">단가<small>(vat별도)</small></th><th style="width:44px">수량</th><th class="y" style="width:78px">금액(vat 별도)</th><th class="y" style="width:78px">금액(vat 포함)</th><th style="width:112px">비고</th></tr>' + rows.join('') +
@@ -739,7 +916,7 @@ function lib(src, ok) {
   if (!LIBP[src]) LIBP[src] = new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = src; sc.onload = () => ok() ? res() : rej(new Error('x')); sc.onerror = () => { LIBP[src] = null; rej(new Error('도구를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.')); }; document.head.appendChild(sc); });
   return LIBP[src];
 }
-const fileBase = () => '견적서_' + String(Q.to || '거래처').replace(/[\\/:*?"<>|\s]+/g, '_') + '_' + (Q.date || today());
+const fileBase = () => DKL(Q.dk).h + '_' + String(Q.to || '거래처').replace(/[\\/:*?"<>|\s]+/g, '_') + '_' + (Q.date || today());
 async function docCanvas(T) {
   await lib('vendor/html2canvas.min.js?v=1.4.1', () => window.html2canvas);
   const box = document.createElement('div');
@@ -788,6 +965,38 @@ $('hQSharePdf').addEventListener('click', e => busy(e.currentTarget, async () =>
 $('hQPng').addEventListener('click', e => busy(e.currentTarget, async () => { const f = await makeFile('png'); if (f) { saveBlob(f, f.name); toast('사진으로 저장했어요: ' + f.name); } }));
 $('hQPdf').addEventListener('click', e => busy(e.currentTarget, async () => { const f = await makeFile('pdf'); if (f) { saveBlob(f, f.name); toast('PDF로 저장했어요: ' + f.name); } }));
 $('hQCopy').addEventListener('click', e => copyImg(e.currentTarget));
+/* 📗 엑셀 · 👁 미리보기 */
+function homeSpec(T) {
+  const rows = [];
+  T.res.forEach((r, i) => { if (r.skip || r.err) return; const l = Q.lines[i]; rows.push({ code: l.code || '', n: l.n, br: l.br, sp: l.sp, u: l.u || '', q: r.q, p: r.p, amt: r.amt, inc: r.incl, m: l.m }); });
+  return { dk: Q.dk, form: 'home', to: Q.to, date: Q.date, site: Q.site, cman: Q.cman, ctel: Q.ctel, memo: Q.memo, sup: SUP, seal: SUP.seal, rows, supply: T.supply, total: T.total };
+}
+async function homeXls(internal) {
+  const T = ready(); if (!T) return;
+  const X = await xlLib(), wb = new X.Workbook(), L = DKL(Q.dk); wb.creator = SUP.name || '';
+  if (internal) {
+    const dr = rate100(Q.mr), rows = [];
+    T.res.forEach((r, i) => { if (r.skip || r.err) return; const l = Q.lines[i], rr = r.r100 != null ? r.r100 : dr;
+      rows.push([l.code || '', l.n, l.br || '', l.sp || '', l.u || '', r.q, r.cost != null ? r.cost : '', r.costAmt != null ? r.costAmt : '', r.cost != null && !r.manual ? rr / 10000 : '', r.p, Math.round(r.p * 11 / 10), r.amt, r.incl, r.margin != null ? r.margin : '', r.margin != null && r.amt ? r.margin / r.amt : '', l.m || '']); });
+    xlTable(wb, '보관용(마진)', '🔒 ' + L.h + ' 보관용 — 매입가 · 마진 포함 (거래처에 보내지 마세요)',
+      [['받는 분', Q.to], [L.d, xDate(Q.date)], ['현장명', Q.site || ''], ['계산 방법', (Q.mode === 'markup' ? '매입가 기준 — 매입가 × (1 + 마진율)' : '판매가 기준 — 매입가 ÷ (1 − 마진율)') + ' · 기본 마진율 ' + Q.mr + '% · ' + ({ '10u': '10원 단위 올림', '100u': '100원 단위 올림', '1u': '1원 단위 올림', '10r': '10원 단위 반올림' }[Q.ru] || '')]],
+      [['NO', 9], ['제품명', 28], ['브랜드', 10], ['규격', 12], ['단위', 6], ['수량', 8, v => xQf(v)], ['매입단가', 11, xNum, 'FFE8E8E8'], ['매입금액', 12, xNum, 'FFE8E8E8'], ['정한\n마진율', 8, xPct, 'FFE8E8E8'], ['단가\n(vat별도)', 11, xNum], ['단가\n(vat포함)', 11, xNum], ['금액\n(vat별도)', 13, xNum, 'FFFFF200'], ['금액\n(vat포함)', 13, xNum, 'FFFFF200'], ['마진', 12, xNum, 'FFE8E8E8'], ['실제\n마진율', 8, xPct, 'FFE8E8E8'], ['비고', 16]],
+      rows, ['합계', '', '', '', '', '', '', T.costSum, '', '', '', T.supply, T.total, T.margin, T.saleWithCost ? T.margin / T.saleWithCost : '', T.noCost ? '매입단가 없는 ' + T.noCost + '줄은 마진에서 뺌' : '']);
+  }
+  xlDoc(wb, internal ? '거래처용 ' + L.h : L.h, homeSpec(T));
+  await xlSave(wb, fileBase() + (internal ? '_보관용(마진)' : '') + '.xlsx');
+}
+function homePreview() {
+  const T = qTotals(), L = DKL(Q.dk), w = [];
+  if (T.errs.length) w.push('빨간 칸 ' + T.errs.length + '곳은 아직 견적서에 들어가지 않아요');
+  if (!String(Q.to || '').trim()) w.push('받는 분이 비어 있어요');
+  if (!T.n) w.push('품목이 아직 없어요');
+  showPreview(L.h + ' 미리보기 — 거래처에 나가는 모양', docHtml(T), w.length ? '⚠ ' + w.map(esc).join(' · ') : '', [['📤 바로 보내기 (사진)', () => $('hQShareImg').click()], ['📄 PDF', () => $('hQSharePdf').click()], ['📗 엑셀 (거래처용)', () => $('hQXls').click()], ['🖨 인쇄', () => $('hQPrint').click()]]);
+}
+$('hQXls').addEventListener('click', e => busy(e.currentTarget, () => homeXls(false)));
+$('hQXlsIn').addEventListener('click', e => busy(e.currentTarget, () => homeXls(true)));
+$('hQPv').addEventListener('click', homePreview); $('hQPv2').addEventListener('click', homePreview);
+$('hQDkBox').addEventListener('click', e => { const b = e.target.closest('[data-dk]'); if (!b || b.dataset.dk === Q.dk) return; Q.dk = b.dataset.dk; qSaveDraft(); $('hQDkBox').innerHTML = dkSeg('hQDk', Q.dk); renderSheet(); toast(DKL(Q.dk).h + '(으)로 바꿨어요'); });
 function copyImg(btn) {
   const T = ready(); if (!T) return;
   if (!(navigator.clipboard && window.ClipboardItem)) { busy(btn, async () => { const f = await makeFile('png'); if (f) { saveBlob(f, f.name); toast('이 브라우저는 사진 복사가 안 돼서 파일로 저장했어요.'); } }); return; }
@@ -822,7 +1031,7 @@ $('hQNew').addEventListener('click', () => { if (!confirm('지금 쓰던 견적�
 const TWO = (() => {
   const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
   const blank = () => ({ code: '', n: '', br: '', sp: '', u: '', q: '', cost: '', a: '', p1: '', b: '', p2: '', m: '' });
-  const newDoc = (logo, form) => ({ to: '', site: '', cman: '', ctel: '', date: today(), memo: form === 'corp' ? MEMO_CORP : '', logo, form });
+  const newDoc = (logo, form) => ({ dk: 'quote', to: '', site: '', cman: '', ctel: '', date: today(), memo: form === 'corp' ? MEMO_CORP : '', logo, form });
   const MEMO_CORP = '위 견적은 도착도 견적입니다. / 발주 요청시 약 7일정도 재고확보 시간이 필요합니다. 참고부탁드립니다.\n제품명, 규격 수량 확인 필수 부탁드립니다.\n위 견적은 견적일로부터, 7일간 유효합니다.\n위 상품은 반품이 불가하오니, 참고부탁드립니다.';
   const newT = () => ({ id: 't' + Date.now(), a: '10', b: '5', mode: 'markup', ru: '10u', d1: newDoc(true, 'corp'), d2: newDoc(true, 'corp'), sup2: { name: '', biz: '', ceo: '', addr: '', mgr: '', tel: '', fax: '', email: '', btype: '', bitem: '' }, cust: { name: '', biz: '', ceo: '', addr: '', tel: '', fax: '', btype: '', bitem: '' }, lines: Array.from({ length: 10 }, blank) });
   function norm(t) { const b = newT(), o = Object.assign(b, t || {}); o.d1 = Object.assign(newDoc(true, 'corp'), (t || {}).d1 || {}); o.d2 = Object.assign(newDoc(true, 'corp'), (t || {}).d2 || {}); o.cust = Object.assign(newT().cust, (t || {}).cust || {}); o.sup2 = Object.assign(newT().sup2, (t || {}).sup2 || {}); o.lines = (o.lines || []).map(l => Object.assign(blank(), l)); if (!o.lines.length) o.lines.push(blank()); return o; }
@@ -940,7 +1149,7 @@ const TWO = (() => {
       rows.push('<tr><td class="c">' + (rows.length + 1) + '</td><td>' + esc(l.n) + '</td><td>' + esc(l.sp) + '</td><td class="c">' + esc(l.u) + '</td><td class="r">' + fmtQ(r.q) + '</td><td class="r">' + won(p) + '</td><td class="r">' + won(a) + '</td><td class="r">' + won(v) + '</td><td class="r">' + won(inc) + '</td><td class="c">' + esc(l.m) + '</td></tr>'); });
     while (rows.length < 10) rows.push('<tr><td class="c">' + (rows.length + 1) + '</td><td></td><td></td><td></td><td></td><td></td><td class="r">-</td><td class="r">-</td><td class="r">-</td><td></td></tr>');
     const box = (lab, X, seal) => '<table class="cbx"><tr><th class="vl" rowspan="5">' + lab.split('').join('<br>') + '</th><th>사업자명</th><td colspan="3" class="nm">' + esc(X.name) + (seal ? '<img class="seal" src="' + seal + '" alt="">' : '') + '</td></tr><tr><th>사업자번호</th><td>' + esc(X.biz) + '</td><th>대표자</th><td>' + esc(X.ceo) + '</td></tr><tr><th>주소</th><td colspan="3">' + esc(X.addr) + '</td></tr><tr><th>전화번호</th><td>' + esc(X.tel) + '</td><th>팩 스</th><td>' + esc(X.fax) + '</td></tr><tr><th>업 태</th><td>' + esc(X.btype) + '</td><th>업 종</th><td>' + esc(X.bitem) + '</td></tr></table>';
-    return '<div class="cdoc"><div class="chd"><div></div><h1>견 적 서</h1><div class="clogo">' + (D.logo ? '<span class="eu">EUGENE</span><span class="ac"><b>ACE</b><i>Hardware</i></span>' : '') + '</div></div>' +
+    return '<div class="cdoc"><div class="chd"><div></div><h1>' + DKL(D.dk).t + '</h1><div class="clogo">' + (D.logo ? '<span class="eu">EUGENE</span><span class="ac"><b>ACE</b><i>Hardware</i></span>' : '') + '</div></div>' +
       '<div class="cbs">' + box('공급자', A, w === 1 ? A.seal : '') + box('공급받는자', B, '') + '</div>' +
       '<table class="csum"><tr><th style="width:62px">작성년</th><th style="width:40px">월</th><th style="width:40px">일</th><th>합계금액</th><th>공급가액</th><th>세액</th><th>현 장 명</th></tr><tr><td class="c"><b>' + esc(dd[0] || '') + '</b></td><td class="c"><b>' + (dd[1] ? Number(dd[1]) : '') + '</b></td><td class="c"><b>' + (dd[2] ? Number(dd[2]) : '') + '</b></td><td class="r"><b>' + won(st) + '</b></td><td class="r"><b>' + won(sa) + '</b></td><td class="r"><b>' + won(sv) + '</b></td><td class="c"><b>' + esc(D.site) + '</b></td></tr></table>' +
       '<table class="cit"><tr><th style="width:36px">순번</th><th>제 품 명</th><th style="width:118px">규격</th><th style="width:40px">단위</th><th style="width:48px">수량</th><th style="width:62px">단가</th><th style="width:78px">공급가액</th><th style="width:66px">부가세</th><th style="width:80px">합계</th><th style="width:96px">비 고</th></tr>' + rows.join('') +
@@ -955,8 +1164,9 @@ const TWO = (() => {
       rows.push('<tr><td class="c">' + esc(l.code) + '</td><td class="c">' + esc(l.n) + '</td><td class="c">' + esc(l.br) + '</td><td class="c">' + esc(l.sp) + '</td><td class="r">' + won(p) + '</td><td class="c">' + fmtQ(r.q) + (l.u ? ' ' + esc(l.u) : '') + '</td><td class="r">' + won(a) + '</td><td class="r">' + won(inc) + '</td><td class="c" style="font-size:11px">' + esc(l.m) + '</td></tr>'); });
     while (rows.length < 15) rows.push('<tr><td>&nbsp;</td><td></td><td></td><td></td><td class="r">-</td><td></td><td class="r">-</td><td class="r">-</td><td></td></tr>');
     const sup = w === 1 ? O.s1 : O.s2, tot = w === 1 ? O.i1 : O.i2, kv = (k, v) => '<div class="kv"><span>' + k + '</span><span>' + esc(v) + '</span></div>';
-    return '<div class="hdoc"><div class="qhd"><div class="logo">' + (D.logo ? '<b>ACE</b> <i>Hardware</i>' : '') + '</div><h1>견 적 서</h1><div></div></div>' +
-      '<div class="qtop"><div class="l"><div class="to">' + esc(D.to || '(받는 분)') + '</div>' + kv('견적일 :', ds) + kv('현장명 :', D.site) + kv('담당자 :', D.cman) + kv('연락처 :', D.ctel) + '<div class="say">아래와 같이 견적합니다.</div></div>' +
+    const L = DKL(D.dk);
+    return '<div class="hdoc"><div class="qhd"><div class="logo">' + (D.logo ? '<b>ACE</b> <i>Hardware</i>' : '') + '</div><h1>' + L.t + '</h1><div></div></div>' +
+      '<div class="qtop"><div class="l"><div class="to">' + esc(D.to || '(받는 분)') + '</div>' + kv(L.d + ' :', ds) + kv('현장명 :', D.site) + kv('담당자 :', D.cman) + kv('연락처 :', D.ctel) + '<div class="say">' + L.say + '</div></div>' +
       '<table><tr><th>사업자번호</th><td>' + esc(S.biz) + '</td></tr><tr><th>상호 (법인명)</th><td>' + esc(S.name) + (w === 1 && S.seal ? '<img class="seal" src="' + S.seal + '" alt="직인">' : '') + '</td></tr><tr><th>사업장 주소</th><td>' + esc(S.addr) + '</td></tr><tr><th>담 당 자</th><td>' + esc(S.mgr) + '</td></tr><tr><th>전화번호</th><td>' + esc(S.tel) + '</td></tr><tr><th>F A X</th><td>' + esc(S.fax) + '</td></tr><tr><th>E-MAIL</th><td>' + esc(S.email) + '</td></tr></table></div>' +
       '<div class="amtline">금 &nbsp; 액 &nbsp; : <span>일금 ' + hangulWon(tot) + '원정</span> <span>(₩' + won(tot) + '/부가세 포함)</span></div>' +
       '<table class="qitems"><tr><th style="width:70px">NO</th><th>제품명</th><th style="width:64px">브랜드</th><th style="width:74px">규격</th><th style="width:66px">단가<small>(vat별도)</small></th><th style="width:44px">수량</th><th class="y" style="width:78px">금액(vat 별도)</th><th class="y" style="width:78px">금액(vat 포함)</th><th style="width:112px">비고</th></tr>' + rows.join('') +
@@ -967,13 +1177,13 @@ const TWO = (() => {
     [1, 2].forEach(w => {
       const D = w === 1 ? T.d1 : T.d2, f = (k, t, ty) => '<div><label class="f">' + t + '</label><input type="' + (ty || 'text') + '" data-doc="' + w + '" data-f="' + k + '" maxlength="80"></div>';
       const box = document.querySelector('.dfm[data-doc="' + w + '"]'), box2 = document.querySelector('.dfm2[data-doc="' + w + '"]');
-      box.innerHTML = f('to', w === 1 ? '받는 분 (중간 기업)' : '받는 분 (최종 업체)') + f('site', '현장명') + f('date', '견적일', 'date');
+      box.innerHTML = '<div><label class="f">문서 종류</label><select data-doc="' + w + '" data-f="dk"><option value="quote">📄 견적서</option><option value="stmt">🧾 거래명세표</option></select></div>' + f('to', w === 1 ? '받는 분 (중간 기업)' : '받는 분 (최종 업체)') + f('site', '현장명') + f('date', '날짜 (견적일 · 거래일)', 'date');
       if (w === 2) box.querySelector('[data-f="site"]').placeholder = '비우면 1차와 같음';
       box2.innerHTML = '<div><label class="f">견적서 양식</label><select data-doc="' + w + '" data-f="form"><option value="corp">기업용 (공급자 · 공급받는자)</option><option value="home">홈센터 기본 (엑셀 모양)</option></select></div>' + f('cman', '담당자') + f('ctel', '연락처') +
         '<div style="grid-column:1/-1"><label class="f">비고 (견적서 아래 칸, 여러 줄 가능) <button type="button" class="btn ghost sm" data-act="memo" data-w="' + w + '" style="min-height:28px;margin-left:6px">기본 문구 넣기</button></label><textarea data-doc="' + w + '" data-f="memo" maxlength="600" rows="4"></textarea></div><label class="ckl"><input type="checkbox" data-doc="' + w + '" data-f="logo"> 로고 넣기 (EUGENE · ACE Hardware)</label>';
-      [box, box2].forEach(b => b.querySelectorAll('input[type=text],input[type=date],textarea,select').forEach(x => { x.value = D[x.dataset.f] || (x.tagName === 'SELECT' ? 'home' : ''); }));
+      [box, box2].forEach(b => b.querySelectorAll('input[type=text],input[type=date],textarea,select').forEach(x => { x.value = D[x.dataset.f] || (x.dataset.f === 'dk' ? 'quote' : x.tagName === 'SELECT' ? 'home' : ''); }));
       box2.querySelector('input[type=checkbox]').checked = !!D.logo;
-      document.querySelector('[data-acts="' + w + '"]').innerHTML = '<button class="btn big" data-act="simg" data-w="' + w + '">📤 보내기 (사진)</button><button class="btn big" data-act="spdf" data-w="' + w + '">📄 PDF</button><button class="btn ghost" data-act="copy" data-w="' + w + '">📋 사진 복사</button><button class="btn ghost" data-act="png" data-w="' + w + '">🖼 사진 저장</button><button class="btn ghost" data-act="print" data-w="' + w + '">🖨 인쇄</button>';
+      document.querySelector('[data-acts="' + w + '"]').innerHTML = '<button class="btn big" data-act="simg" data-w="' + w + '">📤 보내기 (사진)</button><button class="btn big" data-act="spdf" data-w="' + w + '">📄 PDF</button><button class="btn ghost" data-act="copy" data-w="' + w + '">📋 사진 복사</button><button class="btn ghost" data-act="png" data-w="' + w + '">🖼 사진 저장</button><button class="btn ghost" data-act="print" data-w="' + w + '">🖨 인쇄</button><button class="btn ghost" data-act="pv" data-w="' + w + '">👁 미리보기</button><button class="btn ghost" data-act="xls" data-w="' + w + '">📗 엑셀 (거래처용)</button><button class="btn ghost" data-act="xlsin" data-w="' + w + '">📗 엑셀 (우리 보관용 · 1차 · 최종 · 마진)</button>';
     });
     const sf = [['name', '사업자명 (상호)'], ['biz', '사업자번호'], ['ceo', '대표자'], ['addr', '주소'], ['tel', '전화번호'], ['fax', '팩스'], ['btype', '업태'], ['bitem', '업종'], ['mgr', '담당자'], ['email', 'E-MAIL']];
     $('tSup2').innerHTML = sf.map(([k, t]) => '<div><label class="f">' + t + '</label><input type="text" data-s2="' + k + '" maxlength="120"></div>').join('');
@@ -1003,7 +1213,7 @@ const TWO = (() => {
   }
   const LIBP = {};
   function lib(src, ok) { if (ok()) return Promise.resolve(); if (!LIBP[src]) LIBP[src] = new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = src; sc.onload = () => ok() ? res() : rej(new Error('x')); sc.onerror = () => { LIBP[src] = null; rej(new Error('도구를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.')); }; document.head.appendChild(sc); }); return LIBP[src]; }
-  const base = w => (w === 1 ? '1차견적서_' : '최종견적서_') + String((w === 1 ? T.d1 : T.d2).to || '거래처').replace(/[\\/:*?"<>|\s]+/g, '_') + '_' + ((w === 1 ? T.d1 : T.d2).date || today());
+  const base = w => (w === 1 ? '1차' : '최종') + DKL((w === 1 ? T.d1 : T.d2).dk).h + '_' + String((w === 1 ? T.d1 : T.d2).to || '거래처').replace(/[\\/:*?"<>|\s]+/g, '_') + '_' + ((w === 1 ? T.d1 : T.d2).date || today());
   async function canvasOf(w, O) {
     await lib('vendor/html2canvas.min.js?v=1.4.1', () => window.html2canvas);
     const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-12000px;top:0;width:820px;background:#fff;'; box.innerHTML = docHtml(w, O); document.body.appendChild(box);
@@ -1028,6 +1238,36 @@ const TWO = (() => {
     try { await navigator.share({ files: [f], title: f.name }); }
     catch (e) { if (e && e.name === 'AbortError') return; const R = $('tReady' + w); R.innerHTML = '<div class="ok" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">준비됐어요. 한 번 더 눌러 주세요. <button class="btn sm">📤 보내기</button></div>'; R.querySelector('button').addEventListener('click', ev => { ev.currentTarget.disabled = true; navigator.share({ files: [f], title: f.name }).then(() => { R.innerHTML = ''; }).catch(er => { R.innerHTML = ''; if (!er || er.name !== 'AbortError') { saveBlob(f, f.name); toast('보내기 창을 열지 못해 파일로 저장했어요.'); } }); }); }
   }
+  /* 📗 엑셀 · 👁 미리보기 */
+  function twoSpec(w, O) {
+    const D = docD(w), A = w === 1 ? SUP() : T.sup2, rows = [];
+    O.res.forEach((r, i) => { if (r.skip || r.err) return; const l = T.lines[i]; rows.push({ code: l.code || '', n: l.n, br: l.br || '', sp: l.sp || '', u: l.u || '', q: r.q, p: w === 1 ? r.p1 : r.p2, amt: w === 1 ? r.amt1 : r.amt2, inc: w === 1 ? r.inc1 : r.inc2, m: l.m || '' }); });
+    return { dk: D.dk, form: D.form === 'corp' ? 'corp' : 'home', to: D.to, date: D.date, site: D.site, cman: D.cman, ctel: D.ctel, memo: D.memo, sup: A, cust: w === 1 ? T.sup2 : Object.assign({}, T.cust, { name: s_(T.cust.name) || D.to }), seal: w === 1 ? A.seal : '', rows, supply: w === 1 ? O.s1 : O.s2, total: w === 1 ? O.i1 : O.i2 };
+  }
+  async function twoXls(w, internal) {
+    const O = ready(w); if (!O) return;
+    const X = await xlLib(), wb = new X.Workbook(), L1 = DKL(T.d1.dk), L2 = DKL(T.d2.dk);
+    if (internal) {
+      const rows = [];
+      O.res.forEach((r, i) => { if (r.skip || r.err) return; const l = T.lines[i], ra = r100(s_(l.a) ? l.a : T.a), rb = r100(s_(l.b) ? l.b : T.b);
+        rows.push([l.code || '', l.n, l.br || '', l.sp || '', l.u || '', r.q, r.cost != null ? r.cost : '', r.costAmt != null ? r.costAmt : '', r.cost != null && !r.man1 ? ra / 10000 : '', r.p1, r.amt1, r.m1 != null ? r.m1 : '', r.m1 != null && r.amt1 ? r.m1 / r.amt1 : '', !r.man2 ? rb / 10000 : '', r.p2, r.amt2, r.m2, r.amt2 ? r.m2 / r.amt2 : '', l.m || '']); });
+      xlTable(wb, '보관용(마진)', '🔒 2단계 보관용 — 매입가 · 1차 · 최종 · 마진 (거래처에 보내지 마세요)',
+        [['1차 받는 분', (T.d1.to || '') + ' (' + L1.h + ')'], ['최종 받는 분', (T.d2.to || '') + ' (' + L2.h + ')'], ['날짜 · 현장명', xDate(T.d1.date) + (T.d1.site ? ' · ' + T.d1.site : '')], ['마진', '우리 A ' + T.a + '% · 중간 업체 B ' + T.b + '% · ' + (T.mode === 'markup' ? '매입가 기준 (× (1 + 마진율))' : '판매가 기준 (÷ (1 − 마진율))')]],
+        [['NO', 9], ['제품명', 26], ['브랜드', 9], ['규격', 12], ['단위', 6], ['수량', 8, v => xQf(v)], ['매입단가', 11, xNum, 'FFE8E8E8'], ['매입금액', 12, xNum, 'FFE8E8E8'], ['우리 %', 7, xPct, 'FFE3F1E8'], ['1차 단가', 11, xNum, 'FFE3F1E8'], ['1차 금액\n(vat별도)', 13, xNum, 'FFE3F1E8'], ['우리 마진', 12, xNum, 'FFE3F1E8'], ['우리\n마진율', 8, xPct, 'FFE3F1E8'], ['중간 %', 7, xPct, 'FFE3ECF7'], ['최종 단가', 11, xNum, 'FFE3ECF7'], ['최종 금액\n(vat별도)', 13, xNum, 'FFE3ECF7'], ['중간 마진', 12, xNum, 'FFE3ECF7'], ['중간\n마진율', 8, xPct, 'FFE3ECF7'], ['비고', 14]],
+        rows, ['합계', '', '', '', '', '', '', O.cost, '', '', O.s1, O.m1, O.sale1c ? O.m1 / O.sale1c : '', '', '', O.s2, O.m2, O.s2 ? O.m2 / O.s2 : '', O.noCost ? '매입단가 없는 ' + O.noCost + '줄은 우리 마진에서 뺌' : '']);
+      xlDoc(wb, '1차 ' + L1.h, twoSpec(1, O));
+      if (s_(T.d2.to)) xlDoc(wb, '최종 ' + L2.h, twoSpec(2, O));
+    } else xlDoc(wb, (w === 1 ? '1차 ' : '최종 ') + DKL((w === 1 ? T.d1 : T.d2).dk).h, twoSpec(w, O));
+    await xlSave(wb, internal ? '2단계_보관용(마진)_' + String(T.d1.to || '거래처').replace(/[\\/:*?"<>|\s]+/g, '_') + '_' + (T.d1.date || today()) + '.xlsx' : base(w) + '.xlsx');
+  }
+  function twoPreview(w) {
+    const O = totals(), D = w === 1 ? T.d1 : T.d2, L = DKL(D.dk), msg = [];
+    if (O.errs.length) msg.push('확인할 칸 ' + O.errs.length + '곳은 아직 들어가지 않아요');
+    if (!s_(D.to)) msg.push('받는 분이 비어 있어요');
+    if (!O.n) msg.push('품목이 아직 없어요');
+    const go = a => () => { const b = document.querySelector('[data-acts="' + w + '"] [data-act="' + a + '"]'); if (b) b.click(); };
+    showPreview((w === 1 ? '1차 ' : '최종 ') + L.h + ' 미리보기', docHtml(w, O), msg.length ? '⚠ ' + msg.map(esc).join(' · ') : '', [['📤 보내기 (사진)', go('simg')], ['📄 PDF', go('spdf')], ['📗 엑셀 (거래처용)', go('xls')], ['🖨 인쇄', go('print')]]);
+  }
   function copy(w, btn) {
     const O = ready(w); if (!O) return;
     if (!(navigator.clipboard && window.ClipboardItem)) { busy(btn, async () => { const f = await makeFile(w, 'png'); if (f) { saveBlob(f, f.name); toast('이 브라우저는 사진 복사가 안 돼서 파일로 저장했어요.'); } }); return; }
@@ -1040,6 +1280,9 @@ const TWO = (() => {
     if (a === 'simg') { if (!isPhone()) { copy(w, b); return; } busy(b, async () => { const f = await makeFile(w, 'png'); if (f) await share(w, f); }); }
     else if (a === 'spdf') busy(b, async () => { const f = await makeFile(w, 'pdf'); if (!f) return; if (isPhone()) await share(w, f); else { saveBlob(f, f.name); toast('PDF를 저장했어요 (' + f.name + ').'); } });
     else if (a === 'copy') copy(w, b);
+    else if (a === 'pv') twoPreview(w);
+    else if (a === 'xls') busy(b, () => twoXls(w, false));
+    else if (a === 'xlsin') busy(b, () => twoXls(w, true));
     else if (a === 'png') busy(b, async () => { const f = await makeFile(w, 'png'); if (f) { saveBlob(f, f.name); toast('사진으로 저장했어요: ' + f.name); } });
     else if (a === 'pdf') busy(b, async () => { const f = await makeFile(w, 'pdf'); if (f) { saveBlob(f, f.name); toast('PDF로 저장했어요: ' + f.name); } });
     else if (a === 'memo') { const D = w === 1 ? T.d1 : T.d2; if (s_(D.memo) && !confirm('지금 비고를 기본 문구로 바꿀까요?')) return; D.memo = MEMO_CORP; save(); renderForms(); update(); }
