@@ -206,7 +206,7 @@ table.qt td.bcc { width: 108px; min-width: 108px; } table.qt td.bcc svg { min-wi
 <div class="toast" id="toast" role="status"></div>
 <script>
 'use strict';
-const BUILD = '2026-11-08c';
+const BUILD = '2026-11-08d';
 /* 새 버전이 올라오면 저절로 새로 고침 (창으로 돌아올 때 · 5분마다). 고르는 창이나 스캔 화면을 쓰는 중이면 기다림 */
 (function () {
   const check = async () => {
@@ -226,6 +226,8 @@ const BC = (() => {
   const PAR = ['LLLLLL', 'LLGLGG', 'LLGGLG', 'LLGGGL', 'LGLLGG', 'LGGLLG', 'LGGGLL', 'LGLGLG', 'LGLGGL', 'LGGLGL'];
   const eanCheck = d12 => { let s = 0; for (let i = 0; i < 12; i++) s += +d12[i] * (i % 2 ? 3 : 1); return (10 - s % 10) % 10; };
   const isEan = s => /^\d{13}$/.test(s) && eanCheck(s) === +s[12];
+  /* UPC-A(12자리, 수입 상품): 막대 모양은 앞에 0을 붙인 EAN-13과 같고, 스캐너는 UPC-A로 읽음 */
+  const isUpc = s => /^\d{12}$/.test(s) && eanCheck('0' + s.slice(0, 11)) === +s[11];
   function ean13(s) {
     const p = PAR[+s[0]]; let m = '101';
     for (let i = 1; i <= 6; i++) m += (p[i - 1] === 'L' ? L : G)[+s[i]];
@@ -241,17 +243,17 @@ const BC = (() => {
     vals.push(sum % 103);
     return vals.map(v => w2m(C128[v])).join('') + w2m(STOP);
   }
-  const modules = s => isEan(s) ? { kind: 'EAN-13', m: ean13(s) } : { kind: 'Code128', m: code128(s) };
+  const modules = s => isEan(s) ? { kind: 'EAN-13', m: ean13(s) } : isUpc(s) ? { kind: 'UPC-A', m: ean13('0' + s) } : { kind: 'Code128', m: code128(s) };
   /* SVG: 모듈 하나 = 1 단위, 앞뒤 조용한 여백(quiet zone) 포함, 아래 숫자 */
   function svg(s, o) {
-    o = o || {}; const { kind, m } = modules(String(s)), q = kind === 'EAN-13' ? 11 : 10, W = m.length + q * 2, H = o.h || 50, text = o.text !== false;
+    o = o || {}; const { kind, m } = modules(String(s)), q = kind === 'Code128' ? 10 : 11, W = m.length + q * 2, H = o.h || 50, text = o.text !== false;
     let r = '', x = 0;
     while (x < m.length) { if (m[x] === '1') { let w = 1; while (m[x + w] === '1') w++; r += '<rect x="' + (x + q) + '" y="0" width="' + w + '" height="' + H + '"/>'; x += w; } else x++; }
     const th = text ? 11 : 0;
     return '<svg class="bc" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + (H + th) + '" preserveAspectRatio="none" shape-rendering="crispEdges" role="img" aria-label="바코드 ' + s + '"><rect width="' + W + '" height="' + (H + th) + '" fill="#fff"/><g fill="#000">' + r + '</g>' +
       (text ? '<text x="' + W / 2 + '" y="' + (H + 10) + '" text-anchor="middle" font-family="monospace" font-size="10" fill="#000">' + s + '</text>' : '') + '</svg>';
   }
-  return { svg, modules, isEan, eanCheck, code128, ean13, C128, STOP, w2m };
+  return { svg, modules, isEan, isUpc, eanCheck, code128, ean13, C128, STOP, w2m };
 })();
 
 const $ = id => document.getElementById(id);
@@ -276,8 +278,19 @@ const SAMPLE = [['포세린 타일 그레이 600×600', '타일', 32000], ['욕�
   ['욕실 환풍기 저소음', '욕실환풍기', 35000], ['거위목 주방수전', '주방수전/부속품', 79000], ['앵글밸브 스텐', '세면기/부속품', 5500], ['멀티플랜지 정심', '양변기/부속품', 3900]]
   .map((r, i) => { const d12 = '8805137' + String(10001 + i * 13).slice(-5); return { c: String(20100100 + i * 7), b: d12 + BC.eanCheck(d12), n: r[0], s: r[1], m: '', p: r[2], k: 0, q: 0 }; });
 let DB = LS.get('db', null);
-const products = () => DB ? DB.products : SAMPLE;
-let PC = {}; const reindex = () => { PC = {}; products().forEach(p => { PC[p.c] = p; }); };
+/* 전산(PMS) 상품 목록을 올렸으면: 바코드 = 전산 등록 바코드, 단가 = 전산 판매가 (행사 기간이면 행사가) */
+function promoOn(pr) { const m = /(\d{1,2})\.(\d{1,2})\s*[-~]\s*(\d{1,2})\.(\d{1,2})/.exec(pr || ''); if (!m) return false; const d = new Date(), t = (d.getMonth() + 1) * 100 + d.getDate(), a = +m[1] * 100 + +m[2], b = +m[3] * 100 + +m[4]; return a <= b ? t >= a && t <= b : t >= a || t <= b; }
+const pickBc = bs => (bs || []).find(b => BC.isEan(b) || BC.isUpc(b)) || (bs || [])[0] || '';
+function view(p) {
+  const bm = DB && DB.bm; if (!bm) return p;
+  const m = bm[p.c]; if (!m) return Object.assign({}, p, { reg: false });
+  /* 전산에 바코드가 여러 개면: 실제로 POS에서 찍혔던(판매 기록) 바코드를 먼저 */
+  const [bs, rp, pp, pr, note] = m, b = p.b && bs.includes(p.b) ? p.b : pickBc(bs), promo = pp > 0 && promoOn(pr);
+  return Object.assign({}, p, { b: b || p.b, p: promo ? pp : (rp > 0 ? rp : p.p), reg: true, promo: promo ? { pp, rp, pr, note: note || '' } : null, bad: !!b && !BC.isEan(b) && !BC.isUpc(b) });
+}
+let PL = [], PC = {};
+const products = () => PL;
+const reindex = () => { PL = (DB ? DB.products : SAMPLE).map(view); PC = {}; PL.forEach(p => { PC[p.c] = p; }); };
 reindex();
 
 /* ===== 견적 (이 기기에만 저장) — 줄마다 상품 정보를 그대로 적어 둠 (상품 목록이 바뀌어도 견적은 그대로) ===== */
@@ -295,7 +308,7 @@ function addItem(code, q, quiet) {
   ST.last = code; save(); renderLeft(); renderRight();
   const i = C.lines.findIndex(x => x.c === code), row = document.querySelector('[data-li="' + i + '"]');
   if (row) { row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash'); row.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
-  if (!quiet) toast(p.n + ' 담았어요');
+  if (!quiet && p.promo && p.promo.note) toast(p.n + ' 담았어요 — ' + p.promo.note + ' 행사 중 (' + p.promo.pr + ')'); else if (!quiet) toast(p.reg === false ? '⚠ ' + p.n + ' — 전산(PMS)에 없는 상품이라 POS에서 안 읽힐 수 있어요' : p.n + ' 담았어요');
 }
 
 /* ===== 왼쪽: 견적서 (시안 A) ===== */
@@ -340,9 +353,9 @@ function renderRight() {
   const list = visible().slice(0, 300), hot = hotCut();
   $('R').innerHTML = list.length ? list.map(p => {
     const n = inCart(p.c), lk = look(p), s = st && st[p.c];
-    const badges = (p.k >= hot ? '<span class="badge hot">인기</span>' : '') + (s && s.st && s.st !== '정상' ? '<span class="badge stop">' + esc(s.st) + '</span>' : '') + (s && s.q != null && s.q <= 0 ? '<span class="badge low">재고 없음</span>' : '');
+    const badges = (p.promo ? '<span class="badge hot">' + (p.promo.note ? esc(p.promo.note) + ' ' : '') + '행사 ~' + esc(String(p.promo.pr).split(/[-~]/)[1] || '') + '</span>' : '') + (p.reg === false ? '<span class="badge stop">전산 미등록</span>' : '') + (p.bad ? '<span class="badge low">바코드 확인</span>' : '') + (p.k >= hot ? '<span class="badge hot">인기</span>' : '') + (s && s.st && s.st !== '정상' ? '<span class="badge stop">' + esc(s.st) + '</span>' : '') + (s && s.q != null && s.q <= 0 ? '<span class="badge low">재고 없음</span>' : '');
     return '<div class="pcard' + (n ? ' in' : '') + '" data-pid="' + esc(p.c) + '">' + (n ? '<span class="cnt">' + n + '</span>' : '') + '<button class="add" type="button" data-add="' + esc(p.c) + '" aria-label="담기">＋</button>' +
-      '<div class="ic" style="background:' + lk.bg + '">' + lk.e + '</div><div class="nm">' + badges + esc(p.n) + '</div><div class="sp">' + esc(p.s || '') + (p.k ? ' · 판매 ' + p.k + '건' : '') + (s && s.q != null ? ' · 재고 ' + s.q : '') + '</div><div class="pr">' + won(p.p) + '원</div><div class="grip">⟵ 끌어서 담기 · ' + esc(p.b || p.c) + '</div></div>';
+      '<div class="ic" style="background:' + lk.bg + '">' + lk.e + '</div><div class="nm">' + badges + esc(p.n) + '</div><div class="sp">' + esc(p.s || '') + (p.k ? ' · 판매 ' + p.k + '건' : '') + (s && s.q != null ? ' · 재고 ' + s.q : '') + '</div><div class="pr">' + won(p.p) + '원' + (p.promo && p.promo.rp > p.p ? ' <s class="muted" style="font-weight:500;font-size:.8em">' + won(p.promo.rp) + '</s>' : '') + '</div><div class="grip">⟵ 끌어서 담기 · ' + esc(p.b || p.c) + (p.reg ? ' ✓' : '') + '</div></div>';
   }).join('') + (visible().length > 300 ? '<div class="empty" style="grid-column:1/-1">상품이 많아 300개까지만 보여요. 위에서 찾거나 분류를 골라 주세요.</div>' : '') : '<div class="empty" style="grid-column:1/-1">찾는 상품이 없어요</div>';
 }
 
@@ -451,6 +464,37 @@ function analyze(rows) {
   });
   return { v: 1, at: Date.now(), from: from === 99999999 ? 0 : from, to, txN: tx.size, rows: use.length, interior, products, co: coOut, bundles };
 }
+/* 전산(PMS) 상품 목록: 상품코드 · 상품명 · 바코드 (+ 기존판매가 · 행사가 · 행사기간) — 판매번호가 없는 표 */
+const code8 = v => { const s = typeof v === 'number' ? String(Math.round(v)) : String(v == null ? '' : v).trim(); return /^\d{1,8}$/.test(s) ? s.padStart(8, '0') : s; };
+const bcStr = v => typeof v === 'number' ? String(Math.round(v)) : String(v == null ? '' : v).replace(/\s/g, '');
+function masterRows(aoa) {
+  let h = -1; for (let i = 0; i < Math.min(aoa.length, 30); i++) { const z = (aoa[i] || []).map(hn); if (z.includes('상품코드') && z.some(x => /바코드/.test(x)) && !z.includes('판매번호')) { h = i; break; } }
+  if (h < 0) return null;
+  const z = aoa[h].map(hn), col = (...ns) => { for (const n of ns) { const k = z.indexOf(n); if (k >= 0) return k; } return -1; };
+  const K = { c: col('상품코드'), b: z.findIndex(x => /바코드/.test(x)), p: col('기존판매가', '판매가', '정상가', '정상판매가'), pp: col('행사가'), pr: col('행사기간') };
+  const out = {}; let n = 0;
+  for (let i = h + 1; i < aoa.length; i++) {
+    const r = aoa[i] || [], c = code8(r[K.c]); if (!c) continue;
+    const b = bcStr(r[K.b]), o = out[c] || (out[c] = [[], 0, 0, '', '']);
+    if (b && !o[0].includes(b)) o[0].push(b);
+    /* 행사가는 "39,900 (1+1)"처럼 글이 붙기도 함 → 숫자는 단가, 괄호 안은 행사 표시 */
+    const ppRaw = K.pp >= 0 ? String(r[K.pp] == null ? '' : r[K.pp]) : '', p = K.p >= 0 ? num(r[K.p]) : 0, pp = num(ppRaw.replace(/\(.*?\)/g, '')), note = (ppRaw.match(/\(([^)]*)\)/) || [])[1] || '', pr = K.pr >= 0 ? String(r[K.pr] || '').trim() : '';
+    if (p > 0 && !o[1]) o[1] = Math.round(p); if (pp > 0 && !o[2]) { o[2] = Math.round(pp); o[3] = pr; o[4] = note.trim(); } n++;
+  }
+  return n ? out : null;
+}
+/* 전산 목록을 붙인 뒤: 견적서에 담긴 상품도 전산 바코드 · 단가로 맞춤 (직접 고친 단가는 그대로) + 결과 정리 */
+function afterMaster() {
+  let lc = 0; C.lines.forEach(l => { const p = PC[l.c]; if (!p || !p.reg) return; if (l.b !== p.b || (l.op == null && l.p !== p.p)) lc++; l.b = p.b; if (l.op == null) l.p = p.p; }); save(); renderLeft();
+  const raw = Object.fromEntries(DB.products.map(p => [p.c, p])), ps = PL;
+  const reg = ps.filter(p => p.reg), un = ps.filter(p => p.reg === false), chg = reg.filter(p => raw[p.c].b && !(DB.bm[p.c][0] || []).includes(raw[p.c].b)), upc = reg.filter(p => BC.isUpc(p.b)), bad = reg.filter(p => p.bad), promo = reg.filter(p => p.promo);
+  const li = (a, f) => a.slice(0, 8).map(f).join('<br>') + (a.length > 8 ? '<br>…외 ' + (a.length - 8) + '개' : '');
+  return '<div class="ok">✅ 전산 상품 목록을 맞췄어요 — 인테리어 상품 ' + ps.length.toLocaleString('ko-KR') + '개 중 <b>' + reg.length.toLocaleString('ko-KR') + '개</b>가 전산에 있어요. 이제 이 상품들은 <b>전산 등록 바코드</b>와 <b>전산 판매가</b>로 나와요.' +
+    (promo.length ? '<br>지금 행사 중인 상품 ' + promo.length + '개는 행사가로 나와요.' : '') + (upc.length ? '<br>수입 상품 바코드(12자리 UPC-A) ' + upc.length + '개도 UPC-A로 그려요.' : '') + (lc ? '<br>견적서에 담긴 ' + lc + '개 상품의 바코드 · 단가도 전산 기준으로 바꿨어요.' : '') + '</div>' +
+    (chg.length ? '<details class="warnb" style="margin-top:8px"><summary>판매 기록과 바코드가 달라진 상품 ' + chg.length + '개 (전산 바코드로 바꿔 그려요)</summary>' + li(chg, p => esc(p.n) + ' · ' + esc(raw[p.c].b) + ' → <b>' + esc(p.b) + '</b>') + '</details>' : '') +
+    (un.length ? '<details class="err" style="margin-top:8px"><summary>전산에 없는 상품 ' + un.length + '개 (판매 기록 바코드로 그리지만 POS에서 안 읽힐 수 있어요 — 카드에 "전산 미등록")</summary>' + li(un, p => esc(p.c) + ' · ' + esc(p.n)) + '</details>' : '') +
+    (bad.length ? '<details class="warnb" style="margin-top:8px"><summary>바코드 끝자리(체크 숫자)가 맞지 않는 상품 ' + bad.length + '개 — 실제 상품의 바코드와 한 번 비교해 주세요</summary>' + li(bad, p => esc(p.n) + ' · ' + esc(p.b)) + '</details>' : '');
+}
 /* 재고 파일(선택): 상품코드 · 상품상태 · 가용 재고수량 */
 function stockRows(aoa) {
   let h = -1; for (let i = 0; i < Math.min(aoa.length, 30); i++) { const z = (aoa[i] || []).map(hn); if (z.includes('상품코드') && (z.some(x => /재고수량/.test(x)) || z.includes('상품상태'))) { h = i; break; } }
@@ -462,10 +506,11 @@ function stockRows(aoa) {
 function openUpload(msg) {
   const old = $('um'); if (old) old.remove();
   const box = document.createElement('div'); box.className = 'modal'; box.id = 'um';
-  const sum = DB ? '<div class="kv"><span>지금 상품</span><span><b>' + DB.products.length.toLocaleString('ko-KR') + '개</b> (' + (DB.interior ? '인테리어성자재' : '전체 분류') + ')</span><span>판매 데이터</span><span>' + dLabel(DB.from) + ' ~ ' + dLabel(DB.to) + ' · 거래 ' + DB.txN.toLocaleString('ko-KR') + '건</span><span>자주 사는 구성</span><span>' + (DB.bundles.map(b => esc(b.name) + ' ' + b.n + '건').join(' · ') || '-') + '</span><span>재고 파일</span><span>' + (DB.stock ? Object.keys(DB.stock).length.toLocaleString('ko-KR') + '개 상품 · ' + esc(DB.stockAt || '') : '없음') + '</span></div>' : '<p class="muted">아직 올린 자료가 없어요. 지금은 샘플 상품이 보여요.</p>';
+  const sum = DB ? '<div class="kv"><span>지금 상품</span><span><b>' + DB.products.length.toLocaleString('ko-KR') + '개</b> (' + (DB.interior ? '인테리어성자재' : '전체 분류') + ')</span><span>판매 데이터</span><span>' + dLabel(DB.from) + ' ~ ' + dLabel(DB.to) + ' · 거래 ' + DB.txN.toLocaleString('ko-KR') + '건</span><span>자주 사는 구성</span><span>' + (DB.bundles.map(b => esc(b.name) + ' ' + b.n + '건').join(' · ') || '-') + '</span><span>전산 상품 목록</span><span>' + (DB.bm ? '<b>' + Object.keys(DB.bm).length.toLocaleString('ko-KR') + '개</b> · ' + esc(DB.bmAt || '') + ' · 인테리어 상품 중 ' + PL.filter(p => p.reg).length.toLocaleString('ko-KR') + '개 맞춤' : '<b style="color:var(--red)">없음 — 바코드가 판매 기록 기준이에요</b>') + '</span><span>재고 파일</span><span>' + (DB.stock ? Object.keys(DB.stock).length.toLocaleString('ko-KR') + '개 상품 · ' + esc(DB.stockAt || '') : '없음') + '</span></div>' : '<p class="muted">아직 올린 자료가 없어요. 지금은 샘플 상품이 보여요.</p>';
   box.innerHTML = '<div class="mbox" role="dialog" aria-modal="true"><div class="mh"><b>📥 상품 · 판매 데이터 올리기</b><button class="btn sm x" type="button" data-ux="close">닫기 ✕</button></div><div class="mb">' + (msg || '') + sum +
     '<div class="hint" style="margin-bottom:10px;background:#eef3fa;color:#1d3557;border-radius:10px;padding:10px 12px">🖱️ <b>Finder에서 파일을 이 화면 아무 곳에나 끌어다 놓아도 돼요.</b> 판매 데이터 · 재고 파일을 한꺼번에 끌어 놓아도 알아서 나눠요.</div><label class="drop" for="fSales"><b>① 판매 데이터 (필수) — POS "실시간 대량판매현황" 엑셀</b>2년치처럼 여러 파일을 한꺼번에 골라도 돼요. 인테리어성자재 상품만 골라 <b>상품 목록</b>(최근 판매 단가 · 바코드)과 <b>같이 산 상품</b>, <b>욕실 1개소 · 2개소</b> 같은 자주 사는 구성을 만들어요.</label>' +
-    '<label class="drop" for="fStock" style="margin-top:10px"><b>② 재고 파일 (선택) — "인테리어 재고 확인" 엑셀</b>상품코드로 맞춰 재고 수량과 발주중단 같은 상태를 카드에 보여 줘요.</label>' +
+    '<label class="drop" for="fStock" style="margin-top:10px"><b>② 전산 상품 목록 (꼭 권장) — "PMS상품다운로드" 엑셀</b>상품코드로 맞춰 <b>전산에 등록된 바코드</b>와 <b>판매가 · 행사가</b>로 바꿔요. 이래야 POS에서 바코드가 읽혀요.</label>' +
+    '<label class="drop" for="fStock" style="margin-top:10px"><b>③ 재고 파일 (선택) — "인테리어 재고 확인" 엑셀</b>상품코드로 맞춰 재고 수량과 발주중단 같은 상태를 카드에 보여 줘요.</label>' +
     '<p class="muted" style="font-size:.84em;margin:10px 0 0">손님 이름 · 담당자 같은 개인 정보는 저장하지 않아요. 상품 목록은 <b>이 기기(브라우저)에만</b> 저장돼요 — 태블릿에서도 쓰려면 태블릿에서 한 번 더 올리거나, 아래 "목록 파일로 저장"한 파일을 태블릿에서 "목록 파일 불러오기" 하세요.</p></div>' +
     '<div class="mf"><button class="btn sm" type="button" data-ux="export"' + (DB ? '' : ' disabled') + '>💾 목록 파일로 저장</button><label class="btn sm" for="fJson">📂 목록 파일 불러오기</label><span style="margin-left:auto"></span><button class="btn sm ghost" type="button" data-ux="reset"' + (DB ? '' : ' disabled') + ' style="color:var(--red)">샘플로 되돌리기</button></div></div>';
   box.addEventListener('click', e => {
@@ -489,16 +534,17 @@ async function importFiles(files) {
   if (!xs.length) { openUpload('<div class="err">엑셀(.xlsx · .xls · .xlsb) 또는 CSV 파일을 올려 주세요.' + (skip.length ? '<br>못 쓰는 파일: ' + skip.map(f => esc(f.name)).join(', ') : '') + '</div>'); return; }
   openUpload('<div class="warnb">⏳ ' + xs.length + '개 파일 읽는 중… (큰 파일은 1~2분 걸릴 수 있어요)</div>');
   try {
-    const byFile = [], none = [], salesNames = [], stockNames = []; let bad = 0, stock = null;
+    const byFile = [], none = [], salesNames = [], stockNames = [], masterNames = []; let bad = 0, stock = null, master = null;
     for (const f of xs) {
-      const sheets = await readAoa(f); let got = null, st = null;
-      for (const a of sheets) { const r = salesRows(a); if (r) { got = got || { rows: [], bad: 0 }; got.rows.push(...r.rows); got.bad += r.bad; } else if (!st) st = stockRows(a); }
+      const sheets = await readAoa(f); let got = null, st = null, ms = null;
+      for (const a of sheets) { const r = salesRows(a); if (r) { got = got || { rows: [], bad: 0 }; got.rows.push(...r.rows); got.bad += r.bad; } else { const m = masterRows(a); if (m) ms = Object.assign(ms || {}, m); else if (!st) st = stockRows(a); } }
       if (got) { bad += got.bad; byFile.push(got.rows); salesNames.push(f.name); }
+      else if (ms) { master = Object.assign(master || {}, ms); masterNames.push(f.name); }
       else if (st) { stock = Object.assign(stock || {}, st); stockNames.push(f.name); }
       else none.push(f.name);
     }
     const tail = (none.length ? '<br>판매 내역 · 재고 파일이 아니어서 건너뛴 파일: ' + none.map(esc).join(', ') : '') + (skip.length ? '<br>엑셀이 아니어서 건너뛴 파일: ' + skip.map(f => esc(f.name)).join(', ') : '');
-    if (!byFile.length && !stock) { openUpload('<div class="err">판매 내역을 찾지 못했어요. 머리글에 <b>판매번호 · 상품코드 · 상품명 · 판매수량</b>이 있는 POS 판매 파일인지 확인해 주세요.' + tail + '</div>'); return; }
+    if (!byFile.length && !stock && !master) { openUpload('<div class="err">판매 내역을 찾지 못했어요. 머리글에 <b>판매번호 · 상품코드 · 상품명 · 판매수량</b>이 있는 POS 판매 파일인지 확인해 주세요.' + tail + '</div>'); return; }
     let msg = '';
     if (byFile.length) {
       /* 같은 기간 파일을 두 번 올려도 두 번 세지 않게: 같은 줄(판매번호·상품·수량·금액)은 파일마다 센 개수 중 큰 값만 */
@@ -506,9 +552,14 @@ async function importFiles(files) {
       byFile.forEach(rows => { const seen = new Map(); rows.forEach(r => { const k = r.tx + '|' + r.c + '|' + r.q + '|' + r.p; const n = (seen.get(k) || 0) + 1; seen.set(k, n); if (n > (keyCnt.get(k) || 0)) { keyCnt.set(k, n); all.push(r); } }); });
       const db = analyze(all);
       if (stock) { db.stock = stock; db.stockAt = stockNames.join(', '); } else if (DB && DB.stock) { db.stock = DB.stock; db.stockAt = DB.stockAt; }
+      if (master) { db.bm = master; db.bmAt = masterNames.join(', '); } else if (DB && DB.bm) { db.bm = DB.bm; db.bmAt = DB.bmAt; }
       const ok = saveDB(db);
       msg = '<div class="' + (ok ? 'ok' : 'err') + '">' + (ok ? '✅ 상품 목록을 만들었어요' : '⚠ 기기 저장 공간이 부족해 다음에 열면 사라질 수 있어요 (지금은 쓸 수 있어요)') + ' — 판매 파일 ' + salesNames.length + '개 · 판매 줄 ' + db.rows.toLocaleString('ko-KR') + '개' + (db.interior ? ' (인테리어성자재만)' : '') + ' → 상품 ' + db.products.length.toLocaleString('ko-KR') + '개 · 거래 ' + db.txN.toLocaleString('ko-KR') + '건' +
-        (stock ? '<br>재고 파일 ' + stockNames.length + '개도 붙였어요' : '') + (bad ? '<br>숫자를 읽지 못해 뺀 줄 ' + bad + '개' : '') + tail + '</div>';
+        (stock ? '<br>재고 파일 ' + stockNames.length + '개도 붙였어요' : '') + (bad ? '<br>숫자를 읽지 못해 뺀 줄 ' + bad + '개' : '') + tail + '</div>' + (db.bm ? afterMaster() : '');
+    } else if (master) {
+      if (!DB) { openUpload('<div class="err">전산 상품 목록만 있어요. 판매 데이터를 먼저 (또는 같이) 올려 주세요 — 판매 데이터의 인테리어 상품에 전산 바코드를 맞춰요.' + tail + '</div>'); return; }
+      const db = Object.assign({}, DB, { bm: master, bmAt: masterNames.join(', ') }); if (stock) { db.stock = stock; db.stockAt = stockNames.join(', '); }
+      const ok = saveDB(db); msg = (ok ? '' : '<div class="err">⚠ 기기 저장 공간이 부족해 다음에 열면 사라질 수 있어요</div>') + afterMaster() + (tail ? '<div class="muted" style="margin-top:6px">' + tail.replace(/^<br>/, '') + '</div>' : '');
     } else {
       if (!DB) { openUpload('<div class="err">재고 파일만 있어요. 판매 데이터를 먼저 (또는 같이) 올려 주세요.' + tail + '</div>'); return; }
       const hit = DB.products.filter(p => stock[p.c]).length; saveDB(Object.assign({}, DB, { stock, stockAt: stockNames.join(', ') }));
