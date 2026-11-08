@@ -71,8 +71,8 @@ label.f { display: block; font-size: .85em; font-weight: 600; color: var(--ink2)
 .pic { width: 76px; height: 57px; flex: none; color: #1f5a3d; background: #fff; border: 1px solid var(--line); border-radius: 10px; }
 .phb { flex: none; padding: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; cursor: zoom-in; width: 96px; height: 72px; }
 .phb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-#phDlg { border: 0; border-radius: 16px; padding: 10px; max-width: min(92vw, 900px); }
-#phDlg img { display: block; max-width: 100%; max-height: 78vh; border-radius: 10px; }
+#phDlg { border: 0; border-radius: 16px; padding: 10px; max-width: min(calc(92vw / var(--z, 1)), 900px); }
+#phDlg img { display: block; max-width: 100%; max-height: calc(78vh / var(--z, 1)); border-radius: 10px; }
 #phDlg p { margin: 8px 4px 2px; font-weight: 700; }
 #phDlg::backdrop { background: rgba(0,0,0,.6); }
 .figc { margin: 6px 0 18px; }
@@ -340,8 +340,8 @@ body.wideq .wrap { max-width: 1530px; }
 .dkseg { display: inline-flex; background: var(--surface2); border: 1px solid var(--line); border-radius: 12px; padding: 3px; }
 .dkseg button { border: 0; background: transparent; font: inherit; font-weight: 700; padding: 7px 14px; border-radius: 9px; cursor: pointer; color: var(--ink2); }
 .dkseg button.on { background: var(--top); color: #fff; }
-.pvov { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 150; background: rgba(15,23,42,.55); display: flex; align-items: flex-start; justify-content: center; padding: 12px 0; overflow: hidden; }
-.pvbox { background: var(--surface); border-radius: 16px; width: min(900px, calc(100vw - 24px)); min-width: 0; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.35); display: flex; flex-direction: column; max-height: calc(100vh - 32px); }
+.pvov { position: fixed; top: 0; left: 0; width: calc(100vw / var(--z, 1)); height: calc(100vh / var(--z, 1)); z-index: 150; background: rgba(15,23,42,.55); display: flex; align-items: flex-start; justify-content: center; padding: 12px 0; overflow: hidden; }
+.pvbox { background: var(--surface); border-radius: 16px; width: min(900px, calc(calc(100vw / var(--z, 1)) - 24px)); min-width: 0; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.35); display: flex; flex-direction: column; max-height: calc(calc(100vh / var(--z, 1)) - 32px); }
 .pvhd { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
 .pvnote { padding: 8px 16px; background: #fff6e5; color: #8a5300; font-size: .9em; }
 .pvbody { overflow-x: hidden; overflow-y: auto; padding: 12px; background: #e9edf2; flex: 1; min-width: 0; }
@@ -387,10 +387,15 @@ body.print2 #tPrint .cdoc { border: 0; padding: 0; width: 100%; }
 input[type="date"] { -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; box-sizing: border-box; display: block; width: 100%; text-align: left; }
 input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
 input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
+
+/* 큰 모니터(1800px 넘는 화면)에서는 글씨 · 버튼을 조금 크게 */
+@media screen and (min-width: 1800px) { html { zoom: 1.12; --z: 1.12; } }
+@media screen and (min-width: 2200px) { html { zoom: 1.3; --z: 1.3; } }
+@media screen and (min-width: 3000px) { html { zoom: 1.6; --z: 1.6; } }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-08a';
+const BUILD = '2026-11-08-r1';
 (function () {
   let busy = false;
   async function check() {

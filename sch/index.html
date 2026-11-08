@@ -188,7 +188,7 @@ td.l, th.l { text-align: left; }
 .mono { font-family: ui-monospace, Consolas, monospace; font-size: .9em; background: var(--surface2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; word-break: break-all; user-select: all; }
 
 /* 창(모달) */
-dialog.doc { border: 0; border-radius: var(--radius); padding: 0; width: min(980px, calc(100% - 24px)); max-height: calc(100vh - 48px); background: var(--surface); color: var(--ink); box-shadow: 0 20px 60px rgba(0, 0, 0, .25); }
+dialog.doc { border: 0; border-radius: var(--radius); padding: 0; width: min(980px, calc(100% - 24px)); max-height: calc(calc(100vh / var(--z, 1)) - 48px); background: var(--surface); color: var(--ink); box-shadow: 0 20px 60px rgba(0, 0, 0, .25); }
 dialog.doc.narrow { width: min(560px, calc(100% - 24px)); }
 dialog.doc::backdrop { background: rgba(10, 15, 25, .45); }
 dialog.doc .dh { position: sticky; top: 0; z-index: 1; background: var(--surface); display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--line); }
@@ -215,6 +215,7 @@ dialog.doc.pin { width: min(340px, calc(100% - 24px)); text-align: center; }
 .fab-bar { position: fixed; right: 20px; bottom: 20px; z-index: 40; display: flex; gap: 8px; }
 .fab { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 10px 16px; font-size: .9em; font-weight: 600; text-decoration: none; box-shadow: 0 6px 18px rgba(16, 24, 40, .14); }
 .fab:hover { border-color: var(--s1); }
+.fab-more { display: none; cursor: pointer; }
 .fab.admin-btn { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); padding: 12px 20px; font-size: 1em; font-weight: 700; cursor: pointer; }
 .head-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .mode-tag { font-weight: 700; font-size: .9em; padding: 6px 13px; border-radius: 999px; background: #e7f6ec; color: #166534; }
@@ -231,8 +232,12 @@ body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .
   .dl small { font-size: .78em; }
   .emp { flex-direction: column; padding: 3px 1px; font-size: .64em; letter-spacing: -.5px; text-align: center; gap: 0; border-radius: 5px; }
   .emp b, .emp i { max-width: 100%; overflow: hidden; }
-  .fab-bar { right: 10px; bottom: 10px; left: 10px; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
-  .fab { padding: 8px 12px; font-size: .85em; }
+  .fab-bar { right: 10px; bottom: 10px; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .fab { padding: 10px 14px; font-size: .9em; }
+  .fab-bar a.fab { display: none; }
+  .fab-bar.open a.fab { display: block; }
+  .fab-more { display: block !important; order: 9; background: var(--ink); color: #fff; border-color: var(--ink); font-weight: 700; }
+  .fab.admin-btn { order: 8; }
 }
 /* 스크롤 막대: 매출 현황과 같게 얇고 둥글게 */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -247,6 +252,11 @@ body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .
   body, html { background: #fff; }
   .day { break-inside: avoid; min-height: 100px; }
 }
+
+/* 큰 모니터(1800px 넘는 화면)에서는 글씨 · 버튼을 조금 크게 */
+@media screen and (min-width: 1800px) { html { zoom: 1.12; --z: 1.12; } }
+@media screen and (min-width: 2200px) { html { zoom: 1.3; --z: 1.3; } }
+@media screen and (min-width: 3000px) { html { zoom: 1.6; --z: 1.6; } }
 </style>
 </head>
 <body>
@@ -368,7 +378,7 @@ body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .
   </div>
 </dialog>
 
-<div class="fab-bar"><a class="fab" href="../todo/">✅ 할 일</a><a class="fab" href="../pos/">📊 매출 현황</a><button class="fab admin-btn hide" id="adminFab">🔒 관리자 모드</button><a class="fab" href="../quote/">🏪 홈센터 견적서</a><a class="fab" href="../order/">🏗️ 수주팀</a></div>
+<div class="fab-bar" id="fabBar"><button class="fab fab-more" id="fabMore" type="button" aria-expanded="false">☰ 바로가기</button><a class="fab" href="../todo/">✅ 할 일</a><a class="fab" href="../pos/">📊 매출 현황</a><button class="fab admin-btn hide" id="adminFab">🔒 관리자 모드</button><a class="fab" href="../quote/">🏪 홈센터 견적서</a><a class="fab" href="../order/">🏗️ 수주팀</a></div>
 <div id="toast" role="status"></div>
 
 <script>
@@ -383,7 +393,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-07c';
+const BUILD = '2026-11-08-r1';
 (function () {
   let busy = false;
   async function check() {
@@ -1064,6 +1074,9 @@ $('pinChangeBtn').addEventListener('click', () => {
   });
 });
 $('adminFab').addEventListener('click', enterAdmin);
+/* 핸드폰: ☰ 바로가기를 누르면 다른 앱 버튼이 펼쳐짐 (바깥을 누르면 접힘) */
+$('fabMore').addEventListener('click', e => { e.stopPropagation(); const o = $('fabBar').classList.toggle('open'); $('fabMore').textContent = o ? '✕ 닫기' : '☰ 바로가기'; $('fabMore').setAttribute('aria-expanded', o); });
+document.addEventListener('click', e => { if (!e.target.closest('#fabBar') && $('fabBar').classList.contains('open')) $('fabMore').click(); });
 $('adminGateBtn').addEventListener('click', enterAdmin);
 // 주소창에서 #admin을 붙이거나 지우면 화면도 따라감 (로그인 전이면 비밀번호 안내만 보여 줌)
 window.addEventListener('hashchange', () => {

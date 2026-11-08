@@ -16,7 +16,7 @@ html, body { margin: 0; height: 100%; }
 body { font-family: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background: var(--bg); color: var(--ink); font-size: 15px; overflow: hidden; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
-.app { height: 100dvh; display: flex; flex-direction: column; }
+.app { height: calc(100dvh / var(--z, 1)); display: flex; flex-direction: column; }
 /* 맨 위: 시안 고르기 */
 .top { background: var(--navy); color: #fff; padding: 8px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: none; }
 .top h1 { font-size: 1.05em; margin: 0; white-space: nowrap; } .top h1 b { color: #ff6b6b; }
@@ -75,7 +75,7 @@ svg.bc { display: block; width: 100%; height: auto; background: #fff; }
 .del { border: 0; background: transparent; color: var(--ink3); font-size: 18px; width: 36px; height: 36px; border-radius: 8px; }
 .empty { margin: 16px; border: 2px dashed var(--line); border-radius: var(--r); padding: 40px 16px; text-align: center; color: var(--ink3); line-height: 1.7; }
 .empty b { color: var(--ink2); font-size: 1.05em; }
-.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #172033; color: #fff; padding: 10px 18px; border-radius: 12px; z-index: 300; font-weight: 600; display: none; max-width: 90vw; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #172033; color: #fff; padding: 10px 18px; border-radius: 12px; z-index: 300; font-weight: 600; display: none; max-width: calc(90vw / var(--z, 1)); }
 
 /* ========== 시안 A: 견적서 종이 그대로 ========== */
 .paperwrap { background: #d9dee6; padding: 16px; }
@@ -89,6 +89,7 @@ svg.bc { display: block; width: 100%; height: auto; background: #fff; }
 .pinfo label:nth-child(odd) { border-right: 1px solid #c8ced8; }
 .pinfo label span { width: 72px; flex: none; text-align: center; background: #f2f4f7; align-self: stretch; display: flex; align-items: center; justify-content: center; font-size: .85em; font-weight: 700; }
 .pinfo input { border: 0; padding: 0 8px; min-height: 38px; flex: 1; min-width: 0; background: transparent; }
+@media screen and (max-width: 560px) { .pinfo { grid-template-columns: 1fr; } .pinfo label:nth-child(odd) { border-right: 0; } }
 table.qt { width: 100%; border-collapse: collapse; font-size: .9em; }
 table.qt th { background: #f2f4f7; border-top: 1.5px solid #000; border-bottom: 1px solid #000; padding: 6px 4px; font-size: .85em; }
 table.qt td { border-bottom: 1px solid #e3e7ee; padding: 6px 4px; vertical-align: middle; }
@@ -152,7 +153,7 @@ table.qt td.bcc { width: 108px; min-width: 108px; } table.qt td.bcc svg { min-wi
 .scan .sh b { font-size: 1.1em; }
 .scan .prog { height: 6px; background: #edf0f4; flex: none; } .scan .prog i { display: block; height: 100%; background: var(--ok); transition: width .2s; }
 .scan .sb { flex: 1; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; gap: 14px; text-align: center; }
-.scan .big { width: min(640px, 92vw); padding: 10px 26px; background: #fff; }
+.scan .big { width: min(640px, calc(92vw / var(--z, 1))); padding: 10px 26px; background: #fff; }
 .scan .nm { font-size: 1.35em; font-weight: 800; } .scan .nm small { display: block; font-size: .7em; color: var(--ink3); font-weight: 500; }
 .scan .qn { font-size: 1.15em; background: #fff6e0; color: #6b4300; border-radius: 12px; padding: 10px 16px; } .scan .qn b { font-size: 1.5em; }
 .scan .sf { display: flex; gap: 10px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
@@ -165,7 +166,7 @@ table.qt td.bcc { width: 108px; min-width: 108px; } table.qt td.bcc svg { min-wi
 .fabcat { display: none; }
 @media (max-width: 899px) {
   .split, .split.b { grid-template-columns: 1fr; }
-  .pane.right { position: fixed; left: 0; right: 0; bottom: 0; height: 74dvh; z-index: 50; background: var(--bg); border-top-left-radius: 18px; border-top-right-radius: 18px; box-shadow: 0 -10px 40px rgba(0,0,0,.25); transform: translateY(105%); transition: transform .25s; overflow: hidden; }
+  .pane.right { position: fixed; left: 0; right: 0; bottom: 0; height: calc(74dvh / var(--z, 1)); z-index: 50; background: var(--bg); border-top-left-radius: 18px; border-top-right-radius: 18px; box-shadow: 0 -10px 40px rgba(0,0,0,.25); transform: translateY(105%); transition: transform .25s; overflow: hidden; }
   .pane.right.open { transform: none; }
   .fabcat { display: flex; position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 60; min-height: 56px; border-radius: 999px; padding: 0 20px; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
   .top .note { display: none; }
@@ -188,6 +189,11 @@ table.qt td.bcc { width: 108px; min-width: 108px; } table.qt td.bcc svg { min-wi
 input[type="date"] { -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; box-sizing: border-box; display: block; width: 100%; text-align: left; }
 input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
 input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
+
+/* 큰 모니터(1800px 넘는 화면)에서는 글씨 · 버튼을 조금 크게 */
+@media screen and (min-width: 1800px) { html { zoom: 1.12; --z: 1.12; } }
+@media screen and (min-width: 2200px) { html { zoom: 1.3; --z: 1.3; } }
+@media screen and (min-width: 3000px) { html { zoom: 1.6; --z: 1.6; } }
 </style>
 </head>
 <body>
@@ -225,7 +231,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
 <div class="toast" id="toast" role="status"></div>
 <script>
 'use strict';
-const BUILD = '2026-11-08l';
+const BUILD = '2026-11-08m';
 /* 새 버전이 올라오면 저절로 새로 고침 (창으로 돌아올 때 · 5분마다). 고르는 창이나 스캔 화면을 쓰는 중이면 기다림 */
 (function () {
   const check = async () => {
