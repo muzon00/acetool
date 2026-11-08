@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self' https://*.googleapis.com https://www.gstatic.com; frame-src https://acetool-923f6.firebaseapp.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <title>인테리어 상담 견적 · ACE</title>
@@ -25,7 +25,9 @@ button { cursor: pointer; }
 .vtabs button small { display: block; font-weight: 500; opacity: .75; font-size: .76em; }
 .vtabs button.on { background: #fff; color: var(--navy); }
 .top .note { font-size: .78em; opacity: .8; }
-.top .btn { color: var(--navy); }
+.top .btn { color: var(--navy); } .top .btn.on { background: #e8f6ee; color: var(--ok); border-color: #9fc7b0; }
+.modal .info { display: grid; gap: 8px; } .modal .info label { font-size: .8em; color: var(--ink3); font-weight: 700; } .modal .info input { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; font-size: 1.1em; color: var(--ink); margin-top: 2px; }
+.errb { background: #fdecee; color: #8a1c24; border-radius: 10px; padding: 10px 12px; }
 .apptabs { display: flex; gap: 4px; background: rgba(255,255,255,.1); border-radius: 12px; padding: 3px; }
 .apptabs a { color: #cfd8e6; text-decoration: none; font-weight: 800; padding: 7px 12px; border-radius: 9px; font-size: .92em; }
 .apptabs a.on { background: #fff; color: var(--navy); }
@@ -192,7 +194,8 @@ input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
   <div class="top">
     <div class="apptabs"><a href="index.html" class="on">🧾 상품 견적 (바코드)</a><a href="package.html">🏠 전체 인테리어 견적</a></div>
     <span class="note" id="dbNote"></span>
-    <button class="btn sm" type="button" data-act="upload" style="margin-left:auto">📥 상품 · 판매 데이터 올리기</button>
+    <button class="btn sm" id="cloudBtn" type="button" style="margin-left:auto">☁️ 로그인 (기기 연동)</button>
+    <button class="btn sm" type="button" data-act="upload">📥 상품 · 판매 데이터 올리기</button>
   </div>
   <div class="split" id="split">
     <section class="pane left">
@@ -217,7 +220,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
 <div class="toast" id="toast" role="status"></div>
 <script>
 'use strict';
-const BUILD = '2026-11-08h';
+const BUILD = '2026-11-08i';
 /* 새 버전이 올라오면 저절로 새로 고침 (창으로 돌아올 때 · 5분마다). 고르는 창이나 스캔 화면을 쓰는 중이면 기다림 */
 (function () {
   const check = async () => {
@@ -530,7 +533,7 @@ function openUpload(msg) {
     '<div class="hint" style="margin-bottom:10px;background:#eef3fa;color:#1d3557;border-radius:10px;padding:10px 12px">🖱️ <b>Finder에서 파일을 이 화면 아무 곳에나 끌어다 놓아도 돼요.</b> 판매 데이터 · 재고 파일을 한꺼번에 끌어 놓아도 알아서 나눠요.</div><label class="drop" for="fSales"><b>① 판매 데이터 (필수) — POS "실시간 대량판매현황" 엑셀</b>2년치처럼 여러 파일을 한꺼번에 골라도 돼요. 인테리어성자재 상품만 골라 <b>상품 목록</b>(최근 판매 단가 · 바코드)과 <b>같이 산 상품</b>, <b>욕실 1개소 · 2개소</b> 같은 자주 사는 구성을 만들어요.</label>' +
     '<label class="drop" for="fStock" style="margin-top:10px"><b>② 전산 상품 목록 (꼭 권장) — "PMS상품다운로드" 엑셀</b>상품코드로 맞춰 <b>전산에 등록된 바코드</b>와 <b>판매가 · 행사가</b>로 바꿔요. 이래야 POS에서 바코드가 읽혀요.</label>' +
     '<label class="drop" for="fStock" style="margin-top:10px"><b>③ 재고 파일 (선택) — "인테리어 재고 확인" 엑셀</b>상품코드로 맞춰 재고 수량과 발주중단 같은 상태를 카드에 보여 줘요.</label>' +
-    '<p class="muted" style="font-size:.84em;margin:10px 0 0">손님 이름 · 담당자 같은 개인 정보는 저장하지 않아요. 상품 목록은 <b>이 기기(브라우저)에만</b> 저장돼요 — 태블릿에서도 쓰려면 태블릿에서 한 번 더 올리거나, 아래 "목록 파일로 저장"한 파일을 태블릿에서 "목록 파일 불러오기" 하세요.</p></div>' +
+    '<p class="muted" style="font-size:.84em;margin:10px 0 0">손님 이름 · 담당자 같은 개인 정보는 저장하지 않아요. <b>☁️ 맨 위에서 로그인하면 PC · 태블릿이 자동으로 연동돼요</b> — PC에서 관리자 계정으로 올리면 태블릿은 열기만 하면 같은 상품 목록을 받아요. (로그인하지 않으면 이 기기에만 저장)</p></div>' +
     '<div class="mf"><button class="btn sm" type="button" data-ux="export"' + (DB ? '' : ' disabled') + '>💾 목록 파일로 저장</button><label class="btn sm" for="fJson">📂 목록 파일 불러오기</label><span style="margin-left:auto"></span><button class="btn sm ghost" type="button" data-ux="reset"' + (DB ? '' : ' disabled') + ' style="color:var(--red)">샘플로 되돌리기</button></div></div>';
   box.addEventListener('click', e => {
     const b = e.target.closest('[data-ux]'); if (e.target === box) { box.remove(); return; } if (!b) return;
@@ -540,6 +543,20 @@ function openUpload(msg) {
   });
   document.body.appendChild(box);
 }
+/* ☁️ 연동: 관리자로 로그인했으면 올린 상품 목록을 클라우드로 → 다른 기기가 자동으로 받음 */
+window.dbVer = () => DB && DB.ver;
+async function cloudPush() {
+  const CL = window.CLOUD;
+  if (!CL || !CL.user) return '<div class="warnb" style="margin-top:8px">☁️ 태블릿 · 다른 PC에도 똑같이 나오게 하려면 맨 위 <b>☁️ 로그인</b>(관리자 계정) 후 다시 올려 주세요. 로그인하면 지금 목록이 바로 올라가요.</div>';
+  if (!CL.canWrite()) return '<div class="warnb" style="margin-top:8px">☁️ 이 계정은 보기 전용이라 클라우드에 올리지 않았어요 (이 기기에만 저장). 관리자 계정으로 올려 주세요.</div>';
+  try { const v = await CL.pushDB(DB); DB.ver = v; LS.set('db', DB); return '<div class="ok" style="margin-top:8px">☁️ <b>모든 기기에 연동했어요</b> — 태블릿에서 열면 같은 상품 목록 · 바코드가 나와요.</div>'; }
+  catch (e) { return '<div class="err" style="margin-top:8px">☁️ 클라우드에 올리지 못했어요: ' + esc(e.message || e) + '</div>'; }
+}
+window.addEventListener('cloud-db', async e => {
+  const db = e.detail, CL = window.CLOUD;
+  if (db) { LS.set('db', db); DB = db; reindex(); ST.cat = 'all'; ST.last = ''; renderLeft(); renderRight(); toast('☁️ 최신 상품 목록을 받았어요 — 상품 ' + db.products.length.toLocaleString('ko-KR') + '개'); return; }
+  if (DB && CL && CL.canWrite()) { const m = await cloudPush(); if (/모든 기기/.test(m)) toast('☁️ 이 기기의 상품 목록을 클라우드에 올렸어요 — 이제 모든 기기에 연동돼요'); }
+});
 function saveDB(db) { const ok = LS.set('db', db); DB = db; reindex(); ST.cat = 'all'; ST.last = ''; renderRight(); return ok; }
 /* 파일 올리기: 고르기 창 또는 Finder에서 끌어다 놓기 — 파일 내용을 보고 판매 데이터 / 재고 파일 / 목록 파일을 알아서 구분 */
 async function importFiles(files) {
@@ -547,7 +564,7 @@ async function importFiles(files) {
   const js = files.filter(f => /\.json$/i.test(f.name)), xs = files.filter(f => /\.(xlsx|xlsm|xlsb|xls|csv)$/i.test(f.name)), skip = files.filter(f => !js.includes(f) && !xs.includes(f));
   if (js.length && !xs.length) {
     try { const j = JSON.parse(await js[0].text()); if (!j || j.v !== 1 || !Array.isArray(j.products) || !j.products.every(p => p && typeof p.c === 'string' && typeof p.n === 'string' && Number.isFinite(p.p))) throw new Error('인테리어 상품 목록 파일이 아니에요');
-      saveDB(j); openUpload('<div class="ok">✅ 목록 파일을 불러왔어요 — 상품 ' + j.products.length + '개</div>'); } catch (er) { openUpload('<div class="err">' + esc(er.message || er) + '</div>'); }
+      saveDB(j); openUpload('<div class="ok">✅ 목록 파일을 불러왔어요 — 상품 ' + j.products.length + '개</div>' + await cloudPush()); } catch (er) { openUpload('<div class="err">' + esc(er.message || er) + '</div>'); }
     return;
   }
   if (!xs.length) { openUpload('<div class="err">엑셀(.xlsx · .xls · .xlsb) 또는 CSV 파일을 올려 주세요.' + (skip.length ? '<br>못 쓰는 파일: ' + skip.map(f => esc(f.name)).join(', ') : '') + '</div>'); return; }
@@ -584,7 +601,7 @@ async function importFiles(files) {
       const hit = DB.products.filter(p => stock[p.c]).length; saveDB(Object.assign({}, DB, { stock, stockAt: stockNames.join(', ') }));
       msg = '<div class="ok">✅ 재고를 붙였어요 — 상품 ' + DB.products.length + '개 중 ' + hit + '개가 재고 파일에 있어요.' + tail + '</div>';
     }
-    openUpload(msg);
+    openUpload(msg + '<div class="muted" style="margin-top:8px">☁️ 연동 중…</div>'); openUpload(msg + await cloudPush());
   } catch (er) { openUpload('<div class="err">파일을 읽지 못했어요: ' + esc(er.message || er) + '</div>'); }
 }
 ['fSales', 'fStock', 'fJson'].forEach(id => $(id).addEventListener('change', e => { const fs = [...e.target.files]; e.target.value = ''; importFiles(fs); }));
@@ -685,5 +702,6 @@ document.addEventListener('keydown', e => {
 });
 renderLeft(); renderRight();
 </script>
+<script type="module" src="cloud.js?v=1"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data: blob:; connect-src 'self' https://*.googleapis.com https://www.gstatic.com; frame-src https://acetool-923f6.firebaseapp.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <title>전체 인테리어 견적 · ACE</title>
@@ -21,6 +21,7 @@ button { cursor: pointer; }
 .apptabs { display: flex; gap: 4px; background: rgba(255,255,255,.1); border-radius: 12px; padding: 3px; }
 .apptabs a { color: #cfd8e6; text-decoration: none; font-weight: 800; padding: 7px 12px; border-radius: 9px; font-size: .92em; }
 .apptabs a.on { background: #fff; color: var(--navy); }
+#cloudBtn.on { background: #e8f6ee !important; color: var(--ok) !important; border-color: #9fc7b0; }
 .vtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
 .vtabs button { border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.08); color: #fff; border-radius: 10px; padding: 5px 12px; font-weight: 700; min-height: 40px; text-align: left; }
 .vtabs button small { display: block; font-weight: 500; opacity: .75; font-size: .74em; }
@@ -160,6 +161,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
 <div class="app">
   <div class="top">
     <div class="apptabs"><a href="index.html">🧾 상품 견적 (바코드)</a><a href="package.html" class="on">🏠 전체 인테리어 견적</a></div>
+    <button class="btn sm" id="cloudBtn" type="button" style="margin-left:auto;color:var(--navy)">☁️ 로그인 (기기 연동)</button>
 
   </div>
   <div class="main" id="main"></div>
@@ -169,7 +171,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
 <div class="toast" id="toast" role="status"></div>
 <script>
 'use strict';
-const BUILD = '2026-11-08p3';
+const BUILD = '2026-11-08p4';
 (function () {
   const check = async () => { if (document.querySelector('.modal')) return; try { const t = await (await fetch(location.pathname + '?b=' + Date.now(), { cache: 'no-store' })).text(); const m = t.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD) location.reload(); } catch (e) { } };
   addEventListener('focus', check); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); }); setInterval(check, 5 * 60 * 1000);
@@ -404,6 +406,16 @@ const newPQ = () => ({ cust: { name: '', tel: '', addr: '', date: today(), staff
 let PQ = LS.get('pq', null) || newPQ();
 const saveQ = () => LS.set('pq', PQ);
 let MODE = LS.get('mode', 'vendor') === 'pkg' ? 'pkg' : 'vendor', UNDO_Q = null;
+/* ☁️ PKG 목록 · 추가 시공비 · 공급자 정보를 모든 기기와 연동 */
+function pushPkgCfg() { const CL = window.CLOUD; if (CL && CL.canRead()) CL.pushPkg({ pkgs: PKGS, extras: EXTRAS, sup: PQ.sup }).then(() => toast('☁️ 모든 기기에 연동했어요')).catch(e => toast('☁️ 연동 실패: ' + (e.message || e))); }
+window.addEventListener('cloud-pkg', e => {
+  const c = e.detail;
+  if (!c) { if (LS.get('pkgs', null) || LS.get('extras', null) || LS.get('sup', null)) pushPkgCfg(); return; }
+  if (Array.isArray(c.pkgs) && c.pkgs.length) { PKGS = c.pkgs; LS.set('pkgs', PKGS); }
+  if (Array.isArray(c.extras)) { EXTRAS = c.extras; LS.set('extras', EXTRAS); }
+  if (c.sup) { LS.set('sup', c.sup); PQ.sup = Object.assign({}, PQ.sup, c.sup); saveQ(); }
+  if (!document.querySelector('.modal')) render();
+});
 /* ＋ 새 PKG 등록: 이름 · 소비자가(VAT 포함) · 구성품 내역 → 목록에 넣고 바로 고름 */
 function pkgNew() {
   const box = document.createElement('div'); box.className = 'modal';
@@ -421,7 +433,7 @@ function pkgNew() {
       if (pv == null || Number.isNaN(pv) || pv <= 0) return msg('판매가를 숫자로 적어 주세요 (예: 2990000)');
       if (PKGS.some(x => x.n === n)) return msg('같은 이름의 PKG가 이미 있어요');
       const p = { id: 'p' + Date.now().toString(36), n, p: Math.round(pv), t };
-      PKGS = PKGS.concat([p]); LS.set('pkgs', PKGS);
+      PKGS = PKGS.concat([p]); LS.set('pkgs', PKGS); pushPkgCfg();
       if (!PQ.pk.length) PQ.pk.push({ id: nid(), q: 1, day: '', memo: '' }); const l = PQ.pk[PQ.pk.length - 1]; Object.assign(l, { pid: p.id, n: p.n, p: p.p }); PQ.comp = [...new Set(PQ.pk.map(x => (PKGS.find(y => y.id === x.pid) || {}).t).filter(Boolean))].join('\n\n'); saveQ();
       box.remove(); render(); toast(n + ' 등록했어요 (' + won(p.p) + '원)');
     } });
@@ -477,7 +489,7 @@ function pkgLists() {
     '<h3 style="margin:0 0 6px">🛁 PKG</h3>' + PKGS.map((p, i) => '<div style="border:1px solid var(--line);border-radius:12px;padding:8px;margin-bottom:8px"><div style="display:flex;gap:6px"><input class="cell" style="border:1px solid var(--line);font-weight:700" data-lp="' + i + '.n" value="' + esc(p.n) + '"><input class="cell r" style="border:1px solid var(--line);width:130px" data-lp="' + i + '.p" value="' + won(p.p) + '"><button class="del" data-lpd="' + i + '" type="button">✕</button></div><textarea class="paste" style="min-height:90px;margin-top:6px" data-lp="' + i + '.t">' + esc(p.t) + '</textarea></div>').join('') +
     '<button class="addrow" data-lpa="1" type="button">＋ PKG 추가</button><h3 style="margin:14px 0 6px">🛠 추가 시공비</h3>' + EXTRAS.map((x, i) => '<div style="display:grid;grid-template-columns:70px 1fr 120px 30px;gap:6px;margin-bottom:4px"><input class="cell" style="border:1px solid var(--line)" data-le="' + i + '.g" value="' + esc(x.g) + '"><input class="cell" style="border:1px solid var(--line)" data-le="' + i + '.n" value="' + esc(x.n) + '"><input class="cell r" style="border:1px solid var(--line)" data-le="' + i + '.p" value="' + won(x.p) + '"><button class="del" data-led="' + i + '" type="button">✕</button></div>').join('') +
     '<button class="addrow" data-lea="1" type="button">＋ 시공비 항목 추가</button></div><div class="mf"><button class="btn ghost" data-lx="reset" type="button">본사 기본값으로 되돌리기</button><span style="margin-left:auto"></span><button class="btn pri" data-lx="x" type="button">닫기</button></div></div>'; };
-  const persist = () => { LS.set('pkgs', PKGS); LS.set('extras', EXTRAS); };
+  const persist = () => { LS.set('pkgs', PKGS); LS.set('extras', EXTRAS); pushPkgCfg(); };
   box.addEventListener('click', e => { const t = e.target, b = t.closest('[data-lx]');
     if (t === box || (b && b.dataset.lx === 'x')) { box.remove(); render(); return; }
     if (b && b.dataset.lx === 'reset' && confirm('PKG · 추가 시공비 목록을 본사 기본값으로 되돌릴까요?')) { PKGS = PKG_DEF; EXTRAS = EXTRA_DEF; persist(); draw(); return; }
@@ -510,7 +522,7 @@ document.addEventListener('click', e => {
 }, true);
 document.addEventListener('change', e => {
   if (MODE !== 'pkg') return; const t = e.target;
-  if (t.dataset.pq) { const [o, k] = t.dataset.pq.split('.'); PQ[o][k] = t.value; if (o === 'sup') LS.set('sup', PQ.sup); liveQ(); return; }
+  if (t.dataset.pq) { const [o, k] = t.dataset.pq.split('.'); PQ[o][k] = t.value; if (o === 'sup') { LS.set('sup', PQ.sup); pushPkgCfg(); } liveQ(); return; }
   if (t.dataset.pt) { PQ[t.dataset.pt] = t.value; liveQ(); return; }
   if (t.dataset.pl) { const [a, id, k] = t.dataset.pl.split('.'), x = PQ[a].find(y => y.id === id); if (!x) return;
     if (k === 'q' || k === 'p') { const v = num(t.value); if (v == null || Number.isNaN(v)) { toast('숫자로 적어 주세요'); render(); return; } x[k] = k === 'p' ? Math.round(v) : v; saveQ(); render(); return; }
@@ -572,5 +584,6 @@ addEventListener('dragleave', e => { if (!hasF(e)) return; if (!--dd && $('dov')
 addEventListener('drop', e => { if (!hasF(e)) return; e.preventDefault(); dd = 0; if ($('dov')) $('dov').remove(); importFiles([...e.dataTransfer.files]); });
 render();
 </script>
+<script type="module" src="cloud.js?v=1"></script>
 </body>
 </html>
