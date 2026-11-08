@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<title>인테리어 상담 견적 · 시안</title>
+<meta name="theme-color" content="#1d3557">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root { --bg: #eef1f5; --surface: #fff; --surface2: #f6f8fb; --line: #dfe4ec; --ink: #172033; --ink2: #4d586b; --ink3: #8a94a6; --navy: #1d3557; --red: #d71920; --ok: #1f7a4d; --warn: #b26a00; --r: 14px; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; }
+body { font-family: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background: var(--bg); color: var(--ink); font-size: 15px; overflow: hidden; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.app { height: 100dvh; display: flex; flex-direction: column; }
+/* 맨 위: 시안 고르기 */
+.top { background: var(--navy); color: #fff; padding: 8px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: none; }
+.top h1 { font-size: 1.05em; margin: 0; white-space: nowrap; } .top h1 b { color: #ff6b6b; }
+.vtabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.vtabs button { border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.08); color: #fff; border-radius: 10px; padding: 7px 12px; font-weight: 700; min-height: 40px; }
+.vtabs button small { display: block; font-weight: 500; opacity: .75; font-size: .76em; }
+.vtabs button.on { background: #fff; color: var(--navy); }
+.top .note { margin-left: auto; font-size: .78em; opacity: .8; }
+/* 반으로 나누기: 왼쪽 견적서 · 오른쪽 상품 */
+.split { flex: 1; min-height: 0; display: grid; grid-template-columns: 54fr 46fr; }
+.split.b { grid-template-columns: 50fr 50fr; }
+.pane { min-height: 0; display: flex; flex-direction: column; }
+.pane.left { border-right: 1px solid var(--line); }
+.scroll { overflow-y: auto; -webkit-overflow-scrolling: touch; min-height: 0; flex: 1; }
+.bar { display: flex; gap: 8px; align-items: center; padding: 10px 12px; background: var(--surface); border-bottom: 1px solid var(--line); flex-wrap: wrap; flex: none; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 0 14px; min-height: 44px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+.btn.pri { background: var(--navy); border-color: var(--navy); color: #fff; }
+.btn.red { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.ghost { background: transparent; }
+.btn.sm { min-height: 36px; padding: 0 10px; font-size: .9em; }
+.btn:disabled { opacity: .45; }
+.muted { color: var(--ink3); }
+/* 상품 카드 (오른쪽) — 왼쪽으로 끌거나 누르면 담김 */
+.search { flex: 1; min-width: 140px; min-height: 44px; border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; background: var(--surface2); }
+.chips { display: flex; gap: 6px; overflow-x: auto; padding: 8px 12px; background: var(--surface); border-bottom: 1px solid var(--line); flex: none; scrollbar-width: none; }
+.chips button { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 0 14px; min-height: 38px; font-weight: 600; color: var(--ink2); }
+.chips button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 10px; padding: 12px; }
+.pcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px; display: flex; flex-direction: column; gap: 6px; touch-action: pan-y; user-select: none; -webkit-user-select: none; position: relative; transition: transform .1s, box-shadow .1s; }
+.pcard:active { transform: scale(.98); }
+.pcard .ic { height: 70px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 34px; }
+.pcard .nm { font-weight: 700; font-size: .93em; line-height: 1.3; }
+.pcard .sp { font-size: .8em; color: var(--ink3); }
+.pcard .pr { font-weight: 800; }
+.pcard .add { position: absolute; right: 8px; top: 8px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--navy); color: #fff; font-size: 20px; line-height: 1; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+.pcard .grip { font-size: .72em; color: var(--ink3); }
+.pcard.in { border-color: #9fc7b0; box-shadow: inset 0 0 0 2px #cfe8da; }
+.pcard .cnt { position: absolute; left: 8px; top: 8px; background: var(--ok); color: #fff; border-radius: 999px; font-size: .75em; font-weight: 800; padding: 2px 8px; }
+/* 끌기 */
+.dragghost { position: fixed; z-index: 100; pointer-events: none; background: var(--navy); color: #fff; border-radius: 12px; padding: 10px 14px; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,.3); transform: translate(-50%, -60%) rotate(-3deg); max-width: 260px; }
+body.dragging [data-drop] { outline: 3px dashed #6c9bd2; outline-offset: -6px; }
+body.dragging [data-drop].over { outline-color: var(--ok); background-color: #eaf7ef !important; }
+.flash { animation: fl 1s ease; } @keyframes fl { 0% { background: #fff3b0; } 100% { background: transparent; } }
+/* 바코드 */
+svg.bc { display: block; width: 100%; height: auto; background: #fff; }
+.qtyb { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; }
+.qtyb button { width: 36px; height: 36px; border: 0; background: var(--surface2); font-size: 18px; font-weight: 700; }
+.qtyb input { width: 44px; height: 36px; border: 0; text-align: center; font-weight: 800; -moz-appearance: textfield; }
+.qtyb input::-webkit-outer-spin-button, .qtyb input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.del { border: 0; background: transparent; color: var(--ink3); font-size: 18px; width: 36px; height: 36px; border-radius: 8px; }
+.empty { margin: 16px; border: 2px dashed var(--line); border-radius: var(--r); padding: 40px 16px; text-align: center; color: var(--ink3); line-height: 1.7; }
+.empty b { color: var(--ink2); font-size: 1.05em; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #172033; color: #fff; padding: 10px 18px; border-radius: 12px; z-index: 300; font-weight: 600; display: none; max-width: 90vw; }
+
+/* ========== 시안 A: 견적서 종이 그대로 ========== */
+.paperwrap { background: #d9dee6; padding: 16px; }
+.paper { background: #fff; max-width: 820px; margin: 0 auto; padding: 26px 26px 20px; box-shadow: 0 4px 20px rgba(0,0,0,.12); border-radius: 4px; min-height: 100%; }
+.ph { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: 14px; }
+.ph .lg { font-weight: 900; font-style: italic; color: var(--red); font-size: 1.15em; } .ph .lg i { color: var(--ink); }
+.ph h2 { margin: 0; letter-spacing: .5em; font-size: 1.6em; text-align: center; }
+.ph .no { text-align: right; font-size: .8em; color: var(--ink3); }
+.pinfo { display: grid; grid-template-columns: 1fr 1fr; border: 1.5px solid #000; margin-bottom: 12px; }
+.pinfo label { display: flex; align-items: center; border-bottom: 1px solid #c8ced8; min-height: 38px; }
+.pinfo label:nth-child(odd) { border-right: 1px solid #c8ced8; }
+.pinfo label span { width: 72px; flex: none; text-align: center; background: #f2f4f7; align-self: stretch; display: flex; align-items: center; justify-content: center; font-size: .85em; font-weight: 700; }
+.pinfo input { border: 0; padding: 0 8px; min-height: 38px; flex: 1; min-width: 0; background: transparent; }
+table.qt { width: 100%; border-collapse: collapse; font-size: .9em; }
+table.qt th { background: #f2f4f7; border-top: 1.5px solid #000; border-bottom: 1px solid #000; padding: 6px 4px; font-size: .85em; }
+table.qt td { border-bottom: 1px solid #e3e7ee; padding: 6px 4px; vertical-align: middle; }
+table.qt td.r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.qt td.c { text-align: center; }
+table.qt .nm b { display: block; } table.qt .nm small { color: var(--ink3); }
+table.qt td.bcc { width: 128px; }
+.ptot { margin-top: 10px; border-top: 1.5px solid #000; display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; padding: 10px 4px; font-variant-numeric: tabular-nums; }
+.ptot .g { font-size: 1.25em; font-weight: 900; } .ptot .g + div { font-size: 1.25em; font-weight: 900; color: var(--red); }
+.pmemo { width: 100%; border: 1px solid #c8ced8; border-radius: 6px; padding: 8px; min-height: 54px; resize: vertical; margin-top: 6px; }
+.pdrop { min-height: 120px; }
+/* ========== 시안 B: 결제 바코드 중심 (POS 스타일) ========== */
+.seg { display: inline-flex; background: #e6eaf1; border-radius: 12px; padding: 3px; }
+.seg button { border: 0; background: transparent; border-radius: 9px; padding: 0 14px; min-height: 38px; font-weight: 700; color: var(--ink2); }
+.seg button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.bcards { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.bcard { background: #fff; border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center; }
+.bcard .nm b { font-size: 1.02em; } .bcard .nm small { display: block; color: var(--ink3); }
+.bcard .bcbox { grid-column: 1 / -1; border: 1px solid #edf0f4; border-radius: 10px; padding: 8px 18px; background: #fff; display: flex; gap: 14px; align-items: center; }
+.bcard .bcbox .bc { max-width: 320px; }
+.bcard .bcbox .q { font-size: 1.6em; font-weight: 900; white-space: nowrap; } .bcard .bcbox .q small { font-size: .5em; color: var(--ink3); display: block; font-weight: 600; }
+.bcard .amt { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; } .bcard .amt small { display: block; color: var(--ink3); font-weight: 500; }
+.bcard.done { opacity: .55; }
+.bfoot { flex: none; background: var(--ink); color: #fff; padding: 12px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.bfoot .t { font-size: 1.5em; font-weight: 900; font-variant-numeric: tabular-nums; } .bfoot .t small { font-size: .5em; font-weight: 500; opacity: .7; display: block; }
+.bfoot .btn { margin-left: auto; min-height: 52px; font-size: 1.05em; }
+.posgrid { display: grid; grid-template-columns: 92px 1fr; min-height: 0; flex: 1; }
+.rail { overflow-y: auto; background: #172033; display: flex; flex-direction: column; }
+.rail button { border: 0; background: transparent; color: #c5cddb; padding: 12px 4px; font-size: .78em; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 4px; border-left: 4px solid transparent; }
+.rail button span { font-size: 24px; } .rail button.on { background: #22304a; color: #fff; border-left-color: #ff6b6b; }
+.plist { padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.prow { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; display: grid; grid-template-columns: 46px 1fr auto auto; gap: 10px; align-items: center; touch-action: pan-y; user-select: none; -webkit-user-select: none; min-height: 60px; }
+.prow .ic { width: 46px; height: 46px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.prow .nm b { font-size: .95em; } .prow .nm small { display: block; color: var(--ink3); font-size: .8em; }
+.prow .pr { font-weight: 800; font-variant-numeric: tabular-nums; }
+.prow .add { width: 44px; height: 44px; border-radius: 12px; border: 0; background: var(--navy); color: #fff; font-size: 22px; }
+.prow.in { border-color: #9fc7b0; background: #f3fbf6; }
+/* ========== 시안 C: 공간별 상담 ========== */
+.cinfo { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 10px 12px; background: var(--surface); border-bottom: 1px solid var(--line); flex: none; }
+.cinfo input { min-height: 40px; border: 1px solid var(--line); border-radius: 10px; padding: 0 10px; background: var(--surface2); min-width: 0; }
+.rooms { padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.room { background: #fff; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.room .rh { display: flex; align-items: center; gap: 10px; padding: 10px 12px; font-weight: 800; border-bottom: 1px solid var(--line); }
+.room .rh .em { font-size: 22px; } .room .rh .sum { margin-left: auto; font-variant-numeric: tabular-nums; }
+.room .rh .tgt { font-size: .72em; font-weight: 700; background: var(--ok); color: #fff; border-radius: 999px; padding: 2px 8px; }
+.room.cur { border-color: var(--ok); box-shadow: 0 0 0 2px #cfe8da; }
+.room .ri { display: grid; grid-template-columns: 1fr auto 96px auto; gap: 10px; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f2f6; }
+.room .ri:last-child { border-bottom: 0; }
+.room .ri .nm small { display: block; color: var(--ink3); font-size: .8em; }
+.room .ri .r { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 84px; }
+.room .re { padding: 14px; text-align: center; color: var(--ink3); font-size: .9em; }
+.csum { flex: none; background: #fff; border-top: 1px solid var(--line); padding: 10px 14px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+.csum .rs { display: flex; gap: 10px; flex-wrap: wrap; font-size: .86em; color: var(--ink2); }
+.csum .tt { margin-left: auto; font-size: 1.35em; font-weight: 900; }
+.tgtbar { display: flex; gap: 6px; padding: 10px 12px; background: #f3fbf6; border-bottom: 1px solid #cfe8da; flex-wrap: wrap; align-items: center; flex: none; }
+.tgtbar b { font-size: .85em; color: var(--ok); margin-right: 4px; }
+.tgtbar button { border: 1px solid #cfe8da; background: #fff; border-radius: 999px; padding: 0 12px; min-height: 38px; font-weight: 700; }
+.tgtbar button.on { background: var(--ok); color: #fff; border-color: var(--ok); }
+.sets { display: flex; gap: 8px; overflow-x: auto; padding: 10px 12px 0; scrollbar-width: none; }
+.sets button { flex: none; border: 1px dashed #9fb8d6; background: #f3f7fc; border-radius: 12px; padding: 8px 12px; text-align: left; font-weight: 700; min-height: 52px; }
+.sets button small { display: block; font-weight: 500; color: var(--ink3); font-size: .78em; }
+.cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; padding: 12px; }
+.cgrid .pcard .ic { height: 96px; font-size: 44px; }
+/* ========== 결제 스캔 화면 (세 시안 공통) ========== */
+.scan { position: fixed; inset: 0; z-index: 200; background: #fff; display: flex; flex-direction: column; }
+.scan .sh { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.scan .sh b { font-size: 1.1em; }
+.scan .prog { height: 6px; background: #edf0f4; flex: none; } .scan .prog i { display: block; height: 100%; background: var(--ok); transition: width .2s; }
+.scan .sb { flex: 1; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; gap: 14px; text-align: center; }
+.scan .big { width: min(560px, 88vw, 110vh); padding: 10px 26px; background: #fff; }
+.scan .nm { font-size: 1.35em; font-weight: 800; } .scan .nm small { display: block; font-size: .7em; color: var(--ink3); font-weight: 500; }
+.scan .qn { font-size: 1.15em; background: #fff6e0; color: #6b4300; border-radius: 12px; padding: 10px 16px; } .scan .qn b { font-size: 1.5em; }
+.scan .sf { display: flex; gap: 10px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
+.scan .sf .btn { flex: 1; justify-content: center; min-height: 60px; font-size: 1.1em; }
+.scan .tip { font-size: .8em; color: var(--ink3); }
+.scan .alll { width: 100%; max-width: 900px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; text-align: left; }
+.scan .alll > div { border: 1px solid var(--line); border-radius: 12px; padding: 10px; } .scan .alll > div.ok { opacity: .45; }
+.scan .alll b { display: block; } .scan .alll small { color: var(--ink3); }
+/* 세로 화면 · 작은 태블릿: 상품은 아래에서 올라오는 판 */
+.fabcat { display: none; }
+@media (max-width: 899px) {
+  .split, .split.b { grid-template-columns: 1fr; }
+  .pane.right { position: fixed; left: 0; right: 0; bottom: 0; height: 74dvh; z-index: 50; background: var(--bg); border-top-left-radius: 18px; border-top-right-radius: 18px; box-shadow: 0 -10px 40px rgba(0,0,0,.25); transform: translateY(105%); transition: transform .25s; overflow: hidden; }
+  .pane.right.open { transform: none; }
+  .fabcat { display: flex; position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 60; min-height: 56px; border-radius: 999px; padding: 0 20px; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+  .top .note { display: none; }
+  .cinfo { grid-template-columns: 1fr 1fr; }
+  table.qt td.bcc { width: 96px; }
+}
+/* 인쇄: 왼쪽 견적서만 (바코드 포함) */
+@media print {
+  @page { size: A4; margin: 10mm; }
+  body { overflow: visible; background: #fff; }
+  .top, .pane.right, .bar, .fabcat, .toast, .bfoot .btn, .tgtbar, .del, .qtyb button, .noprint { display: none !important; }
+  .app, .split, .pane, .scroll { display: block !important; height: auto !important; overflow: visible !important; }
+  .pane.left { border: 0; }
+  .paperwrap { background: #fff; padding: 0; } .paper { box-shadow: none; max-width: none; padding: 0; }
+  .qtyb { border: 0; } .qtyb input { width: auto; }
+  .bcard, .room { break-inside: avoid; }
+  .pinfo input, .cinfo input { border: 0; background: transparent; }
+}
+</style>
+</head>
+<body>
+<style>
+.closecat { display: none; }
+@media (max-width: 899px) { .closecat { display: inline-flex; } }
+</style>
+<div class="app">
+  <div class="top">
+    <h1>인테리어 상담 견적 <b>시안</b></h1>
+    <div class="vtabs" id="vtabs">
+      <button data-v="A">시안 A<small>견적서 종이 그대로</small></button>
+      <button data-v="B">시안 B<small>결제 바코드 중심</small></button>
+      <button data-v="C">시안 C<small>공간별 상담</small></button>
+    </div>
+    <span class="note">샘플 상품이에요 · 오른쪽 상품을 왼쪽으로 끌어오거나 눌러서 담아요</span>
+  </div>
+  <div class="split" id="split"></div>
+</div>
+<button class="btn pri fabcat" id="fabcat" type="button">＋ 상품 담기</button>
+<div class="toast" id="toast" role="status"></div>
+<script>
+'use strict';
+/* ===== 바코드 (EAN-13 · Code128) — 외부 도구 없이 SVG로 그림 ===== */
+const BC = (() => {
+  const C128 = '212222 222122 222221 121223 121322 131222 122213 122312 132212 221213 221312 231212 112232 122132 122231 113222 123122 123221 223211 221132 221231 213212 223112 312131 311222 321122 321221 312212 322112 322211 212123 212321 232121 111323 131123 131321 112313 132113 132311 211313 231113 231311 112133 112331 132131 113123 113321 133121 313121 211331 231131 213113 213311 213131 311123 311321 331121 312113 312311 332111 314111 221411 431111 111224 111422 121124 121421 141122 141221 112214 112412 122114 122411 142112 142211 241211 221114 413111 241112 134111 111242 121142 121241 114212 124112 124211 411212 421112 421211 212141 214121 412121 111143 111341 131141 114113 114311 411113 411311 113141 114131 311141 411131 211412 211214 211232'.split(' ');
+  const STOP = '2331112';
+  const w2m = w => { let s = '', bar = true; for (const ch of w) { s += (bar ? '1' : '0').repeat(+ch); bar = !bar; } return s; };
+  const L = ['0001101', '0011001', '0010011', '0111101', '0100011', '0110001', '0101111', '0111011', '0110111', '0001011'];
+  const G = L.map(x => x.split('').reverse().map(b => b === '1' ? '0' : '1').join(''));
+  const R = L.map(x => x.split('').map(b => b === '1' ? '0' : '1').join(''));
+  const PAR = ['LLLLLL', 'LLGLGG', 'LLGGLG', 'LLGGGL', 'LGLLGG', 'LGGLLG', 'LGGGLL', 'LGLGLG', 'LGLGGL', 'LGGLGL'];
+  const eanCheck = d12 => { let s = 0; for (let i = 0; i < 12; i++) s += +d12[i] * (i % 2 ? 3 : 1); return (10 - s % 10) % 10; };
+  const isEan = s => /^\d{13}$/.test(s) && eanCheck(s) === +s[12];
+  function ean13(s) {
+    const p = PAR[+s[0]]; let m = '101';
+    for (let i = 1; i <= 6; i++) m += (p[i - 1] === 'L' ? L : G)[+s[i]];
+    m += '01010';
+    for (let i = 7; i <= 12; i++) m += R[+s[i]];
+    return m + '101';
+  }
+  function code128(s) {
+    const vals = [];
+    if (/^\d+$/.test(s) && s.length % 2 === 0) { vals.push(105); for (let i = 0; i < s.length; i += 2) vals.push(+s.substr(i, 2)); }
+    else { vals.push(104); for (const ch of s) { const c = ch.charCodeAt(0); if (c < 32 || c > 126) throw new Error('바코드에 쓸 수 없는 글자: ' + ch); vals.push(c - 32); } }
+    let sum = vals[0]; for (let i = 1; i < vals.length; i++) sum += vals[i] * i;
+    vals.push(sum % 103);
+    return vals.map(v => w2m(C128[v])).join('') + w2m(STOP);
+  }
+  const modules = s => isEan(s) ? { kind: 'EAN-13', m: ean13(s) } : { kind: 'Code128', m: code128(s) };
+  /* SVG: 모듈 하나 = 1 단위, 앞뒤 조용한 여백(quiet zone) 포함, 아래 숫자 */
+  function svg(s, o) {
+    o = o || {}; const { kind, m } = modules(String(s)), q = kind === 'EAN-13' ? 11 : 10, W = m.length + q * 2, H = o.h || 50, text = o.text !== false;
+    let r = '', x = 0;
+    while (x < m.length) { if (m[x] === '1') { let w = 1; while (m[x + w] === '1') w++; r += '<rect x="' + (x + q) + '" y="0" width="' + w + '" height="' + H + '"/>'; x += w; } else x++; }
+    const th = text ? 11 : 0;
+    return '<svg class="bc" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + (H + th) + '" shape-rendering="crispEdges" role="img" aria-label="바코드 ' + s + '"><rect width="' + W + '" height="' + (H + th) + '" fill="#fff"/><g fill="#000">' + r + '</g>' +
+      (text ? '<text x="' + W / 2 + '" y="' + (H + 10) + '" text-anchor="middle" font-family="monospace" font-size="10" fill="#000">' + s + '</text>' : '') + '</svg>';
+  }
+  return { svg, modules, isEan, eanCheck, code128, ean13, C128, STOP, w2m };
+})();
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const won = n => Math.round(n).toLocaleString('ko-KR');
+let toastT = null;
+function toast(m) { const t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => { t.style.display = 'none'; }, 1800); }
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+
+/* ===== 샘플 상품 (나중에 POS 상품 마스터 엑셀로 바꿈: 상품코드 · 바코드 · 상품명 · 규격 · 판매가) ===== */
+const CATS = [['tile', '타일', '🧱', '#f3e9dc'], ['bath', '욕실도기', '🚽', '#e6f0fa'], ['fau', '수전', '🚿', '#e0f2f2'], ['acc', '욕실장·소품', '🪞', '#efe9f7'], ['kit', '주방', '🍳', '#fdeee4'],
+  ['floor', '바닥재', '🪵', '#f1e6d8'], ['wall', '벽지·도장', '🎨', '#fde7ef'], ['door', '몰딩·문', '🚪', '#ece7e1'], ['light', '조명', '💡', '#fff3cc'], ['mat', '부자재', '🧰', '#e9edf2']];
+const CAT = Object.fromEntries(CATS.map(c => [c[0], { n: c[1], e: c[2], bg: c[3] }]));
+const RAW = [
+  ['tile', '포세린 타일 그레이', '600×600 · 1.44㎡/박스', '박스', 32000], ['tile', '욕실 벽타일 화이트 무광', '300×600 · 1.44㎡/박스', '박스', 19800], ['tile', '논슬립 바닥타일', '300×300 · 1.35㎡/박스', '박스', 16500],
+  ['tile', '헥사곤 모자이크 타일', '300×300 시트', '장', 12000], ['tile', '타일 줄눈 시멘트 백색', '5kg', '포', 8900], ['tile', '타일 접착제', '20kg', '포', 14500],
+  ['bath', '원피스 양변기 절수형', '로우탱크 · 6L', '대', 289000], ['bath', '반다리 세면기', '550mm', '대', 89000], ['bath', '아크릴 욕조', '1500×750', '대', 359000], ['bath', '일체형 비데', '자동 세정', '대', 449000],
+  ['fau', '원홀 세면수전', '크롬', '개', 59000], ['fau', '해바라기 샤워수전 세트', '레인샤워', '세트', 129000], ['fau', '거위목 주방수전', '원홀', '개', 79000], ['fau', '욕조수전', '벽붙이', '개', 99000],
+  ['acc', '슬라이드 욕실장', '600×800', '개', 159000], ['acc', '수건장', '400×600', '개', 39000], ['acc', '욕실 액세서리 4종 세트', '휴지걸이·수건걸이 등', '세트', 49000], ['acc', '욕실 환풍기', '저소음 · 역풍방지', '개', 35000],
+  ['kit', '사각 싱크볼', '850 · 스테인리스', '개', 189000], ['kit', '음식물 배수구 세트', '스테인리스', '세트', 23000], ['kit', '인조대리석 상판', '폭 600', 'm', 150000],
+  ['floor', '강마루 오크', '1.0㎡ 기준', '㎡', 39000], ['floor', '장판 2.2T', '1.0㎡ 기준', '㎡', 18000], ['floor', '데코타일 우드', '3.34㎡/박스', '박스', 45000],
+  ['wall', '실크벽지', '106cm×15.6m', '롤', 32000], ['wall', '합지벽지', '53cm×12.5m', '롤', 14000], ['wall', '친환경 수성페인트', '18L · 화이트', '통', 89000], ['wall', '젯소', '4L', '통', 22000],
+  ['door', 'PVC 걸레받이', '2.4m', '개', 4500], ['door', '천장몰딩', '2.4m', '개', 6800], ['door', 'ABS 도어 세트', '문틀 포함', '세트', 289000], ['door', '디지털 도어락', '번호·카드', '개', 189000],
+  ['light', 'LED 평판등', '640×640', '개', 69000], ['light', '다운라이트 4인치', 'LED 8W', '개', 12000], ['light', '방습 욕실등', 'LED 15W', '개', 29000],
+  ['mat', '바이오 실리콘', '270ml · 백색', '개', 3500], ['mat', '액체 방수제', '4kg', '통', 28000], ['mat', 'PVC 배관 50A', '4m', '본', 9800]
+];
+const P = RAW.map((r, i) => {
+  const d12 = '8805137' + String(10001 + i * 13).slice(-5);
+  return { id: 'p' + (i + 1), cat: r[0], n: r[1], sp: r[2], u: r[3], p: r[4], code: String(20100100 + i * 7), bc: d12 + BC.eanCheck(d12) };
+});
+const PID = Object.fromEntries(P.map(p => [p.id, p]));
+const byName = n => P.find(p => p.n === n).id;
+const ROOMS = [['bath', '욕실', '🛁'], ['kit', '주방', '🍳'], ['living', '거실·방', '🛋️'], ['etc', '공통·부자재', '🧰']];
+const SETS = [
+  { n: '욕실 기본 세트', d: '양변기 · 세면기 · 수전 2 · 소품 · 욕실장', room: 'bath', it: [['원피스 양변기 절수형', 1], ['반다리 세면기', 1], ['원홀 세면수전', 1], ['해바라기 샤워수전 세트', 1], ['욕실 액세서리 4종 세트', 1], ['슬라이드 욕실장', 1]] },
+  { n: '욕실 타일 시공 (약 6㎡)', d: '벽타일 4 · 바닥 2 · 줄눈 · 접착제 · 실리콘', room: 'bath', it: [['욕실 벽타일 화이트 무광', 4], ['논슬립 바닥타일', 2], ['타일 줄눈 시멘트 백색', 1], ['타일 접착제', 2], ['바이오 실리콘', 2]] },
+  { n: '주방 싱크 교체', d: '싱크볼 · 주방수전 · 배수구', room: 'kit', it: [['사각 싱크볼', 1], ['거위목 주방수전', 1], ['음식물 배수구 세트', 1]] },
+  { n: '방 도배 (작은 방)', d: '실크벽지 6롤 · 젯소 · 걸레받이', room: 'living', it: [['실크벽지', 6], ['젯소', 1], ['PVC 걸레받이', 6]] }
+];
+
+/* ===== 상태 (시안마다 따로, 이 기기에만 저장) ===== */
+const LS = { get(k, d) { try { const v = localStorage.getItem('int.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('int.' + k, JSON.stringify(v)); } catch (e) { } } };
+const ST = { v: ['A', 'B', 'C'].includes(LS.get('v', 'A')) ? LS.get('v', 'A') : 'A', cat: 'all', q: '', room: 'bath' };
+const newCart = () => ({ info: { date: today() }, lines: [] });
+const carts = {};
+['A', 'B', 'C'].forEach(v => { const x = LS.get('cart' + v, null); carts[v] = x && Array.isArray(x.lines) ? Object.assign(newCart(), x, { lines: x.lines.filter(l => PID[l.pid]) }) : newCart(); });
+const cart = () => carts[ST.v];
+const save = () => LS.set('cart' + ST.v, cart());
+function totals(lines) { const t = lines.reduce((s, l) => s + PID[l.pid].p * l.q, 0), sup = Math.round(t * 10 / 11); return { t, sup, vat: t - sup, n: lines.reduce((s, l) => s + l.q, 0) }; }
+const inCart = pid => cart().lines.filter(l => l.pid === pid).reduce((s, l) => s + l.q, 0);
+function addItem(pid, room, q, quiet) {
+  const c = cart(), rm = ST.v === 'C' ? (room || ST.room) : '';
+  const l = c.lines.find(x => x.pid === pid && (x.room || '') === rm);
+  if (l) l.q += (q || 1); else c.lines.push({ pid, q: q || 1, room: rm });
+  save(); renderLeft(); renderRight();
+  const i = c.lines.findIndex(x => x.pid === pid && (x.room || '') === rm), row = document.querySelector('[data-li="' + i + '"]');
+  if (row) { row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash'); row.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+  if (!quiet) toast(PID[pid].n + ' 담았어요' + (rm ? ' → ' + ROOMS.find(r => r[0] === rm)[1] : ''));
+}
+
+/* ===== 화면 틀 ===== */
+const qtyB = (i, q) => '<span class="qtyb"><button type="button" data-qd="' + i + '" data-d="-1" aria-label="빼기">−</button><input type="number" inputmode="numeric" min="1" value="' + q + '" data-qi="' + i + '" aria-label="수량"><button type="button" data-qd="' + i + '" data-d="1" aria-label="더하기">＋</button></span>';
+const icon = p => '<div class="ic" style="background:' + CAT[p.cat].bg + '">' + CAT[p.cat].e + '</div>';
+const searchBar = () => '<div class="bar"><input class="search" id="q" type="search" placeholder="상품명 · 규격 · 바코드 찾기" value="' + esc(ST.q) + '"><button class="btn ghost closecat" type="button" data-act="closecat">닫기 ✕</button></div>';
+const leftBar = (title) => '<div class="bar"><b>' + title + '</b><span class="muted" id="cnt"></span><span style="margin-left:auto"></span><button class="btn pri" type="button" data-act="scan">🧾 결제 바코드</button><button class="btn" type="button" data-act="print">🖨 인쇄</button><button class="btn ghost" type="button" data-act="clear">🗑 비우기</button></div>';
+function layout() {
+  const sp = $('split'); sp.className = 'split' + (ST.v === 'B' ? ' b' : '');
+  if (ST.v === 'A') sp.innerHTML = '<section class="pane left">' + leftBar('견적서') + '<div class="scroll paperwrap" data-drop="main"><div class="paper" id="L"></div></div></section>' +
+    '<section class="pane right" id="Rp">' + searchBar() + '<div class="chips" id="chips"></div><div class="scroll"><div class="pgrid" id="R"></div></div></section>';
+  if (ST.v === 'B') sp.innerHTML = '<section class="pane left"><div class="bar"><b>결제 목록</b><input class="search" style="max-width:220px" data-info="name" placeholder="고객명" value="' + esc(cart().info.name || '') + '"><span style="margin-left:auto"></span><button class="btn" type="button" data-act="print">🖨 바코드 출력</button><button class="btn ghost" type="button" data-act="clear">🗑 비우기</button></div>' +
+    '<div class="scroll" data-drop="main"><div class="bcards" id="L"></div></div><div class="bfoot" id="BF"></div></section>' +
+    '<section class="pane right" id="Rp">' + searchBar() + '<div class="posgrid"><div class="rail" id="chips"></div><div class="scroll"><div class="plist" id="R"></div></div></div></section>';
+  if (ST.v === 'C') sp.innerHTML = '<section class="pane left"><div class="cinfo">' + ['name:고객명', 'tel:연락처', 'addr:현장 주소'].map(x => { const [k, t] = x.split(':'); return '<input data-info="' + k + '" placeholder="' + t + '" value="' + esc(cart().info[k] || '') + '">'; }).join('') + '</div>' +
+    leftBar('공간별 견적') + '<div class="scroll"><div class="rooms" id="L"></div></div><div class="csum" id="CS"></div></section>' +
+    '<section class="pane right" id="Rp"><div class="tgtbar" id="TG"></div>' + searchBar() + '<div class="sets" id="SETS"></div><div class="chips" id="chips"></div><div class="scroll"><div class="cgrid" id="R"></div></div></section>';
+  document.querySelectorAll('#vtabs button').forEach(b => b.classList.toggle('on', b.dataset.v === ST.v));
+  renderLeft(); renderRight();
+}
+/* ===== 왼쪽: 견적서 ===== */
+function renderLeft() {
+  const c = cart(), T = totals(c.lines), L = $('L'); if (!L) return;
+  const cnt = $('cnt'); if (cnt) cnt.textContent = c.lines.length ? c.lines.length + '개 품목 · ' + T.n + '개' : '';
+  $('fabcat').textContent = '＋ 상품 담기' + (c.lines.length ? ' (' + c.lines.length + ')' : '');
+  const emptyMsg = '<b>오른쪽 상품을 여기로 끌어오세요</b><br>또는 상품을 눌러서 담아요. 담으면 상품 옆에 <b>바코드</b>가 같이 나와서, 계산할 때 POS에서 바로 찍을 수 있어요.';
+  if (ST.v === 'A') {
+    const inf = (k, t, ty) => '<label><span>' + t + '</span><input data-info="' + k + '"' + (ty ? ' type="' + ty + '"' : '') + ' value="' + esc(c.info[k] || '') + '"></label>';
+    L.innerHTML = '<div class="ph"><div class="lg">ACE <i>Hardware</i></div><h2>견 적 서</h2><div class="no">일산점 · 인테리어</div></div>' +
+      '<div class="pinfo">' + inf('name', '고객명') + inf('tel', '연락처') + inf('addr', '현장 주소') + inf('date', '상담일', 'date') + inf('staff', '담당자') + inf('valid', '유효기간') + '</div>' +
+      '<div class="pdrop">' + (c.lines.length ? '<table class="qt"><tr><th>No</th><th style="text-align:left">품명 · 규격</th><th>수량</th><th>단가</th><th>금액</th><th>바코드</th><th class="noprint"></th></tr>' +
+        c.lines.map((l, i) => { const p = PID[l.pid]; return '<tr data-li="' + i + '"><td class="c">' + (i + 1) + '</td><td class="nm"><b>' + esc(p.n) + '</b><small>' + esc(p.sp) + '</small></td><td class="c">' + qtyB(i, l.q) + '<div class="muted" style="font-size:.75em">' + esc(p.u) + '</div></td><td class="r">' + won(p.p) + '</td><td class="r"><b>' + won(p.p * l.q) + '</b></td><td class="bcc">' + BC.svg(p.bc, { h: 34 }) + '</td><td class="noprint"><button class="del" type="button" data-del="' + i + '" aria-label="빼기">✕</button></td></tr>'; }).join('') + '</table>'
+        : '<div class="empty">' + emptyMsg + '</div>') + '</div>' +
+      '<div class="ptot"><div>공급가액</div><div>' + won(T.sup) + '원</div><div>부가세</div><div>' + won(T.vat) + '원</div><div class="g">합계 (부가세 포함)</div><div>' + won(T.t) + '원</div></div>' +
+      '<textarea class="pmemo" data-info="memo" placeholder="비고 (예: 시공비 별도 · 배송 3일 소요)">' + esc(c.info.memo || '') + '</textarea>';
+  }
+  if (ST.v === 'B') {
+    L.innerHTML = c.lines.length ? c.lines.map((l, i) => { const p = PID[l.pid]; return '<div class="bcard" data-li="' + i + '"><div class="nm"><b>' + (i + 1) + '. ' + esc(p.n) + '</b><small>' + esc(p.sp) + ' · ' + won(p.p) + '원/' + esc(p.u) + '</small></div><div class="amt">' + won(p.p * l.q) + '원<small>' + l.q + esc(p.u) + '</small></div>' +
+      '<div class="bcbox"><div style="flex:1">' + BC.svg(p.bc, { h: 40 }) + '</div><div class="q">×' + l.q + '<small>스캔 수량</small></div></div><div>' + qtyB(i, l.q) + '</div><div style="text-align:right"><button class="del" type="button" data-del="' + i + '" aria-label="빼기">✕</button></div></div>'; }).join('')
+      : '<div class="empty">' + emptyMsg + '</div>';
+    $('BF').innerHTML = '<div class="t">' + won(T.t) + '원<small>' + c.lines.length + '개 품목 · ' + T.n + '개 · 부가세 포함</small></div><button class="btn red" type="button" data-act="scan"' + (c.lines.length ? '' : ' disabled') + '>▶ 결제 스캔 시작</button>';
+  }
+  if (ST.v === 'C') {
+    L.innerHTML = ROOMS.map(([k, t, e]) => {
+      const ls = c.lines.map((l, i) => [l, i]).filter(([l]) => l.room === k), s = ls.reduce((a, [l]) => a + PID[l.pid].p * l.q, 0);
+      return '<div class="room' + (ST.room === k ? ' cur' : '') + '" data-drop="' + k + '"><div class="rh" data-room="' + k + '"><span class="em">' + e + '</span>' + t + (ST.room === k ? ' <span class="tgt">지금 담는 곳</span>' : '') + '<span class="sum">' + (ls.length ? won(s) + '원' : '') + '</span></div>' +
+        (ls.length ? ls.map(([l, i]) => { const p = PID[l.pid]; return '<div class="ri" data-li="' + i + '"><div class="nm"><b>' + esc(p.n) + '</b><small>' + esc(p.sp) + ' · ' + won(p.p) + '원</small></div>' + qtyB(i, l.q) + '<div>' + BC.svg(p.bc, { h: 30 }) + '</div><div class="r">' + won(p.p * l.q) + '원<br><button class="del" type="button" data-del="' + i + '" aria-label="빼기">✕</button></div></div>'; }).join('')
+          : '<div class="re">여기로 끌어오거나, 위 제목을 눌러 "지금 담는 곳"으로 정한 뒤 상품을 누르세요</div>') + '</div>';
+    }).join('');
+    $('CS').innerHTML = '<div class="rs">' + ROOMS.map(([k, t, e]) => { const s = c.lines.filter(l => l.room === k).reduce((a, l) => a + PID[l.pid].p * l.q, 0); return s ? '<span>' + e + ' ' + t + ' ' + won(s) + '원</span>' : ''; }).join('') + '</div><div class="tt">합계 ' + won(T.t) + '원 <small class="muted" style="font-size:.55em;font-weight:600">부가세 포함</small></div>';
+  }
+}
+/* ===== 오른쪽: 상품 ===== */
+function visible() {
+  const q = ST.q.trim().toLowerCase();
+  return P.filter(p => (ST.cat === 'all' || p.cat === ST.cat) && (!q || (p.n + ' ' + p.sp + ' ' + p.bc + ' ' + p.code).toLowerCase().includes(q)));
+}
+function renderRight() {
+  const R = $('R'); if (!R) return;
+  const chips = $('chips'), list = visible();
+  if (ST.v === 'B') chips.innerHTML = [['all', '전체', '🏷️']].concat(CATS.map(c => [c[0], c[1], c[2]])).map(([k, t, e]) => '<button type="button" data-cat="' + k + '" class="' + (ST.cat === k ? 'on' : '') + '"><span>' + e + '</span>' + t + '</button>').join('');
+  else chips.innerHTML = [['all', '전체']].concat(CATS.map(c => [c[0], c[2] + ' ' + c[1]])).map(([k, t]) => '<button type="button" data-cat="' + k + '" class="' + (ST.cat === k ? 'on' : '') + '">' + t + '</button>').join('');
+  if (!list.length) { R.innerHTML = '<div class="empty">찾는 상품이 없어요</div>'; return; }
+  if (ST.v === 'B') R.innerHTML = list.map(p => { const n = inCart(p.id); return '<div class="prow' + (n ? ' in' : '') + '" data-pid="' + p.id + '">' + icon(p) + '<div class="nm"><b>' + esc(p.n) + '</b><small>' + esc(p.sp) + (n ? ' · <b style="color:var(--ok)">' + n + '개 담김</b>' : '') + '</small></div><div class="pr">' + won(p.p) + '</div><button class="add" type="button" data-add="' + p.id + '" aria-label="담기">＋</button></div>'; }).join('');
+  else R.innerHTML = list.map(p => { const n = inCart(p.id); return '<div class="pcard' + (n ? ' in' : '') + '" data-pid="' + p.id + '">' + (n ? '<span class="cnt">' + n + '</span>' : '') + '<button class="add" type="button" data-add="' + p.id + '" aria-label="담기">＋</button>' + icon(p) + '<div class="nm">' + esc(p.n) + '</div><div class="sp">' + esc(p.sp) + '</div><div class="pr">' + won(p.p) + '원 <span class="muted" style="font-weight:500;font-size:.8em">/ ' + esc(p.u) + '</span></div><div class="grip">⟵ 끌어서 담기 · ' + p.bc + '</div></div>'; }).join('');
+  if (ST.v === 'C') {
+    $('TG').innerHTML = '<b>담을 공간</b>' + ROOMS.map(([k, t, e]) => '<button type="button" data-room="' + k + '" class="' + (ST.room === k ? 'on' : '') + '">' + e + ' ' + t + '</button>').join('');
+    $('SETS').innerHTML = SETS.map((s, i) => '<button type="button" data-set="' + i + '">⚡ ' + esc(s.n) + '<small>' + esc(s.d) + '</small></button>').join('');
+  }
+}
+/* ===== 끌어서 담기 (손가락 · 마우스 모두) — 옆으로 밀면 끌기, 위아래로 밀면 목록 스크롤 ===== */
+let drag = null, ghost = null, lastDrag = 0;
+document.addEventListener('pointerdown', e => {
+  if (e.button > 0) return;
+  const card = e.target.closest('[data-pid]'); if (!card || e.target.closest('button,input')) return;
+  drag = { pid: card.dataset.pid, x: e.clientX, y: e.clientY, on: false, id: e.pointerId, card, over: null };
+});
+document.addEventListener('pointermove', e => {
+  if (!drag || e.pointerId !== drag.id) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (!drag.on) {
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+    if (e.pointerType !== 'mouse' && Math.abs(dy) > Math.abs(dx)) { drag = null; return; }
+    drag.on = true; document.body.classList.add('dragging');
+    try { drag.card.setPointerCapture(e.pointerId); } catch (er) { }
+    ghost = document.createElement('div'); ghost.className = 'dragghost'; ghost.textContent = CAT[PID[drag.pid].cat].e + ' ' + PID[drag.pid].n; document.body.appendChild(ghost);
+    if (window.innerWidth < 900) { const rp = $('Rp'); if (rp) rp.classList.remove('open'); }
+  }
+  e.preventDefault();
+  ghost.style.left = e.clientX + 'px'; ghost.style.top = e.clientY + 'px';
+  const t = document.elementFromPoint(e.clientX, e.clientY), z = t && t.closest('[data-drop]');
+  if (z !== drag.over) { if (drag.over) drag.over.classList.remove('over'); if (z) z.classList.add('over'); drag.over = z; }
+}, { passive: false });
+function endDrag(e, ok) {
+  if (!drag) return;
+  if (drag.on) {
+    lastDrag = Date.now(); document.body.classList.remove('dragging'); if (ghost) ghost.remove(); ghost = null;
+    if (drag.over) drag.over.classList.remove('over');
+    if (ok) { const t = document.elementFromPoint(e.clientX, e.clientY), z = t && t.closest('[data-drop]'); if (z) addItem(drag.pid, z.dataset.drop === 'main' ? '' : z.dataset.drop); else toast('왼쪽 견적서 위에 놓아 주세요'); }
+  }
+  drag = null;
+}
+document.addEventListener('pointerup', e => endDrag(e, true));
+document.addEventListener('pointercancel', e => endDrag(e, false));
+
+/* ===== 누르기 ===== */
+document.addEventListener('click', e => {
+  const t = e.target, c = cart();
+  const vb = t.closest('#vtabs [data-v]'); if (vb) { ST.v = vb.dataset.v; LS.set('v', ST.v); layout(); return; }
+  if (t.closest('#fabcat')) { $('Rp').classList.toggle('open'); return; }
+  const a = t.closest('[data-act]');
+  if (a) {
+    const k = a.dataset.act;
+    if (k === 'closecat') $('Rp').classList.remove('open');
+    else if (k === 'print') { if (!c.lines.length) { toast('담은 상품이 없어요'); return; } window.print(); }
+    else if (k === 'clear') { if (c.lines.length && confirm('담은 상품을 모두 지울까요?')) { c.lines = []; save(); renderLeft(); renderRight(); } }
+    else if (k === 'scan') openScan();
+    return;
+  }
+  const ad = t.closest('[data-add]'); if (ad) { addItem(ad.dataset.add); return; }
+  const qd = t.closest('[data-qd]'); if (qd) { const l = c.lines[+qd.dataset.qd]; if (!l) return; l.q = Math.max(1, l.q + Number(qd.dataset.d)); save(); renderLeft(); renderRight(); return; }
+  const dl = t.closest('[data-del]'); if (dl) { c.lines.splice(+dl.dataset.del, 1); save(); renderLeft(); renderRight(); return; }
+  const ch = t.closest('[data-cat]'); if (ch) { ST.cat = ch.dataset.cat; renderRight(); return; }
+  const rm = t.closest('[data-room]'); if (rm) { ST.room = rm.dataset.room; renderLeft(); renderRight(); toast(ROOMS.find(r => r[0] === ST.room)[1] + '에 담아요'); return; }
+  const st = t.closest('[data-set]'); if (st) { const s = SETS[+st.dataset.set]; ST.room = s.room; s.it.forEach(([n, q]) => addItem(byName(n), s.room, q, true)); renderRight(); toast(s.n + ' 담았어요'); return; }
+  const card = t.closest('[data-pid]'); if (card && Date.now() - lastDrag > 400 && !t.closest('input')) { addItem(card.dataset.pid); }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'q') { ST.q = t.value; renderRight(); return; }
+  if (t.dataset.info) { cart().info[t.dataset.info] = t.value; save(); }
+});
+document.addEventListener('change', e => {
+  const t = e.target; if (t.dataset.qi === undefined) return;
+  const l = cart().lines[+t.dataset.qi]; if (!l) return;
+  const v = Math.floor(Number(t.value)); l.q = Number.isFinite(v) && v >= 1 ? Math.min(v, 9999) : l.q; save(); renderLeft(); renderRight();
+});
+
+/* ===== 결제 스캔 화면: 바코드를 하나씩 크게 → POS 스캐너로 찍고 "다음" ===== */
+let SC = null;
+function scanLines() { const c = cart(); return ST.v === 'C' ? ROOMS.flatMap(([k]) => c.lines.filter(l => l.room === k)) : c.lines.slice(); }
+function openScan() {
+  const ls = scanLines(); if (!ls.length) { toast('담은 상품이 없어요'); return; }
+  SC = { ls, i: 0, done: new Set(), all: false }; drawScan();
+}
+function drawScan() {
+  let el = $('scan'); if (!el) { el = document.createElement('div'); el.id = 'scan'; el.className = 'scan'; document.body.appendChild(el); }
+  const { ls, i } = SC, T = totals(ls), n = ls.length, pct = Math.round(SC.done.size / n * 100);
+  let body;
+  if (SC.all) body = '<div class="alll">' + ls.map((l, k) => { const p = PID[l.pid]; return '<div data-sk="' + k + '" class="' + (SC.done.has(k) ? 'ok' : '') + '"><b>' + (k + 1) + '. ' + esc(p.n) + ' × ' + l.q + '</b><small>' + esc(p.sp) + '</small>' + BC.svg(p.bc, { h: 60 }) + '</div>'; }).join('') + '</div><div class="tip">찍은 바코드를 누르면 흐리게 표시돼요</div>';
+  else if (SC.done.size === n && i >= n) body = '<div style="font-size:3em">✅</div><div class="nm">' + n + '개 품목을 모두 스캔했어요</div><div class="qn">POS 합계가 <b>' + won(T.t) + '원</b>인지 확인하세요<br><small>수량 합계 ' + T.n + '개</small></div>';
+  else { const l = ls[i], p = PID[l.pid]; body = '<div class="nm">' + (i + 1) + '. ' + esc(p.n) + '<small>' + esc(p.sp) + ' · ' + won(p.p) + '원 · 상품코드 ' + p.code + '</small></div><div class="big">' + BC.svg(p.bc, { h: 42 }) + '</div>' +
+    '<div class="qn">수량 <b>' + l.q + '</b>' + esc(p.u) + (l.q > 1 ? ' — ' + l.q + '번 찍거나, 한 번 찍고 POS에서 수량 ' + l.q + ' 입력' : ' — 한 번 찍으세요') + '</div><div class="tip">화면 밝기를 최대로 올려 주세요 · 바코드가 안 읽히면 🖨 인쇄해서 찍어요</div>'; }
+  el.innerHTML = '<div class="sh"><b>🧾 결제 스캔</b><span>' + (SC.all ? '한 화면에 모두' : Math.min(i + 1, n) + ' / ' + n) + '</span><span class="muted">' + T.n + '개 · ' + won(T.t) + '원</span><span style="margin-left:auto"></span><button class="btn sm" type="button" data-s="all">' + (SC.all ? '하나씩 크게' : '한 화면에 모두') + '</button><button class="btn sm" type="button" data-s="close">닫기 ✕</button></div>' +
+    '<div class="prog"><i style="width:' + pct + '%"></i></div><div class="sb">' + body + '</div>' +
+    (SC.all ? '' : (i >= n ? '<div class="sf"><button class="btn" type="button" data-s="prev">◀ 다시 보기</button><button class="btn pri" type="button" data-s="close">끝내기</button></div>' : '<div class="sf"><button class="btn" type="button" data-s="prev"' + (i ? '' : ' disabled') + '>◀ 이전</button><button class="btn pri" type="button" data-s="next">✔ 찍었어요 · 다음 ▶</button></div>'));
+}
+document.addEventListener('click', e => {
+  if (!SC) return;
+  const b = e.target.closest('[data-s]'), sk = e.target.closest('[data-sk]');
+  if (sk) { const k = +sk.dataset.sk; SC.done.has(k) ? SC.done.delete(k) : SC.done.add(k); drawScan(); return; }
+  if (!b) return; const s = b.dataset.s;
+  if (s === 'close') { $('scan').remove(); SC = null; return; }
+  if (s === 'all') SC.all = !SC.all;
+  if (s === 'next') { SC.done.add(SC.i); SC.i = Math.min(SC.i + 1, SC.ls.length); }
+  if (s === 'prev') SC.i = Math.max(0, Math.min(SC.i, SC.ls.length) - 1);
+  drawScan();
+});
+document.addEventListener('keydown', e => {
+  if (!SC) return;
+  if (e.key === 'Escape') { $('scan').remove(); SC = null; }
+  else if (!SC.all && (e.key === 'ArrowRight' || e.key === ' ')) { e.preventDefault(); SC.done.add(SC.i); SC.i = Math.min(SC.i + 1, SC.ls.length); drawScan(); }
+  else if (!SC.all && e.key === 'ArrowLeft') { SC.i = Math.max(0, Math.min(SC.i, SC.ls.length) - 1); drawScan(); }
+});
+layout();
+</script>
+</body>
+</html>
