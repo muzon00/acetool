@@ -119,6 +119,9 @@ table.qt td.bcc { width: 108px; min-width: 108px; } table.qt td.bcc svg { min-wi
 .mb { padding: 14px 16px; } .mf { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--line); flex-wrap: wrap; align-items: center; }
 .drop { border: 2px dashed #9fb8d6; border-radius: 14px; padding: 18px; text-align: center; background: #f6f9fd; display: block; cursor: pointer; }
 .drop b { display: block; font-size: 1.05em; margin-bottom: 4px; }
+.dropov { position: fixed; inset: 0; z-index: 400; background: rgba(29,53,87,.78); display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.dropov div { border: 4px dashed #fff; border-radius: 24px; padding: 40px 56px; color: #fff; font-size: 1.6em; font-weight: 900; text-align: center; }
+.dropov small { display: block; font-size: .5em; font-weight: 600; opacity: .85; margin-top: 8px; }
 .kv { display: grid; grid-template-columns: 120px 1fr; gap: 6px 10px; font-size: .92em; margin: 10px 0; } .kv span:nth-child(odd) { color: var(--ink3); }
 .ok { background: #eaf7ef; color: #14532d; border-radius: 10px; padding: 10px 12px; } .err { background: #fdecee; color: #8a1c24; border-radius: 10px; padding: 10px 12px; } .warnb { background: #fff6e0; color: #6b4300; border-radius: 10px; padding: 10px 12px; }
 .bsec { margin: 12px 0 4px; font-weight: 800; font-size: .92em; color: var(--ink2); }
@@ -197,8 +200,8 @@ table.qt td.bcc { width: 108px; min-width: 108px; } table.qt td.bcc svg { min-wi
   </div>
 </div>
 <button class="btn pri fabcat" id="fabcat" type="button">＋ 상품 담기</button>
-<input type="file" id="fSales" accept=".xlsx,.xls,.csv" multiple hidden>
-<input type="file" id="fStock" accept=".xlsx,.xls,.csv" hidden>
+<input type="file" id="fSales" accept=".xlsx,.xlsm,.xlsb,.xls,.csv,.json" multiple hidden>
+<input type="file" id="fStock" accept=".xlsx,.xlsm,.xlsb,.xls,.csv" multiple hidden>
 <input type="file" id="fJson" accept=".json,application/json" hidden>
 <div class="toast" id="toast" role="status"></div>
 <script>
@@ -452,7 +455,7 @@ function openUpload(msg) {
   const box = document.createElement('div'); box.className = 'modal'; box.id = 'um';
   const sum = DB ? '<div class="kv"><span>지금 상품</span><span><b>' + DB.products.length.toLocaleString('ko-KR') + '개</b> (' + (DB.interior ? '인테리어성자재' : '전체 분류') + ')</span><span>판매 데이터</span><span>' + dLabel(DB.from) + ' ~ ' + dLabel(DB.to) + ' · 거래 ' + DB.txN.toLocaleString('ko-KR') + '건</span><span>자주 사는 구성</span><span>' + (DB.bundles.map(b => esc(b.name) + ' ' + b.n + '건').join(' · ') || '-') + '</span><span>재고 파일</span><span>' + (DB.stock ? Object.keys(DB.stock).length.toLocaleString('ko-KR') + '개 상품 · ' + esc(DB.stockAt || '') : '없음') + '</span></div>' : '<p class="muted">아직 올린 자료가 없어요. 지금은 샘플 상품이 보여요.</p>';
   box.innerHTML = '<div class="mbox" role="dialog" aria-modal="true"><div class="mh"><b>📥 상품 · 판매 데이터 올리기</b><button class="btn sm x" type="button" data-ux="close">닫기 ✕</button></div><div class="mb">' + (msg || '') + sum +
-    '<label class="drop" for="fSales"><b>① 판매 데이터 (필수) — POS "실시간 대량판매현황" 엑셀</b>2년치처럼 여러 파일을 한꺼번에 골라도 돼요. 인테리어성자재 상품만 골라 <b>상품 목록</b>(최근 판매 단가 · 바코드)과 <b>같이 산 상품</b>, <b>욕실 1개소 · 2개소</b> 같은 자주 사는 구성을 만들어요.</label>' +
+    '<div class="hint" style="margin-bottom:10px;background:#eef3fa;color:#1d3557;border-radius:10px;padding:10px 12px">🖱️ <b>Finder에서 파일을 이 화면 아무 곳에나 끌어다 놓아도 돼요.</b> 판매 데이터 · 재고 파일을 한꺼번에 끌어 놓아도 알아서 나눠요.</div><label class="drop" for="fSales"><b>① 판매 데이터 (필수) — POS "실시간 대량판매현황" 엑셀</b>2년치처럼 여러 파일을 한꺼번에 골라도 돼요. 인테리어성자재 상품만 골라 <b>상품 목록</b>(최근 판매 단가 · 바코드)과 <b>같이 산 상품</b>, <b>욕실 1개소 · 2개소</b> 같은 자주 사는 구성을 만들어요.</label>' +
     '<label class="drop" for="fStock" style="margin-top:10px"><b>② 재고 파일 (선택) — "인테리어 재고 확인" 엑셀</b>상품코드로 맞춰 재고 수량과 발주중단 같은 상태를 카드에 보여 줘요.</label>' +
     '<p class="muted" style="font-size:.84em;margin:10px 0 0">손님 이름 · 담당자 같은 개인 정보는 저장하지 않아요. 상품 목록은 <b>이 기기(브라우저)에만</b> 저장돼요 — 태블릿에서도 쓰려면 태블릿에서 한 번 더 올리거나, 아래 "목록 파일로 저장"한 파일을 태블릿에서 "목록 파일 불러오기" 하세요.</p></div>' +
     '<div class="mf"><button class="btn sm" type="button" data-ux="export"' + (DB ? '' : ' disabled') + '>💾 목록 파일로 저장</button><label class="btn sm" for="fJson">📂 목록 파일 불러오기</label><span style="margin-left:auto"></span><button class="btn sm ghost" type="button" data-ux="reset"' + (DB ? '' : ' disabled') + ' style="color:var(--red)">샘플로 되돌리기</button></div></div>';
@@ -465,39 +468,55 @@ function openUpload(msg) {
   document.body.appendChild(box);
 }
 function saveDB(db) { const ok = LS.set('db', db); DB = db; reindex(); ST.cat = 'all'; ST.last = ''; renderRight(); return ok; }
-$('fSales').addEventListener('change', async e => {
-  const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
-  openUpload('<div class="warnb">⏳ ' + files.length + '개 파일 읽는 중… (큰 파일은 1~2분 걸릴 수 있어요)</div>');
+/* 파일 올리기: 고르기 창 또는 Finder에서 끌어다 놓기 — 파일 내용을 보고 판매 데이터 / 재고 파일 / 목록 파일을 알아서 구분 */
+async function importFiles(files) {
+  files = files.filter(f => f && f.size > 0); if (!files.length) return;
+  const js = files.filter(f => /\.json$/i.test(f.name)), xs = files.filter(f => /\.(xlsx|xlsm|xlsb|xls|csv)$/i.test(f.name)), skip = files.filter(f => !js.includes(f) && !xs.includes(f));
+  if (js.length && !xs.length) {
+    try { const j = JSON.parse(await js[0].text()); if (!j || j.v !== 1 || !Array.isArray(j.products) || !j.products.every(p => p && typeof p.c === 'string' && typeof p.n === 'string' && Number.isFinite(p.p))) throw new Error('인테리어 상품 목록 파일이 아니에요');
+      saveDB(j); openUpload('<div class="ok">✅ 목록 파일을 불러왔어요 — 상품 ' + j.products.length + '개</div>'); } catch (er) { openUpload('<div class="err">' + esc(er.message || er) + '</div>'); }
+    return;
+  }
+  if (!xs.length) { openUpload('<div class="err">엑셀(.xlsx · .xls · .xlsb) 또는 CSV 파일을 올려 주세요.' + (skip.length ? '<br>못 쓰는 파일: ' + skip.map(f => esc(f.name)).join(', ') : '') + '</div>'); return; }
+  openUpload('<div class="warnb">⏳ ' + xs.length + '개 파일 읽는 중… (큰 파일은 1~2분 걸릴 수 있어요)</div>');
   try {
-    const keyCnt = new Map(), byFile = [];
-    let all = [], bad = 0, none = [];
-    for (const f of files) {
-      const sheets = await readAoa(f); let got = null;
-      for (const a of sheets) { const r = salesRows(a); if (r) { got = got || { rows: [], bad: 0 }; got.rows.push(...r.rows); got.bad += r.bad; } }
-      if (!got) { none.push(f.name); continue; }
-      bad += got.bad; byFile.push(got.rows);
+    const byFile = [], none = [], salesNames = [], stockNames = []; let bad = 0, stock = null;
+    for (const f of xs) {
+      const sheets = await readAoa(f); let got = null, st = null;
+      for (const a of sheets) { const r = salesRows(a); if (r) { got = got || { rows: [], bad: 0 }; got.rows.push(...r.rows); got.bad += r.bad; } else if (!st) st = stockRows(a); }
+      if (got) { bad += got.bad; byFile.push(got.rows); salesNames.push(f.name); }
+      else if (st) { stock = Object.assign(stock || {}, st); stockNames.push(f.name); }
+      else none.push(f.name);
     }
-    /* 같은 기간 파일을 두 번 올려도 두 번 세지 않게: 같은 줄(판매번호·상품·수량·금액)은 파일마다 센 개수 중 큰 값만 */
-    byFile.forEach(rows => { const seen = new Map(); rows.forEach(r => { const k = r.tx + '|' + r.c + '|' + r.q + '|' + r.p; const n = (seen.get(k) || 0) + 1; seen.set(k, n); if (n > (keyCnt.get(k) || 0)) { keyCnt.set(k, n); all.push(r); } }); });
-    if (!all.length) { openUpload('<div class="err">판매 내역을 찾지 못했어요. 머리글에 <b>판매번호 · 상품코드 · 상품명 · 판매수량</b>이 있는 POS 판매 파일인지 확인해 주세요.' + (none.length ? '<br>못 읽은 파일: ' + none.map(esc).join(', ') : '') + '</div>'); return; }
-    const db = analyze(all); if (DB && DB.stock) { db.stock = DB.stock; db.stockAt = DB.stockAt; }
-    const ok = saveDB(db);
-    openUpload('<div class="' + (ok ? 'ok' : 'err') + '">' + (ok ? '✅ 상품 목록을 만들었어요' : '⚠ 기기 저장 공간이 부족해 다음에 열면 사라질 수 있어요 (지금은 쓸 수 있어요)') + ' — 판매 줄 ' + db.rows.toLocaleString('ko-KR') + '개' + (db.interior ? ' (인테리어성자재만)' : '') + ' → 상품 ' + db.products.length.toLocaleString('ko-KR') + '개 · 거래 ' + db.txN.toLocaleString('ko-KR') + '건' +
-      (bad ? '<br>숫자를 읽지 못해 뺀 줄 ' + bad + '개' : '') + (none.length ? '<br>판매 내역이 아니어서 건너뛴 파일: ' + none.map(esc).join(', ') : '') + '</div>');
+    const tail = (none.length ? '<br>판매 내역 · 재고 파일이 아니어서 건너뛴 파일: ' + none.map(esc).join(', ') : '') + (skip.length ? '<br>엑셀이 아니어서 건너뛴 파일: ' + skip.map(f => esc(f.name)).join(', ') : '');
+    if (!byFile.length && !stock) { openUpload('<div class="err">판매 내역을 찾지 못했어요. 머리글에 <b>판매번호 · 상품코드 · 상품명 · 판매수량</b>이 있는 POS 판매 파일인지 확인해 주세요.' + tail + '</div>'); return; }
+    let msg = '';
+    if (byFile.length) {
+      /* 같은 기간 파일을 두 번 올려도 두 번 세지 않게: 같은 줄(판매번호·상품·수량·금액)은 파일마다 센 개수 중 큰 값만 */
+      const keyCnt = new Map(), all = [];
+      byFile.forEach(rows => { const seen = new Map(); rows.forEach(r => { const k = r.tx + '|' + r.c + '|' + r.q + '|' + r.p; const n = (seen.get(k) || 0) + 1; seen.set(k, n); if (n > (keyCnt.get(k) || 0)) { keyCnt.set(k, n); all.push(r); } }); });
+      const db = analyze(all);
+      if (stock) { db.stock = stock; db.stockAt = stockNames.join(', '); } else if (DB && DB.stock) { db.stock = DB.stock; db.stockAt = DB.stockAt; }
+      const ok = saveDB(db);
+      msg = '<div class="' + (ok ? 'ok' : 'err') + '">' + (ok ? '✅ 상품 목록을 만들었어요' : '⚠ 기기 저장 공간이 부족해 다음에 열면 사라질 수 있어요 (지금은 쓸 수 있어요)') + ' — 판매 파일 ' + salesNames.length + '개 · 판매 줄 ' + db.rows.toLocaleString('ko-KR') + '개' + (db.interior ? ' (인테리어성자재만)' : '') + ' → 상품 ' + db.products.length.toLocaleString('ko-KR') + '개 · 거래 ' + db.txN.toLocaleString('ko-KR') + '건' +
+        (stock ? '<br>재고 파일 ' + stockNames.length + '개도 붙였어요' : '') + (bad ? '<br>숫자를 읽지 못해 뺀 줄 ' + bad + '개' : '') + tail + '</div>';
+    } else {
+      if (!DB) { openUpload('<div class="err">재고 파일만 있어요. 판매 데이터를 먼저 (또는 같이) 올려 주세요.' + tail + '</div>'); return; }
+      const hit = DB.products.filter(p => stock[p.c]).length; saveDB(Object.assign({}, DB, { stock, stockAt: stockNames.join(', ') }));
+      msg = '<div class="ok">✅ 재고를 붙였어요 — 상품 ' + DB.products.length + '개 중 ' + hit + '개가 재고 파일에 있어요.' + tail + '</div>';
+    }
+    openUpload(msg);
   } catch (er) { openUpload('<div class="err">파일을 읽지 못했어요: ' + esc(er.message || er) + '</div>'); }
-});
-$('fStock').addEventListener('change', async e => {
-  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-  if (!DB) { openUpload('<div class="err">판매 데이터를 먼저 올려 주세요.</div>'); return; }
-  try { let st = null; for (const a of await readAoa(f)) { st = stockRows(a); if (st) break; } if (!st) { openUpload('<div class="err">재고 파일에서 <b>상품코드 · 재고수량</b> 칸을 찾지 못했어요.</div>'); return; }
-    const db = Object.assign({}, DB, { stock: st, stockAt: f.name }); const hit = DB.products.filter(p => st[p.c]).length; saveDB(db);
-    openUpload('<div class="ok">✅ 재고를 붙였어요 — 상품 ' + DB.products.length + '개 중 ' + hit + '개가 재고 파일에 있어요.</div>'); } catch (er) { openUpload('<div class="err">파일을 읽지 못했어요: ' + esc(er.message || er) + '</div>'); }
-});
-$('fJson').addEventListener('change', async e => {
-  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-  try { const j = JSON.parse(await f.text()); if (!j || j.v !== 1 || !Array.isArray(j.products) || !j.products.every(p => p && typeof p.c === 'string' && typeof p.n === 'string' && Number.isFinite(p.p))) throw new Error('인테리어 상품 목록 파일이 아니에요');
-    saveDB(j); openUpload('<div class="ok">✅ 목록 파일을 불러왔어요 — 상품 ' + j.products.length + '개</div>'); } catch (er) { openUpload('<div class="err">' + esc(er.message || er) + '</div>'); }
-});
+}
+['fSales', 'fStock', 'fJson'].forEach(id => $(id).addEventListener('change', e => { const fs = [...e.target.files]; e.target.value = ''; importFiles(fs); }));
+/* Finder · 탐색기에서 화면 아무 곳에나 끌어다 놓기 */
+let dragDepth = 0;
+const hasFiles = e => e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
+function dropOv(on) { let o = $('dropov'); if (on && !o) { o = document.createElement('div'); o.id = 'dropov'; o.className = 'dropov'; o.innerHTML = '<div>📥 여기에 놓으면 올라가요<small>POS 판매 내역 엑셀 (여러 개 가능) · 재고 파일 · 목록 파일(.json)</small></div>'; document.body.appendChild(o); } if (!on && o) o.remove(); }
+window.addEventListener('dragenter', e => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth++; dropOv(true); });
+window.addEventListener('dragover', e => { if (!hasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+window.addEventListener('dragleave', e => { if (!hasFiles(e)) return; dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) dropOv(false); });
+window.addEventListener('drop', e => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth = 0; dropOv(false); importFiles([...e.dataTransfer.files]); });
 
 /* ===== 끌어서 담기 (손가락: 옆으로 밀면 끌기 · 위아래는 스크롤 / 마우스: 어느 쪽이든) ===== */
 let drag = null, ghost = null, lastDrag = 0;
