@@ -206,7 +206,7 @@ table.qt td.bcc { width: 108px; min-width: 108px; } table.qt td.bcc svg { min-wi
 <div class="toast" id="toast" role="status"></div>
 <script>
 'use strict';
-const BUILD = '2026-11-08d';
+const BUILD = '2026-11-08e';
 /* 새 버전이 올라오면 저절로 새로 고침 (창으로 돌아올 때 · 5분마다). 고르는 창이나 스캔 화면을 쓰는 중이면 기다림 */
 (function () {
   const check = async () => {
@@ -286,7 +286,7 @@ function view(p) {
   const m = bm[p.c]; if (!m) return Object.assign({}, p, { reg: false });
   /* 전산에 바코드가 여러 개면: 실제로 POS에서 찍혔던(판매 기록) 바코드를 먼저 */
   const [bs, rp, pp, pr, note] = m, b = p.b && bs.includes(p.b) ? p.b : pickBc(bs), promo = pp > 0 && promoOn(pr);
-  return Object.assign({}, p, { b: b || p.b, p: promo ? pp : (rp > 0 ? rp : p.p), reg: true, promo: promo ? { pp, rp, pr, note: note || '' } : null, bad: !!b && !BC.isEan(b) && !BC.isUpc(b) });
+  return Object.assign({}, p, { b: b || p.b, p: promo ? pp : (rp > 0 ? rp : p.p), reg: true, promo: promo ? { pp, rp, pr, note: note || '' } : null, bad: /^\d{12,13}$/.test(b) && !BC.isEan(b) && !BC.isUpc(b) }); /* 숫자 12·13자리인데 확인 숫자가 틀린 것만 (영문이 든 바코드는 Code128로 그대로 그림 — 정상) */
 }
 let PL = [], PC = {};
 const products = () => PL;
