@@ -134,6 +134,9 @@ table.qt td.bcc { width: 108px; min-width: 108px; } table.qt td.bcc svg { min-wi
 .bi .nm { font-size: .92em; } .bi .nm small { display: block; color: var(--ink3); font-size: .8em; }
 .bi .pr { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .share { display: inline-block; height: 6px; border-radius: 3px; background: #9fc7b0; vertical-align: middle; margin-right: 4px; }
+.nobc { font-size: .72em; color: var(--red); font-weight: 700; text-align: center; line-height: 1.3; border: 1px dashed #f3a5ab; border-radius: 6px; padding: 3px 4px; margin-top: 2px; background: #fff7f7; }
+.nobc small { font-weight: 500; color: var(--ink3); }
+.top .note.bad { background: #fff1c2; color: #7a4a00; border-radius: 8px; padding: 4px 10px; font-weight: 800; opacity: 1; }
 .pr-in { width: 78px; text-align: right; border: 1px solid var(--line); border-radius: 8px; min-height: 34px; padding: 0 6px; font-variant-numeric: tabular-nums; }
 .pr-in.chg { color: var(--red); font-weight: 700; }
 /* ========== 결제 스캔 화면 (세 시안 공통) ========== */
@@ -214,7 +217,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
 <div class="toast" id="toast" role="status"></div>
 <script>
 'use strict';
-const BUILD = '2026-11-08g';
+const BUILD = '2026-11-08h';
 /* 새 버전이 올라오면 저절로 새로 고침 (창으로 돌아올 때 · 5분마다). 고르는 창이나 스캔 화면을 쓰는 중이면 기다림 */
 (function () {
   const check = async () => {
@@ -297,6 +300,13 @@ function view(p) {
   return Object.assign({}, p, { b: b || p.b, p: promo ? pp : (rp > 0 ? rp : p.p), reg: true, promo: promo ? { pp, rp, pr, note: note || '' } : null, bad: /^\d{12,13}$/.test(b) && !BC.isEan(b) && !BC.isUpc(b) }); /* 숫자 12·13자리인데 확인 숫자가 틀린 것만 (영문이 든 바코드는 Code128로 그대로 그림 — 정상) */
 }
 let PL = [], PC = {};
+/* 바코드는 진짜일 때만: 샘플 상품은 그리지 않음, PMS를 안 올렸거나 전산에 없는 상품은 경고 */
+const SAMPLE_C = new Set(SAMPLE.map(p => p.c));
+function lineBc(l, h) {
+  if (SAMPLE_C.has(l.c)) return '<div class="nobc">샘플 상품 · 바코드 없음<br><small>📥 실제 상품 목록을 올려 주세요</small></div>';
+  const p = PC[l.c], warn = !DB ? '' : !DB.bm ? 'PMS 미확인 — 전산 바코드 아님' : p && p.reg === false ? '전산 미등록 상품' : !p ? '지금 목록에 없는 상품' : '';
+  return BC.svg(l.b || l.c, { h }) + (warn ? '<div class="nobc">⚠ ' + warn + '</div>' : '');
+}
 const products = () => PL;
 const reindex = () => { PL = (DB ? DB.products : SAMPLE).map(view); PC = {}; PL.forEach(p => { PC[p.c] = p; }); };
 reindex();
@@ -330,7 +340,7 @@ function renderLeft() {
     '<div class="pinfo">' + inf('name', '고객명') + inf('tel', '연락처') + inf('addr', '현장 주소') + inf('date', '상담일', 'date') + inf('staff', '담당자') + inf('valid', '유효기간') + '</div>' +
     '<div class="pdrop">' + (C.lines.length ? '<table class="qt"><tr><th>No</th><th style="text-align:left">품명</th><th>수량</th><th>단가</th><th>금액</th><th>바코드</th><th class="noprint"></th></tr>' +
       C.lines.map((l, i) => '<tr data-li="' + i + '"><td class="c">' + (i + 1) + '</td><td class="nm"><b>' + esc(l.n) + '</b><small>' + esc(l.c) + (l.s ? ' · ' + esc(l.s) : '') + '</small></td><td class="c">' + qtyB(i, l.q) + '</td>' +
-        '<td class="r"><input class="pr-in' + (l.op != null ? ' chg' : '') + '" inputmode="numeric" data-pi="' + i + '" value="' + won(lineP(l)) + '" title="눌러서 단가 고치기 (할인 등)"></td><td class="r"><b>' + won(lineP(l) * l.q) + '</b></td><td class="bcc">' + BC.svg(l.b || l.c, { h: 34 }) + '</td><td class="noprint"><button class="del" type="button" data-del="' + i + '" aria-label="빼기">✕</button></td></tr>').join('') + '</table>'
+        '<td class="r"><input class="pr-in' + (l.op != null ? ' chg' : '') + '" inputmode="numeric" data-pi="' + i + '" value="' + won(lineP(l)) + '" title="눌러서 단가 고치기 (할인 등)"></td><td class="r"><b>' + won(lineP(l) * l.q) + '</b></td><td class="bcc">' + lineBc(l, 34) + '</td><td class="noprint"><button class="del" type="button" data-del="' + i + '" aria-label="빼기">✕</button></td></tr>').join('') + '</table>'
       : '<div class="empty"><b>오른쪽 상품을 여기로 끌어오세요</b><br>또는 상품을 눌러서 담아요. 위쪽 <b>⚡ 자주 사는 구성</b>을 누르면 욕실 1개소 · 2개소에 보통 들어가는 상품을 한 번에 골라 담을 수 있어요.<br>담으면 상품 옆에 <b>바코드</b>가 같이 나와서 계산할 때 POS에서 바로 찍어요.</div>') + '</div>' +
     '<div class="ptot"><div>공급가액</div><div>' + won(T.sup) + '원</div><div>부가세</div><div>' + won(T.vat) + '원</div><div class="g">합계 (부가세 포함)</div><div>' + won(T.t) + '원</div></div>' +
     '<textarea class="pmemo" data-info="memo" placeholder="비고 (예: 시공비 별도 · 배송 3일 소요)">' + esc(C.info.memo || '') + '</textarea>';
@@ -349,6 +359,7 @@ function hotCut() { const ks = products().map(p => p.k || 0).filter(Boolean).sor
 function renderRight() {
   const st = DB && DB.stock;
   $('dbNote').textContent = DB ? '상품 ' + DB.products.length.toLocaleString('ko-KR') + '개 · 판매 데이터 ' + dLabel(DB.from) + ' ~ ' + dLabel(DB.to) + ' (거래 ' + DB.txN.toLocaleString('ko-KR') + '건)' : '지금은 샘플 상품이에요';
+  $('dbNote').classList.toggle('bad', !DB || !DB.bm); if (!DB) $('dbNote').textContent = '⚠ 샘플 상품이에요 — 바코드가 없어요. 📥 판매 데이터 + PMS를 올려 주세요'; else if (!DB.bm) $('dbNote').textContent += ' · ⚠ PMS 미적용 — 바코드가 전산 기준이 아니에요';
   $('info').innerHTML = DB ? '' : '<div class="info-strip">📥 오른쪽 위 <b>상품 · 판매 데이터 올리기</b>로 POS 판매 내역(엑셀)을 올리면 실제 인테리어 상품과 <b>자주 사는 구성</b>(욕실 1개소 · 2개소 등)이 여기 나와요.</div>';
   $('BND').style.display = DB && DB.bundles && DB.bundles.length ? '' : 'none';
   if (DB && DB.bundles) $('BND').innerHTML = DB.bundles.map((b, i) => '<button type="button" data-bnd="' + i + '">⚡ ' + esc(b.name) + '<small>판매 ' + b.n + '건 기준 · ' + b.items.length + '가지</small></button>').join('');
@@ -363,7 +374,7 @@ function renderRight() {
     const n = inCart(p.c), lk = look(p), s = st && st[p.c];
     const badges = (p.promo ? '<span class="badge hot">' + (p.promo.note ? esc(p.promo.note) + ' ' : '') + '행사 ~' + esc(String(p.promo.pr).split(/[-~]/)[1] || '') + '</span>' : '') + (p.reg === false ? '<span class="badge stop">전산 미등록</span>' : '') + (p.bad ? '<span class="badge low">바코드 확인</span>' : '') + (p.k >= hot ? '<span class="badge hot">인기</span>' : '') + (s && s.st && s.st !== '정상' ? '<span class="badge stop">' + esc(s.st) + '</span>' : '') + (s && s.q != null && s.q <= 0 ? '<span class="badge low">재고 없음</span>' : '');
     return '<div class="pcard' + (n ? ' in' : '') + '" data-pid="' + esc(p.c) + '">' + (n ? '<span class="cnt">' + n + '</span>' : '') + '<button class="add" type="button" data-add="' + esc(p.c) + '" aria-label="담기">＋</button>' +
-      '<div class="ic" style="background:' + lk.bg + '">' + lk.e + '</div><div class="nm">' + badges + esc(p.n) + '</div><div class="sp">' + esc(p.s || '') + (p.k ? ' · 판매 ' + p.k + '건' : '') + (s && s.q != null ? ' · 재고 ' + s.q : '') + '</div><div class="pr">' + won(p.p) + '원' + (p.promo && p.promo.rp > p.p ? ' <s class="muted" style="font-weight:500;font-size:.8em">' + won(p.promo.rp) + '</s>' : '') + '</div><div class="grip">⟵ 끌어서 담기 · ' + esc(p.b || p.c) + (p.reg ? ' ✓' : '') + '</div></div>';
+      '<div class="ic" style="background:' + lk.bg + '">' + lk.e + '</div><div class="nm">' + badges + esc(p.n) + '</div><div class="sp">' + esc(p.s || '') + (p.k ? ' · 판매 ' + p.k + '건' : '') + (s && s.q != null ? ' · 재고 ' + s.q : '') + '</div><div class="pr">' + won(p.p) + '원' + (p.promo && p.promo.rp > p.p ? ' <s class="muted" style="font-weight:500;font-size:.8em">' + won(p.promo.rp) + '</s>' : '') + '</div><div class="grip">⟵ 끌어서 담기 · ' + (DB ? esc(p.b || p.c) + (p.reg ? ' ✓' : '') : '샘플 (바코드 없음)') + '</div></div>';
   }).join('') + (visible().length > 300 ? '<div class="empty" style="grid-column:1/-1">상품이 많아 300개까지만 보여요. 위에서 찾거나 분류를 골라 주세요.</div>' : '') : '<div class="empty" style="grid-column:1/-1">찾는 상품이 없어요</div>';
 }
 
@@ -643,14 +654,14 @@ document.addEventListener('focusin', e => { if (e.target.dataset && e.target.dat
 
 /* ===== 🧾 결제 스캔: 바코드를 하나씩 크게 → POS 스캐너로 찍고 다음 ===== */
 let SC = null;
-function openScan() { if (!C.lines.length) { toast('담은 상품이 없어요'); return; } SC = { ls: C.lines.slice(), i: 0, done: new Set(), all: false }; drawScan(); }
+function openScan() { if (!C.lines.length) { toast('담은 상품이 없어요'); return; } if (C.lines.some(l => SAMPLE_C.has(l.c))) { toast('샘플 상품은 바코드가 없어요 — 🗑 비우고 실제 상품을 담아 주세요'); return; } SC = { ls: C.lines.slice(), i: 0, done: new Set(), all: false }; drawScan(); }
 function drawScan() {
   let el = $('scan'); if (!el) { el = document.createElement('div'); el.id = 'scan'; el.className = 'scan'; document.body.appendChild(el); }
   const { ls, i } = SC, n = ls.length, tt = ls.reduce((s, l) => s + lineP(l) * l.q, 0), tn = ls.reduce((s, l) => s + l.q, 0), pct = Math.round(SC.done.size / n * 100);
   let body;
-  if (SC.all) body = '<div class="alll">' + ls.map((l, k) => '<div data-sk="' + k + '" class="' + (SC.done.has(k) ? 'ok' : '') + '"><b>' + (k + 1) + '. ' + esc(l.n) + ' × ' + l.q + '</b><small>' + won(lineP(l)) + '원</small>' + BC.svg(l.b || l.c, { h: 40 }) + '</div>').join('') + '</div><div class="tip">찍은 바코드를 누르면 흐리게 표시돼요</div>';
+  if (SC.all) body = '<div class="alll">' + ls.map((l, k) => '<div data-sk="' + k + '" class="' + (SC.done.has(k) ? 'ok' : '') + '"><b>' + (k + 1) + '. ' + esc(l.n) + ' × ' + l.q + '</b><small>' + won(lineP(l)) + '원</small>' + lineBc(l, 40) + '</div>').join('') + '</div><div class="tip">찍은 바코드를 누르면 흐리게 표시돼요</div>';
   else if (i >= n) body = '<div style="font-size:3em">✅</div><div class="nm">' + n + '개 품목을 모두 스캔했어요</div><div class="qn">POS 합계가 <b>' + won(tt) + '원</b>인지 확인하세요<br><small>수량 합계 ' + tn + '개' + (ls.some(l => l.op != null) ? ' · 단가를 고친 품목은 POS에서도 같은 금액으로 바꿔 주세요' : '') + '</small></div>';
-  else { const l = ls[i]; body = '<div class="nm">' + (i + 1) + '. ' + esc(l.n) + '<small>' + won(lineP(l)) + '원' + (l.op != null ? ' (단가 고침 — 원래 ' + won(l.p) + '원)' : '') + ' · 상품코드 ' + esc(l.c) + '</small></div><div class="big">' + BC.svg(l.b || l.c, { h: 42 }) + '</div>' +
+  else { const l = ls[i]; body = '<div class="nm">' + (i + 1) + '. ' + esc(l.n) + '<small>' + won(lineP(l)) + '원' + (l.op != null ? ' (단가 고침 — 원래 ' + won(l.p) + '원)' : '') + ' · 상품코드 ' + esc(l.c) + '</small></div><div class="big">' + lineBc(l, 42) + '</div>' +
     '<div class="qn">수량 <b>' + l.q + '</b>개' + (l.q > 1 ? ' — ' + l.q + '번 찍거나, 한 번 찍고 POS에서 수량 ' + l.q + ' 입력' : ' — 한 번 찍으세요') + '</div><div class="tip">화면 밝기를 최대로 올려 주세요 · 바코드가 안 읽히면 🖨 인쇄해서 찍어요</div>'; }
   el.innerHTML = '<div class="sh"><b>🧾 결제 스캔</b><span>' + (SC.all ? '한 화면에 모두' : Math.min(i + 1, n) + ' / ' + n) + '</span><span class="muted">' + tn + '개 · ' + won(tt) + '원</span><span style="margin-left:auto"></span><button class="btn sm" type="button" data-s="all">' + (SC.all ? '하나씩 크게' : '한 화면에 모두') + '</button><button class="btn sm" type="button" data-s="close">닫기 ✕</button></div>' +
     '<div class="prog"><i style="width:' + pct + '%"></i></div><div class="sb">' + body + '</div>' +
