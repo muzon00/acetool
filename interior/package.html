@@ -393,7 +393,30 @@ let PKGS = LS.get('pkgs', null) || PKG_DEF, EXTRAS = LS.get('extras', null) || E
 const newPQ = () => ({ cust: { name: '', tel: '', addr: '', date: today(), staff: '' }, sup: Object.assign({}, SUP_DEF, LS.get('sup', {})), pk: [{ id: nid(), pid: PKGS[0].id, n: PKGS[0].n, p: PKGS[0].p, q: 1, day: '', memo: '' }], comp: PKGS[0].t, meas: '', chg: '', mat: [], work: [], cond: '1. E/V 사용료 및 현장 동의서는 고객님이 직접 하셔야 합니다.\n2. 보양비는 별도 입니다.' });
 let PQ = LS.get('pq', null) || newPQ();
 const saveQ = () => LS.set('pq', PQ);
-let MODE = LS.get('mode', 'vendor') === 'pkg' ? 'pkg' : 'vendor';
+let MODE = LS.get('mode', 'vendor') === 'pkg' ? 'pkg' : 'vendor', UNDO_Q = null;
+/* ＋ 새 PKG 등록: 이름 · 소비자가(VAT 포함) · 구성품 내역 → 목록에 넣고 바로 고름 */
+function pkgNew() {
+  const box = document.createElement('div'); box.className = 'modal';
+  const base = PKGS[0] ? PKGS[0].t : '';
+  box.innerHTML = '<div class="mbox" style="width:min(640px,100%)"><div class="mh"><b>＋ 새 욕실 PKG 등록</b><button class="btn sm x" data-nx="x" type="button">닫기 ✕</button></div><div class="mb">' +
+    '<div class="info" style="grid-template-columns:2fr 1fr"><div><label>PKG 이름<input id="npN" placeholder="예) +EG SELECT PKG (거실)"></label></div><div><label>판매가 (VAT 포함)<input id="npP" inputmode="numeric" placeholder="예) 2,990,000"></label></div></div>' +
+    '<label style="display:block;margin-top:10px;font-size:.78em;color:var(--ink3);font-weight:700">기본 구성품 내역 (견적서에 그대로 나가요)<textarea class="paste" id="npT" style="min-height:220px;font-size:1.25em;color:var(--ink)" placeholder="(거실)\n■ 선택 상품 PKG 구성품\n 1. 벽타일: …"></textarea></label>' +
+    '<button class="btn sm ghost" data-nx="copy" type="button">지금 PKG 구성품을 복사해서 시작</button><div id="npMsg"></div></div>' +
+    '<div class="mf"><span style="margin-left:auto"></span><button class="btn" data-nx="x" type="button">취소</button><button class="btn pri" data-nx="save" type="button">등록하고 고르기</button></div></div>';
+  box.addEventListener('click', e => { const b = e.target.closest('[data-nx]'); if (e.target === box || (b && b.dataset.nx === 'x')) { box.remove(); return; } if (!b) return;
+    if (b.dataset.nx === 'copy') { box.querySelector('#npT').value = PQ.comp || base; return; }
+    if (b.dataset.nx === 'save') {
+      const n = box.querySelector('#npN').value.trim(), pv = num(box.querySelector('#npP').value), t = box.querySelector('#npT').value.trim(), msg = m => { box.querySelector('#npMsg').innerHTML = '<div class="errb" style="margin-top:8px">' + m + '</div>'; };
+      if (!n) return msg('PKG 이름을 적어 주세요');
+      if (pv == null || Number.isNaN(pv) || pv <= 0) return msg('판매가를 숫자로 적어 주세요 (예: 2990000)');
+      if (PKGS.some(x => x.n === n)) return msg('같은 이름의 PKG가 이미 있어요');
+      const p = { id: 'p' + Date.now().toString(36), n, p: Math.round(pv), t };
+      PKGS = PKGS.concat([p]); LS.set('pkgs', PKGS);
+      const l = PQ.pk[PQ.pk.length - 1]; Object.assign(l, { pid: p.id, n: p.n, p: p.p }); PQ.comp = [...new Set(PQ.pk.map(x => (PKGS.find(y => y.id === x.pid) || {}).t).filter(Boolean))].join('\n\n'); saveQ();
+      box.remove(); render(); toast(n + ' 등록했어요 (' + won(p.p) + '원)');
+    } });
+  document.body.appendChild(box); box.querySelector('#npN').focus();
+}
 function totQ() { const s = a => a.reduce((t, x) => t + Math.round(nz(x.p) * nz(x.q)), 0), pk = s(PQ.pk), mat = s(PQ.mat), work = s(PQ.work); return { pk, mat, work, total: pk + mat + work }; }
 function pkgDoc() {
   const T = totQ(), C = PQ.cust, S = PQ.sup, row = (i, x) => '<tr><td class="c">' + i + '</td><td>' + esc(x.n) + '</td><td class="c">' + esc(x.day || '') + '</td><td class="c">' + esc(x.u || 'EA') + '</td><td class="r">' + qf(nz(x.q)) + '</td><td class="r">' + won(nz(x.p)) + '</td><td class="r">' + won(Math.round(nz(x.p) * nz(x.q))) + '</td><td style="font-size:.9em">' + esc(x.memo || '') + '</td></tr>';
@@ -418,10 +441,10 @@ function renderP() {
     '<input class="cell r" data-pl="' + arr + '.' + x.id + '.q" value="' + qf(nz(x.q)) + '" title="빼는 품목은 −1"><input class="cell r" data-pl="' + arr + '.' + x.id + '.p" value="' + won(nz(x.p)) + '"><div class="sa"' + (nz(x.q) < 0 ? ' style="color:var(--red)"' : '') + '>' + won(Math.round(nz(x.p) * nz(x.q))) + '</div><button class="del" data-pdel="' + arr + '.' + x.id + '" type="button">✕</button></div>';
   const head = '<div class="it ith" style="grid-template-columns:1fr 64px 96px 96px 30px"><span>품명 · 비고</span><span>수량</span><span>단가 (VAT 포함)</span><span style="text-align:right">금액</span><span></span></div>';
   const groups = [...new Set(EXTRAS.map(x => x.g))];
-  let L = '<div class="scroll"><div class="secs">' +
+  let L = '<div class="scroll"><div class="secs"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn" data-pa="clear" type="button" style="color:var(--red);border-color:#f3c4c9">🗑 전체 지우기</button>' + (UNDO_Q ? '<span class="warnb" style="padding:6px 10px">지웠어요 <button class="btn sm" data-pa="undo" type="button">↩ 되돌리기</button></span>' : '') + '<span style="margin-left:auto"></span><button class="btn sm" data-pa="pkgnew" type="button">＋ 새 PKG 등록</button></div>' +
     '<div class="card" style="padding:12px"><h2 style="margin:0 0 8px;font-size:1.05em">👤 고객</h2><div class="info">' + inp('cust', 'name', '고객명') + inp('cust', 'tel', '연락처') + inp('cust', 'addr', '시공 주소') + inp('cust', 'date', '견적일', 'date') + inp('cust', 'staff', '담당자') + '</div></div>' +
     '<div class="sc"><div class="sh"><b>🛁 PKG 선택</b><span class="mchips">' + PKGS.map(p => '<button type="button" data-ppk="' + p.id + '" class="' + (PQ.pk.some(x => x.pid === p.id) ? 'on' : '') + '">' + esc(p.n) + ' ' + won(p.p) + '</button>').join('') + '</span></div>' + head + PQ.pk.map(x => lineRow('pk', x)).join('') +
-    '<div style="padding:8px 10px;display:flex;gap:8px;flex-wrap:wrap"><button class="addrow" data-padd="pk" type="button">＋ 욕실 하나 더 (2개소)</button></div></div>' +
+    '<div style="padding:8px 10px;display:flex;gap:8px;flex-wrap:wrap"><button class="addrow" data-padd="pk" type="button">＋ 욕실 하나 더 (2개소)</button><span style="margin-left:auto"></span><button class="addrow" data-pa="pkgnew" type="button">＋ 새 PKG 등록</button><button class="addrow" data-pa="lists" type="button">✏️ PKG 고치기 · 지우기</button></div></div>' +
     '<div class="card" style="padding:12px"><label style="font-weight:800">기본 구성품 내역 <span class="muted" style="font-weight:500;font-size:.85em">PKG를 고르면 자동으로 들어가요 · 고쳐도 돼요</span><textarea class="paste" style="min-height:150px" data-pt="comp">' + esc(PQ.comp) + '</textarea></label>' +
     '<div class="info" style="grid-template-columns:1fr 1fr;margin-top:8px"><div><label>실측 내용<textarea class="paste" data-pt="meas" placeholder="예) 1층 욕실 2340*1720*2100(mm)\n중앙판 1, 사이드판 2">' + esc(PQ.meas) + '</textarea></label></div><div><label>추가 / 변경 자재<textarea class="paste" data-pt="chg" placeholder="예) 벽타일 어반시크 아이보리 300*600">' + esc(PQ.chg) + '</textarea></label></div></div></div>' +
     '<div class="sc"><div class="sh"><b>🧱 추가 자재비용</b><span class="muted" style="font-size:.82em">PKG에서 빼는 품목은 수량 <b>−1</b></span></div>' + head + PQ.mat.map(x => lineRow('mat', x)).join('') +
@@ -432,7 +455,7 @@ function renderP() {
     '<div class="card" style="padding:12px"><label style="font-weight:800">조건<textarea class="paste" data-pt="cond">' + esc(PQ.cond) + '</textarea></label>' +
     '<details style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">🏢 공급자 정보 (견적서 오른쪽 위)</summary><div class="info" style="margin-top:8px">' + inp('sup', 'biz', '등록번호') + inp('sup', 'name', '상호') + inp('sup', 'ceo', '대표') + inp('sup', 'addr', '주소') + inp('sup', 'btype', '업태') + inp('sup', 'bitem', '종목') + '</div></details></div>' +
     '<div class="sum4"><div>PKG<b>' + won(T.pk) + '</b></div><div>추가 자재<b>' + won(T.mat) + '</b></div><div>추가 시공<b>' + won(T.work) + '</b></div><div class="c">총 합계 (VAT 포함)<b>' + won(T.total) + '</b></div></div>' +
-    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" data-pa="new" type="button">🆕 새 견적</button><span style="margin-left:auto"></span>' + (wide ? '' : '<button class="btn" data-pa="pv" type="button">👁 미리보기</button>') + '<button class="btn pri" data-pa="print" type="button">🖨 인쇄 · PDF</button></div></div></div>';
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" data-pa="clear" type="button" style="color:var(--red)">🗑 전체 지우기</button><span style="margin-left:auto"></span>' + (wide ? '' : '<button class="btn" data-pa="pv" type="button">👁 미리보기</button>') + '<button class="btn pri" data-pa="print" type="button">🖨 인쇄 · PDF</button></div></div></div>';
   el.innerHTML = modeBar() + '<div class="splitB" style="grid-template-columns:' + (wide ? '52fr 48fr' : '1fr') + '"><section>' + L + '</section>' + (wide ? '<section><div class="bar"><b>👁 고객 견적서</b><span style="margin-left:auto"></span><button class="btn pri" data-pa="print" type="button">🖨 인쇄 · PDF</button></div><div class="scroll prev"><div class="docwrap" id="docQ">' + pkgDoc() + '</div></div></section>' : '') + '</div>';
   fitQ();
 }
@@ -470,7 +493,9 @@ document.addEventListener('click', e => {
   const a = t.closest('[data-pa]'); if (a) { const k = a.dataset.pa;
     if (k === 'print') pkgPrint();
     else if (k === 'lists') pkgLists();
-    else if (k === 'new') { if (confirm('지금 쓰던 욕실 PKG 견적을 비우고 새로 쓸까요?')) { PQ = newPQ(); saveQ(); render(); } }
+    else if (k === 'clear') { if (confirm('지금 쓰던 욕실 PKG 견적을 모두 지울까요?\n(바로 아래 ↩ 되돌리기로 살릴 수 있어요)')) { UNDO_Q = JSON.parse(JSON.stringify(PQ)); PQ = newPQ(); saveQ(); render(); const sc = document.querySelector('#main .scroll'); if (sc) sc.scrollTop = 0; toast('지웠어요 — 되돌리려면 ↩ 되돌리기'); } }
+    else if (k === 'undo') { if (UNDO_Q) { PQ = UNDO_Q; UNDO_Q = null; saveQ(); render(); toast('되돌렸어요'); } }
+    else if (k === 'pkgnew') pkgNew();
     else if (k === 'pv') { const box = document.createElement('div'); box.className = 'modal'; box.innerHTML = '<div class="mbox" style="width:min(900px,100%)"><div class="mh"><b>👁 고객 견적서</b><button class="btn sm x" type="button">닫기 ✕</button></div><div class="mb" style="background:#d9dee6;overflow:auto"><div style="background:#fff;width:max-content;margin:0 auto">' + pkgDoc() + '</div></div></div>'; box.addEventListener('click', ev => { if (ev.target === box || ev.target.closest('.x')) box.remove(); }); document.body.appendChild(box); } }
 }, true);
 document.addEventListener('change', e => {
