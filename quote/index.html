@@ -382,10 +382,15 @@ body.print2 #tPrint .cdoc { border: 0; padding: 0; width: 100%; }
 .imp.over { border-color: #3182f6; background: #eef5ff; }
 .imglink { color: #1d4f91; font-weight: 800; text-decoration: underline; cursor: pointer; }
 .ocrraw { white-space: pre-wrap; font-size: .8em; background: var(--surface2); border-radius: 8px; padding: 8px; max-height: 240px; overflow: auto; }
+
+/* 아이패드 사파리: 날짜 칸이 정해진 폭보다 줄어들지 않아 옆으로 삐져나가는 문제 → 칸 폭에 맞춤 */
+input[type="date"] { -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; box-sizing: border-box; display: block; width: 100%; text-align: left; }
+input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
+input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
 </style>
 <script>
 // 새 버전 자동 반영 (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-07f';
+const BUILD = '2026-11-08a';
 (function () {
   let busy = false;
   async function check() {

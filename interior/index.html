@@ -173,6 +173,11 @@ table.qt td.bcc { width: 108px; min-width: 108px; } table.qt td.bcc svg { min-wi
   
   .pinfo input { border: 0; background: transparent; } .pr-in { border: 0 !important; background: transparent !important; }
 }
+
+/* 아이패드 사파리: 날짜 칸이 정해진 폭보다 줄어들지 않아 옆으로 삐져나가는 문제 → 칸 폭에 맞춤 */
+input[type="date"] { -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; box-sizing: border-box; display: block; width: 100%; text-align: left; }
+input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
+input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
 </style>
 </head>
 <body>
@@ -209,7 +214,7 @@ table.qt td.bcc { width: 108px; min-width: 108px; } table.qt td.bcc svg { min-wi
 <div class="toast" id="toast" role="status"></div>
 <script>
 'use strict';
-const BUILD = '2026-11-08f';
+const BUILD = '2026-11-08g';
 /* 새 버전이 올라오면 저절로 새로 고침 (창으로 돌아올 때 · 5분마다). 고르는 창이나 스캔 화면을 쓰는 중이면 기다림 */
 (function () {
   const check = async () => {

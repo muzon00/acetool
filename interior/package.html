@@ -149,6 +149,11 @@ table.xg tr.ovh td { background: #f0f2f6; font-weight: 700; }
   .info { grid-template-columns: 1fr 1fr; } .sum4 { grid-template-columns: 1fr 1fr; }
   .mrow { grid-template-columns: 1fr 1fr; } .vtabs { margin-left: 0; }
 }
+
+/* 아이패드 사파리: 날짜 칸이 정해진 폭보다 줄어들지 않아 옆으로 삐져나가는 문제 → 칸 폭에 맞춤 */
+input[type="date"] { -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; box-sizing: border-box; display: block; width: 100%; text-align: left; }
+input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
+input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
 </style>
 </head>
 <body>
@@ -164,7 +169,7 @@ table.xg tr.ovh td { background: #f0f2f6; font-weight: 700; }
 <div class="toast" id="toast" role="status"></div>
 <script>
 'use strict';
-const BUILD = '2026-11-08p2';
+const BUILD = '2026-11-08p3';
 (function () {
   const check = async () => { if (document.querySelector('.modal')) return; try { const t = await (await fetch(location.pathname + '?b=' + Date.now(), { cache: 'no-store' })).text(); const m = t.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD) location.reload(); } catch (e) { } };
   addEventListener('focus', check); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); }); setInterval(check, 5 * 60 * 1000);
