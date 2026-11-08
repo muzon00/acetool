@@ -164,7 +164,7 @@ table.xg tr.ovh td { background: #f0f2f6; font-weight: 700; }
 <div class="toast" id="toast" role="status"></div>
 <script>
 'use strict';
-const BUILD = '2026-11-08p1';
+const BUILD = '2026-11-08p2';
 (function () {
   const check = async () => { if (document.querySelector('.modal')) return; try { const t = await (await fetch(location.pathname + '?b=' + Date.now(), { cache: 'no-store' })).text(); const m = t.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD) location.reload(); } catch (e) { } };
   addEventListener('focus', check); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); }); setInterval(check, 5 * 60 * 1000);
@@ -361,7 +361,7 @@ const prodSearch = sid => '<div class="psearch"><input class="cell" style="borde
 /* ===================== 시안 A: 업체 원본 표 그대로 + 오른쪽 회색 마진 칸 ===================== */
 function renderA() {
   const R = calc(), el = $('main'), sp = PK.split;
-  let h = '<div class="bar">' + setBar() + '<span style="margin-left:auto"></span><label class="btn" for="fImp">📥 업체 견적 불러오기</label>' + (PK.secs.length ? '<button class="btn" data-a="vclear" type="button" style="color:var(--red);border-color:#f3c4c9">🗑 전체 지우기</button>' : '') + (UNDO_V ? '<button class="btn" data-a="vundo" type="button">↩ 되돌리기</button>' : '') + '<button class="btn" data-a="pv" data-st="split">👁 고객 견적서</button><button class="btn pri" data-a="print" data-st="split">🖨 인쇄</button></div>';
+  let h = '<div class="bar">' + setBar() + '<span style="margin-left:auto"></span><label class="btn" for="fImp">📥 업체 견적 불러오기</label>' + (PK.secs.length ? '<button class="btn" data-a="vclear" type="button" style="color:var(--red);border-color:#f3c4c9">🗑 전체 지우기</button>' : '') + (UNDO_V ? '<button class="btn pri" data-a="vundo" type="button">↩ 되돌리기 (지운 견적 살리기)</button>' : '') + '<button class="btn" data-a="pv" data-st="split">👁 고객 견적서</button><button class="btn pri" data-a="print" data-st="split">🖨 인쇄</button></div>';
   if (!PK.secs.length) { el.innerHTML = modeBar() + h + '<div class="cwrap">' + importPanel(true) + '</div>'; fixSel(el); return; }
   h += '<div class="scroll"><div style="padding:10px 12px;background:#fff;border-bottom:1px solid var(--line);position:sticky;left:0">' + '<details class="infobox"' + (PK.info.name ? '' : ' open') + '><summary>👤 고객 · 현장 정보 ' + (PK.info.name ? '— ' + esc(PK.info.name) + (PK.info.site ? ' · ' + esc(PK.info.site) : '') : '<span class="muted">(고객 견적서에 나와요)</span>') + '</summary><div class="info" style="margin-top:8px">' + infoInputs() + '</div><textarea class="paste" style="margin-top:8px;min-height:60px" data-f="memo" placeholder="견적서 아래 안내 문구">' + esc(PK.memo) + '</textarea><label style="display:inline-flex;gap:6px;align-items:center;font-weight:700;font-size:.9em"><input type="checkbox" data-f="vatIn"' + (PK.vatIn ? ' checked' : '') + '> 업체 금액이 부가세 포함이에요</label> <label style="display:inline-flex;gap:6px;align-items:center;font-weight:700;font-size:.9em;margin-left:12px"><input type="checkbox" data-f="showSum"' + (PK.showSum ? ' checked' : '') + '> 고객 견적서에 공종별 집계표 넣기</label></details><div style="margin-top:8px">' + checkHtml() + '</div></div><table class="xg"><tr><th>품명</th><th>규격</th><th>단위</th><th>수량</th>' +
     (sp ? '<th>재료비 단가</th><th>재료비 금액</th><th>노무비 단가</th><th>노무비 금액</th>' : '<th>단가</th>') + '<th>원가 합계</th><th>비고</th><th class="m">마진 %</th><th class="m">판매 단가</th><th class="m">판매 금액</th><th class="m"></th></tr>';
@@ -395,7 +395,7 @@ const EXTRA_DEF = [['기본', '욕실 기본시공비 추가 (욕조→샤워, 1
   ['양중', '양중 (E/V 없는 5층 이하, 덧붙임)', 240000], ['양중', '양중 (E/V 없는 5층 이하, 전체 철거)', 360000]].map(([g, n, p], i) => ({ id: 'x' + i, g, n, p }));
 const SUP_DEF = { biz: '572-85-01118', name: 'ACE 일산점', ceo: '', addr: '경기도 고양시 일산서구 일중로 15번길 128, 상가동 B201-B219호', btype: '도소매', bitem: '기타 건축자재 도매업' };
 let PKGS = LS.get('pkgs', null) || PKG_DEF, EXTRAS = LS.get('extras', null) || EXTRA_DEF;
-const newPQ = () => ({ cust: { name: '', tel: '', addr: '', date: today(), staff: '' }, sup: Object.assign({}, SUP_DEF, LS.get('sup', {})), pk: [{ id: nid(), pid: PKGS[0].id, n: PKGS[0].n, p: PKGS[0].p, q: 1, day: '', memo: '' }], comp: PKGS[0].t, meas: '', chg: '', mat: [], work: [], cond: '1. E/V 사용료 및 현장 동의서는 고객님이 직접 하셔야 합니다.\n2. 보양비는 별도 입니다.' });
+const newPQ = () => ({ cust: { name: '', tel: '', addr: '', date: today(), staff: '' }, sup: Object.assign({}, SUP_DEF, LS.get('sup', {})), pk: [], comp: '', meas: '', chg: '', mat: [], work: [], cond: '1. E/V 사용료 및 현장 동의서는 고객님이 직접 하셔야 합니다.\n2. 보양비는 별도 입니다.' });
 let PQ = LS.get('pq', null) || newPQ();
 const saveQ = () => LS.set('pq', PQ);
 let MODE = LS.get('mode', 'vendor') === 'pkg' ? 'pkg' : 'vendor', UNDO_Q = null;
@@ -417,7 +417,7 @@ function pkgNew() {
       if (PKGS.some(x => x.n === n)) return msg('같은 이름의 PKG가 이미 있어요');
       const p = { id: 'p' + Date.now().toString(36), n, p: Math.round(pv), t };
       PKGS = PKGS.concat([p]); LS.set('pkgs', PKGS);
-      const l = PQ.pk[PQ.pk.length - 1]; Object.assign(l, { pid: p.id, n: p.n, p: p.p }); PQ.comp = [...new Set(PQ.pk.map(x => (PKGS.find(y => y.id === x.pid) || {}).t).filter(Boolean))].join('\n\n'); saveQ();
+      if (!PQ.pk.length) PQ.pk.push({ id: nid(), q: 1, day: '', memo: '' }); const l = PQ.pk[PQ.pk.length - 1]; Object.assign(l, { pid: p.id, n: p.n, p: p.p }); PQ.comp = [...new Set(PQ.pk.map(x => (PKGS.find(y => y.id === x.pid) || {}).t).filter(Boolean))].join('\n\n'); saveQ();
       box.remove(); render(); toast(n + ' 등록했어요 (' + won(p.p) + '원)');
     } });
   document.body.appendChild(box); box.querySelector('#npN').focus();
@@ -446,10 +446,10 @@ function renderP() {
     '<input class="cell r" data-pl="' + arr + '.' + x.id + '.q" value="' + qf(nz(x.q)) + '" title="빼는 품목은 −1"><input class="cell r" data-pl="' + arr + '.' + x.id + '.p" value="' + won(nz(x.p)) + '"><div class="sa"' + (nz(x.q) < 0 ? ' style="color:var(--red)"' : '') + '>' + won(Math.round(nz(x.p) * nz(x.q))) + '</div><button class="del" data-pdel="' + arr + '.' + x.id + '" type="button">✕</button></div>';
   const head = '<div class="it ith" style="grid-template-columns:1fr 64px 96px 96px 30px"><span>품명 · 비고</span><span>수량</span><span>단가 (VAT 포함)</span><span style="text-align:right">금액</span><span></span></div>';
   const groups = [...new Set(EXTRAS.map(x => x.g))];
-  let L = '<div class="scroll"><div class="secs"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn" data-pa="clear" type="button" style="color:var(--red);border-color:#f3c4c9">🗑 전체 지우기</button>' + (UNDO_Q ? '<span class="warnb" style="padding:6px 10px">지웠어요 <button class="btn sm" data-pa="undo" type="button">↩ 되돌리기</button></span>' : '') + '<span style="margin-left:auto"></span><button class="btn sm" data-pa="pkgnew" type="button">＋ 새 PKG 등록</button></div>' +
+  let L = '<div class="scroll"><div class="secs"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn" data-pa="clear" type="button" style="color:var(--red);border-color:#f3c4c9">🗑 전체 지우기</button>' + (UNDO_Q ? '<span class="warnb" style="padding:6px 10px;font-weight:700">🗑 모두 지웠어요 <button class="btn pri sm" data-pa="undo" type="button">↩ 되돌리기</button></span>' : '') + '<span style="margin-left:auto"></span><button class="btn sm" data-pa="pkgnew" type="button">＋ 새 PKG 등록</button></div>' +
     '<div class="card" style="padding:12px"><h2 style="margin:0 0 8px;font-size:1.05em">👤 고객</h2><div class="info">' + inp('cust', 'name', '고객명') + inp('cust', 'tel', '연락처') + inp('cust', 'addr', '시공 주소') + inp('cust', 'date', '견적일', 'date') + inp('cust', 'staff', '담당자') + '</div></div>' +
     '<div class="sc"><div class="sh"><b>🛁 PKG 선택</b><span class="mchips">' + PKGS.map(p => '<button type="button" data-ppk="' + p.id + '" class="' + (PQ.pk.some(x => x.pid === p.id) ? 'on' : '') + '">' + esc(p.n) + ' ' + won(p.p) + '</button>').join('') + '</span></div>' + head + PQ.pk.map(x => lineRow('pk', x)).join('') +
-    '<div style="padding:8px 10px;display:flex;gap:8px;flex-wrap:wrap"><button class="addrow" data-padd="pk" type="button">＋ 욕실 하나 더 (2개소)</button><span style="margin-left:auto"></span><button class="addrow" data-pa="pkgnew" type="button">＋ 새 PKG 등록</button><button class="addrow" data-pa="lists" type="button">✏️ PKG 고치기 · 지우기</button></div></div>' +
+    (PQ.pk.length ? '' : '<div class="muted" style="padding:10px 12px">위에서 PKG를 눌러 고르세요</div>') + '<div style="padding:8px 10px;display:flex;gap:8px;flex-wrap:wrap"><button class="addrow" data-padd="pk" type="button">' + (PQ.pk.length ? '＋ 욕실 하나 더 (2개소)' : '＋ PKG 줄 추가') + '</button><span style="margin-left:auto"></span><button class="addrow" data-pa="pkgnew" type="button">＋ 새 PKG 등록</button><button class="addrow" data-pa="lists" type="button">✏️ PKG 고치기 · 지우기</button></div></div>' +
     '<div class="card" style="padding:12px"><label style="font-weight:800">기본 구성품 내역 <span class="muted" style="font-weight:500;font-size:.85em">PKG를 고르면 자동으로 들어가요 · 고쳐도 돼요</span><textarea class="paste" style="min-height:150px" data-pt="comp">' + esc(PQ.comp) + '</textarea></label>' +
     '<div class="info" style="grid-template-columns:1fr 1fr;margin-top:8px"><div><label>실측 내용<textarea class="paste" data-pt="meas" placeholder="예) 1층 욕실 2340*1720*2100(mm)\n중앙판 1, 사이드판 2">' + esc(PQ.meas) + '</textarea></label></div><div><label>추가 / 변경 자재<textarea class="paste" data-pt="chg" placeholder="예) 벽타일 어반시크 아이보리 300*600">' + esc(PQ.chg) + '</textarea></label></div></div></div>' +
     '<div class="sc"><div class="sh"><b>🧱 추가 자재비용</b><span class="muted" style="font-size:.82em">PKG에서 빼는 품목은 수량 <b>−1</b></span></div>' + head + PQ.mat.map(x => lineRow('mat', x)).join('') +
@@ -490,15 +490,15 @@ document.addEventListener('click', e => {
   const t = e.target; if (t.closest('.modal')) return;
   const md = t.closest('[data-mode]'); if (md) { MODE = md.dataset.mode; LS.set('mode', MODE); render(); return; }
   if (MODE !== 'pkg') return;
-  const pk = t.closest('[data-ppk]'); if (pk) { const p = PKGS.find(x => x.id === pk.dataset.ppk); const l = PQ.pk[PQ.pk.length - 1]; Object.assign(l, { pid: p.id, n: p.n, p: p.p }); PQ.comp = [...new Set(PQ.pk.map(x => (PKGS.find(y => y.id === x.pid) || {}).t).filter(Boolean))].join('\n\n'); saveQ(); render(); return; }
-  const ad = t.closest('[data-padd]'); if (ad) { const a = ad.dataset.padd, base = a === 'pk' ? Object.assign({}, PQ.pk[0], { id: nid(), memo: '' }) : { id: nid(), n: '', q: 1, p: 0, memo: '' }; PQ[a].push(base); saveQ(); render(); return; }
-  const dl = t.closest('[data-pdel]'); if (dl) { const [a, id] = dl.dataset.pdel.split('.'); if (a === 'pk' && PQ.pk.length === 1) { toast('PKG는 하나 이상 있어야 해요'); return; } PQ[a] = PQ[a].filter(x => x.id !== id); saveQ(); render(); return; }
+  const pk = t.closest('[data-ppk]'); if (pk) { const p = PKGS.find(x => x.id === pk.dataset.ppk); if (!PQ.pk.length) PQ.pk.push({ id: nid(), q: 1, day: '', memo: '' }); const l = PQ.pk[PQ.pk.length - 1]; Object.assign(l, { pid: p.id, n: p.n, p: p.p }); PQ.comp = [...new Set(PQ.pk.map(x => (PKGS.find(y => y.id === x.pid) || {}).t).filter(Boolean))].join('\n\n'); saveQ(); render(); return; }
+  const ad = t.closest('[data-padd]'); if (ad) { const a = ad.dataset.padd, base = a === 'pk' ? (PQ.pk[0] ? Object.assign({}, PQ.pk[0], { id: nid(), memo: '' }) : { id: nid(), pid: PKGS[0].id, n: PKGS[0].n, p: PKGS[0].p, q: 1, day: '', memo: '' }) : { id: nid(), n: '', q: 1, p: 0, memo: '' }; PQ[a].push(base); saveQ(); render(); return; }
+  const dl = t.closest('[data-pdel]'); if (dl) { const [a, id] = dl.dataset.pdel.split('.'); PQ[a] = PQ[a].filter(x => x.id !== id); saveQ(); render(); return; }
   const ex = t.closest('[data-pex]'); if (ex) { const x = EXTRAS.find(y => y.id === ex.dataset.pex); PQ.work.push({ id: nid(), n: x.n, q: 1, p: x.p, memo: '' }); saveQ(); render(); toast(x.n + ' 넣었어요'); return; }
   const pick = t.closest('[data-pick]'); if (pick && t.closest('.psearch')) { const p = JSON.parse(pick.dataset.pick); PQ.mat.push({ id: nid(), n: p.n, q: 1, p: p.p, memo: '', bc: p.b, c: p.c }); saveQ(); e.stopImmediatePropagation(); render(); toast(p.n + ' 넣었어요'); return; }
   const a = t.closest('[data-pa]'); if (a) { const k = a.dataset.pa;
     if (k === 'print') pkgPrint();
     else if (k === 'lists') pkgLists();
-    else if (k === 'clear') { if (confirm('지금 쓰던 욕실 PKG 견적을 모두 지울까요?\n(바로 아래 ↩ 되돌리기로 살릴 수 있어요)')) { UNDO_Q = JSON.parse(JSON.stringify(PQ)); PQ = newPQ(); saveQ(); render(); const sc = document.querySelector('#main .scroll'); if (sc) sc.scrollTop = 0; toast('지웠어요 — 되돌리려면 ↩ 되돌리기'); } }
+    else if (k === 'clear') { UNDO_Q = JSON.parse(JSON.stringify(PQ)); PQ = Object.assign(newPQ(), { cond: PQ.cond, sup: PQ.sup }); saveQ(); render(); const sc = document.querySelector('#main .scroll'); if (sc) sc.scrollTop = 0; toast('모두 지웠어요 — 실수였으면 ↩ 되돌리기'); }
     else if (k === 'undo') { if (UNDO_Q) { PQ = UNDO_Q; UNDO_Q = null; saveQ(); render(); toast('되돌렸어요'); } }
     else if (k === 'pkgnew') pkgNew();
     else if (k === 'pv') { const box = document.createElement('div'); box.className = 'modal'; box.innerHTML = '<div class="mbox" style="width:min(900px,100%)"><div class="mh"><b>👁 고객 견적서</b><button class="btn sm x" type="button">닫기 ✕</button></div><div class="mb" style="background:#d9dee6;overflow:auto"><div style="background:#fff;width:max-content;margin:0 auto">' + pkgDoc() + '</div></div></div>'; box.addEventListener('click', ev => { if (ev.target === box || ev.target.closest('.x')) box.remove(); }); document.body.appendChild(box); } }
@@ -520,7 +520,7 @@ document.addEventListener('click', e => {
   const t = e.target;
   const a = t.closest('[data-a]');
   if (a) { const k = a.dataset.a;
-    if (k === 'vclear') { if (confirm('불러온 업체 견적과 고객 정보를 모두 지울까요?\n(↩ 되돌리기로 살릴 수 있어요)')) { UNDO_V = JSON.parse(JSON.stringify(PK)); const keep = { mAll: PK.mAll, ru: PK.ru, rm: PK.rm, cut: PK.cut }; PK = Object.assign(newPK(), keep); save(); render(); toast('지웠어요 — 되돌리려면 ↩ 되돌리기'); } return; }
+    if (k === 'vclear') { UNDO_V = JSON.parse(JSON.stringify(PK)); const keep = { mAll: PK.mAll, ru: PK.ru, rm: PK.rm, cut: PK.cut }; PK = Object.assign(newPK(), keep); save(); render(); toast('모두 지웠어요 — 실수였으면 ↩ 되돌리기'); return; }
     if (k === 'vundo') { if (UNDO_V) { PK = UNDO_V; UNDO_V = null; save(); render(); toast('되돌렸어요'); } return; }
     if (k === 'example') applyImport(parseVendor(exampleAoa()), '예시 (주)한빛인테리어');
     else if (k === 'exfile') downloadExample();
