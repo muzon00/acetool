@@ -1,6 +1,6 @@
 /* ☁️ 인테리어 견적 — PC · 태블릿 연동 (Firebase, 매출현황 · 근무표와 같은 프로젝트)
-   int_db/meta  : 상품 목록 · 같이 산 상품 · 자주 사는 구성 · 재고 (JSON 글자로 — Firestore는 배열 안 배열을 못 담음)
-   int_db/bm_N  : 전산(PMS) 바코드 · 판매가 (4,000개씩 나눔 — 문서 하나 1MB 제한)
+   int_db/meta  : 버전 · 조각 수 · 올린 시각 (다른 기기는 이 문서가 바뀌면 받음)
+   int_db/bm_N  : 상품 목록 · 같이 산 상품 · 구성 · 재고 · 전산 바코드 전체를 JSON 글자로 25만 자씩 나눔 (문서 하나 1MB 제한)
    int_cfg/pkg  : 욕실 PKG 목록 · 추가 시공비 · 공급자 정보
    읽기: 등록된 계정(관리자 · 근무표 관리자)으로 로그인한 기기 / 상품 목록 쓰기: 관리자만 */
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -18,25 +18,31 @@ C.canRead = () => !!(C.user && C.role);
 C.canWrite = () => C.role === 'admin';
 C.logout = () => signOut(auth);
 
-/* 상품 목록 올리기 (관리자): 바코드 목록은 나눠서, 나머지는 meta 한 문서에 */
+/* 상품 목록 올리기 (관리자): 목록 전체(바코드 · 재고 포함)를 JSON 글자로 만들어 25만 자씩 int_db/bm_0, bm_1 … 에 나눠 담고, meta에는 버전 · 조각 수만 (v2)
+   예전(v1: meta.j + 바코드 조각) 자료도 그대로 읽음 */
+const CH = 250000;
 C.pushDB = async (DB) => {
   if (!C.canWrite()) throw new Error('상품 목록은 관리자 계정으로 로그인해야 올릴 수 있어요');
-  const ver = Date.now(), { bm, ...rest } = DB; rest.ver = ver;
-  const j = JSON.stringify(rest); if (j.length > 950000) throw new Error('상품 목록이 너무 커요 (' + Math.round(j.length / 1000) + 'KB)');
-  const keys = bm ? Object.keys(bm) : [], chunks = [];
-  for (let i = 0; i < keys.length; i += 4000) { const o = {}; keys.slice(i, i + 4000).forEach(k => { o[k] = bm[k]; }); const s = JSON.stringify(o); if (s.length > 950000) throw new Error('바코드 목록 조각이 너무 커요'); chunks.push(s); }
+  const ver = Date.now(), body = Object.assign({}, DB); delete body.ver;
+  const j = JSON.stringify(body), chunks = [];
+  for (let i = 0; i < j.length; i += CH) chunks.push(j.slice(i, i + CH));
+  if (chunks.length > 99) throw new Error('상품 목록이 너무 커요 (' + Math.round(j.length / 1e6) + 'MB)');
   C.pendingVer = ver;
-  const b = writeBatch(fs), oldN = (C.meta && C.meta.bmN) || 0;
-  chunks.forEach((s, i) => b.set(doc(fs, 'int_db', 'bm_' + i), { j: s }));
+  const oldN = (C.meta && C.meta.bmN) || 0;
+  /* 한 번에 보내는 양(10MB) 제한 때문에 조각은 몇 개씩 나눠 보내고, meta는 맨 마지막에 (다른 기기는 meta가 바뀔 때만 받음) */
+  for (let i = 0; i < chunks.length; i += 8) { const b = writeBatch(fs); chunks.slice(i, i + 8).forEach((s, k) => b.set(doc(fs, 'int_db', 'bm_' + (i + k)), { j: s, ver })); await b.commit(); }
+  const b = writeBatch(fs);
   for (let i = chunks.length; i < oldN; i++) b.delete(doc(fs, 'int_db', 'bm_' + i));
-  b.set(doc(fs, 'int_db', 'meta'), { j, ver, bmN: chunks.length, at: serverTimestamp(), by: (C.user && C.user.email) || '' });
+  b.set(doc(fs, 'int_db', 'meta'), { v: 2, ver, bmN: chunks.length, at: serverTimestamp(), by: (C.user && C.user.email) || '' });
   await b.commit();
   return ver;
 };
 async function pullDB(m) {
   const parts = await Promise.all(Array.from({ length: m.bmN || 0 }, (_, i) => getDoc(doc(fs, 'int_db', 'bm_' + i))));
-  const body = JSON.parse(m.j);
-  if (m.bmN) { const bm = {}; for (const p of parts) { if (!p.exists()) throw new Error('바코드 목록 일부를 받지 못했어요'); Object.assign(bm, JSON.parse(p.data().j)); } body.bm = bm; }
+  for (const p of parts) if (!p.exists()) throw new Error('상품 목록 일부를 받지 못했어요');
+  let body;
+  if (m.v === 2) { if (parts.some(p => p.data().ver !== m.ver)) throw new Error('상품 목록이 올라가는 중이에요 — 잠시 뒤 다시 받아요'); body = JSON.parse(parts.map(p => p.data().j).join('')); }
+  else { body = JSON.parse(m.j); if (m.bmN) { const bm = {}; for (const p of parts) Object.assign(bm, JSON.parse(p.data().j)); body.bm = bm; } }
   body.ver = m.ver; return body;
 }
 C.pushPkg = async (cfg) => { if (!C.canRead()) return false; const at = Date.now(); C.pkgAt = at; await setDoc(doc(fs, 'int_cfg', 'pkg'), { j: JSON.stringify(cfg), at, by: (C.user && C.user.email) || '' }); return true; };

@@ -171,7 +171,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
 <div class="toast" id="toast" role="status"></div>
 <script>
 'use strict';
-const BUILD = '2026-11-08p4';
+const BUILD = '2026-11-08p5';
 (function () {
   const check = async () => { if (document.querySelector('.modal')) return; try { const t = await (await fetch(location.pathname + '?b=' + Date.now(), { cache: 'no-store' })).text(); const m = t.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD) location.reload(); } catch (e) { } };
   addEventListener('focus', check); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); }); setInterval(check, 5 * 60 * 1000);
@@ -584,6 +584,6 @@ addEventListener('dragleave', e => { if (!hasF(e)) return; if (!--dd && $('dov')
 addEventListener('drop', e => { if (!hasF(e)) return; e.preventDefault(); dd = 0; if ($('dov')) $('dov').remove(); importFiles([...e.dataTransfer.files]); });
 render();
 </script>
-<script type="module" src="cloud.js?v=1"></script>
+<script type="module" src="cloud.js?v=2"></script>
 </body>
 </html>
