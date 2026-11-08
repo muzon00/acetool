@@ -26,6 +26,9 @@ button { cursor: pointer; }
 .vtabs button.on { background: #fff; color: var(--navy); }
 .top .note { font-size: .78em; opacity: .8; }
 .top .btn { color: var(--navy); }
+.apptabs { display: flex; gap: 4px; background: rgba(255,255,255,.1); border-radius: 12px; padding: 3px; }
+.apptabs a { color: #cfd8e6; text-decoration: none; font-weight: 800; padding: 7px 12px; border-radius: 9px; font-size: .92em; }
+.apptabs a.on { background: #fff; color: var(--navy); }
 /* 반으로 나누기: 왼쪽 견적서 · 오른쪽 상품 */
 .split { flex: 1; min-height: 0; display: grid; grid-template-columns: 58fr 42fr; }
 .split.b { grid-template-columns: 50fr 50fr; }
@@ -179,7 +182,7 @@ table.qt td.bcc { width: 108px; min-width: 108px; } table.qt td.bcc svg { min-wi
 </style>
 <div class="app">
   <div class="top">
-    <h1>인테리어 상담 견적</h1>
+    <div class="apptabs"><a href="index.html" class="on">🧾 상품 견적 (바코드)</a><a href="package.html">🏠 전체 인테리어 견적</a></div>
     <span class="note" id="dbNote"></span>
     <button class="btn sm" type="button" data-act="upload" style="margin-left:auto">📥 상품 · 판매 데이터 올리기</button>
   </div>
@@ -206,7 +209,7 @@ table.qt td.bcc { width: 108px; min-width: 108px; } table.qt td.bcc svg { min-wi
 <div class="toast" id="toast" role="status"></div>
 <script>
 'use strict';
-const BUILD = '2026-11-08e';
+const BUILD = '2026-11-08f';
 /* 새 버전이 올라오면 저절로 새로 고침 (창으로 돌아올 때 · 5분마다). 고르는 창이나 스캔 화면을 쓰는 중이면 기다림 */
 (function () {
   const check = async () => {
