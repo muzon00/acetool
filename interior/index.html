@@ -106,6 +106,7 @@ table.qt td.bcc { width: 108px; min-width: 108px; } table.qt td.bcc svg { min-wi
 .badge { display: inline-block; font-size: .7em; font-weight: 800; border-radius: 6px; padding: 1px 6px; margin-right: 4px; vertical-align: middle; }
 .badge.hot { background: #ffe8e8; color: var(--red); } .badge.stop { background: #eee; color: #777; } .badge.low { background: #fff3d6; color: var(--warn); }
 .chips button.brand { border: 1.5px solid var(--navy); color: var(--navy); font-weight: 800; } .chips button.brand.on { background: var(--navy); color: #fff; } .chips button small { opacity: .7; }
+.pcard .pcode { font-size: .8em; color: var(--ink2); font-variant-numeric: tabular-nums; letter-spacing: .02em; } .pcard .pcode b { color: var(--navy); font-weight: 800; }
 .ghead { grid-column: 1 / -1; font-weight: 800; color: var(--ink2); padding: 8px 2px 4px; border-bottom: 2px solid var(--line); } .ghead small { color: var(--ink3); font-weight: 600; }
 .info-strip { padding: 8px 12px; background: #fff8e6; color: #7a5200; font-size: .85em; border-bottom: 1px solid #f3e2b8; flex: none; }
 .bundles { display: flex; gap: 8px; overflow-x: auto; padding: 10px 12px; background: var(--surface); border-bottom: 1px solid var(--line); flex: none; scrollbar-width: none; }
@@ -222,7 +223,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
 <div class="toast" id="toast" role="status"></div>
 <script>
 'use strict';
-const BUILD = '2026-11-08j';
+const BUILD = '2026-11-08k';
 /* 새 버전이 올라오면 저절로 새로 고침 (창으로 돌아올 때 · 5분마다). 고르는 창이나 스캔 화면을 쓰는 중이면 기다림 */
 (function () {
   const check = async () => {
@@ -376,7 +377,7 @@ function renderRight() {
   // 같이 많이 산 상품 (방금 담은 상품 기준)
   const co = DB && ST.last && DB.co[ST.last] ? DB.co[ST.last].filter(([c]) => PC[c] && !inCart(c)).slice(0, 8) : [];
   $('CO').innerHTML = co.length ? '<div class="co"><div class="ch">🔗 ' + esc(PC[ST.last].n.slice(0, 24)) + ' — 같이 많이 산 상품<button type="button" data-act="coX" aria-label="닫기">✕</button></div><div class="cl">' +
-    co.map(([c, n]) => '<div class="ci"><b>' + esc(PC[c].n) + '</b><small>' + won(PC[c].p) + '원 · 같이 산 ' + pctTxt(n / (PC[ST.last].k || 1)) + '</small><button type="button" data-add="' + c + '" aria-label="담기">＋</button></div>').join('') + '</div></div>' : '';
+    co.map(([c, n]) => '<div class="ci"><b>' + esc(PC[c].n) + '</b><small>' + esc(c) + ' · ' + won(PC[c].p) + '원 · 같이 산 ' + pctTxt(n / (PC[ST.last].k || 1)) + '</small><button type="button" data-add="' + c + '" aria-label="담기">＋</button></div>').join('') + '</div></div>' : '';
   const cats = catList().slice(0, 18);
   const brandChips = BRANDS.map(([k, t, re]) => [k, t, products().filter(p => re.test(p.n)).length]).filter(x => x[2]).map(([k, t, n]) => '<button type="button" data-cat="' + k + '" class="brand' + (ST.cat === k ? ' on' : '') + '">' + t + ' <small>' + n + '</small></button>').join('');
   $('chips').innerHTML = '<button type="button" data-cat="all" class="' + (ST.cat === 'all' ? 'on' : '') + '">전체</button>' + brandChips + cats.map(c => '<button type="button" data-cat="' + esc(c) + '" class="' + (ST.cat === c ? 'on' : '') + '">' + look({ n: '', s: c }).e + ' ' + esc(c) + '</button>').join('');
@@ -388,7 +389,7 @@ function renderRight() {
     const n = inCart(p.c), lk = look(p), s = st && st[p.c];
     const badges = (p.promo ? '<span class="badge hot">' + (p.promo.note ? esc(p.promo.note) + ' ' : '') + '행사 ~' + esc(String(p.promo.pr).split(/[-~]/)[1] || '') + '</span>' : '') + (p.reg === false ? '<span class="badge stop">전산 미등록</span>' : '') + (p.bad ? '<span class="badge low">바코드 확인</span>' : '') + (p.k >= hot ? '<span class="badge hot">인기</span>' : '') + (s && s.st && s.st !== '정상' ? '<span class="badge stop">' + esc(s.st) + '</span>' : '') + (s && s.q != null && s.q <= 0 ? '<span class="badge low">재고 없음</span>' : '');
     return head + '<div class="pcard' + (n ? ' in' : '') + '" data-pid="' + esc(p.c) + '">' + (n ? '<span class="cnt">' + n + '</span>' : '') + '<button class="add" type="button" data-add="' + esc(p.c) + '" aria-label="담기">＋</button>' +
-      '<div class="ic" style="background:' + lk.bg + '">' + lk.e + '</div><div class="nm">' + badges + esc(p.n) + '</div><div class="sp">' + esc(p.s || '') + (p.k ? ' · 판매 ' + p.k + '건' : '') + (s && s.q != null ? ' · 재고 ' + s.q : '') + '</div><div class="pr">' + won(p.p) + '원' + (p.promo && p.promo.rp > p.p ? ' <s class="muted" style="font-weight:500;font-size:.8em">' + won(p.promo.rp) + '</s>' : '') + '</div><div class="grip">⟵ 끌어서 담기 · ' + (DB ? esc(p.b || p.c) + (p.reg ? ' ✓' : '') : '샘플 (바코드 없음)') + '</div></div>';
+      '<div class="ic" style="background:' + lk.bg + '">' + lk.e + '</div><div class="nm">' + badges + esc(p.n) + '</div><div class="pcode">상품코드 <b>' + esc(p.c) + '</b></div><div class="sp">' + esc(p.s || '') + (p.k ? ' · 판매 ' + p.k + '건' : '') + (s && s.q != null ? ' · 재고 ' + s.q : '') + '</div><div class="pr">' + won(p.p) + '원' + (p.promo && p.promo.rp > p.p ? ' <s class="muted" style="font-weight:500;font-size:.8em">' + won(p.promo.rp) + '</s>' : '') + '</div><div class="grip">⟵ 끌어서 담기 · ' + (DB ? esc(p.b || p.c) + (p.reg ? ' ✓' : '') : '샘플 (바코드 없음)') + '</div></div>';
   }).join('') + (visible().length > 300 ? '<div class="empty" style="grid-column:1/-1">상품이 많아 300개까지만 보여요. 위에서 찾거나 분류를 골라 주세요.</div>' : '') : '<div class="empty" style="grid-column:1/-1">찾는 상품이 없어요</div>';
 }
 
