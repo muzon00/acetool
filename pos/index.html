@@ -1266,7 +1266,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-10k';
+var BUILD = '2026-11-10l';
 (function () {
   var busy = false;
   function typing() {
@@ -3011,13 +3011,14 @@ function renderAnalysis(d, det, el) {
 
   const sm = d.sms;
   if (sm.close.length) {
-    h += '<div class="card"><h2>마감 문자와 POS 대조</h2>' + table(['일자', '일마감(문자)', '건수', '비율', '환산(VAT별도)', 'POS 순매출', '차이', '당월 누계(문자)', '비율'],
+    h += '<div class="card"><h2>마감 문자와 POS 대조</h2>' + table(['일자', '일마감(문자)', '건수 (문자)', 'POS 객수', '비율', '환산(VAT별도)', 'POS 순매출', '차이', '당월 누계(문자)', '비율'],
       sm.close.slice().reverse().map(c => {
         const day = c.day, mon = c.month;
         let st;
         if (c.diff === null) st = c.pos === null ? 'POS 미등록' : '-';
         else st = Math.abs(c.diff) <= Math.max(1000, c.pos * 0.001) ? '일치' : sign(Math.round(c.diff)) + '원';
-        return [mdLabel(c.d), day ? won(day.v) : '-', day ? esc(day.c) : '-', day && day.r !== null ? esc(day.r) + '%' : '-', day ? won(day.vEx) : '-', c.pos === null ? '-' : won(c.pos), st, mon ? won(mon.v) : '-', mon && mon.r !== null ? esc(mon.r) + '%' : '-'];
+        const pt = (((S.daily || {})[ymOf(c.d)] || {})[dayOf(c.d)] || {}).t; /* POS 원본을 올린 날의 매장 판매번호 수 (반품만 있는 것 제외) */
+        return [mdLabel(c.d), day ? won(day.v) : '-', day ? esc(day.c) : '-', pt === undefined ? '<span class="muted">-</span>' : (day && Number(day.c) === pt ? '<b>' + pt + '</b> ✓' : String(pt)), day && day.r !== null ? esc(day.r) + '%' : '-', day ? won(day.vEx) : '-', c.pos === null ? '-' : won(c.pos), st, mon ? won(mon.v) : '-', mon && mon.r !== null ? esc(mon.r) + '%' : '-'];
       })) + '<p class="muted" style="margin:6px 0 0">"비율"은 문자에 표시된 % 값을 그대로 옮긴 것입니다. 차이가 계속 크면 목표·설정 탭에서 문자 금액 기준(VAT 포함/별도)을 바꿔 보세요.</p></div>';
   }
   if (sm.member.length) {
