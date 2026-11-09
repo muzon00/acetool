@@ -176,7 +176,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
 <div class="toast" id="toast" role="status"></div>
 <script>
 'use strict';
-const BUILD = '2026-11-08p6';
+const BUILD = '2026-11-10p1';
 (function () {
   const check = async () => { if (document.querySelector('.modal')) return; try { const t = await (await fetch(location.pathname + '?b=' + Date.now(), { cache: 'no-store' })).text(); const m = t.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD) location.reload(); } catch (e) { } };
   addEventListener('focus', check); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); }); setInterval(check, 5 * 60 * 1000);
@@ -363,8 +363,13 @@ const setBar = () => '<span class="mgin">전체 마진 <input type="text" inputm
   '<select class="chip" data-f="ru" title="단가 끝자리"><option value="10">10원 단위</option><option value="100">100원 단위</option><option value="1000">1,000원 단위</option></select><select class="chip" data-f="rm" title="끝자리 처리"><option value="round">반올림</option><option value="down">버림</option><option value="up">올림</option></select><select class="chip" data-f="cut" title="총액 끝자리"><option value="0">총액 그대로</option><option value="10000">만원 아래 절사</option><option value="100000">10만원 아래 절사</option></select>';
 const fixSel = el => { el.querySelectorAll('select[data-f]').forEach(s => { s.value = String(PK[s.dataset.f]); }); };
 /* 우리 상품 넣기 (상품 견적에 올린 상품 목록에서 — 전산 바코드 · 판매가) */
+/* 상품 목록은 한 번만 읽어 둠 (글자 칠 때마다 1MB 넘는 목록을 다시 읽으면 오래된 태블릿에서 버벅임) — 다른 탭에서 바뀌면 다시 읽음 */
+let OPDB;
+addEventListener('storage', e => { if (!e.key || e.key === 'int.db') OPDB = undefined; });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') OPDB = undefined; });
 function ourProducts(q) {
-  let db = null; try { db = JSON.parse(localStorage.getItem('int.db') || 'null'); } catch (e) { db = null; }
+  if (OPDB === undefined) { try { OPDB = JSON.parse(localStorage.getItem('int.db') || 'null'); } catch (e) { OPDB = null; } }
+  const db = OPDB;
   if (!db) return null; q = hn(q).toLowerCase(); if (!q) return [];
   return db.products.filter(p => (p.n + p.c).toLowerCase().replace(/\s+/g, '').includes(q)).sort((a, b) => (b.k || 0) - (a.k || 0)).slice(0, 12).map(p => { const m = db.bm && db.bm[p.c]; return { c: p.c, n: p.n, p: m && m[1] > 0 ? m[1] : p.p, b: m ? ((m[0] || []).includes(p.b) ? p.b : (m[0] || [])[0] || p.b) : p.b }; });
 }
@@ -578,8 +583,12 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('input', e => {
   const t = e.target;
-  if (t.dataset.ps !== undefined) { const L = t.parentElement.querySelector('.pl'), r = ourProducts(t.value); if (r == null) { L.hidden = false; L.innerHTML = '<div class="muted">🧾 상품 견적 탭에서 판매 데이터 · PMS를 먼저 올려 주세요</div>'; return; } L.hidden = !r.length; L.innerHTML = r.map(p => '<div data-pick="' + esc(JSON.stringify(p)) + '"><span>' + esc(p.n) + '</span><b>' + won(p.p) + '원</b></div>').join(''); }
+  if (t.dataset.ps !== undefined) { clearTimeout(psT); psT = setTimeout(() => psFind(t), 150); }
 });
+let psT = null;
+function psFind(t) {
+  if (t.isConnected) { const L = t.parentElement.querySelector('.pl'), r = ourProducts(t.value); if (r == null) { L.hidden = false; L.innerHTML = '<div class="muted">🧾 상품 견적 탭에서 판매 데이터 · PMS를 먼저 올려 주세요</div>'; return; } L.hidden = !r.length; L.innerHTML = r.map(p => '<div data-pick="' + esc(JSON.stringify(p)) + '"><span>' + esc(p.n) + '</span><b>' + won(p.p) + '원</b></div>').join(''); }
+}
 document.addEventListener('focusin', e => { if (e.target.classList && e.target.classList.contains('cell') && e.target.classList.contains('r')) e.target.select(); });
 $('fImp').addEventListener('change', e => { const fs = [...e.target.files]; e.target.value = ''; importFiles(fs); });
 let dd = 0; const hasF = e => e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
