@@ -620,6 +620,11 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .mt-col i { display: block; width: 40%; border-radius: 4px 4px 0 0; min-height: 2px; }
 .mt-col i.ly { background: var(--ink3); opacity: .45; } .mt-col i.cy { background: var(--s1); }
 .mt-bar small { color: var(--ink3); }
+.mt-sp { display: block; } .mt-sp polyline { fill: none; stroke: var(--ink3); stroke-width: 2; stroke-linejoin: round; } .mt-sp circle { fill: var(--ink3); }
+.mt-sp.up polyline, .mt-sp.dip polyline { stroke: var(--ok-ink); } .mt-sp.up circle, .mt-sp.dip circle { fill: var(--ok-ink); }
+.mt-sp.down polyline, .mt-sp.peak polyline { stroke: var(--bad-ink); } .mt-sp.down circle, .mt-sp.peak circle { fill: var(--bad-ink); }
+.mt-tg { display: inline-block; white-space: nowrap; font-weight: 700; font-size: .85em; padding: 2px 8px; border-radius: 999px; background: var(--bg); color: var(--ink2); }
+.mt-tg.up, .mt-tg.dip { background: var(--ok-bg); color: var(--ok-ink); } .mt-tg.down, .mt-tg.peak { background: var(--bad-bg); color: var(--bad-ink); }
 @media print {
   body.mt-printing #adminHead, body.mt-printing #adminAlert, body.mt-printing #v-admin > p.muted, body.mt-printing .mt-np, body.mt-printing #a-meet textarea { display: none !important; }
   body.mt-printing .mt-pv { display: block !important; }
@@ -1258,7 +1263,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-10g';
+var BUILD = '2026-11-10h';
 (function () {
   var busy = false;
   function typing() {
@@ -1413,6 +1418,7 @@ function salesAgg(headRow) {
   const map = {}, order = [];
   const st = { rowsRead: 0, usedRows: 0, totalNet: 0, byG: { '내판': 0, '외판': 0 }, unknown: {}, badDate: 0, dateSet: {}, adjusted: 0, other: 0, payByDay: {}, badNum: 0, badSamples: [] };
   const hasPay = !aggMode && col['결제금액'] !== undefined;  // POS 원본이면 날짜별 총결제금액(VAT 포함)도 모음
+  const hasTx = !aggMode && col['판매번호'] !== undefined, txm = {};  // POS 원본이면 날짜별 매장(내판) 객수 = 금액이 0보다 큰 판매번호 수
   const get = (r, name) => { const k = col[name]; return k === undefined ? '' : r[k]; };
   const add = r => {
     if (!r || !r.length) return;
@@ -1450,12 +1456,15 @@ function salesAgg(headRow) {
     let o = map[key];
     if (!o) { o = map[key] = [d, g, mgr, cust, cat, 0, 0]; order.push(key); }
     o[5] += net; o[6] += mar;
+    if (hasTx && g === '내판') { const tn = String(get(r, '판매번호') || '').trim(); if (tn) { const m = txm[d] || (txm[d] = new Map()); m.set(tn, (m.get(tn) || 0) + net); } }
     st.usedRows++; st.totalNet += net; st.byG[g] += net; st.dateSet[d] = 1;
   };
   const done = () => {
     const rows = order.map(k => map[k]);
     const dates = Object.keys(st.dateSet).map(Number).sort((a, b) => a - b);
-    return { rows, stats: { rowsRead: st.rowsRead, usedRows: st.usedRows, totalNet: st.totalNet, byG: st.byG, unknown: st.unknown, badDate: st.badDate, dates, adjusted: st.adjusted, other: st.other, badNum: st.badNum, badSamples: st.badSamples, payByDay: hasPay ? st.payByDay : null, mode: aggMode ? '백업/집계 CSV' : 'POS 원본' } };
+    let txByDay = null;
+    if (hasTx) { txByDay = {}; dates.forEach(d => { let c = 0; if (txm[d]) txm[d].forEach(v => { if (v > 0) c++; }); txByDay[d] = c; }); }
+    return { rows, stats: { rowsRead: st.rowsRead, usedRows: st.usedRows, totalNet: st.totalNet, byG: st.byG, unknown: st.unknown, badDate: st.badDate, dates, adjusted: st.adjusted, other: st.other, badNum: st.badNum, badSamples: st.badSamples, txByDay, payByDay: hasPay ? st.payByDay : null, mode: aggMode ? '백업/집계 CSV' : 'POS 원본' } };
   };
   return { add, done };
 }
@@ -1799,6 +1808,9 @@ async function registerParsed(p) {
         // 총결제금액(VAT 포함): POS 원본 파일일 때만 있음
         const pay = p.stats.payByDay && p.stats.payByDay[Number(ym) * 100 + Number(day)];
         if (pay !== undefined && pay !== null) sum[day].p = Math.round(pay);
+        // 매장(내판) 객수: POS 원본 파일일 때만 있음
+        const tc = p.stats.txByDay && p.stats.txByDay[Number(ym) * 100 + Number(day)];
+        if (tc !== undefined && tc !== null) sum[day].t = tc;
       });
       if (JSON.stringify(det).length > 900000) throw new Error(ymLabel(Number(ym)) + ' 데이터가 너무 큽니다(문서 1MB 제한). 관리자에게 문의해 주세요.');
       tx.set(dRef, { ym: Number(ym), days: det, updatedAt: serverTimestamp() });
@@ -6568,6 +6580,89 @@ function mtCons(ym, upDay) {
   return { n: rs.length, net: rs.reduce((s, r) => s + (Number(r.net) || 0), 0) };
 }
 const mtMerge = (a, b) => { const o = Object.assign({}, a); Object.keys(b).forEach(k => { o[k] = (o[k] || 0) + b[k]; }); return o; };
+/* 구간 흐름: 고른 기간(예: 1~10월)의 달별 값으로 "오르는 중 · 빠지는 중 · 오르다 빠짐 · 빠지다 회복 · 비슷"을 나눔 */
+/* 매장(내판) 객수: POS 원본을 올린 날의 판매번호 수 (그 달 모든 영업일에 있을 때만), 없으면 마감 문자 건수 (모든 영업일) — 일부만 있는 달은 비움 */
+function mtTx(ym) {
+  const md = (S.daily || {})[ym] || {}, ks = Object.keys(md);
+  if (!ks.length) return null;
+  if (ks.every(k => md[k].t !== undefined)) return { n: ks.reduce((s, k) => s + (Number(md[k].t) || 0), 0), src: 'pos' };
+  const byD = {}; ((S.smsCache || {})[ym] || []).forEach(r => { if (r.kind === '마감' && r.metric === '일마감' && Number(r.c) > 0) byD[r.d] = Number(r.c); });
+  if (ks.every(k => byD[ym * 100 + Number(k)])) return { n: ks.reduce((s, k) => s + byD[ym * 100 + Number(k)], 0), src: 'sms' };
+  return null;
+}
+/* 흐름 나누기: 영업일 수 차이를 빼려고 하루 평균(days가 있으면)으로, 들쭉날쭉을 줄이려고 3개월 이동평균으로 꼭대기 · 바닥을 찾음 */
+function mtTrend(v, days) {
+  const n = v.length;
+  if (n < 3 || v.some(x => x === null || x === undefined)) return { k: 'na', l: '자료 부족' };
+  const w = days ? v.map((x, i) => days[i] ? x / days[i] : x) : v.slice();
+  const sm = w.map((_, i) => { const a = w.slice(Math.max(0, i - 1), Math.min(n, i + 2)); return a.reduce((s, x) => s + x, 0) / a.length; });
+  const t = Math.max(1, Math.round(n / 3)), avg = a => a.reduce((s, x) => s + x, 0) / a.length;
+  const first = avg(w.slice(0, t)), last = avg(w.slice(-t)), pk = sm.indexOf(Math.max(...sm)), lo = sm.indexOf(Math.min(...sm)), P = sm[pk], L = sm[lo];
+  if (pk > 0 && pk < n - 1 && P > 0 && last <= P * 0.85 && first <= P * 0.85) return { k: 'peak', l: '⛰ 오르다 빠짐', i: pk, d: last / P - 1 };
+  if (lo > 0 && lo < n - 1 && L > 0 && last >= L * 1.15 && first >= L * 1.15) return { k: 'dip', l: '↩ 빠지다 회복', i: lo, d: last / L - 1 };
+  const g = first ? last / first - 1 : 0;
+  return g >= 0.1 ? { k: 'up', l: '📈 오르는 중', d: g } : g <= -0.1 ? { k: 'down', l: '📉 빠지는 중', d: g } : { k: 'flat', l: '➖ 비슷', d: g };
+}
+function mtSpark(v, cls) {
+  const W = 120, H = 30, xs = v.map(x => x === null || x === undefined ? null : x), ok = xs.filter(x => x !== null);
+  if (ok.length < 2) return '';
+  const mn = Math.min(...ok), mx = Math.max(...ok), y = x => H - 3 - (mx > mn ? (x - mn) / (mx - mn) : 0.5) * (H - 6), X = i => 3 + i * (W - 6) / Math.max(1, xs.length - 1);
+  const pts = xs.map((x, i) => x === null ? null : X(i).toFixed(1) + ',' + y(x).toFixed(1)).filter(Boolean).join(' ');
+  const li = xs.length - 1;
+  return '<svg class="mt-sp ' + (cls || '') + '" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" aria-hidden="true"><polyline points="' + pts + '"/>' + (xs[li] !== null ? '<circle cx="' + X(li).toFixed(1) + '" cy="' + y(xs[li]).toFixed(1) + '" r="2.6"/>' : '') + '</svg>';
+}
+function mtRangeHtml(months) {
+  const all = months.slice();
+  if (!MT.to || !all.includes(MT.to)) MT.to = MT.ym;
+  if (!MT.from || !all.includes(MT.from) || MT.from >= MT.to) { const jan = Math.floor(MT.to / 100) * 100 + 1; MT.from = all.includes(jan) && jan < MT.to ? jan : all[Math.max(0, all.indexOf(MT.to) - 5)]; }
+  const rng = all.filter(m => m >= MT.from && m <= MT.to), mL = m => (m % 100) + '월', rl = (Math.floor(MT.from / 100) !== Math.floor(MT.to / 100) ? ymLabel(MT.from) : mL(MT.from)) + ' ~ ' + mL(MT.to);
+  const opt = (sel, f) => all.map(m => '<option value="' + m + '"' + (m === sel ? ' selected' : '') + (f(m) ? '' : ' disabled') + '>' + ymLabel(m) + '</option>').join('');
+  let h = '<div class="card"><div class="bk-h"><h2>📈 구간 흐름 · ' + rl + '</h2><div class="mt-np" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">' +
+    '<select id="mtFrom" aria-label="시작 달">' + opt(MT.from, m => m < MT.to) + '</select> ~ <select id="mtTo" aria-label="끝 달">' + opt(MT.to, m => m > MT.from) + '</select>' +
+    '<span class="tr-seg" id="mtScope"><button type="button" data-s="n"' + (MT.scope !== 'all' ? ' class="on"' : '') + '>매장(내판)</button><button type="button" data-s="all"' + (MT.scope === 'all' ? ' class="on"' : '') + '>내판+외판</button></span></div></div>';
+  if (rng.length < 3) return h + '<p class="muted" style="margin:0">흐름을 보려면 3개월 이상 골라 주세요.</p></div>';
+  const ag = rng.map(m => eaAgg(m, 31)), lyAg = rng.map(m => eaAgg(m - 100, 31)), tx = rng.map(mtTx), lyTx = rng.map(m => mtTx(m - 100));
+  const sum = a => a.reduce((s, x) => s + (x || 0), 0), lyCmp = (cur, ly) => ly.every(x => x) && sum(ly) ? chgTxt(sum(cur) / sum(ly) - 1) : '-';
+  const srcOk = tx.every(x => x) && tx.every(x => x.src === tx[0].src), txV = srcOk ? tx.map(x => x.n) : tx.map(() => null);
+  const aov = srcOk && tx[0].src === 'pos' ? rng.map((m, i) => tx[i].n ? ag[i].n / tx[i].n : null) : rng.map(() => null);
+  const rate = ag.map(a => eaRate(a));
+  const rows = [
+    { name: '매출 전체', v: ag.map(a => a.tot), f: mtWon, ly: lyCmp(ag.map(a => a.tot), lyAg.map(a => a.days ? a.tot : 0)) },
+    { name: '매장 (내판)', v: ag.map(a => a.n), f: mtWon, ly: lyCmp(ag.map(a => a.n), lyAg.map(a => a.days ? a.n : 0)) },
+    { name: '외판 (B2B)', v: ag.map(a => a.o), f: mtWon, ly: lyCmp(ag.map(a => a.o), lyAg.map(a => a.days ? a.o : 0)) },
+    { name: '매장 객수' + (srcOk && tx[0].src === 'sms' ? ' (마감 문자 건수)' : ''), v: txV, f: x => Math.round(x).toLocaleString('ko-KR') + '명', ly: srcOk && lyTx.every(x => x && x.src === tx[0].src) ? lyCmp(txV, lyTx.map(x => x.n)) : '-', miss: !srcOk },
+    { name: '매장 객단가', v: aov, f: x => won(x), ly: '-', miss: !aov.every(x => x) },
+    { name: '마진율', v: rate, f: x => pct(x), ly: '-', pp: true }
+  ];
+  const catOf = a => MT.scope === 'all' ? mtMerge(a.catn, a.cato) : a.catn, catTot = {};
+  ag.forEach(a => Object.entries(catOf(a)).forEach(([k, v]) => { catTot[k] = (catTot[k] || 0) + v; }));
+  const cats = Object.keys(catTot).filter(k => catTot[k] > 0).sort((a, b) => catTot[b] - catTot[a]).slice(0, 14);
+  const catRows = cats.map(k => ({ name: k, v: ag.map(a => a.det ? (catOf(a)[k] || 0) : null), f: mtWon, ly: lyCmp(ag.map(a => catOf(a)[k] || 0), lyAg.map(a => a.det ? (catOf(a)[k] || 0) : 0)), cat: true }));
+  const say = r => {
+    const t = mtTrend(r.v, r.pp || r.name === '매장 객단가' ? null : ag.map(a => a.days)); r.t = t;
+    if (t.k === 'na') return r.miss ? '이 기간 자료가 다 있지 않아요' : '자료 부족';
+    const pf = r.pp ? x => eaPP(x) : x => chgTxt(x);
+    if (t.k === 'peak') return mL(rng[t.i]) + ' 무렵까지 오르다가(' + r.f(r.v[t.i]) + ') 그 뒤로 빠지는 중 — 최근 ' + third(rng) + '개월은 꼭대기 때보다 ' + (r.pp ? eaPP(avgLast(r.v) - r.v[t.i]) : chgTxt(t.d));
+    if (t.k === 'dip') return mL(rng[t.i]) + ' 무렵 바닥(' + r.f(r.v[t.i]) + ')을 찍고 다시 오르는 중 — 최근 ' + third(rng) + '개월은 바닥 때보다 ' + (r.pp ? eaPP(avgLast(r.v) - r.v[t.i]) : chgTxt(t.d));
+    const fl = r.f(r.v[0]) + ' → ' + r.f(r.v[r.v.length - 1]);
+    return (t.k === 'up' ? '구간 앞쪽보다 뒤쪽이 ' : t.k === 'down' ? '구간 앞쪽보다 뒤쪽이 ' : '큰 변화 없음 · ') + (t.k === 'flat' ? fl : (r.pp ? eaPP(avgLast(r.v) - avgFirst(r.v)) : chgTxt(t.d)) + ' (' + fl + ')');
+  };
+  const third = v => Math.max(1, Math.round(v.length / 3)), avgLast = v => { const a = v.slice(-third(v)); return a.reduce((s, x) => s + x, 0) / a.length; }, avgFirst = v => { const a = v.slice(0, third(v)); return a.reduce((s, x) => s + x, 0) / a.length; };
+  const tr = r => { const txt = say(r), k = r.t.k; return ['<b>' + esc(r.name) + '</b>', mtSpark(r.v, k), '<span class="mt-tg ' + k + '">' + r.t.l + '</span>', '<small>' + txt + '</small>', r.v.every(x => x !== null && x !== undefined) && !r.pp && r.name !== '매장 객단가' ? r.f(sum(r.v)) : '-', r.ly]; };
+  const head = ['항목', rng.map(mL)[0] + '→' + mL(rng[rng.length - 1]), '흐름', '설명', '구간 합계', '작년 같은 구간 대비'];
+  const mainT = rows.map(tr), catT = catRows.map(tr);
+  const grp = k => catRows.filter(r => r.t.k === k).map(r => '<b>' + esc(r.name) + '</b>');
+  const pts = [];
+  [['peak', '⛰ 오르다가 빠지는 중'], ['down', '📉 계속 빠지는 중'], ['up', '📈 오르는 중'], ['dip', '↩ 빠졌다가 회복 중']].forEach(([k, l]) => { const g = grp(k); if (g.length) pts.push(l + ': ' + g.join(', ')); });
+  const main = rows.filter(r => r.t && ['peak', 'down', 'up', 'dip'].includes(r.t.k)).map(r => r.name.replace(/ \(.*\)/, '') + ' → <b>' + r.t.l.replace(/^\S+ /, '') + '</b>');
+  h += '<p class="muted" style="margin:0 0 8px">' + rl + ' ' + rng.length + '개월을 달별로 놓고, 구간 앞쪽(처음 ' + third(rng) + '개월)과 뒤쪽(마지막 ' + third(rng) + '개월) 평균을 비교했어요. 달마다 영업일 수가 달라서 <b>하루 평균</b>으로 견줘요. 중간에 꼭대기가 있고 앞뒤가 꼭대기보다 15% 넘게 낮으면 "오르다 빠짐"이에요.</p>' +
+    table(head, mainT) +
+    '<h3 class="ea-h">대분류별 흐름 (' + (MT.scope === 'all' ? '내판+외판' : '매장 내판') + ' · 구간 합계 큰 순 ' + cats.length + '개)</h3>' + (catT.length ? table(head, catT) : '<p class="muted">이 기간 상세 자료(대분류)가 없어요.</p>') +
+    '<p class="mt-easy">💬 <b>쉽게 말하면</b> · ' + (main.length ? main.join(' · ') + '. ' : '전체 매출 · 객수는 큰 변화가 없어요. ') + (pts.length ? pts.join(' / ') + '.' : '대분류는 대부분 큰 변화가 없어요.') + ' 작년에도 같은 구간에 같은 모양이었으면 계절 때문일 수 있으니 "작년 같은 구간 대비" 칸을 같이 보세요.</p>' +
+    (rows[3].miss ? '<p class="muted" style="margin:6px 0 0">객수: 이 기간 모든 날의 객수가 없어 비워 뒀어요. POS "실시간 대량판매현황" 원본 파일을 업로드 탭에 다시 올리면 그날의 매장 객수(판매번호 수)가 같이 저장돼요. 마감 문자를 매일 올린 달은 문자 건수로 채워요.</p>' : '<p class="muted" style="margin:6px 0 0">객수 = ' + (tx[0].src === 'pos' ? '매장(내판)에서 금액이 0원보다 큰 판매번호 수 (반품만 있는 거래 제외)' : '마감 문자의 일마감 건수 합계') + ' · 객단가 = 매장 매출 ÷ 객수</p>') + '</div>';
+  return h;
+}
+
 async function loadMeet() {
   const el = $('a-meet');
   el.innerHTML = '<div class="card muted">회의 자료를 만드는 중…</div>';
@@ -6575,6 +6670,8 @@ async function loadMeet() {
   catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
   try { await loadCons(); } catch (e) { S.cons = S.cons || []; }
   try { await loadPlans(true); } catch (e) { S.plans = S.plans || []; }
+  /* 객수가 없는 달은 마감 문자 건수로 채우려고 문자 자료를 받아 둠 */
+  try { const need = eaMonths().filter(m => Object.values(S.daily[m] || {}).some(x => x.t === undefined)); await Promise.all(need.map(m => loadSms(m).catch(() => []))); } catch (e) { }
   try { const s = await getDoc(doc(db, C.config, 'meet')); MT.memo = s.exists() ? s.data() : {}; } catch (e) { MT.memo = {}; }
   renderMeet();
 }
@@ -6634,6 +6731,8 @@ function renderMeet() {
       (e2 ? '<p class="mt-easy">💬 <b>쉽게 말하면</b> · ' + e2 + '</p>' : '') +
       '<p class="muted" style="margin:6px 0 0">%p(퍼센트포인트) = 퍼센트끼리 뺀 값이에요. 마진율 25% → 20%면 "−5%p".</p></div>';
   }
+
+  h += mtRangeHtml(months);
 
   /* 3. 잘한 점 · 아쉬운 점 (자료로 자동 + 점장 메모) */
   const good = [], bad = [], put = (ok, s) => (ok ? good : bad).push(s);
@@ -6738,7 +6837,10 @@ function renderMeet() {
     '<li><b>종합 평가</b> — 목표 달성(40%) · 작년 대비(25%) · 최근 흐름(20%) · 마진율(15%)을 합친 점수. S·A 우수, B 양호, C 보통, D 미흡.</li></ul></details></div>';
 
   el.innerHTML = h;
-  $('mtYm').addEventListener('change', e => { MT.ym = Number(e.target.value); renderMeet(); });
+  $('mtYm').addEventListener('change', e => { MT.ym = Number(e.target.value); MT.to = 0; MT.from = 0; renderMeet(); });
+  if ($('mtFrom')) $('mtFrom').addEventListener('change', e => { MT.from = Number(e.target.value); renderMeet(); });
+  if ($('mtTo')) $('mtTo').addEventListener('change', e => { MT.to = Number(e.target.value); renderMeet(); });
+  if ($('mtScope')) $('mtScope').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { MT.scope = b.dataset.s; renderMeet(); }));
   $('mtPrint').addEventListener('click', () => {
     el.querySelectorAll('textarea.mt-memo').forEach(t => { const pvEl = t.nextElementSibling; if (pvEl) { pvEl.textContent = t.value.trim() ? '📝 ' + t.value : ''; } });
     document.body.classList.add('mt-printing');
