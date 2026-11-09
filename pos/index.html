@@ -154,6 +154,8 @@ svg text.wk { fill: var(--ink); font-weight: 700; }
 .arbar { display: flex; height: 22px; border-radius: 8px; overflow: hidden; background: var(--grid); gap: 2px; }
 .arbar span { display: block; height: 100%; }
 .arbar.sm { height: 10px; border-radius: 5px; gap: 1px; }
+.pmemo { display: block; width: 100%; min-width: 160px; min-height: 32px; margin-top: 4px; border: 1px dashed var(--line, #dfe4ec); border-radius: 8px; padding: 0 8px; font: inherit; font-size: .86em; color: var(--ink2, #555); background: transparent; }
+.pmemo:focus { border-style: solid; background: #fff; color: var(--ink, #111); }
 .pamt { min-height: 36px; width: 9.5em; max-width: 100%; text-align: right; border: 1px solid var(--line, #dfe4ec); border-radius: 8px; padding: 0 8px; font: inherit; background: #fff; font-variant-numeric: tabular-nums; }
 .pdate { min-height: 36px; border: 1px solid var(--line, #dfe4ec); border-radius: 8px; padding: 0 6px; font: inherit; background: #fff; width: 9.2em; max-width: 100%; }
 .pl { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .8em; font-weight: 700; white-space: nowrap; }
@@ -882,7 +884,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
           <label style="min-width:200px">거래처<input type="text" id="pCust" list="custList" maxlength="80" autocomplete="off"></label>
           <label>담당<input type="text" id="pMgr" list="mgrList" maxlength="30" autocomplete="off" style="width:110px"></label>
           <label class="amt">금액(원, VAT 별도)<input type="number" id="pAmt" min="0" step="1000"><span class="amt-read" id="pAmtRead"></span><span class="amt-chips" id="pChips"></span></label>
-          <label style="min-width:160px">메모(선택)<input type="text" id="pMemo" maxlength="60"></label>
+          <label style="min-width:160px">메모(선택)<input type="text" id="pMemo" maxlength="200"></label>
           <button class="btn primary" id="pAdd" style="margin-top:20px">추가</button>
         </div>
         <datalist id="custList"></datalist><datalist id="mgrList"></datalist>
@@ -1255,7 +1257,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-10d';
+var BUILD = '2026-11-10e';
 (function () {
   var busy = false;
   function typing() {
@@ -4199,7 +4201,7 @@ function renderPlanList() {
       : '<button class="btn ghost sm" data-po="' + p.id + '">되돌리기</button>';
     /* 아직 열린 건은 예정일을 바로 고칠 수 있음 (처음 예정일은 아래에 작게) */
     const dCell = p.st === 'open' ? '<input type="date" class="pdate" data-pdt="' + p.id + '" value="' + dLabel(p.d) + '" title="눌러서 예정일 바꾸기"><small class="muted"> (' + DOWK[dowOf(p.d)] + ')</small>' : mdLabel(p.d) + ' (' + DOWK[dowOf(p.d)] + ')';
-    return [dCell + (p.d0 && p.d0 !== p.d ? '<br><small class="muted">처음 ' + mdLabel(p.d0) + '</small>' : ''), esc(p.cust) + (p.memo ? '<br><small class="muted">' + esc(p.memo) + '</small>' : ''), esc(p.mgr || '-'), (p.st === 'open' ? '<input type="text" inputmode="numeric" class="pamt" data-pam="' + p.id + '" value="' + won(p.amt) + '" title="눌러서 금액 고치기">' : won(p.amt)) + (p.amt0 && p.amt0 !== p.amt ? '<br><small class="muted">처음 ' + won(p.amt0) + '</small>' : ''),
+    return [dCell + (p.d0 && p.d0 !== p.d ? '<br><small class="muted">처음 ' + mdLabel(p.d0) + '</small>' : ''), esc(p.cust) + '<br><input type="text" class="pmemo" data-pmm="' + p.id + '" maxlength="200" value="' + esc(p.memo || '') + '" placeholder="✏️ 메모 쓰기" title="눌러서 메모 쓰기 · 고치기 (Enter로 저장)">', esc(p.mgr || '-'), (p.st === 'open' ? '<input type="text" inputmode="numeric" class="pamt" data-pam="' + p.id + '" value="' + won(p.amt) + '" title="눌러서 금액 고치기">' : won(p.amt)) + (p.amt0 && p.amt0 !== p.amt ? '<br><small class="muted">처음 ' + won(p.amt0) + '</small>' : ''),
       st,
       acts + ' <button class="btn danger sm" data-px="' + p.id + '">삭제</button>'];
   };
@@ -4225,6 +4227,16 @@ function renderPlanList() {
       toast(String(p.cust || '').slice(0, 20) + ' 예정일을 ' + mdLabel(p.d) + ' → ' + mdLabel(d) + '로 바꿨어요');
     } catch (e) { toast('실패: ' + errMsg(e)); inp.disabled = false; inp.value = dLabel(p.d); }
   }));
+  $('pList').querySelectorAll('[data-pmm]').forEach(inp => {
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
+    inp.addEventListener('change', async () => {
+      const id = inp.dataset.pmm, p = (S.plans || []).find(x => x.id === id), memo = cleanText(inp.value, 200);
+      if (!p || memo === (p.memo || '')) return;
+      inp.disabled = true;
+      try { await setDoc(doc(db, C.plans, id), { memo, editedAt: serverTimestamp() }, { merge: true }); p.memo = memo; inp.disabled = false; toast(memo ? '메모를 저장했어요' : '메모를 지웠어요'); }
+      catch (e) { toast('실패: ' + errMsg(e)); inp.disabled = false; inp.value = p.memo || ''; }
+    });
+  });
   $('pList').querySelectorAll('[data-pam]').forEach(inp => {
     inp.addEventListener('focus', () => inp.select());
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
@@ -4254,7 +4266,7 @@ function renderPlanList() {
   inp.addEventListener('input', read);
   $('pAdd').addEventListener('click', async () => {
     const d = Number(($('pD').value || '').replace(/-/g, '')), cust = cleanText($('pCust').value, 80), mgr = cleanText($('pMgr').value, 30), amt = Math.round(Number(inp.value));
-    const prob = 'fix', memo = cleanText($('pMemo').value, 60);
+    const prob = 'fix', memo = cleanText($('pMemo').value, 200);
     if (!toDateInt(String(d))) { $('pMsg').textContent = '예정일을 입력해 주세요.'; return; }
     if (!cust) { $('pMsg').textContent = '거래처를 입력해 주세요.'; return; }
     if (!(amt > 0 && amt < 1e11)) { $('pMsg').textContent = '금액을 입력해 주세요.'; return; }
@@ -6680,7 +6692,7 @@ function renderMeet() {
     if (fb && NT) e5 += ' 지금 흐름 그대로면 목표의 <b>' + pct(fb.rate, 0) + '</b>로 끝날 것 같아요' + (planAmt ? ', 예정 매출을 다 받으면 ' + pct(withPlan / NT, 0) + '까지 갈 수 있어요.' : '.');
     h += '<div class="card"><h2>⑤ ' + Nm + ' 현재 · 예상 매출</h2><div class="kpis">' + k + '</div>' +
       (e5 ? '<p class="mt-easy">💬 <b>쉽게 말하면</b> · ' + e5 + '</p>' : '') +
-      (ahead.length ? '<h3 class="ea-h">앞으로 들어올 예정 매출</h3>' + table(['예정일', '거래처', '담당', '금액'], ahead.slice(0, 10).map(p => [mdLabel(p.d), esc(p.cust), esc(p.mgr || '-'), won(p.amt)])) + (ahead.length > 10 ? '<p class="muted">…외 ' + (ahead.length - 10) + '건</p>' : '') : '') +
+      (ahead.length ? '<h3 class="ea-h">앞으로 들어올 예정 매출</h3>' + table(['예정일', '거래처', '담당', '금액'], ahead.slice(0, 10).map(p => [mdLabel(p.d), esc(p.cust) + (p.memo ? '<br><small class="muted">' + esc(p.memo) + '</small>' : ''), esc(p.mgr || '-'), won(p.amt)])) + (ahead.length > 10 ? '<p class="muted">…외 ' + (ahead.length - 10) + '건</p>' : '') : '') +
       '<p class="muted" style="margin:6px 0 0">예상 마감 = 최근 몇 달의 요일별(평일·토·일) 하루 평균을 남은 영업일에 곱해 더한 값이에요. 보수는 낮게, 낙관은 높게 잡은 것.</p></div>';
 
     /* 6. 목표 달성을 위해 할 일 (자료로 자동 + 점장 메모) */
