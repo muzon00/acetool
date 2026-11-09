@@ -154,6 +154,7 @@ svg text.wk { fill: var(--ink); font-weight: 700; }
 .arbar { display: flex; height: 22px; border-radius: 8px; overflow: hidden; background: var(--grid); gap: 2px; }
 .arbar span { display: block; height: 100%; }
 .arbar.sm { height: 10px; border-radius: 5px; gap: 1px; }
+.pamt { min-height: 36px; width: 9.5em; max-width: 100%; text-align: right; border: 1px solid var(--line, #dfe4ec); border-radius: 8px; padding: 0 8px; font: inherit; background: #fff; font-variant-numeric: tabular-nums; }
 .pdate { min-height: 36px; border: 1px solid var(--line, #dfe4ec); border-radius: 8px; padding: 0 6px; font: inherit; background: #fff; width: 9.2em; max-width: 100%; }
 .pl { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .8em; font-weight: 700; white-space: nowrap; }
 .pl.p1 { background: var(--ok-bg); color: var(--ok-ink); }
@@ -1254,7 +1255,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-10c';
+var BUILD = '2026-11-10d';
 (function () {
   var busy = false;
   function typing() {
@@ -4198,7 +4199,7 @@ function renderPlanList() {
       : '<button class="btn ghost sm" data-po="' + p.id + '">되돌리기</button>';
     /* 아직 열린 건은 예정일을 바로 고칠 수 있음 (처음 예정일은 아래에 작게) */
     const dCell = p.st === 'open' ? '<input type="date" class="pdate" data-pdt="' + p.id + '" value="' + dLabel(p.d) + '" title="눌러서 예정일 바꾸기"><small class="muted"> (' + DOWK[dowOf(p.d)] + ')</small>' : mdLabel(p.d) + ' (' + DOWK[dowOf(p.d)] + ')';
-    return [dCell + (p.d0 && p.d0 !== p.d ? '<br><small class="muted">처음 ' + mdLabel(p.d0) + '</small>' : ''), esc(p.cust) + (p.memo ? '<br><small class="muted">' + esc(p.memo) + '</small>' : ''), esc(p.mgr || '-'), won(p.amt),
+    return [dCell + (p.d0 && p.d0 !== p.d ? '<br><small class="muted">처음 ' + mdLabel(p.d0) + '</small>' : ''), esc(p.cust) + (p.memo ? '<br><small class="muted">' + esc(p.memo) + '</small>' : ''), esc(p.mgr || '-'), (p.st === 'open' ? '<input type="text" inputmode="numeric" class="pamt" data-pam="' + p.id + '" value="' + won(p.amt) + '" title="눌러서 금액 고치기">' : won(p.amt)) + (p.amt0 && p.amt0 !== p.amt ? '<br><small class="muted">처음 ' + won(p.amt0) + '</small>' : ''),
       st,
       acts + ' <button class="btn danger sm" data-px="' + p.id + '">삭제</button>'];
   };
@@ -4224,6 +4225,23 @@ function renderPlanList() {
       toast(String(p.cust || '').slice(0, 20) + ' 예정일을 ' + mdLabel(p.d) + ' → ' + mdLabel(d) + '로 바꿨어요');
     } catch (e) { toast('실패: ' + errMsg(e)); inp.disabled = false; inp.value = dLabel(p.d); }
   }));
+  $('pList').querySelectorAll('[data-pam]').forEach(inp => {
+    inp.addEventListener('focus', () => inp.select());
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
+    inp.addEventListener('change', async () => {
+      const id = inp.dataset.pam, p = (S.plans || []).find(x => x.id === id), amt = Math.round(Number(String(inp.value).replace(/[^\d]/g, '')));
+      if (!p) return;
+      if (!(amt > 0 && amt < 1e11)) { toast('금액을 숫자로 적어 주세요'); inp.value = won(p.amt); return; }
+      if (amt === p.amt) { inp.value = won(p.amt); return; }
+      if (amt >= p.amt * 10 || amt * 10 <= p.amt) { if (!confirm(won(p.amt) + ' → ' + won(amt) + '\n\n금액이 10배 넘게 바뀌어요. 맞나요?')) { inp.value = won(p.amt); return; } }
+      inp.disabled = true;
+      try {
+        await setDoc(doc(db, C.plans, id), { amt, amt0: p.amt0 || p.amt, editedAt: serverTimestamp() }, { merge: true });
+        await rebuildPlanSum(); renderPlanList();
+        toast(String(p.cust || '').slice(0, 20) + ' 금액을 ' + krwP(p.amt) + ' → ' + krwP(amt) + '로 바꿨어요');
+      } catch (e) { toast('실패: ' + errMsg(e)); inp.disabled = false; inp.value = won(p.amt); }
+    });
+  });
   act('data-pd', id => setDoc(doc(db, C.plans, id), { st: 'done', doneBy: 'manual', doneAt: serverTimestamp() }, { merge: true }));
   act('data-pc', id => setDoc(doc(db, C.plans, id), { st: 'cancel', doneAt: serverTimestamp() }, { merge: true }));
   act('data-po', id => setDoc(doc(db, C.plans, id), { st: 'open', doneBy: '', matched: 0 }, { merge: true }));
