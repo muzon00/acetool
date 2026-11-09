@@ -146,14 +146,14 @@ select, input[type=text], input[type=date], input[type=number] { background: var
 .st-휴무 { background: var(--bad-bg); color: var(--bad-ink); }
 .st-연차 { background: var(--ok-bg); color: var(--ok-ink); }
 .st-경조 { background: #e6f6f3; color: #0d766a; }
-.st-생일반차, .st-반차 { background: #f0edfd; color: #5b3dc7; }
-.st-예비군, .st-시험, .st-교육 { background: var(--warn-bg); color: var(--warn-ink); }
+.st-생일반차, .st-반차, .st-결혼기념일 { background: #f0edfd; color: #5b3dc7; }
+.st-예비군, .st-시험, .st-교육, .st-건강검진 { background: var(--warn-bg); color: var(--warn-ink); }
 .st-본사회의 { background: #e3eefc; color: #1d4f91; }
 [data-theme="night"] .st-본사회의 { background: #1c2f4d; color: #9cc3f5; }
 .st-육아휴직 { background: var(--bg); color: var(--ink3); }
 [data-theme="night"] .st-조출 { background: #4a3a10; color: #f6d77a; } [data-theme="night"] .st-조출 b { color: #f6d77a; }
 [data-theme="night"] .st-경조 { background: #0f3530; color: #86dccf; }
-[data-theme="night"] .st-생일반차, [data-theme="night"] .st-반차 { background: #2c2350; color: #c5b6ff; }
+[data-theme="night"] .st-생일반차, [data-theme="night"] .st-반차, [data-theme="night"] .st-결혼기념일 { background: #2c2350; color: #c5b6ff; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: .78em; color: var(--ink2); margin-top: 10px; }
 .legend span { display: inline-flex; align-items: center; gap: 4px; }
 .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 4px; }
@@ -393,7 +393,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요)
-const BUILD = '2026-11-08-r1';
+const BUILD = '2026-11-10-r1';
 (function () {
   let busy = false;
   async function check() {
@@ -465,10 +465,10 @@ const DEFAULT_ROSTER = [
 ].map(m => Object.assign({ start: '', end: '' }, m));
 
 // 상태: 직원이 신청 / 관리자가 배정
-const STATES = ['조출', '조출반차', '마감', '휴무', '연차', '반차', '생일반차', '경조', '예비군', '시험', '교육', '본사회의', '육아휴직'];  // 누구나 아무 칸에나 넣을 수 있음
+const STATES = ['조출', '조출반차', '마감', '휴무', '연차', '반차', '생일반차', '경조', '예비군', '시험', '교육', '건강검진', '결혼기념일', '본사회의', '육아휴직'];  // 누구나 아무 칸에나 넣을 수 있음
 // 엑셀 표기 (조출 = 노란 칸, 마감·미지정 = 빈 칸 = 10시~20시)
-const CODE = { '휴무': '휴', '연차': '연', '경조': '경', '육아휴직': '육휴', '예비군': '예비군', '생일반차': '생반\n반차', '반차': '반차', '조출반차': '반차', '시험': '시험', '교육': '교육', '본사회의': '본사\n회의', '조출': '', '마감': '' };
-const ABSENT = ['휴', '연', '경', '육휴', '예비군', '생반\n반차', '반차', '시험', '교육'];  // 근무인원에서 빠지는 표기
+const CODE = { '휴무': '휴', '연차': '연', '경조': '경', '육아휴직': '육휴', '예비군': '예비군', '생일반차': '생반\n반차', '반차': '반차', '조출반차': '반차', '시험': '시험', '교육': '교육', '본사회의': '본사\n회의', '건강검진': '건강\n검진', '결혼기념일': '결혼\n반차', '조출': '', '마감': '' };
+const ABSENT = ['휴', '연', '경', '육휴', '예비군', '생반\n반차', '반차', '시험', '교육', '건강\n검진', '결혼\n반차'];  // 근무인원에서 빠지는 표기
 const OFF_LEGEND = [['휴무일', '휴'], ['연차휴가', '연'], ['경조휴가', '경'], ['육아휴직', '육휴'], ['', '예비군'], ['', '생반\n반차'], ['', '시험']];
 
 const fixedHolidays = { '01-01': '신정', '03-01': '삼일절', '05-05': '어린이날', '06-06': '현충일', '08-15': '광복절', '10-03': '개천절', '10-09': '한글날', '12-25': '성탄절' };
@@ -585,7 +585,7 @@ function renderCalendar(y, m) {
     h += '</div></div>';
   }
   g.innerHTML = h;
-  $('calLegend').innerHTML = [['st-조출', '조출 07~17'], ['st-조출반차', '조출+반차'], ['st-마감', '마감 10~20 (빈칸도 10~20)'], ['st-휴무', '휴무'], ['st-연차', '연차'], ['st-생일반차', '반차·생일반차'], ['st-경조', '경조'], ['st-예비군', '예비군·시험·교육'], ['st-본사회의', '본사회의'], ['st-육아휴직', '육아휴직']]
+  $('calLegend').innerHTML = [['st-조출', '조출 07~17'], ['st-조출반차', '조출+반차'], ['st-마감', '마감 10~20 (빈칸도 10~20)'], ['st-휴무', '휴무'], ['st-연차', '연차'], ['st-생일반차', '반차·생일반차·결혼기념일'], ['st-경조', '경조'], ['st-예비군', '예비군·시험·교육·건강검진'], ['st-본사회의', '본사회의'], ['st-육아휴직', '육아휴직']]
     .map(([c, l]) => '<span><i class="' + c + '"></i>' + l + '</span>').join('');
 }
 function renderSummary(y, m) {
@@ -610,7 +610,7 @@ function renderSummary(y, m) {
   }).join('');
 }
 function renderWarn(y, m) {
-  const warn = [], work = ['', '조출', '조출반차', '마감', '반차', '생일반차', '교육', '본사회의', '예비군', '시험'];
+  const warn = [], work = ['', '조출', '조출반차', '마감', '반차', '생일반차', '결혼기념일', '교육', '건강검진', '본사회의', '예비군', '시험'];
   membersForMonth(y, m).forEach(e => {
     let c = 0;
     for (let d = 1; d <= dim(y, m); d++) {
