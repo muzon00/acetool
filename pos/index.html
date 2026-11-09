@@ -601,6 +601,26 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .tk-tbl tr.no td { background: var(--warn-bg); }
 .tk-tbl .x { border: 0; background: transparent; color: var(--ink3); cursor: pointer; font-size: 1.05em; width: 36px; height: 36px; }
 .tk-tbl .x:hover { color: var(--bad-ink); }
+/* 📝 회의 자료 */
+.mt-easy { background: var(--warn-bg); color: var(--ink); border-radius: 12px; padding: 10px 14px; margin: 12px 0 0; line-height: 1.65; word-break: keep-all; }
+.mt-say { margin: 0; padding-left: 1.4em; line-height: 1.85; word-break: keep-all; }
+.mt-say li { margin: 2px 0; }
+.mt-gb { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; } @media (max-width: 760px) { .mt-gb { grid-template-columns: 1fr; } }
+.mt-gb ul { margin: 0; padding-left: 1.2em; line-height: 1.75; word-break: keep-all; }
+.mt-good .ea-h { color: var(--ok-ink); } .mt-bad .ea-h { color: var(--bad-ink); }
+.mt-memo { width: 100%; min-height: 84px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font: inherit; margin-top: 10px; background: var(--surface); color: var(--ink); resize: vertical; }
+.mt-pv { display: none; white-space: pre-wrap; margin-top: 8px; line-height: 1.6; }
+.mt-bars { display: flex; gap: 6px; align-items: flex-end; margin: 14px 0 6px; overflow-x: auto; }
+.mt-bar { flex: 1; min-width: 34px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: .8em; }
+.mt-col { position: relative; width: 100%; height: 110px; display: flex; align-items: flex-end; justify-content: center; gap: 3px; }
+.mt-col i { display: block; width: 40%; border-radius: 4px 4px 0 0; min-height: 2px; }
+.mt-col i.ly { background: var(--ink3); opacity: .45; } .mt-col i.cy { background: var(--s1); }
+.mt-bar small { color: var(--ink3); }
+@media print {
+  body.mt-printing #adminHead, body.mt-printing #adminAlert, body.mt-printing #v-admin > p.muted, body.mt-printing .mt-np, body.mt-printing #a-meet textarea { display: none !important; }
+  body.mt-printing .mt-pv { display: block !important; }
+  body.mt-printing #a-meet .card { break-inside: avoid; box-shadow: none; }
+}
 @media print {
   body.tp-printing > *:not(#printArea) { display: none !important; }
   body.tp-printing #printArea { display: block !important; }
@@ -791,6 +811,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
       <nav class="secnav" id="adminTabs" aria-label="관리자 메뉴">
         <button class="pill on" data-tab="upload">업로드</button>
         <button class="pill" data-tab="eval">월별 평가·원인</button>
+        <button class="pill" data-tab="meet">📝 회의 자료</button>
         <button class="pill" data-tab="sga">판관비·BEP</button>
         <button class="pill" data-tab="close">월마감 체크</button>
         <button class="pill" data-tab="plans">예정 매출</button>
@@ -959,6 +980,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
     </div>
 
     <div id="a-eval" class="hide"></div>
+    <div id="a-meet" class="hide"></div>
     <div id="a-sga" class="hide"></div>
     <div id="a-close" class="hide"></div>
     <div id="a-vip" class="hide"></div>
@@ -1232,7 +1254,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-10b';
+var BUILD = '2026-11-10c';
 (function () {
   var busy = false;
   function typing() {
@@ -2855,7 +2877,7 @@ window.addEventListener('resize', () => {
 
 /* ===================== 관리자: 탭 ===================== */
 document.querySelectorAll('#adminTabs .pill').forEach(b => b.addEventListener('click', () => showAdminTab(b.dataset.tab)));
-const ATABS = ['upload', 'eval', 'sga', 'close', 'plans', 'acct', 'download', 'settings', 'tree', 'vip', 'members', 'help'];
+const ATABS = ['upload', 'eval', 'meet', 'sga', 'close', 'plans', 'acct', 'download', 'settings', 'tree', 'vip', 'members', 'help'];
 function showAdminTab(t) {
   if (!ATABS.includes(t)) t = 'upload';
   S.adminTab = t;
@@ -2867,6 +2889,7 @@ function showAdminTab(t) {
   if (t === 'settings') loadSettings();
   if (t === 'tree') loadTree();
   if (t === 'eval') loadEval();
+  if (t === 'meet') loadMeet();
   if (t === 'sga') loadSga();
   if (t === 'close') loadClose();
   if (t === 'vip') loadMembersList();
@@ -6481,6 +6504,215 @@ function renderEval() {
   if ($('eaChips')) $('eaChips').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { EA.bk = Number(b.dataset.i); eaDrawMoves(); }));
   $('eaTbl').querySelectorAll('tr[data-ym]').forEach(tr => tr.addEventListener('click', () => { EA.ym = Number(tr.dataset.ym); renderEval(); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
   eaDrawMoves();
+}
+
+/* ===================== 📝 회의 자료 (관리자만) =====================
+   지난달 리뷰(목표 · 전년 대비 · 잘한 점 / 아쉬운 점 · 시공) + 이번 달 전망 · 목표 달성 방법을 한 화면에.
+   숫자마다 "쉽게 말하면" 설명을 붙임. 점장 메모는 pos_config/meet 문서에 리뷰 달별(r202610)로 저장 */
+let MT = { ym: 0, memo: null };
+function mtWon(n) {
+  n = Math.round(Number(n) || 0); if (!n) return '0원';
+  const s = shortWon(Math.abs(n)); return (n < 0 ? '−' : '') + s + (/원$/.test(s) ? '' : '원');
+}
+const mtSW = n => (n >= 0 ? '+' : '−') + mtWon(Math.abs(n));
+/* "작년 같은 달보다 1,200만원 더 팔았어요 (+5.0%)" */
+function mtEasy(a, b, what, verb) {
+  verb = verb || ['더 팔았어요', '덜 팔았어요'];
+  if (!b) return '비교할 자료가 없어요';
+  const d = a - b, r = a / b - 1;
+  if (Math.abs(r) < 0.02) return '거의 같아요 (' + mtSW(d) + ')';
+  return what + '보다 <b>' + mtWon(Math.abs(d)) + ' ' + (d > 0 ? verb[0] : verb[1]) + '</b> (' + chgTxt(r) + ')';
+}
+/* 시공: 그 달 1일 ~ upDay일 (목표·설정의 시공 기준: 욕실/전체 · 영업일자/시공일자, 취소 제외) */
+function mtCons(ym, upDay) {
+  const { scope, basis } = consCfg(), dOf = r => basis === 'cons' ? r.sd : r.d;
+  const rs = (S.cons || []).filter(r => { const d = dOf(r); return !r.cx && d && (scope === 'all' || isBath(r)) && Math.floor(d / 100) === ym && d % 100 <= (upDay || 31); });
+  return { n: rs.length, net: rs.reduce((s, r) => s + (Number(r.net) || 0), 0) };
+}
+const mtMerge = (a, b) => { const o = Object.assign({}, a); Object.keys(b).forEach(k => { o[k] = (o[k] || 0) + b[k]; }); return o; };
+async function loadMeet() {
+  const el = $('a-meet');
+  el.innerHTML = '<div class="card muted">회의 자료를 만드는 중…</div>';
+  try { await loadBase(); await loadDetail(); }
+  catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
+  try { await loadCons(); } catch (e) { S.cons = S.cons || []; }
+  try { await loadPlans(true); } catch (e) { S.plans = S.plans || []; }
+  try { const s = await getDoc(doc(db, C.config, 'meet')); MT.memo = s.exists() ? s.data() : {}; } catch (e) { MT.memo = {}; }
+  renderMeet();
+}
+function renderMeet() {
+  const el = $('a-meet'), months = eaMonths(), today = todayInt(), curYm = ymOf(today);
+  if (!months.length) { el.innerHTML = '<div class="card"><h2>📝 회의 자료</h2><p class="muted" style="margin:0">아직 매출 자료가 없습니다. 업로드 탭에 POS 판매 내역을 올려 주세요.</p></div>'; return; }
+  eaCache = {};
+  const ended = months.filter(m => m < curYm);
+  if (!MT.ym || !months.includes(MT.ym)) MT.ym = ended.length ? ended[ended.length - 1] : months[months.length - 1];
+  const R = MT.ym, N = addMonths(R, 1), Rm = (R % 100) + '월', Nm = (N % 100) + '월';
+  const sc = eaScore(R), c = sc.cur, up = sc.up, ly = eaAgg(R - 100, up), pv = eaAgg(addMonths(R, -1), up);
+  const T = sc.target, tg = (S.targets || {})[R] || {}, rate = eaRate(c), lyRate = eaRate(ly);
+  const memo = (MT.memo || {})['r' + R] || {};
+  const cfg = consCfg(), cLabel = cfg.scope === 'bath' ? '욕실 시공' : '시공';
+  const cR = mtCons(R, up), cLy = mtCons(R - 100, up);
+  let h = '';
+
+  /* 0. 맨 위: 달 고르기 · 인쇄 · 발표용 요약 */
+  h += '<div class="card"><div class="bk-h"><h2>📝 회의 자료 · ' + ymLabel(R) + ' 리뷰 + ' + ymLabel(N) + ' 계획</h2><div class="mt-np" style="display:flex;gap:8px;flex-wrap:wrap">' +
+    '<select id="mtYm" aria-label="리뷰할 달">' + months.slice().reverse().map(m => '<option value="' + m + '"' + (m === R ? ' selected' : '') + '>' + ymLabel(m) + ' 리뷰</option>').join('') + '</select>' +
+    '<button class="btn primary" id="mtPrint" type="button">🖨 인쇄 · PDF</button></div></div>' +
+    '<p class="muted" style="margin:0 0 10px">본사 회의에 이 화면을 인쇄해 가져가세요. 금액은 모두 <b>VAT 별도 실매출</b>(반품·취소 뺀 금액)이에요. 아래 노란 칸 <b>💬 쉽게 말하면</b>을 그대로 읽어도 돼요.</p>';
+  const say = [];
+  say.push(Rm + ' 매출은 <b>' + mtWon(c.tot) + '</b>' + (T ? '으로 목표 ' + mtWon(T) + '의 <b>' + pct(c.tot / T, 0) + '</b>를 했습니다.' : '입니다.') + (sc.live ? ' (1~' + up + '일 기준)' : ''));
+  if (ly.days && ly.tot) say.push('작년 ' + Rm + '(' + mtWon(ly.tot) + ')과 비교하면 <b>' + chgTxt(c.tot / ly.tot - 1) + '</b>입니다. 매장(내판) ' + chgTxt(chg(c.n, ly.n)) + ', 외판 ' + chgTxt(chg(c.o, ly.o)) + '.');
+  say.push(cLabel + '은 <b>' + cR.n + '건 · ' + mtWon(cR.net) + '</b>' + (cLy.n || cLy.net ? ' (작년 ' + cLy.n + '건 · ' + mtWon(cLy.net) + ')' : '') + '입니다.');
+  let d = null;
+  if (N <= curYm) {
+    d = buildSummary(S.daily, S.targets, (S.settings || {}).holidays || [], N, today, [], (S.settings || {}).smsVat);
+    const fb = d.forecast && d.forecast['기본'];
+    if (d.lastDay) say.push(Nm + '은 ' + d.lastDay + '일까지 <b>' + mtWon(d.cum.total) + '</b>' + (d.target ? ' (목표의 ' + pct(d.cum.total / d.target, 0) + ')' : '') + (fb ? ', 지금 흐름이면 <b>' + mtWon(fb.total) + '</b>' + (fb.rate !== null ? '(목표의 ' + pct(fb.rate, 0) + ')' : '') + '로 마감할 것으로 봅니다.' : '입니다.'));
+  }
+  h += '<h3 class="ea-h">🎤 발표용 요약 (그대로 읽으세요)</h3><ol class="mt-say">' + say.map(s => '<li>' + s + '</li>').join('') + '</ol></div>';
+
+  /* 1. 지난달 매출 리뷰 */
+  const mar = c.mar.n + c.mar.o;
+  let k = kpi(Rm + ' 매출', mtWon(c.tot), '매장(내판) ' + mtWon(c.n) + ' · 외판 ' + mtWon(c.o), true) +
+    kpi('목표 달성', T ? pct(c.tot / T, 0) : '-', T ? '목표 ' + mtWon(T) + ' · ' + (c.tot >= T ? '달성 ' + mtSW(c.tot - T) : mtWon(T - c.tot) + ' 부족') : '목표·설정 탭에서 목표를 넣어 주세요') +
+    kpi('마진 (남은 돈)', rate !== null ? mtWon(mar) : '-', rate !== null ? '마진율 ' + pct(rate) + (lyRate !== null ? ' · 작년 ' + pct(lyRate) : '') : '상세 자료가 없어요') +
+    kpi('종합 평가', sc.grade ? eaBadge(sc.grade) + ' ' + Math.round(sc.score) + '점' : '-', sc.grade ? EA_GL[sc.grade] : '');
+  const rows = [['전체', 'tot', T], ['매장 (내판)', 'n', tg.n], ['외판 (B2B)', 'o', tg.o]].map(([l, g, t]) => [l, t ? mtWon(t) : '-', mtWon(c[g]), t ? pct(c[g] / t, 0) : '-', ly.days ? mtWon(ly[g]) : '-', ly.days ? chgTxt(chg(c[g], ly[g])) : '-']);
+  let easy = T ? '목표를 100이라고 하면 <b>' + Math.round(c.tot / T * 100) + '</b>만큼 팔았어요. ' + (c.tot < T ? '<b>' + mtWon(T - c.tot) + '</b>이 모자랐어요.' : '목표보다 <b>' + mtWon(c.tot - T) + '</b> 더 팔았어요.') : '';
+  if (rate !== null) easy += ' 물건을 100원어치 팔면 <b>' + Math.round(rate * 100) + '원</b>이 남은 셈이에요' + (lyRate !== null ? ' (작년 ' + Rm + '엔 ' + Math.round(lyRate * 100) + '원).' : '.');
+  h += '<div class="card"><h2>① ' + Rm + ' 매출 리뷰</h2><div class="kpis">' + k + '</div>' +
+    table(['구분', '목표', '실적', '달성률', '작년 ' + Rm, '작년 대비'], rows) +
+    (easy ? '<p class="mt-easy">💬 <b>쉽게 말하면</b> · ' + easy + '</p>' : '') + '</div>';
+
+  /* 2. 전년 · 전월 대비 */
+  if (ly.days || pv.days) {
+    const cmpRow = (l, a, b, f) => [l, b === null ? '-' : f(b), f(a), b === null ? '-' : (f === pct ? eaPP(a - b) : mtSW(a - b)), b === null || f === pct || !b ? '-' : chgTxt(chg(a, b))];
+    const lr = ly.days ? [cmpRow('매출 전체', c.tot, ly.tot, mtWon), cmpRow('매장 (내판)', c.n, ly.n, mtWon), cmpRow('외판 (B2B)', c.o, ly.o, mtWon)] : [];
+    if (rate !== null && lyRate !== null) { lr.push(cmpRow('마진 (남은 돈)', mar, ly.mar.n + ly.mar.o, mtWon)); lr.push(cmpRow('마진율', rate, lyRate, pct)); }
+    if (ly.days) lr.push(['영업일', ly.days + '일', c.days + '일', (c.days - ly.days >= 0 ? '+' : '') + (c.days - ly.days) + '일', '-']);
+    let e2 = ly.days ? '작년 같은 달과 비교하면 ' + mtEasy(c.tot, ly.tot, '작년') + '. 매장은 ' + mtEasy(c.n, ly.n, '작년') + ', 외판은 ' + mtEasy(c.o, ly.o, '작년') + '.' : '';
+    if (pv.days) e2 += ' 바로 전달(' + (addMonths(R, -1) % 100) + '월)보다는 ' + chgTxt(chg(c.tot, pv.tot)) + '예요.';
+    h += '<div class="card"><h2>② 작년 ' + Rm + ' · 전달과 비교</h2>' + (lr.length ? table(['항목', '작년 ' + Rm, '올해 ' + Rm, '차이', '변화율'], lr) : '<p class="muted">작년 ' + Rm + ' 자료가 없어요.</p>') +
+      (e2 ? '<p class="mt-easy">💬 <b>쉽게 말하면</b> · ' + e2 + '</p>' : '') +
+      '<p class="muted" style="margin:6px 0 0">%p(퍼센트포인트) = 퍼센트끼리 뺀 값이에요. 마진율 25% → 20%면 "−5%p".</p></div>';
+  }
+
+  /* 3. 잘한 점 · 아쉬운 점 (자료로 자동 + 점장 메모) */
+  const good = [], bad = [], put = (ok, s) => (ok ? good : bad).push(s);
+  if (T) put(c.tot >= T, c.tot >= T ? '목표 달성 (' + pct(c.tot / T, 0) + ', ' + mtSW(c.tot - T) + ')' : '목표의 ' + pct(c.tot / T, 0) + ' — ' + mtWon(T - c.tot) + ' 부족');
+  if (tg.n) put(c.n >= tg.n, '매장(내판) 목표의 ' + pct(c.n / tg.n, 0) + ' (' + mtSW(c.n - tg.n) + ')');
+  if (tg.o) put(c.o >= tg.o, '외판 목표의 ' + pct(c.o / tg.o, 0) + ' (' + mtSW(c.o - tg.o) + ')');
+  [['매장(내판)', 'n'], ['외판', 'o']].forEach(([l, g]) => { if (ly.days && ly[g] > 0 && Math.abs(c[g] / ly[g] - 1) >= 0.03) put(c[g] >= ly[g], l + ' 작년보다 ' + chgTxt(c[g] / ly[g] - 1) + ' (' + mtSW(c[g] - ly[g]) + ')'); });
+  if (c.det && ly.det) {
+    const mv = eaMoves(mtMerge(c.catn, c.cato), mtMerge(ly.catn, ly.cato)).filter(x => Math.abs(x.d) >= 3e6);
+    mv.filter(x => x.d > 0).slice(0, 3).forEach(x => good.push('<b>' + esc(x.name) + '</b> 작년보다 ' + mtSW(x.d) + ' (' + mtWon(x.b) + ' → ' + mtWon(x.a) + ')'));
+    mv.filter(x => x.d < 0).slice(0, 3).forEach(x => bad.push('<b>' + esc(x.name) + '</b> 작년보다 ' + mtSW(x.d) + ' (' + mtWon(x.b) + ' → ' + mtWon(x.a) + ')'));
+  }
+  if (c.det && pv.det) {
+    const cm = eaMoves(c.cust, pv.cust);
+    cm.filter(x => x.b <= 0 && x.a >= 5e6).slice(0, 3).forEach(x => good.push('새로 매출이 생긴 외판 거래처 <b>' + esc(x.name) + '</b> ' + mtWon(x.a)));
+    cm.filter(x => x.a <= 0 && x.b >= 5e6).slice(0, 3).forEach(x => bad.push('전달엔 있었는데 이번 달 매출이 없는 외판 거래처 <b>' + esc(x.name) + '</b> (전달 ' + mtWon(x.b) + ')'));
+  }
+  if (rate !== null && lyRate !== null && Math.abs(rate - lyRate) >= 0.005) put(rate >= lyRate, '마진율 ' + pct(lyRate) + ' → ' + pct(rate) + ' (' + eaPP(rate - lyRate) + ')' + (rate < lyRate ? ' — 장기재고(2년 이상) 정리 할인 때문이면 충당금을 줄이려고 계획한 비용이라고 설명' : ''));
+  if (c.det && ly.det && c.neg < -1e6 && c.neg < ly.neg * 1.3) bad.push('반품·취소 ' + mtWon(-c.neg) + ' (작년 ' + mtWon(-ly.neg) + ')');
+  if (cLy.n || cR.n) put(cR.n >= cLy.n, cLabel + ' ' + cR.n + '건 (작년 ' + cLy.n + '건, ' + (cR.n - cLy.n >= 0 ? '+' : '−') + Math.abs(cR.n - cLy.n) + '건)');
+  if (!sc.live) put(cR.n >= cfg.T, cLabel + ' 목표 ' + cfg.T + '건 중 ' + cR.n + '건 (' + pct(cR.n / cfg.T, 0) + ')');
+  const ul = a => a.length ? '<ul>' + a.map(s => '<li>' + s + '</li>').join('') + '</ul>' : '<p class="muted" style="margin:0">자료로 찾은 항목이 없어요</p>';
+  const ta = (key, ph) => '<textarea class="mt-memo" data-mt="' + key + '" placeholder="' + esc(ph) + '">' + esc(memo[key] || '') + '</textarea><div class="mt-pv"></div>';
+  h += '<div class="card"><h2>③ ' + Rm + ' 잘한 점 · 아쉬운 점 (이슈)</h2><p class="muted" style="margin-top:-4px">위쪽은 매출 자료로 자동으로 찾은 내용이에요. 아래 칸에 회의에서 말할 이유·이슈를 적어 두세요 (예: 큰 건 보류, 장기재고 정리 행사, 네이버 라이브).</p>' +
+    '<div class="mt-gb"><div class="mt-good"><h3 class="ea-h">👍 잘한 점</h3>' + ul(good) + ta('good', '예) 10/28 네이버 라이브 방송 뒤 욕실 시공 상담이 늘었어요') + '</div>' +
+    '<div class="mt-bad"><h3 class="ea-h">🔧 아쉬운 점 · 이슈</h3>' + ul(bad) + ta('bad', '예) ○○건설 예정 매출 1억이 11월로 보류됐어요') + '</div></div></div>';
+
+  /* 4. 시공 건수 · 금액 */
+  const y = Math.floor(R / 100), mList = Array.from({ length: R % 100 }, (_, i) => i + 1);
+  const yc = mList.map(m => mtCons(y * 100 + m, m === R % 100 ? up : 31)), pc = mList.map(m => mtCons((y - 1) * 100 + m, m === R % 100 ? up : 31));
+  const ys = yc.reduce((s, x) => ({ n: s.n + x.n, net: s.net + x.net }), { n: 0, net: 0 }), ps = pc.reduce((s, x) => ({ n: s.n + x.n, net: s.net + x.net }), { n: 0, net: 0 });
+  k = kpi(Rm + ' ' + cLabel, cR.n + '건', '작년 ' + cLy.n + '건 · 목표 ' + cfg.T + '건', true) +
+    kpi(Rm + ' 시공 매출', mtWon(cR.net), '작년 ' + mtWon(cLy.net)) +
+    kpi('건당 평균', cR.n ? mtWon(cR.net / cR.n) : '-', cLy.n ? '작년 ' + mtWon(cLy.net / cLy.n) : '') +
+    kpi(y + '년 누적 (1~' + Rm + ')', ys.n + '건', '작년 같은 기간 ' + ps.n + '건 · ' + mtWon(ys.net));
+  const mx = Math.max(1, ...yc.map(x => x.n), ...pc.map(x => x.n));
+  const bars = '<div class="mt-bars">' + mList.map((m, i) => '<div class="mt-bar"><div class="mt-col"><i class="ly" style="height:' + (pc[i].n / mx * 100).toFixed(0) + '%"></i><i class="cy" style="height:' + (yc[i].n / mx * 100).toFixed(0) + '%"></i></div><b>' + yc[i].n + '</b><small>' + m + '월</small></div>').join('') + '</div>' +
+    '<div class="legend"><span><i style="background:var(--ink3);opacity:.45"></i>' + (y - 1) + '년</span><span><i style="background:var(--s1)"></i>' + y + '년 (숫자)</span></div>';
+  const e4 = Rm + ' ' + cLabel + '은 ' + cR.n + '건으로 작년(' + cLy.n + '건)보다 ' + (cR.n === cLy.n ? '같아요' : '<b>' + Math.abs(cR.n - cLy.n) + '건 ' + (cR.n > cLy.n ? '많아요' : '적어요') + '</b>') + '. 올해 1~' + Rm + ' 합계는 ' + ys.n + '건(작년 같은 기간 ' + ps.n + '건)이에요.';
+  h += '<div class="card"><h2>④ ' + cLabel + ' 건수 · 금액</h2><div class="kpis">' + k + '</div>' + bars +
+    '<p class="mt-easy">💬 <b>쉽게 말하면</b> · ' + e4 + '</p><p class="muted" style="margin:6px 0 0">기준: ' + (cfg.basis === 'cons' ? '시공일자' : '영업일자(계약일)') + ' · ' + (cfg.scope === 'bath' ? '욕실(무료·유료·리모델링)' : '전체 시공') + ' · 취소 제외 (목표·설정에서 바꿀 수 있어요)</p></div>';
+
+  /* 5. 이번 달 전망 · 6. 목표 달성 방법 */
+  if (d) {
+    const fb = d.forecast && d.forecast['기본'], tN = (S.targets || {})[N] || {}, NT = d.target;
+    const last = N * 100 + d.lastDay, opens = (S.plans || []).filter(p => p.st === 'open' && ymOf(p.d) === N);
+    const ahead = opens.filter(p => p.d > last).sort((a, b) => a.d - b.d), late = opens.filter(p => p.d <= last);
+    const planAmt = ahead.reduce((s, p) => s + (Number(p.amt) || 0), 0), lateAmt = late.reduce((s, p) => s + (Number(p.amt) || 0), 0);
+    const nRest = fb ? Math.max(0, fb.n - d.cum.n) : 0, withPlan = d.cum.total + planAmt + nRest;
+    const live = N === curYm, cDay = live ? today % 100 : 31, cN = mtCons(N, cDay), cNly = mtCons(N - 100, cDay);
+    k = kpi(Nm + ' 지금까지', mtWon(d.cum.total), (d.lastDay ? '1~' + d.lastDay + '일' : '아직 자료 없음') + (NT ? ' · 목표의 ' + pct(d.cum.total / NT, 0) : ''), true) +
+      kpi('목표', NT ? mtWon(NT) : '-', NT ? (d.cum.total >= NT ? '달성!' : '남은 금액 ' + mtWon(NT - d.cum.total)) : '목표·설정에서 넣어 주세요') +
+      kpi('남은 영업일 · 하루 필요', d.remainDays + '일', d.needPerDay !== null ? '하루 ' + mtWon(d.needPerDay) + ' (지금 하루 평균 ' + mtWon(d.avgPerDay) + ')' : '') +
+      kpi('예상 마감', fb ? mtWon(fb.total) : '-', fb ? (fb.rate !== null ? '목표의 ' + pct(fb.rate, 0) + ' · ' : '') + '보수 ' + (d.forecast['보수'] ? mtWon(d.forecast['보수'].total) : '-') + ' ~ 낙관 ' + (d.forecast['낙관'] ? mtWon(d.forecast['낙관'].total) : '-') : '');
+    k += kpi('예정 매출 (외판 견적)', mtWon(planAmt), ahead.length + '건' + (planAmt ? ' · 다 받으면 ' + mtWon(withPlan) + (NT ? ' (' + pct(withPlan / NT, 0) + ')' : '') : '')) +
+      kpi(Nm + ' ' + cLabel, cN.n + '건', (live ? '오늘까지 · ' : '') + '작년 같은 기간 ' + cNly.n + '건 · 목표 ' + cfg.T + '건') +
+      kpi(Nm + ' 시공 매출', mtWon(cN.net), '작년 같은 기간 ' + mtWon(cNly.net)) +
+      kpi('작년 ' + Nm + ' 같은 기간', d.ly.has ? mtWon(d.ly.same) : '-', d.ly.has ? '올해 ' + chgTxt(chg(d.cum.total, d.ly.same)) + ' · 작년 ' + Nm + ' 전체 ' + mtWon(d.ly.total) : '');
+    let e5 = '';
+    if (NT && d.remainDays && d.needPerDay !== null && d.cum.total < NT) {
+      const more = d.needPerDay - d.avgPerDay;
+      e5 = '남은 ' + d.remainDays + '일 동안 <b>하루 ' + mtWon(d.needPerDay) + '</b>씩 팔면 목표를 채워요. 지금은 하루 평균 ' + mtWon(d.avgPerDay) + '이라 ' + (more > 0 ? '<b>하루 ' + mtWon(more) + '을 더</b> 팔아야 해요.' : '지금 속도면 충분해요.');
+    } else if (NT && d.cum.total >= NT) e5 = '이미 목표를 넘었어요! 남은 기간은 더 버는 만큼 플러스예요.';
+    if (fb && NT) e5 += ' 지금 흐름 그대로면 목표의 <b>' + pct(fb.rate, 0) + '</b>로 끝날 것 같아요' + (planAmt ? ', 예정 매출을 다 받으면 ' + pct(withPlan / NT, 0) + '까지 갈 수 있어요.' : '.');
+    h += '<div class="card"><h2>⑤ ' + Nm + ' 현재 · 예상 매출</h2><div class="kpis">' + k + '</div>' +
+      (e5 ? '<p class="mt-easy">💬 <b>쉽게 말하면</b> · ' + e5 + '</p>' : '') +
+      (ahead.length ? '<h3 class="ea-h">앞으로 들어올 예정 매출</h3>' + table(['예정일', '거래처', '담당', '금액'], ahead.slice(0, 10).map(p => [mdLabel(p.d), esc(p.cust), esc(p.mgr || '-'), won(p.amt)])) + (ahead.length > 10 ? '<p class="muted">…외 ' + (ahead.length - 10) + '건</p>' : '') : '') +
+      '<p class="muted" style="margin:6px 0 0">예상 마감 = 최근 몇 달의 요일별(평일·토·일) 하루 평균을 남은 영업일에 곱해 더한 값이에요. 보수는 낮게, 낙관은 높게 잡은 것.</p></div>';
+
+    /* 6. 목표 달성을 위해 할 일 (자료로 자동 + 점장 메모) */
+    const acts = [];
+    if (NT && d.needPerDay !== null && d.cum.total < NT) acts.push('<b>하루 목표 ' + mtWon(d.needPerDay) + '</b> — 매일 마감 때 오늘 매출이 이 금액을 넘었는지 확인 (지금 평균 ' + mtWon(d.avgPerDay) + ')');
+    if (tN.o) { const oGap = tN.o - (d.cum.o + planAmt); if (oGap > 0) acts.push('<b>외판(B2B) ' + mtWon(oGap) + ' 더 필요</b> — 예정 매출을 넣어도 외판 목표 ' + mtWon(tN.o) + '에 모자라요. 기존 거래처 재주문 연락 · 견적 낸 건 확정 서두르기'); else acts.push('외판은 예정 매출까지 받으면 목표 ' + mtWon(tN.o) + '를 채워요 — <b>예정 건이 미뤄지지 않게</b> 거래처와 날짜 확인'); }
+    if (ahead.length) acts.push('예정 매출 ' + ahead.length + '건(' + mtWon(planAmt) + ') 날짜 확인 — 큰 건: ' + ahead.slice().sort((a, b) => b.amt - a.amt).slice(0, 3).map(p => esc(p.cust) + ' ' + mtWon(p.amt) + '(' + mdLabel(p.d) + ')').join(', '));
+    if (late.length) acts.push('<b>예정일이 지났는데 안 들어온 ' + late.length + '건 (' + mtWon(lateAmt) + ')</b> — 받을지 · 미뤄졌는지 확인하고 예정 매출 탭에서 날짜를 바꿔 두기');
+    if (tN.n && fb && fb.n < tN.n) acts.push('매장(내판) 예상 ' + mtWon(fb.n) + ' — 목표 ' + mtWon(tN.n) + '보다 ' + mtWon(tN.n - fb.n) + ' 부족 → 주말 행사 · 잘 팔리는 상품 앞쪽 진열 · 재고 없는 인기 상품 발주');
+    if (c.det && ly.det) { const dn = eaMoves(mtMerge(c.catn, c.cato), mtMerge(ly.catn, ly.cato)).filter(x => x.d <= -3e6).slice(0, 2); if (dn.length) acts.push(Rm + '에 작년보다 줄어든 <b>' + dn.map(x => esc(x.name)).join(' · ') + '</b> 살리기 — 재고 · 진열 · 행사 점검'); }
+    const need = Math.max(0, cfg.T - cN.n);
+    if (need) acts.push('<b>' + cLabel + ' ' + need + '건 더</b> (목표 ' + cfg.T + '건) — 상담만 하고 계약 안 한 고객 다시 연락 · 네이버 라이브 같은 홍보 한 번 더 · 견적서 빨리 보내기');
+    if (rate !== null && lyRate !== null && rate < lyRate - 0.005) acts.push('마진 지키기 — ' + Rm + ' 마진율이 작년보다 ' + eaPP(rate - lyRate) + '. 에누리(추가 할인) 기준 지키기 · 원가가 이상한 상품 확인 (장기재고 정리 할인은 계획된 비용으로 따로 설명)');
+    const memoN = (MT.memo || {})['r' + R] || {};
+    h += '<div class="card"><h2>⑥ ' + Nm + ' 목표를 채우려면 (할 일)</h2><p class="muted" style="margin-top:-4px">자료로 자동으로 뽑은 할 일이에요. 회의에서 말할 계획은 아래 칸에 적어 두세요.</p>' +
+      (acts.length ? '<ol class="mt-say">' + acts.map(s => '<li>' + s + '</li>').join('') + '</ol>' : '<p class="muted">목표를 채우는 데 문제가 없어 보여요.</p>') +
+      '<textarea class="mt-memo" data-mt="act" placeholder="예) 11/20 네이버 라이브 2차 · ○○건설 견적 확정 · 장기재고 정리 행사 계속">' + esc(memoN.act || '') + '</textarea><div class="mt-pv"></div>' +
+      '<div class="mt-np" style="display:flex;gap:8px;align-items:center;margin-top:10px"><button class="btn primary" id="mtSave" type="button">메모 저장</button><span class="muted" id="mtMsg">' + (memo.at ? '저장됨' : '③ · ⑥의 메모를 한꺼번에 저장해요') + '</span></div></div>';
+  } else {
+    h += '<div class="card mt-np"><p class="muted" style="margin:0">' + ymLabel(N) + '은 아직 오지 않은 달이라 전망을 만들 수 없어요. 위에서 지난달을 골라 주세요.</p>' +
+      '<div style="display:flex;gap:8px;align-items:center;margin-top:10px"><button class="btn primary" id="mtSave" type="button">메모 저장</button><span class="muted" id="mtMsg"></span></div></div>';
+  }
+
+  /* 7. 숫자 읽는 법 */
+  h += '<div class="card mt-np"><details><summary><b>📖 숫자 읽는 법 (용어 설명)</b></summary><ul class="mt-say" style="font-size:.95em">' +
+    '<li><b>실매출</b> — 판 금액에서 부가세(10%)와 반품·취소를 뺀 금액. 본사가 보는 매출이 이거예요.</li>' +
+    '<li><b>내판 / 외판</b> — 내판은 매장에 온 손님에게 판 것, 외판(B2B)은 거래처·업체에 판 것.</li>' +
+    '<li><b>마진</b> — 판 금액에서 물건 원가를 뺀 남은 돈. <b>마진율</b> = 100원 팔았을 때 남는 돈 (25%면 25원).</li>' +
+    '<li><b>달성률</b> — 목표를 100으로 봤을 때 얼마나 팔았는지. 69%면 100 중 69.</li>' +
+    '<li><b>작년 대비 +5%</b> — 작년에 100 팔았으면 올해 105. <b>−5%</b>면 95.</li>' +
+    '<li><b>%p (퍼센트포인트)</b> — 퍼센트끼리 뺀 것. 마진율 25% → 20%면 −5%p.</li>' +
+    '<li><b>억 · 만</b> — 1억 = 10,000만 = 100,000,000원. 2억 4,141만원 = 241,410,000원.</li>' +
+    '<li><b>예상 마감 (보수 · 기본 · 낙관)</b> — 이번 달이 끝났을 때 매출 예상. 보수는 안 좋게, 낙관은 좋게, 기본은 보통으로 잡은 것.</li>' +
+    '<li><b>예정 매출</b> — 아직 안 들어왔지만 견적·발주로 들어올 것으로 적어 둔 외판 매출 (예정 매출 탭).</li>' +
+    '<li><b>종합 평가</b> — 목표 달성(40%) · 작년 대비(25%) · 최근 흐름(20%) · 마진율(15%)을 합친 점수. S·A 우수, B 양호, C 보통, D 미흡.</li></ul></details></div>';
+
+  el.innerHTML = h;
+  $('mtYm').addEventListener('change', e => { MT.ym = Number(e.target.value); renderMeet(); });
+  $('mtPrint').addEventListener('click', () => {
+    el.querySelectorAll('textarea.mt-memo').forEach(t => { const pvEl = t.nextElementSibling; if (pvEl) { pvEl.textContent = t.value.trim() ? '📝 ' + t.value : ''; } });
+    document.body.classList.add('mt-printing');
+    setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('mt-printing'), 500); }, 50);
+  });
+  $('mtSave').addEventListener('click', async () => {
+    const o = { at: Date.now() }; el.querySelectorAll('textarea.mt-memo').forEach(t => { o[t.dataset.mt] = String(t.value || '').replace(/[\u0000-\u0009\u000b-\u001f]/g, ' ').slice(0, 2000); });
+    $('mtSave').disabled = true; $('mtMsg').textContent = '저장 중…';
+    try { await setDoc(doc(db, C.config, 'meet'), { ['r' + R]: o }, { merge: true }); MT.memo = MT.memo || {}; MT.memo['r' + R] = o; $('mtMsg').textContent = '✅ 저장했어요'; }
+    catch (e) { $('mtMsg').textContent = '저장 실패: ' + errMsg(e); }
+    $('mtSave').disabled = false;
+  });
 }
 
 /* ===================== 매출 구조 (관리자만) =====================
