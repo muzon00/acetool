@@ -1263,7 +1263,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-10h';
+var BUILD = '2026-11-10i';
 (function () {
   var busy = false;
   function typing() {
@@ -6581,13 +6581,20 @@ function mtCons(ym, upDay) {
 }
 const mtMerge = (a, b) => { const o = Object.assign({}, a); Object.keys(b).forEach(k => { o[k] = (o[k] || 0) + b[k]; }); return o; };
 /* 구간 흐름: 고른 기간(예: 1~10월)의 달별 값으로 "오르는 중 · 빠지는 중 · 오르다 빠짐 · 빠지다 회복 · 비슷"을 나눔 */
-/* 매장(내판) 객수: POS 원본을 올린 날의 판매번호 수 (그 달 모든 영업일에 있을 때만), 없으면 마감 문자 건수 (모든 영업일) — 일부만 있는 달은 비움 */
+/* 객수 = 본사 마감 문자 기준 (점장님 결정, 2026-11-10)
+   ① 그 달 마지막 매출일(또는 그 뒤)의 "당월매출 … (○건)" 문자 → 그 달 건수 · 금액 그대로
+   ② 없으면 그 달 모든 영업일의 "일마감 (○건)" 합계
+   ③ 문자가 모자라면 POS 원본에서 센 매장 판매번호 수 (모든 영업일에 있을 때만) — 일부만 있는 달은 비움 */
 function mtTx(ym) {
   const md = (S.daily || {})[ym] || {}, ks = Object.keys(md);
   if (!ks.length) return null;
-  if (ks.every(k => md[k].t !== undefined)) return { n: ks.reduce((s, k) => s + (Number(md[k].t) || 0), 0), src: 'pos' };
-  const byD = {}; ((S.smsCache || {})[ym] || []).forEach(r => { if (r.kind === '마감' && r.metric === '일마감' && Number(r.c) > 0) byD[r.d] = Number(r.c); });
-  if (ks.every(k => byD[ym * 100 + Number(k)])) return { n: ks.reduce((s, k) => s + byD[ym * 100 + Number(k)], 0), src: 'sms' };
+  const lastDay = ym * 100 + Math.max(...ks.map(Number)), f = (S.settings || {}).smsVat === 'excl' ? 1 : 1 / 1.1;
+  const sm = ((S.smsCache || {})[ym] || []).filter(r => r.kind === '마감');
+  const mon = sm.filter(r => r.metric === '당월' && Number(r.c) > 0 && r.d >= lastDay).sort((a, b) => a.d - b.d)[0];
+  if (mon) return { n: Number(mon.c), v: (Number(mon.v) || 0) * f, src: 'sms' };
+  const byD = {}; sm.forEach(r => { if (r.metric === '일마감' && Number(r.c) > 0) byD[r.d] = r; });
+  if (ks.every(k => byD[ym * 100 + Number(k)])) { const rs = ks.map(k => byD[ym * 100 + Number(k)]); return { n: rs.reduce((s2, r) => s2 + Number(r.c), 0), v: rs.reduce((s2, r) => s2 + (Number(r.v) || 0), 0) * f, src: 'sms' }; }
+  if (ks.every(k => md[k].t !== undefined)) return { n: ks.reduce((s2, k) => s2 + (Number(md[k].t) || 0), 0), v: ks.reduce((s2, k) => s2 + (Number(md[k].n) || 0), 0), src: 'pos' };
   return null;
 }
 /* 흐름 나누기: 영업일 수 차이를 빼려고 하루 평균(days가 있으면)으로, 들쭉날쭉을 줄이려고 3개월 이동평균으로 꼭대기 · 바닥을 찾음 */
@@ -6624,14 +6631,14 @@ function mtRangeHtml(months) {
   const ag = rng.map(m => eaAgg(m, 31)), lyAg = rng.map(m => eaAgg(m - 100, 31)), tx = rng.map(mtTx), lyTx = rng.map(m => mtTx(m - 100));
   const sum = a => a.reduce((s, x) => s + (x || 0), 0), lyCmp = (cur, ly) => ly.every(x => x) && sum(ly) ? chgTxt(sum(cur) / sum(ly) - 1) : '-';
   const srcOk = tx.every(x => x) && tx.every(x => x.src === tx[0].src), txV = srcOk ? tx.map(x => x.n) : tx.map(() => null);
-  const aov = srcOk && tx[0].src === 'pos' ? rng.map((m, i) => tx[i].n ? ag[i].n / tx[i].n : null) : rng.map(() => null);
+  const aov = srcOk ? rng.map((m, i) => tx[i].n ? tx[i].v / tx[i].n : null) : rng.map(() => null);
   const rate = ag.map(a => eaRate(a));
   const rows = [
     { name: '매출 전체', v: ag.map(a => a.tot), f: mtWon, ly: lyCmp(ag.map(a => a.tot), lyAg.map(a => a.days ? a.tot : 0)) },
     { name: '매장 (내판)', v: ag.map(a => a.n), f: mtWon, ly: lyCmp(ag.map(a => a.n), lyAg.map(a => a.days ? a.n : 0)) },
     { name: '외판 (B2B)', v: ag.map(a => a.o), f: mtWon, ly: lyCmp(ag.map(a => a.o), lyAg.map(a => a.days ? a.o : 0)) },
-    { name: '매장 객수' + (srcOk && tx[0].src === 'sms' ? ' (마감 문자 건수)' : ''), v: txV, f: x => Math.round(x).toLocaleString('ko-KR') + '명', ly: srcOk && lyTx.every(x => x && x.src === tx[0].src) ? lyCmp(txV, lyTx.map(x => x.n)) : '-', miss: !srcOk },
-    { name: '매장 객단가', v: aov, f: x => won(x), ly: '-', miss: !aov.every(x => x) },
+    { name: '객수' + (srcOk ? (tx[0].src === 'sms' ? ' (마감 문자)' : ' (POS 판매번호)') : ''), v: txV, f: x => Math.round(x).toLocaleString('ko-KR') + '명', ly: srcOk && lyTx.every(x => x && x.src === tx[0].src) ? lyCmp(txV, lyTx.map(x => x.n)) : '-', miss: !srcOk },
+    { name: '객단가', v: aov, f: x => won(x), ly: '-', miss: !aov.every(x => x) },
     { name: '마진율', v: rate, f: x => pct(x), ly: '-', pp: true }
   ];
   const catOf = a => MT.scope === 'all' ? mtMerge(a.catn, a.cato) : a.catn, catTot = {};
@@ -6639,7 +6646,7 @@ function mtRangeHtml(months) {
   const cats = Object.keys(catTot).filter(k => catTot[k] > 0).sort((a, b) => catTot[b] - catTot[a]).slice(0, 14);
   const catRows = cats.map(k => ({ name: k, v: ag.map(a => a.det ? (catOf(a)[k] || 0) : null), f: mtWon, ly: lyCmp(ag.map(a => catOf(a)[k] || 0), lyAg.map(a => a.det ? (catOf(a)[k] || 0) : 0)), cat: true }));
   const say = r => {
-    const t = mtTrend(r.v, r.pp || r.name === '매장 객단가' ? null : ag.map(a => a.days)); r.t = t;
+    const t = mtTrend(r.v, r.pp || r.name === '객단가' ? null : ag.map(a => a.days)); r.t = t;
     if (t.k === 'na') return r.miss ? '이 기간 자료가 다 있지 않아요' : '자료 부족';
     const pf = r.pp ? x => eaPP(x) : x => chgTxt(x);
     if (t.k === 'peak') return mL(rng[t.i]) + ' 무렵까지 오르다가(' + r.f(r.v[t.i]) + ') 그 뒤로 빠지는 중 — 최근 ' + third(rng) + '개월은 꼭대기 때보다 ' + (r.pp ? eaPP(avgLast(r.v) - r.v[t.i]) : chgTxt(t.d));
@@ -6648,7 +6655,7 @@ function mtRangeHtml(months) {
     return (t.k === 'up' ? '구간 앞쪽보다 뒤쪽이 ' : t.k === 'down' ? '구간 앞쪽보다 뒤쪽이 ' : '큰 변화 없음 · ') + (t.k === 'flat' ? fl : (r.pp ? eaPP(avgLast(r.v) - avgFirst(r.v)) : chgTxt(t.d)) + ' (' + fl + ')');
   };
   const third = v => Math.max(1, Math.round(v.length / 3)), avgLast = v => { const a = v.slice(-third(v)); return a.reduce((s, x) => s + x, 0) / a.length; }, avgFirst = v => { const a = v.slice(0, third(v)); return a.reduce((s, x) => s + x, 0) / a.length; };
-  const tr = r => { const txt = say(r), k = r.t.k; return ['<b>' + esc(r.name) + '</b>', mtSpark(r.v, k), '<span class="mt-tg ' + k + '">' + r.t.l + '</span>', '<small>' + txt + '</small>', r.v.every(x => x !== null && x !== undefined) && !r.pp && r.name !== '매장 객단가' ? r.f(sum(r.v)) : '-', r.ly]; };
+  const tr = r => { const txt = say(r), k = r.t.k; return ['<b>' + esc(r.name) + '</b>', mtSpark(r.v, k), '<span class="mt-tg ' + k + '">' + r.t.l + '</span>', '<small>' + txt + '</small>', r.v.every(x => x !== null && x !== undefined) && !r.pp && r.name !== '객단가' ? r.f(sum(r.v)) : '-', r.ly]; };
   const head = ['항목', rng.map(mL)[0] + '→' + mL(rng[rng.length - 1]), '흐름', '설명', '구간 합계', '작년 같은 구간 대비'];
   const mainT = rows.map(tr), catT = catRows.map(tr);
   const grp = k => catRows.filter(r => r.t.k === k).map(r => '<b>' + esc(r.name) + '</b>');
@@ -6659,7 +6666,11 @@ function mtRangeHtml(months) {
     table(head, mainT) +
     '<h3 class="ea-h">대분류별 흐름 (' + (MT.scope === 'all' ? '내판+외판' : '매장 내판') + ' · 구간 합계 큰 순 ' + cats.length + '개)</h3>' + (catT.length ? table(head, catT) : '<p class="muted">이 기간 상세 자료(대분류)가 없어요.</p>') +
     '<p class="mt-easy">💬 <b>쉽게 말하면</b> · ' + (main.length ? main.join(' · ') + '. ' : '전체 매출 · 객수는 큰 변화가 없어요. ') + (pts.length ? pts.join(' / ') + '.' : '대분류는 대부분 큰 변화가 없어요.') + ' 작년에도 같은 구간에 같은 모양이었으면 계절 때문일 수 있으니 "작년 같은 구간 대비" 칸을 같이 보세요.</p>' +
-    (rows[3].miss ? '<p class="muted" style="margin:6px 0 0">객수: 이 기간 모든 날의 객수가 없어 비워 뒀어요. POS "실시간 대량판매현황" 원본 파일을 업로드 탭에 다시 올리면 그날의 매장 객수(판매번호 수)가 같이 저장돼요. 마감 문자를 매일 올린 달은 문자 건수로 채워요.</p>' : '<p class="muted" style="margin:6px 0 0">객수 = ' + (tx[0].src === 'pos' ? '매장(내판)에서 금액이 0원보다 큰 판매번호 수 (반품만 있는 거래 제외)' : '마감 문자의 일마감 건수 합계') + ' · 객단가 = 매장 매출 ÷ 객수</p>') + '</div>';
+    (() => {
+      const miss = rng.filter((m, i) => !tx[i] || tx[i].src !== 'sms').map(mL);
+      return '<p class="muted" style="margin:6px 0 0">객수 · 객단가는 <b>본사 마감 문자</b> 기준이에요: 그 달 마지막 날 "당월매출 (○건)"의 건수, 객단가 = 문자 금액 ÷ 건수' + ((S.settings || {}).smsVat === 'excl' ? '' : ' (VAT 별도로 환산)') + '.' +
+        (miss.length ? ' <b>마감 문자가 모자란 달: ' + miss.join(', ') + '</b>' + ' — 문자와 POS 판매번호는 세는 법이 달라 섞어서 보지 않아요' + (miss.length < rng.length ? ' (그래서 객수 줄이 비어 있어요)' : '') + '. 업로드 탭에 그 달 <b>마지막 날 마감 문자</b>(당월매출 ○건이 있는 문자)를 붙여 넣으면 채워져요.' : '') + '</p>';
+    })()+ '</div>';
   return h;
 }
 
@@ -6670,8 +6681,8 @@ async function loadMeet() {
   catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
   try { await loadCons(); } catch (e) { S.cons = S.cons || []; }
   try { await loadPlans(true); } catch (e) { S.plans = S.plans || []; }
-  /* 객수가 없는 달은 마감 문자 건수로 채우려고 문자 자료를 받아 둠 */
-  try { const need = eaMonths().filter(m => Object.values(S.daily[m] || {}).some(x => x.t === undefined)); await Promise.all(need.map(m => loadSms(m).catch(() => []))); } catch (e) { }
+  /* 객수는 본사 마감 문자 기준 → 모든 달의 문자 자료를 받아 둠 */
+  try { await Promise.all(eaMonths().map(m => loadSms(m).catch(() => []))); } catch (e) { }
   try { const s = await getDoc(doc(db, C.config, 'meet')); MT.memo = s.exists() ? s.data() : {}; } catch (e) { MT.memo = {}; }
   renderMeet();
 }
