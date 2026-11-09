@@ -1266,7 +1266,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-10l';
+var BUILD = '2026-11-10m';
 (function () {
   var busy = false;
   function typing() {
@@ -1421,7 +1421,9 @@ function salesAgg(headRow) {
   const map = {}, order = [];
   const st = { rowsRead: 0, usedRows: 0, totalNet: 0, byG: { '내판': 0, '외판': 0 }, unknown: {}, badDate: 0, dateSet: {}, adjusted: 0, other: 0, payByDay: {}, badNum: 0, badSamples: [] };
   const hasPay = !aggMode && col['결제금액'] !== undefined;  // POS 원본이면 날짜별 총결제금액(VAT 포함)도 모음
-  const hasTx = !aggMode && col['판매번호'] !== undefined, txm = {};  // POS 원본이면 날짜별 매장(내판) 객수 = 금액이 0보다 큰 판매번호 수
+  /* POS 원본이면 날짜별 객수를 본사 마감 문자와 똑같이 셈 (2026-10-31 · 10월 당월 문자와 1건 · 1원까지 맞춰 봄):
+     매장 + 외판 모두, 판매 거래 수 − 반품 · 취소 거래 수, 그날 입력한 판매번호만 (판매번호 4~11번째 숫자 = 영업일자, 나중에 날짜를 거슬러 넣은 건 문자에 없음) */
+  const hasTx = !aggMode && col['판매번호'] !== undefined, txm = {};
   const get = (r, name) => { const k = col[name]; return k === undefined ? '' : r[k]; };
   const add = r => {
     if (!r || !r.length) return;
@@ -1459,14 +1461,17 @@ function salesAgg(headRow) {
     let o = map[key];
     if (!o) { o = map[key] = [d, g, mgr, cust, cat, 0, 0]; order.push(key); }
     o[5] += net; o[6] += mar;
-    if (hasTx && g === '내판') { const tn = String(get(r, '판매번호') || '').trim(); if (tn) { const m = txm[d] || (txm[d] = new Map()); m.set(tn, (m.get(tn) || 0) + net); } }
+    if (hasTx) {
+      const tn = String(get(r, '판매번호') || '').trim(), td = /^\d{11,}$/.test(tn) ? Number(tn.slice(3, 11)) : 0;
+      if (tn && !(td > 20000101 && td !== d)) { const kd = String(get(r, '거래형태') || ''), sale = kd ? /판매/.test(kd) : net > 0, m = txm[d] || (txm[d] = new Map()); m.set(tn, m.get(tn) || sale); }
+    }
     st.usedRows++; st.totalNet += net; st.byG[g] += net; st.dateSet[d] = 1;
   };
   const done = () => {
     const rows = order.map(k => map[k]);
     const dates = Object.keys(st.dateSet).map(Number).sort((a, b) => a - b);
     let txByDay = null;
-    if (hasTx) { txByDay = {}; dates.forEach(d => { let c = 0; if (txm[d]) txm[d].forEach(v => { if (v > 0) c++; }); txByDay[d] = c; }); }
+    if (hasTx) { txByDay = {}; dates.forEach(d => { let c = 0; if (txm[d]) txm[d].forEach(sale => { c += sale ? 1 : -1; }); txByDay[d] = c; }); }
     return { rows, stats: { rowsRead: st.rowsRead, usedRows: st.usedRows, totalNet: st.totalNet, byG: st.byG, unknown: st.unknown, badDate: st.badDate, dates, adjusted: st.adjusted, other: st.other, badNum: st.badNum, badSamples: st.badSamples, txByDay, payByDay: hasPay ? st.payByDay : null, mode: aggMode ? '백업/집계 CSV' : 'POS 원본' } };
   };
   return { add, done };
@@ -1811,9 +1816,9 @@ async function registerParsed(p) {
         // 총결제금액(VAT 포함): POS 원본 파일일 때만 있음
         const pay = p.stats.payByDay && p.stats.payByDay[Number(ym) * 100 + Number(day)];
         if (pay !== undefined && pay !== null) sum[day].p = Math.round(pay);
-        // 매장(내판) 객수: POS 원본 파일일 때만 있음
+        // 객수 (본사 마감 문자와 같은 방식): POS 원본 파일일 때만 있음
         const tc = p.stats.txByDay && p.stats.txByDay[Number(ym) * 100 + Number(day)];
-        if (tc !== undefined && tc !== null) sum[day].t = tc;
+        if (tc !== undefined && tc !== null) sum[day].tc = tc;
       });
       if (JSON.stringify(det).length > 900000) throw new Error(ymLabel(Number(ym)) + ' 데이터가 너무 큽니다(문서 1MB 제한). 관리자에게 문의해 주세요.');
       tx.set(dRef, { ym: Number(ym), days: det, updatedAt: serverTimestamp() });
@@ -3017,7 +3022,7 @@ function renderAnalysis(d, det, el) {
         let st;
         if (c.diff === null) st = c.pos === null ? 'POS 미등록' : '-';
         else st = Math.abs(c.diff) <= Math.max(1000, c.pos * 0.001) ? '일치' : sign(Math.round(c.diff)) + '원';
-        const pt = (((S.daily || {})[ymOf(c.d)] || {})[dayOf(c.d)] || {}).t; /* POS 원본을 올린 날의 매장 판매번호 수 (반품만 있는 것 제외) */
+        const pt = (((S.daily || {})[ymOf(c.d)] || {})[dayOf(c.d)] || {}).tc; /* POS 원본을 올린 날의 객수 (문자와 같은 방식: 판매 거래 − 반품·취소 거래) */
         return [mdLabel(c.d), day ? won(day.v) : '-', day ? esc(day.c) : '-', pt === undefined ? '<span class="muted">-</span>' : (day && Number(day.c) === pt ? '<b>' + pt + '</b> ✓' : String(pt)), day && day.r !== null ? esc(day.r) + '%' : '-', day ? won(day.vEx) : '-', c.pos === null ? '-' : won(c.pos), st, mon ? won(mon.v) : '-', mon && mon.r !== null ? esc(mon.r) + '%' : '-'];
       })) + '<p class="muted" style="margin:6px 0 0">"비율"은 문자에 표시된 % 값을 그대로 옮긴 것입니다. 차이가 계속 크면 목표·설정 탭에서 문자 금액 기준(VAT 포함/별도)을 바꿔 보세요.</p></div>';
   }
@@ -6603,7 +6608,7 @@ const mtMerge = (a, b) => { const o = Object.assign({}, a); Object.keys(b).forEa
 /* 객수 = 본사 마감 문자 기준 (점장님 결정, 2026-11-10)
    ① 그 달 마지막 매출일(또는 그 뒤)의 "당월매출 … (○건)" 문자 → 그 달 건수 · 금액 그대로
    ② 없으면 그 달 모든 영업일의 "일마감 (○건)" 합계
-   ③ 문자가 모자라면 POS 원본에서 센 매장 판매번호 수 (모든 영업일에 있을 때만) — 일부만 있는 달은 비움 */
+   ③ 문자가 모자라면 POS 원본에서 문자와 같은 방법으로 센 객수(tc, 모든 영업일에 있을 때만) — 일부만 있는 달은 비움 */
 function mtTx(ym) {
   const md = (S.daily || {})[ym] || {}, ks = Object.keys(md);
   if (!ks.length) return null;
@@ -6613,7 +6618,7 @@ function mtTx(ym) {
   if (mon) return { n: Number(mon.c), v: (Number(mon.v) || 0) * f, src: 'sms' };
   const byD = {}; sm.forEach(r => { if (r.metric === '일마감' && Number(r.c) > 0) byD[r.d] = r; });
   if (ks.every(k => byD[ym * 100 + Number(k)])) { const rs = ks.map(k => byD[ym * 100 + Number(k)]); return { n: rs.reduce((s2, r) => s2 + Number(r.c), 0), v: rs.reduce((s2, r) => s2 + (Number(r.v) || 0), 0) * f, src: 'sms' }; }
-  if (ks.every(k => md[k].t !== undefined)) return { n: ks.reduce((s2, k) => s2 + (Number(md[k].t) || 0), 0), v: ks.reduce((s2, k) => s2 + (Number(md[k].n) || 0), 0), src: 'pos' };
+  if (ks.every(k => md[k].tc !== undefined)) return { n: ks.reduce((s2, k) => s2 + (Number(md[k].tc) || 0), 0), v: ks.reduce((s2, k) => s2 + (Number(md[k].n) || 0) + (Number(md[k].o) || 0), 0), src: 'pos' };
   return null;
 }
 /* 흐름 나누기: 영업일 수 차이를 빼려고 하루 평균(days가 있으면)으로, 들쭉날쭉을 줄이려고 3개월 이동평균으로 꼭대기 · 바닥을 찾음 */
@@ -6649,14 +6654,14 @@ function mtRangeHtml(months) {
   if (rng.length < 3) return h + '<p class="muted" style="margin:0">흐름을 보려면 3개월 이상 골라 주세요.</p></div>';
   const ag = rng.map(m => eaAgg(m, 31)), lyAg = rng.map(m => eaAgg(m - 100, 31)), tx = rng.map(mtTx), lyTx = rng.map(m => mtTx(m - 100));
   const sum = a => a.reduce((s, x) => s + (x || 0), 0), lyCmp = (cur, ly) => ly.every(x => x) && sum(ly) ? chgTxt(sum(cur) / sum(ly) - 1) : '-';
-  const srcOk = tx.every(x => x) && tx.every(x => x.src === tx[0].src), txV = srcOk ? tx.map(x => x.n) : tx.map(() => null);
+  const srcOk = tx.every(x => x), txV = srcOk ? tx.map(x => x.n) : tx.map(() => null);
   const aov = srcOk ? rng.map((m, i) => tx[i].n ? tx[i].v / tx[i].n : null) : rng.map(() => null);
   const rate = ag.map(a => eaRate(a));
   const rows = [
     { name: '매출 전체', v: ag.map(a => a.tot), f: mtWon, ly: lyCmp(ag.map(a => a.tot), lyAg.map(a => a.days ? a.tot : 0)) },
     { name: '매장 (내판)', v: ag.map(a => a.n), f: mtWon, ly: lyCmp(ag.map(a => a.n), lyAg.map(a => a.days ? a.n : 0)) },
     { name: '외판 (B2B)', v: ag.map(a => a.o), f: mtWon, ly: lyCmp(ag.map(a => a.o), lyAg.map(a => a.days ? a.o : 0)) },
-    { name: '객수' + (srcOk ? (tx[0].src === 'sms' ? ' (마감 문자)' : ' (POS 판매번호)') : ''), v: txV, f: x => Math.round(x).toLocaleString('ko-KR') + '명', ly: srcOk && lyTx.every(x => x && x.src === tx[0].src) ? lyCmp(txV, lyTx.map(x => x.n)) : '-', miss: !srcOk },
+    { name: '객수 (본사 문자 기준)', v: txV, f: x => Math.round(x).toLocaleString('ko-KR') + '명', ly: srcOk && lyTx.every(x => x) ? lyCmp(txV, lyTx.map(x => x.n)) : '-', miss: !srcOk },
     { name: '객단가', v: aov, f: x => won(x), ly: '-', miss: !aov.every(x => x) },
     { name: '마진율', v: rate, f: x => pct(x), ly: '-', pp: true }
   ];
@@ -6686,9 +6691,10 @@ function mtRangeHtml(months) {
     '<h3 class="ea-h">대분류별 흐름 (' + (MT.scope === 'all' ? '내판+외판' : '매장 내판') + ' · 구간 합계 큰 순 ' + cats.length + '개)</h3>' + (catT.length ? table(head, catT) : '<p class="muted">이 기간 상세 자료(대분류)가 없어요.</p>') +
     '<p class="mt-easy">💬 <b>쉽게 말하면</b> · ' + (main.length ? main.join(' · ') + '. ' : '전체 매출 · 객수는 큰 변화가 없어요. ') + (pts.length ? pts.join(' / ') + '.' : '대분류는 대부분 큰 변화가 없어요.') + ' 작년에도 같은 구간에 같은 모양이었으면 계절 때문일 수 있으니 "작년 같은 구간 대비" 칸을 같이 보세요.</p>' +
     (() => {
-      const miss = rng.filter((m, i) => !tx[i] || tx[i].src !== 'sms').map(mL);
-      return '<p class="muted" style="margin:6px 0 0">객수 · 객단가는 <b>본사 마감 문자</b> 기준이에요: 그 달 마지막 날 "당월매출 (○건)"의 건수, 객단가 = 문자 금액 ÷ 건수' + ((S.settings || {}).smsVat === 'excl' ? '' : ' (VAT 별도로 환산)') + '.' +
-        (miss.length ? ' <b>마감 문자가 모자란 달: ' + miss.join(', ') + '</b>' + ' — 문자와 POS 판매번호는 세는 법이 달라 섞어서 보지 않아요' + (miss.length < rng.length ? ' (그래서 객수 줄이 비어 있어요)' : '') + '. 업로드 탭에 그 달 <b>마지막 날 마감 문자</b>(당월매출 ○건이 있는 문자)를 붙여 넣으면 채워져요.' : '') + '</p>';
+      const miss = rng.filter((m, i) => !tx[i]).map(mL), pos = rng.filter((m, i) => tx[i] && tx[i].src === 'pos').map(mL);
+      return '<p class="muted" style="margin:6px 0 0">객수 = <b>본사 마감 문자 건수</b> (매장+외판, 판매 거래 수 − 반품·취소 거래 수). 그 달 마지막 날 "당월매출 (○건)"을 쓰고, 문자가 없으면 POS 원본에서 같은 방법으로 센 숫자를 써요 (10월 문자와 1건까지 맞춰 봤어요). 객단가 = 매출 ÷ 객수.' +
+        (pos.length ? ' POS로 센 달: ' + pos.join(', ') + '.' : '') +
+        (miss.length ? ' <b>객수가 없는 달: ' + miss.join(', ') + '</b> — 그 달 마지막 날 마감 문자를 붙여 넣거나 POS 원본 파일을 다시 올려 주세요.' : '') + '</p>';
     })()+ '</div>';
   return h;
 }
