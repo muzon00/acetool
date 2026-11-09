@@ -854,13 +854,12 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
     <div id="a-plans" class="hide">
       <div class="card">
         <h2>예정 매출 입력</h2>
-        <p class="muted">외판 담당자가 받은 견적·발주를 미리 적어 두면 홈의 목표 진행과 달력에 반영됩니다. 확률에 따라 반영 비율이 달라집니다 (확정 100% · 높음 70% · 보통 40%). POS 파일에 같은 거래처 매출이 잡히면 자동으로 완료 처리되어 두 번 세지 않습니다.</p>
+        <p class="muted">외판 담당자가 받은 견적·발주를 미리 적어 두면 홈의 목표 진행과 달력에 반영됩니다. 적은 금액이 그대로 반영됩니다. POS 파일에 같은 거래처 매출이 잡히면 자동으로 완료 처리되어 두 번 세지 않습니다.</p>
         <div class="row" style="align-items:flex-start">
           <label>예정일<input type="date" id="pD"></label>
           <label style="min-width:200px">거래처<input type="text" id="pCust" list="custList" maxlength="80" autocomplete="off"></label>
           <label>담당<input type="text" id="pMgr" list="mgrList" maxlength="30" autocomplete="off" style="width:110px"></label>
           <label class="amt">금액(원, VAT 별도)<input type="number" id="pAmt" min="0" step="1000"><span class="amt-read" id="pAmtRead"></span><span class="amt-chips" id="pChips"></span></label>
-          <label>확률<select id="pProb"><option value="fix">확정 (100%)</option><option value="high" selected>높음 (70%)</option><option value="mid">보통 (40%)</option></select></label>
           <label style="min-width:160px">메모(선택)<input type="text" id="pMemo" maxlength="60"></label>
           <button class="btn primary" id="pAdd" style="margin-top:20px">추가</button>
         </div>
@@ -1233,7 +1232,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-10a';
+var BUILD = '2026-11-10b';
 (function () {
   var busy = false;
   function typing() {
@@ -2565,26 +2564,26 @@ function goalCard(d) {
   // 예정 매출(아직 오지 않은 날의 열린 건)이 있으면: 외판은 예정 건으로, 내판은 남은 기간 평균 예상으로 계산
   const pa = d.ended ? { n: 0 } : planAgg(d.ym, d.lastDay), usePlan = pa.n > 0;
   const nRest = fb ? Math.max(0, fb.n - d.cum.n) : 0;
-  const withW = d.cum.total + (pa.w || 0) + nRest, withAll = d.cum.total + (pa.amt || 0) + nRest, fixOnly = d.cum.total + (pa.x || 0) + nRest;
+  const withW = d.cum.total + (pa.amt || 0) + nRest; /* 예정 매출은 적은 금액 그대로 (확률 없음) */
   const mx = Math.max(T, fb ? fb.total : 0, d.cum.total, usePlan ? withW : 0) * 1.02;
   const P = v => (Math.max(0, v) / mx * 100).toFixed(2) + '%';
   // 표시 깃발: 위 = 목표, 아래 = 오늘까지 목표선 (오른쪽 끝에 가까우면 깃발을 왼쪽으로 펼침)
   const flag = (v, cls, label) => { const p = Math.max(0, v) / mx * 100; return '<span class="gm ' + cls + (p > 86 ? ' end' : p < 10 ? ' start' : '') + '" style="left:' + p.toFixed(2) + '%"><b></b><em>' + label + '</em></span>'; };
   let bar = '<div class="gwrap">' + flag(T, 'up', '🎯 목표 ' + eok(T)) + flag(T * d.elapsed, 'down', '오늘 목표 ' + eok(T * d.elapsed)) +
     '<div class="gbar"><span class="gb-n" style="width:' + P(d.cum.n) + '"></span><span class="gb-o" style="width:' + P(d.cum.o) + '"></span>' +
-    (usePlan ? '<span class="gb-p" style="width:' + P(pa.w) + '"></span>' + (nRest ? '<span class="gb-f" style="left:' + P(d.cum.total + pa.w) + ';width:' + P(nRest) + '"></span>' : '')
+    (usePlan ? '<span class="gb-p" style="width:' + P(pa.amt) + '"></span>' + (nRest ? '<span class="gb-f" style="left:' + P(d.cum.total + pa.amt) + ';width:' + P(nRest) + '"></span>' : '')
       : fb ? '<span class="gb-f" style="left:' + P(d.cum.total) + ';width:' + P(Math.max(0, fb.total - d.cum.total)) + '"></span>' : '') + '</div></div>' +
     '<div class="legend" style="margin-top:4px"><span><i style="background:var(--s1)"></i>내판 ' + eok(d.cum.n) + '</span><span><i style="background:var(--s2)"></i>외판 ' + eok(d.cum.o) + '</span>' +
-    (usePlan ? '<span><i class="gb-p" style="display:inline-block"></i>예정 매출 ' + eok(pa.w) + ' (' + pa.n + '건 · 확률 반영)</span>' + (nRest ? '<span><i style="background:transparent;border:1.5px dashed var(--s1)"></i>남은 기간 내판 예상 ' + eok(nRest) + '</span>' : '')
+    (usePlan ? '<span><i class="gb-p" style="display:inline-block"></i>예정 매출 ' + eok(pa.amt) + ' (' + pa.n + '건)</span>' + (nRest ? '<span><i style="background:transparent;border:1.5px dashed var(--s1)"></i>남은 기간 내판 예상 ' + eok(nRest) + '</span>' : '')
       : fb ? '<span><i style="background:transparent;border:1.5px dashed var(--s1)"></i>남은 기간 예상 ' + eok(fb.total - d.cum.total) + '</span>' : '') + '</div>';
   const gap = T - d.cum.total;
   const gapTxt = v => T - v > 0 ? '부족 ' + eok(T - v) : '달성 (+' + eok(v - T) + ')';
   const good = v => v >= T ? ' style="color:var(--ok-ink)"' : '';
   const facts = usePlan ? [
     ['지금 부족', gap > 0 ? won(gap) : '목표 달성 (+' + eok(-gap) + ')'],
-    ['예정 건 반영 후', gapTxt(withW), good(withW)],
-    ['예정 다 받으면', eok(withAll) + ' (' + pct(withAll / T, 0) + ')', good(withAll)],
-    ['확정만 받으면', eok(fixOnly) + ' (' + pct(fixOnly / T, 0) + ')', good(fixOnly)]
+    ['예정 건 다 받으면', gapTxt(withW), good(withW)],
+    ['남은 영업일', d.ended ? '마감' : d.remainDays + '일'],
+    ['예상 마감', eok(withW) + ' (' + pct(withW / T, 0) + ')', good(withW)]
   ] : [
     ['남은 금액', gap > 0 ? won(gap) : '목표 달성 (+' + eok(-gap) + ')'],
     ['남은 영업일', d.ended ? '마감' : d.remainDays + '일'],
@@ -4102,7 +4101,6 @@ async function rebuildConsSummary() {
   await b.commit();
 }
 /* ===================== 예정 매출 (외판 견적·발주 미리 입력) ===================== */
-const PROB = { fix: { l: '확정', w: 1, cls: 'p1' }, high: { l: '높음', w: .7, cls: 'p2' }, mid: { l: '보통', w: .4, cls: 'p3' } };
 async function loadPlans(force) {
   if (S.plans && !force) return;
   const snap = await getDocs(collection(db, C.plans));
@@ -4121,7 +4119,7 @@ async function rebuildPlanSum() {
   S.plans.forEach(p => { const ym = ymOf(p.d); if (!out[ym]) out[ym] = {}; });
   S.plans.filter(p => p.st === 'open').forEach(p => {
     const ym = ymOf(p.d), dd = dayOf(p.d), x = out[ym][dd] = out[ym][dd] || { amt: 0, w: 0, x: 0, n: 0 };
-    x.amt += p.amt; x.w += Math.round(p.amt * (PROB[p.prob] || PROB.mid).w); if (p.prob === 'fix') x.x += p.amt; x.n++;
+    x.amt += p.amt; x.w += p.amt; x.x += p.amt; x.n++; /* 확률 없앰: 모두 적은 금액 그대로 */
   });
   /* 예정일을 다른 달로 옮기거나 지워서 건이 하나도 안 남은 달도 합계를 비움 */
   try { (await getDocs(collection(db, C.planSum))).forEach(s => { const ym = Number(s.id); if (ym && !out[ym]) out[ym] = {}; }); } catch (e) { }
@@ -4172,19 +4170,18 @@ function renderPlanList() {
   const open = ps.filter(p => p.st === 'open'), late = open.filter(p => p.d < today), up = open.filter(p => p.d >= today);
   const past = ps.filter(p => p.st !== 'open').sort((a, b) => b.d - a.d).slice(0, 30);
   const row = (p, kind) => {
-    const pr = PROB[p.prob] || PROB.mid;
     const st = p.st === 'done' ? (p.doneBy === 'pos' ? '✓ POS에 잡힘' + (p.matched ? ' (' + eok(p.matched) + ')' : '') : '✓ 완료') : p.st === 'cancel' ? '취소' : kind === 'late' ? '⚠️ 확인 필요' : '예정';
     const acts = p.st === 'open' ? '<button class="btn ghost sm" data-pd="' + p.id + '">완료</button> <button class="btn ghost sm" data-pc="' + p.id + '">취소</button>'
       : '<button class="btn ghost sm" data-po="' + p.id + '">되돌리기</button>';
     /* 아직 열린 건은 예정일을 바로 고칠 수 있음 (처음 예정일은 아래에 작게) */
     const dCell = p.st === 'open' ? '<input type="date" class="pdate" data-pdt="' + p.id + '" value="' + dLabel(p.d) + '" title="눌러서 예정일 바꾸기"><small class="muted"> (' + DOWK[dowOf(p.d)] + ')</small>' : mdLabel(p.d) + ' (' + DOWK[dowOf(p.d)] + ')';
     return [dCell + (p.d0 && p.d0 !== p.d ? '<br><small class="muted">처음 ' + mdLabel(p.d0) + '</small>' : ''), esc(p.cust) + (p.memo ? '<br><small class="muted">' + esc(p.memo) + '</small>' : ''), esc(p.mgr || '-'), won(p.amt),
-      '<span class="pl ' + pr.cls + '">' + pr.l + (pr.w < 1 ? ' ' + Math.round(pr.w * 100) + '%' : '') + '</span>', p.st === 'open' ? eok(p.amt * pr.w) : '-', st,
+      st,
       acts + ' <button class="btn danger sm" data-px="' + p.id + '">삭제</button>'];
   };
-  const head = ['예정일', '거래처', '담당', '금액', '확률', '반영액', '상태', ''];
-  const sumW = up.reduce((s, p) => s + p.amt * (PROB[p.prob] || PROB.mid).w, 0);
-  let h = '<div class="card"><h2>앞으로 예정 ' + up.length + '건 · 반영액 ' + eok(sumW) + '</h2>' + (up.length ? table(head, up.map(p => row(p, 'up'))) : '<p class="muted">예정 건이 없습니다.</p>') + '</div>';
+  const head = ['예정일', '거래처', '담당', '금액', '상태', ''];
+  const sumW = up.reduce((s, p) => s + p.amt, 0);
+  let h = '<div class="card"><h2>앞으로 예정 ' + up.length + '건 · 합계 ' + eok(sumW) + '</h2>' + (up.length ? table(head, up.map(p => row(p, 'up'))) : '<p class="muted">예정 건이 없습니다.</p>') + '</div>';
   if (late.length) h += '<div class="card"><h2>⚠️ 예정일이 지났는데 POS에 안 잡힌 건 ' + late.length + '건</h2><p class="muted" style="margin-top:-6px">받았으면 "완료", 안 받게 됐으면 "취소"를 눌러 주세요. 그대로 두면 목표 계산에서 빠집니다.</p>' + table(head, late.map(p => row(p, 'late'))) + '</div>';
   if (past.length) h += '<div class="card"><details><summary>지난 예정 (완료·취소) 최근 ' + past.length + '건</summary>' + table(head, past.map(p => row(p, 'past'))) + '</details></div>';
   $('pList').innerHTML = h;
@@ -4216,7 +4213,7 @@ function renderPlanList() {
   inp.addEventListener('input', read);
   $('pAdd').addEventListener('click', async () => {
     const d = Number(($('pD').value || '').replace(/-/g, '')), cust = cleanText($('pCust').value, 80), mgr = cleanText($('pMgr').value, 30), amt = Math.round(Number(inp.value));
-    const prob = PROB[$('pProb').value] ? $('pProb').value : 'mid', memo = cleanText($('pMemo').value, 60);
+    const prob = 'fix', memo = cleanText($('pMemo').value, 60);
     if (!toDateInt(String(d))) { $('pMsg').textContent = '예정일을 입력해 주세요.'; return; }
     if (!cust) { $('pMsg').textContent = '거래처를 입력해 주세요.'; return; }
     if (!(amt > 0 && amt < 1e11)) { $('pMsg').textContent = '금액을 입력해 주세요.'; return; }
