@@ -155,9 +155,10 @@ svg text.wk { fill: var(--ink); font-weight: 700; }
 .arbar span { display: block; height: 100%; }
 .arbar.sm { height: 10px; border-radius: 5px; gap: 1px; }
 .pmemo { display: block; width: 100%; min-width: 160px; min-height: 32px; margin-top: 4px; border: 1px dashed var(--line, #dfe4ec); border-radius: 8px; padding: 0 8px; font: inherit; font-size: .86em; color: var(--ink2, #555); background: transparent; }
-.pmemo:focus { border-style: solid; background: #fff; color: var(--ink, #111); }
-.pamt { min-height: 36px; width: 9.5em; max-width: 100%; text-align: right; border: 1px solid var(--line, #dfe4ec); border-radius: 8px; padding: 0 8px; font: inherit; background: #fff; font-variant-numeric: tabular-nums; }
-.pdate { min-height: 36px; border: 1px solid var(--line, #dfe4ec); border-radius: 8px; padding: 0 6px; font: inherit; background: #fff; width: 9.2em; max-width: 100%; }
+.pmemo:focus { border-style: solid; background: var(--surface, #fff); color: var(--ink, #111); outline: 2px solid var(--s1, #2f6fde); outline-offset: 0; }
+.pmemo::placeholder { color: var(--ink3, #888); opacity: 1; }
+.pamt { min-height: 36px; width: 9.5em; max-width: 100%; text-align: right; border: 1px solid var(--line, #dfe4ec); border-radius: 8px; padding: 0 8px; font: inherit; background: var(--surface, #fff); color: var(--ink, #111); font-variant-numeric: tabular-nums; }
+.pdate { min-height: 36px; border: 1px solid var(--line, #dfe4ec); border-radius: 8px; padding: 0 6px; font: inherit; background: var(--surface, #fff); color: var(--ink, #111); width: 9.2em; max-width: 100%; }
 .pl { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .8em; font-weight: 700; white-space: nowrap; }
 .pl.p1 { background: var(--ok-bg); color: var(--ok-ink); }
 .pl.p2 { background: var(--chip); color: var(--chip-ink); }
@@ -1257,7 +1258,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-10e';
+var BUILD = '2026-11-10f';
 (function () {
   var busy = false;
   function typing() {
