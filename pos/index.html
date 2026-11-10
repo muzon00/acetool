@@ -231,6 +231,8 @@ svg text.wk { fill: var(--ink); font-weight: 700; }
 .gfacts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
 .gfacts div { background: var(--surface2); border-radius: var(--radius-sm); padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .gfacts b { font-size: .98em; overflow-wrap: anywhere; }
+.gstock { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; margin-top: 10px; padding: 8px 12px; border: 1px dashed var(--line); border-radius: var(--radius-sm); font-size: .92em; }
+.gstock b.v { font-size: 1.05em; }
 @media (max-width: 640px) { .goal { grid-template-columns: 1fr; justify-items: center; } .goal-r { width: 100%; } .gfacts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 /* 달력 */
 .cal-h, .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
@@ -1266,7 +1268,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-10m';
+var BUILD = '2026-11-10n';
 (function () {
   var busy = false;
   function typing() {
@@ -2647,7 +2649,7 @@ function goalCard(d) {
   const tgExtra = (gpT ? '<span class="g-tg">목표 매총이익 <b>' + won(gpT) + '</b>' + (tgx && !tgx.gp ? ' <small>(매출×매총율)</small>' : '') + '</span>' : '') + (grT !== null ? '<span class="g-tg">목표 매총율 <b>' + grT + '%</b></span>' : '');
   return '<div class="card" data-sec="목표"><h2 class="g-title"><span>목표 진행 · ' + won(T) + '</span>' + tgExtra + '</h2><div class="goal">' + ring +
     '<div class="goal-r"><p class="muted" style="margin:0 0 8px">' + (!d.lastDay ? '아직 이 달 매출 자료가 없어요 · 목표와 하루 필요 금액을 미리 보는 화면이에요' : ahead ? '오늘까지 목표선보다 <b>' + eok(d.cum.total - T * d.elapsed) + ' 앞서</b> 있어요' : '오늘까지 목표선보다 <b>' + eok(T * d.elapsed - d.cum.total) + ' 부족</b>해요') + (d.lastDay ? ' (시간 경과 ' + pct(d.elapsed) + ')' : '') + '</p>' +
-    payLine(d) + bar + sub + '<div class="gfacts">' + facts.map(f => '<div><span class="muted">' + f[0] + '</span><b' + (f[2] || '') + '>' + f[1] + '</b></div>').join('') + '</div></div></div></div>';
+    payLine(d) + bar + sub + '<div class="gfacts">' + facts.map(f => '<div><span class="muted">' + f[0] + '</span><b' + (f[2] || '') + '>' + f[1] + '</b></div>').join('') + '</div>' + stockLine() + '</div></div></div>';
 }
 
 /* ===================== 달력 ===================== */
@@ -2796,6 +2798,7 @@ async function loadHome(ym, force) {
   try {
     const d = await summaryFor(ym, force);
     try { await loadConsSum(force); } catch (e) { S.consSum = null; }
+    if (S.role === 'admin') { try { await loadStock(force); } catch (e) { S.stock = false; } }
     try { await loadPlanSum(force); if (S.role === 'admin') await loadPlans(force); } catch (e) { S.planSum = S.planSum || {}; }
     try { await loadEvents(d.ym, force); } catch (e) { S.ev = S.ev || {}; }
     if (S.role === 'admin') { try { await loadLogs(force); } catch (e) { S.logs = S.logs || []; } }
@@ -3416,6 +3419,7 @@ const UP_KINDS = {
   mix: { icon: '📚', name: '본사 참고자료 · 매출 유형별 비중 및 추이', desc: '관계사 · 일반 B2B · 일반 내판의 월별 실매출·매총이익을 저장합니다. 같은 지점·연도를 다시 올리면 교체됩니다.' },
   members: { icon: '👑', name: 'Master 이상 회원 명단', desc: '일산점 VIP MASTER · MASTER 고객의 고객번호·이름·등급·거래건·실매출만 저장해 관리자 › 회원 명단에서 봅니다. 새로 올리면 명단 전체가 교체됩니다.' },
   elr: { icon: '📊', name: '본사 일레포트 · 매출 대조', desc: '전 지점 원자료에서 일산점(P936) 줄만 날짜별로 더해 매출현황 자료와 1원까지 맞춰 봅니다.' },
+  stock: { icon: '📦', name: '재고 · 일별수불현황', desc: '일산점 줄만 더해 기말재고 금액 · 수량을 저장하고 홈 목표 진행 칸에 보여 줍니다.' },
   pb: { icon: '🏷️', name: '본사 참고자료 · 점포별 PB 실적', desc: '전체·PB 월별 실적, PB 카테고리별 매출, 잘 팔리는 PB 상품 상위 50개를 저장합니다. 같은 지점·연도를 다시 올리면 교체됩니다.' }
 };
 function detectKind(aoa) {
@@ -3437,6 +3441,7 @@ function detectKind(aoa) {
      판매 파일(과세결제금액 칸)은 시공으로 보지 않음 — 2026-11-06 판매 파일이 시공으로 잘못 들어간 일 */
   const hdr = top.find(l => l.includes('영업일자') && l.includes('판매번호'));
   if (hdr && !hdr.includes('과세결제금액') && hdr.some(c => ['시공일자', '시공상태', '시공PKG'].concat(CONS_CATS).includes(c))) return 'cons';
+  if (has('기말재고-재고금액', '기말재고-재고수량')) return 'stock';  /* 전산 일별수불현황 */
   if (has('거래처명', '잔액')) return 'ar';
   if (has('영업일자', '구분') || has('일자', '구분', '순매출')) return 'sales';
   return '';
@@ -3668,6 +3673,10 @@ function makeJobs(sheets, name) {
     const recs = p.recs.filter(r => !br || r.br === br), ds = recs.map(r => r.d).sort((a, b) => a - b);
     return [{ name, kind, info: (br ? br + ' · ' : '') + recs.length + '건 · ' + (ds.length ? dLabel(ds[0]) + ' ~ ' + dLabel(ds[ds.length - 1]) : ''), save: async () => { const r = await registerCons(recs, name); return '추가 ' + r.added + ' · 교체 ' + r.updated; } }];
   }
+  if (kind === 'stock') {
+    const sp = stockParse(aoa); if (sp.error) return [{ name, kind, error: sp.error }];
+    return [{ name, kind, info: '일산점 ' + yymmdd(sp.d) + ' 기준 · ' + won(sp.amt) + ' · ' + Number(sp.qty).toLocaleString('ko-KR') + '개', save: async () => { await saveStock(sp, name); return '저장'; } }];
+  }
   if (kind === 'ar') {
     const p = arParse(aoa); if (p.error) return [{ name, kind, error: p.error }];
     p.name = name; const date = arDateFromName(name) || todayInt();
@@ -3772,6 +3781,7 @@ function handleSheets(sheets, name) {
   const refs = found.filter(x => /^(mix|pb)/.test(x.kind));
   if (refs.length) { handleRef(refs, name); return; }
   const { aoa, kind } = found[0];
+  if (kind === 'stock') { const sp = stockParse(aoa); if (sp.error) { $('preview').innerHTML = '<div class="banner bad">📦 ' + esc(sp.error) + '</div>'; return; } renderStockPreview(sp, name); return; }
   $('arDateRow').classList.toggle('hide', kind !== 'ar');
   if (kind === 'ar') { const ad = arDateFromName(name); if (ad) $('arDate').value = dLabel(ad); else if (!$('arDate').value) $('arDate').value = dLabel(todayInt()); }
   const res = kind === 'cons' ? consParse(aoa) : kind === 'ar' ? arParse(aoa) : aggregateRows(aoa);
@@ -6950,6 +6960,66 @@ function renderMeet() {
   drawLost();
 }
 
+/* ===================== 📦 재고 (전산 "일별수불현황") =====================
+   일산점(P936) 줄만 골라 기말재고 금액 · 수량을 더해 pos_config/stock 에 저장 (기준일별 기록 hist 유지). 홈 목표 진행 칸에 표시 */
+function stockParse(aoa) {
+  let hi = -1;
+  for (let i = 0; i < Math.min(aoa.length, 15); i++) { const z = (aoa[i] || []).map(hnorm); if (z.includes('기말재고-재고금액') && z.includes('기말재고-재고수량')) { hi = i; break; } }
+  if (hi < 0) return { error: '머리글(기말재고-재고금액 · 기말재고-재고수량)을 찾지 못했습니다' };
+  const z = aoa[hi].map(hnorm), c = n => z.indexOf(n);
+  const K = { d: c('일자'), br: c('지점'), brn: c('지점명'), amt: c('기말재고-재고금액'), qty: c('기말재고-재고수량'), cat: c('분류-대분류') };
+  const byD = {}; let rows = 0, other = 0, bad = 0; const badS = [];
+  for (let i = hi + 1; i < aoa.length; i++) {
+    const r = aoa[i]; if (!r || !r.length) continue;
+    const d = toDateInt(K.d >= 0 ? r[K.d] : ''); if (!d) continue;
+    const br = K.br >= 0 ? String(r[K.br] || '').trim() : '', brn = K.brn >= 0 ? String(r[K.brn] || '') : '';
+    if ((br && br !== 'P936') || (!br && brn && !/일산/.test(brn))) { other++; continue; }
+    const a = numStrict(r[K.amt]), q = numStrict(r[K.qty]);
+    if (Number.isNaN(a) || Number.isNaN(q)) { bad++; if (badS.length < 5) badS.push((i + 1) + '번째 줄'); continue; }
+    const o = byD[d] || (byD[d] = { amt: 0, qty: 0, n: 0, cats: {} }); o.amt += a; o.qty += q; o.n++; rows++;
+    const k = K.cat >= 0 ? cleanText(r[K.cat], 40) || '(미분류)' : '(미분류)', x = o.cats[k] || (o.cats[k] = [0, 0]); x[0] += a; x[1] += q;
+  }
+  if (bad) return { error: '재고 금액 · 수량을 숫자로 읽지 못한 줄 ' + bad + '개 (' + badS.join(', ') + ') — 숫자가 틀리게 저장되지 않도록 저장하지 않았습니다' };
+  const ds = Object.keys(byD).map(Number).sort((a, b) => a - b);
+  if (!ds.length) return { error: '일산점(P936) 재고 줄이 없습니다' + (other ? ' (다른 지점 ' + other.toLocaleString('ko-KR') + '줄)' : '') };
+  const d = ds[ds.length - 1], o = byD[d];
+  Object.keys(o.cats).forEach(k => { o.cats[k] = [Math.round(o.cats[k][0]), Math.round(o.cats[k][1] * 100) / 100]; });
+  return { d, amt: Math.round(o.amt), qty: Math.round(o.qty * 100) / 100, rows: o.n, cats: o.cats, other, dates: ds };
+}
+async function saveStock(p, name) {
+  const ref = doc(db, C.config, 'stock'), old = await getDoc(ref), prev = old.exists() ? old.data() : {};
+  const hist = Object.assign({}, prev.hist || {}); hist[String(p.d)] = { amt: p.amt, qty: p.qty };
+  const keep = Object.keys(hist).sort().slice(-60), h2 = {}; keep.forEach(k => { h2[k] = hist[k]; });
+  await setDoc(ref, { d: p.d, amt: p.amt, qty: p.qty, cats: p.cats, rows: p.rows, file: cleanText(name, 120), hist: h2, at: serverTimestamp(), by: S.user.email || '' });
+  await addDoc(collection(db, C.logs), { at: serverTimestamp(), by: S.user.email || '', file: '[재고] ' + cleanText(name, 110), from: p.d, to: p.d, usedRows: p.rows, fileNet: p.amt, savedNet: p.amt, match: true, bad: [] });
+  S.stock = null;
+}
+async function loadStock(force) {
+  if (S.stock !== undefined && S.stock !== null && !force) return;
+  const s = await getDoc(doc(db, C.config, 'stock')); S.stock = s.exists() ? s.data() : false;
+}
+const yymmdd = d => String(Math.floor(d / 10000) % 100).padStart(2, '0') + '.' + String(Math.floor(d / 100) % 100).padStart(2, '0') + '.' + String(d % 100).padStart(2, '0');
+/* 목표 진행 칸 아래: 일산점 총 재고 (기준일 · 직전 기록 대비) */
+function stockLine() {
+  const st = S.stock; if (!st || !st.d) return '';
+  const ks = Object.keys(st.hist || {}).map(Number).filter(k => k < st.d).sort((a, b) => a - b), pv = ks.length ? st.hist[ks[ks.length - 1]] : null, pd = ks.length ? ks[ks.length - 1] : 0;
+  const dA = pv ? st.amt - pv.amt : 0;
+  return '<div class="gstock"><span>📦 <b>일산점 총 재고금액</b> <b class="v">' + won(st.amt) + '</b></span><span>총 재고수량 <b class="v">' + Number(st.qty).toLocaleString('ko-KR') + '개</b></span><span class="muted">' + yymmdd(st.d) + ' 기준' +
+    (pv ? ' · ' + yymmdd(pd) + ' 대비 ' + (dA >= 0 ? '+' : '−') + won(Math.abs(dA)) : '') + '</span></div>';
+}
+function renderStockPreview(p, name) {
+  const top = Object.entries(p.cats).sort((a, b) => b[1][0] - a[1][0]).slice(0, 8);
+  $('preview').innerHTML = '<div class="banner ok">🔎 <b>' + esc(name) + '</b> → <b>📦 재고 · 일별수불현황</b>(으)로 알아봤어요. 일산점 줄만 더해 기말재고 금액 · 수량을 저장해요.</div>' +
+    '<div class="card"><h2>미리보기 · 일산점 재고 (' + yymmdd(p.d) + ' 기준)</h2><div class="kpis">' + kpi('총 재고금액', won(p.amt), '기말재고 · 원가 기준', true) + kpi('총 재고수량', Number(p.qty).toLocaleString('ko-KR') + '개', '상품 줄 ' + p.rows.toLocaleString('ko-KR') + '개') + '</div>' +
+    table(['대분류', '재고금액', '수량'], top.map(([k, v]) => [esc(k), won(v[0]), Number(v[1]).toLocaleString('ko-KR')])) +
+    (p.dates.length > 1 ? '<p class="muted">파일에 여러 날짜가 있어 가장 최근 ' + dLabel(p.d) + ' 것만 저장해요.</p>' : '') +
+    '<div class="row" style="margin-top:10px"><button class="btn primary" id="stockSave">저장 (홈 목표 진행에 표시)</button><span class="muted" id="stockMsg"></span></div></div>';
+  $('stockSave').addEventListener('click', async function () {
+    this.disabled = true; $('stockMsg').textContent = '저장 중…';
+    try { await saveStock(p, name); $('stockMsg').textContent = '✅ 저장했어요 — 홈 화면 목표 진행 칸에 나와요'; S.logs = null; }
+    catch (e) { this.disabled = false; $('stockMsg').textContent = '저장 실패: ' + errMsg(e); }
+  });
+}
 /* ===================== 매출 구조 (관리자만) =====================
    목표 → 내판 / 외판 → 항목 → 세부 항목 … 단계 제한 없이 가지를 내림. 왼쪽(목표)에서 오른쪽으로 뻗는 그림, 누른 칸만 오른쪽에서 고침
    저장: pos_config/tree 문서. 월별은 'YYYYMM', 연간 계획은 'Y2027' 같은 필드 → { root: { name, amt, memo, key, children: [...] } } */
