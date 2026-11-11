@@ -620,8 +620,12 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .bfs-body { flex: 1; overflow: auto; padding: 4vh 6vw; font-size: clamp(20px, 3.2vw, 38px); line-height: 1.6; }
 .bfs-body h1 { font-size: 1.3em; margin: 0 0 .8em; } .bfs-body ul { padding-left: 1.2em; margin: 0; } .bfs-body li { margin: 0 0 .7em; } .bfs-body li small { display: block; font-size: .6em; color: var(--ink3); }
 .bfs-body dt { font-weight: 800; margin-top: .6em; } .bfs-body dd { margin: .2em 0 0 1em; color: var(--ink2); } .bfs-sub { color: var(--ink3); font-size: .7em; } .bfs-one { background: var(--warn-bg); border-radius: 16px; padding: .6em .9em; }
+.bf-fig { margin: 10px 0 4px; } .bf-fig img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 10px; background: #fff; cursor: zoom-in; } .bf-fig figcaption { margin-top: 6px; font-weight: 600; line-height: 1.6; } .bf-fig .btn { margin-top: 6px; }
+.bfs-fig { margin: 0; } .bfs-fig img { display: block; max-width: 100%; max-height: 62vh; margin: 0 auto; background: #fff; border-radius: 12px; cursor: zoom-in; } .bfs-fig figcaption { margin-top: .5em; font-size: .75em; line-height: 1.5; } .bfs-fig.zoom img { max-width: none; max-height: none; width: 220%; cursor: zoom-out; }
+.bf-zoom { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,.88); overflow: auto; -webkit-overflow-scrolling: touch; } .bf-zoom img { display: block; width: 200%; max-width: none; background: #fff; } .bf-zoom button { position: fixed; top: 12px; right: 12px; font: inherit; font-weight: 700; padding: 10px 16px; border-radius: 12px; border: 0; background: #fff; color: #111; }
+@media (max-width: 900px) { .bf-zoom img { width: 300%; } }
 .bfs-nav { display: flex; justify-content: space-between; padding: 14px 18px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); } .bfs-nav button { min-width: 140px; min-height: 56px; font-size: 1.1em; } .bfs-nav button:disabled { opacity: .35; }
-@media print { body.mt-printing #a-brief .card { break-inside: auto; box-shadow: none; } }
+@media print { body.mt-printing #a-brief .card { break-inside: auto; box-shadow: none; } body.mt-printing .bf-fig { break-inside: avoid; } body.mt-printing .bf-fig img { max-height: 92vh; object-fit: contain; } }
 .why-g { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; } @media (max-width: 860px) { .why-g { grid-template-columns: 1fr; } }
 .why-t { font-size: 1em; margin: 0 0 8px; } .why-t small { font-weight: 500; color: var(--ink3); }
 .why-i { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; background: var(--surface); }
@@ -1288,7 +1292,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-11c';
+var BUILD = '2026-11-11d';
 (function () {
   var busy = false;
   function typing() {
@@ -7177,6 +7181,7 @@ function bfNorm(x) {
     nums: arr(x.nums, s => bfClean(s, 200)),
     qa: arr(x.qa, q => q && q.q ? { q: bfClean(q.q, 200), a: bfClean(q.a, 400) } : null, 20),
     quotes: arr(x.quotes, s => bfClean(s, 300), 20),
+    imgs: arr(x.imgs, g => g && g.k ? { k: bfClean(g.k, 40).replace(/[^\w-]/g, ''), cap: bfClean(g.cap, 300) } : null, 10).filter(g => g.k),
     src: bfClean(x.src, 200)
   };
 }
@@ -7198,6 +7203,8 @@ function bfCard(m) {
   const ul = a => a.length ? '<ul class="bf-ul">' + a.map(s => '<li>' + esc(s) + '</li>').join('') + '</ul>' : '';
   return '<div class="card bf-card" data-bf="' + esc(m.id) + '"><div class="bk-h"><h2>🗣 ' + esc(m.title) + '</h2><span class="muted">' + dLabel(m.date) + (m.who ? ' · ' + esc(m.who) : '') + '</span></div>' +
     (m.one ? '<p class="bf-one">💡 ' + esc(m.one) + '</p>' : '') +
+    sec('🖼', '그림으로 보기', m.imgs.map(g => '<figure class="bf-fig"><img data-bfimg="' + esc(g.k) + '" alt="' + esc(g.cap || '회의 자료 사진') + '">' + (g.cap ? '<figcaption>' + esc(g.cap) + '</figcaption>' : '') +
+      '<div class="row mt-np"><button class="btn ghost" type="button" data-bfa="imgcap" data-k="' + esc(g.k) + '">설명 고치기</button><button class="btn danger" type="button" data-bfa="imgdel" data-k="' + esc(g.k) + '">사진 빼기</button></div></figure>').join('')) +
     sec('✅', '직원이 꼭 알아야 할 것', ul(m.know)) +
     sec('🛠', '우리 매장에서 할 일', m.todo.length ? table(['할 일', '누가', '언제까지'], m.todo.map(t => [esc(t.t), esc(t.who || '-'), esc(t.when || '-')])) : '') +
     sec('🔢', '알아 둘 숫자', ul(m.nums)) +
@@ -7205,7 +7212,7 @@ function bfCard(m) {
     sec('🙋', '직원이 물어볼 만한 것', m.qa.length ? '<dl class="bf-dl">' + m.qa.map(q => '<dt>Q. ' + esc(q.q) + '</dt><dd>A. ' + esc(q.a) + '</dd>').join('') + '</dl>' : '') +
     sec('🗨', '회의에서 나온 말 (원문)', m.quotes.length ? '<ul class="bf-ul bf-q">' + m.quotes.map(s => '<li>"' + esc(s) + '"</li>').join('') + '</ul>' : '') +
     (m.src ? '<p class="muted" style="margin:8px 0 0">출처: ' + esc(m.src) + '</p>' : '') +
-    '<div class="row mt-np" style="margin-top:10px"><button class="btn primary" type="button" data-bfa="show">🎤 설명 모드</button><button class="btn" type="button" data-bfa="print">🖨 인쇄</button><button class="btn ghost" type="button" data-bfa="edit">✏️ 고치기</button><button class="btn danger" type="button" data-bfa="del">삭제</button></div></div>';
+    '<div class="row mt-np" style="margin-top:10px"><button class="btn primary" type="button" data-bfa="show">🎤 설명 모드</button><button class="btn" type="button" data-bfa="print">🖨 인쇄</button><button class="btn" type="button" data-bfa="img">🖼 사진 넣기</button><button class="btn ghost" type="button" data-bfa="edit">✏️ 고치기</button><button class="btn danger" type="button" data-bfa="del">삭제</button></div></div>';
 }
 function renderBrief() {
   const el = $('a-brief'), list = Object.values(BF.items || {}).map(bfNorm).sort((a, b) => b.date - a.date || String(b.id).localeCompare(String(a.id)));
@@ -7214,14 +7221,16 @@ function renderBrief() {
     '<div id="bfPasteBox" class="hide" style="margin-top:10px"><textarea class="mt-memo" id="bfPaste" rows="6" placeholder="정리 내용(Claude가 준 글)을 여기에 붙여넣으세요 (⌘V)"></textarea><div class="row" style="margin-top:8px"><button class="btn primary" type="button" id="bfPasteGo">붙여넣은 내용 저장</button></div></div>' +
     '<p class="muted" style="margin:8px 0 0">파일을 이 화면에 끌어다 놓아도 돼요.</p></div>';
   if (BF.edit) h += bfEditor(BF.edit);
+  h += '<input type="file" id="bfImgFile" accept="image/*" hidden>';
   h += list.length ? list.map(bfCard).join('') : '<div class="card muted">아직 정리된 회의가 없어요. 녹음 · 전사 파일을 주시면 정리 파일을 만들어 드려요.</div>';
   el.innerHTML = h;
+  bfFillImgs(el);
   const bfImport = async text => {
     try {
       const j = JSON.parse(String(text || '').trim().replace(/^\uFEFF/, '')), arr = (Array.isArray(j) ? j : j.meetings || [j]).map(bfNorm);
       if (!arr.length) throw new Error('회의 내용이 없어요');
       if (!confirm(arr.map(m => dLabel(m.date) + ' ' + m.title).join('\n') + '\n\n이 ' + arr.length + '건을 저장할까요? (같은 회의는 새 내용으로 바뀌어요)')) return;
-      const items = Object.assign({}, BF.items); arr.forEach(m => { items[m.id] = m; });
+      const items = Object.assign({}, BF.items); arr.forEach(m => { const old = items[m.id]; if (!m.imgs.length && old && old.imgs && old.imgs.length) m.imgs = old.imgs; items[m.id] = m; });  /* 다시 불러와도 넣어 둔 사진은 그대로 */
       if (JSON.stringify(items).length > 900000) throw new Error('내용이 너무 길어요 (문서 1MB 제한) — 오래된 회의를 지워 주세요');
       await bfSave(items); renderBrief(); toast(arr.length + '건 저장했어요');
     } catch (er) { $('bfMsg').textContent = '불러오지 못했어요: ' + (er instanceof SyntaxError ? '정리 내용 형식이 아니에요 (처음 { 부터 마지막 } 까지 모두 붙여넣었는지 확인)' : errMsg(er)); }
@@ -7236,14 +7245,27 @@ function renderBrief() {
   BF.imp = bfImport;
   if (!el.dataset.dnd) { el.dataset.dnd = '1';  /* 한 번만 연결 (다시 그려도 중복 안 되게) */
     el.addEventListener('dragover', e => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) e.preventDefault(); });
-    el.addEventListener('drop', async e => { const f = e.dataTransfer && e.dataTransfer.files[0]; if (!f) return; e.preventDefault(); e.stopPropagation(); BF.imp(await f.text()); }); }
+    el.addEventListener('drop', async e => {
+      const f = e.dataTransfer && e.dataTransfer.files[0]; if (!f) return; e.preventDefault(); e.stopPropagation();
+      if (/^image\//.test(f.type)) { const c = e.target.closest && e.target.closest('[data-bf]'); if (c) bfAddImg(c.dataset.bf, f); else toast('사진은 넣을 회의 칸 위에 놓아 주세요'); return; }
+      BF.imp(await f.text()); }); }
+  $('bfImgFile').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f && BF.imgFor) bfAddImg(BF.imgFor, f); });
+  el.querySelectorAll('img[data-bfimg]').forEach(im => im.addEventListener('click', () => bfZoom(im.src)));
   $('bfNew').addEventListener('click', () => { BF.edit = bfNorm({ date: todayInt() }); renderBrief(); });
   el.querySelectorAll('[data-bfa]').forEach(b => b.addEventListener('click', async () => {
     const id = b.closest('[data-bf]').dataset.bf, m = bfNorm(BF.items[id] || {}), a = b.dataset.bfa;
     if (a === 'show') bfShow(m);
     else if (a === 'print') bfPrint(m);
     else if (a === 'edit') { BF.edit = m; renderBrief(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-    else if (a === 'del') { if (!confirm('"' + m.title + '" 정리를 지울까요?')) return; const items = Object.assign({}, BF.items); delete items[id]; try { await bfSave(items); renderBrief(); } catch (e) { toast('실패: ' + errMsg(e)); } }
+    else if (a === 'img') { BF.imgFor = id; $('bfImgFile').click(); }
+    else if (a === 'imgcap' || a === 'imgdel') {
+      const k = b.dataset.k, g = m.imgs.find(x => x.k === k); if (!g) return;
+      if (a === 'imgcap') { const c = prompt('사진 아래 설명 (직원이 읽을 쉬운 말)', g.cap); if (c == null) return; g.cap = bfClean(c, 300); }
+      else { if (!confirm('이 사진을 뺄까요?')) return; m.imgs = m.imgs.filter(x => x.k !== k); }
+      const items = Object.assign({}, BF.items); items[id] = m;
+      try { await bfSave(items); if (a === 'imgdel') { try { await deleteDoc(doc(db, C.config, k)); } catch (e) { } delete BF.img[k]; } renderBrief(); } catch (e) { toast('실패: ' + errMsg(e)); }
+    }
+    else if (a === 'del') { if (!confirm('"' + m.title + '" 정리를 지울까요?')) return; const items = Object.assign({}, BF.items); delete items[id]; try { await bfSave(items); for (const g of m.imgs) { try { await deleteDoc(doc(db, C.config, g.k)); } catch (e) { } } renderBrief(); } catch (e) { toast('실패: ' + errMsg(e)); } }
   }));
   if (BF.edit) bfBindEditor();
 }
@@ -7266,7 +7288,7 @@ function bfBindEditor() {
   const v = k => { const e = document.querySelector('[data-bfe="' + k + '"]'); return e ? e.value : ''; }, split = s => s.split('|').map(x => x.trim());
   $('bfCancelE').addEventListener('click', () => { BF.edit = null; renderBrief(); });
   $('bfSaveE').addEventListener('click', async () => {
-    const m = bfNorm({ id: BF.edit.id, date: v('date').replace(/-/g, ''), title: v('title'), who: v('who'), one: v('one'), src: v('src'),
+    const m = bfNorm({ id: BF.edit.id, imgs: BF.edit.imgs, date: v('date').replace(/-/g, ''), title: v('title'), who: v('who'), one: v('one'), src: v('src'),
       know: bfLines(v('know')), nums: bfLines(v('nums')), quotes: bfLines(v('quotes')),
       todo: bfLines(v('todo')).map(l => { const [t, who, when] = split(l); return { t, who, when }; }),
       words: bfLines(v('words')).map(l => { const [w, ...r] = split(l); return { w, m: r.join(' | ') }; }),
@@ -7275,9 +7297,62 @@ function bfBindEditor() {
     try { await bfSave(items); BF.edit = null; renderBrief(); toast('저장했어요'); } catch (e) { toast('실패: ' + errMsg(e)); }
   });
 }
+/* 🖼 회의 사진: 사진 1장 = pos_config/bfimg_… 문서 1개 (JPEG로 줄여서 1MB 안에). 회의 정리(mnotes)에는 사진 번호와 설명만 */
+BF.img = {};
+async function bfLoadImgs(keys) {
+  await Promise.all(keys.filter(k => !BF.img[k]).map(async k => {
+    try { const s = await getDoc(doc(db, C.config, k)); if (s.exists()) BF.img[k] = s.data().data || ''; } catch (e) { }
+  }));
+}
+async function bfFillImgs(root) {
+  const ims = [...root.querySelectorAll('img[data-bfimg]')]; if (!ims.length) return;
+  await bfLoadImgs([...new Set(ims.map(im => im.dataset.bfimg))]);
+  ims.forEach(im => { const d = BF.img[im.dataset.bfimg]; if (d) im.src = d; else im.alt = '사진을 불러오지 못했어요'; });
+}
+function bfShrink(file) {
+  return new Promise((ok, no) => {
+    const u = URL.createObjectURL(file), im = new Image();
+    im.onload = () => {
+      URL.revokeObjectURL(u);
+      let w = im.naturalWidth, h = im.naturalHeight, max = 2200, out = '';
+      for (let t = 0; t < 8; t++) {
+        const r = Math.min(1, max / Math.max(w, h)), cw = Math.round(w * r), ch = Math.round(h * r);
+        const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+        const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cw, ch); cx.drawImage(im, 0, 0, cw, ch);
+        out = cv.toDataURL('image/jpeg', t < 3 ? 0.86 - t * 0.08 : 0.7);
+        if (out.length < 880000) return ok(out);
+        if (t >= 2) max = Math.round(max * 0.8);
+      }
+      no(new Error('사진이 너무 커요'));
+    };
+    im.onerror = () => { URL.revokeObjectURL(u); no(new Error('사진 파일을 읽지 못했어요')); };
+    im.src = u;
+  });
+}
+async function bfAddImg(id, file) {
+  const m = bfNorm(BF.items[id] || {});
+  if (m.imgs.length >= 10) { toast('사진은 회의마다 10장까지예요'); return; }
+  try {
+    toast('사진 줄이는 중…');
+    const data = await bfShrink(file), k = 'bfimg_' + Date.now().toString(36);
+    const cap = prompt('사진 아래에 붙일 설명 (직원이 읽을 쉬운 말, 비워도 돼요)', '');
+    await setDoc(doc(db, C.config, k), { data, meet: id, name: bfClean(file.name, 80), at: serverTimestamp(), by: S.user.email || '' });
+    BF.img[k] = data; m.imgs.push({ k, cap: bfClean(cap || '', 300) });
+    const items = Object.assign({}, BF.items); items[id] = m;
+    await bfSave(items); renderBrief(); toast('사진을 넣었어요 — 🎤 설명 모드 첫 장 다음에 나와요');
+  } catch (e) { toast('사진 넣기 실패: ' + errMsg(e)); }
+}
+function bfZoom(src) {
+  if (!src) return;
+  const z = document.createElement('div'); z.className = 'bf-zoom';
+  z.innerHTML = '<button type="button">닫기 ✕</button><img alt="크게 보기">'; z.querySelector('img').src = src;
+  z.querySelector('button').addEventListener('click', () => z.remove());
+  document.body.appendChild(z);
+}
 /* 🎤 설명 모드: 한 장씩 크게 (◀ ▶ · 키보드 화살표 · 화면 누르기) */
 function bfSlides(m) {
   const s = [{ h: m.title, b: '<p class="bfs-sub">' + dLabel(m.date) + (m.who ? ' · ' + esc(m.who) : '') + '</p>' + (m.one ? '<p class="bfs-one">💡 ' + esc(m.one) + '</p>' : '') }];
+  m.imgs.forEach(g => s.push({ h: '🖼 그림으로 보기', b: '<figure class="bfs-fig"><img data-bfimg="' + esc(g.k) + '" alt="' + esc(g.cap || '회의 자료 사진') + '">' + (g.cap ? '<figcaption>' + esc(g.cap) + '</figcaption>' : '') + '</figure>' }));
   for (let i = 0; i < m.know.length; i += 3) s.push({ h: '✅ 꼭 알아야 할 것', b: '<ul>' + m.know.slice(i, i + 3).map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' });
   for (let i = 0; i < m.todo.length; i += 3) s.push({ h: '🛠 우리 매장에서 할 일', b: '<ul>' + m.todo.slice(i, i + 3).map(t => '<li>' + esc(t.t) + (t.who || t.when ? '<small>' + esc([t.who, t.when].filter(Boolean).join(' · ')) + '</small>' : '') + '</li>').join('') + '</ul>' });
   if (m.nums.length) s.push({ h: '🔢 알아 둘 숫자', b: '<ul>' + m.nums.slice(0, 5).map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' });
@@ -7285,18 +7360,20 @@ function bfSlides(m) {
   for (let i = 0; i < m.qa.length; i += 2) s.push({ h: '🙋 이럴 땐 이렇게', b: '<dl>' + m.qa.slice(i, i + 2).map(q => '<dt>Q. ' + esc(q.q) + '</dt><dd>A. ' + esc(q.a) + '</dd>').join('') + '</dl>' });
   return s;
 }
-function bfShow(m) {
+async function bfShow(m) {
+  if (m.imgs.length) { toast('사진 불러오는 중…'); await bfLoadImgs(m.imgs.map(g => g.k)); }
   const sl = bfSlides(m); let i = 0;
   const box = document.createElement('div'); box.className = 'bfs';
-  const draw = () => { box.innerHTML = '<div class="bfs-top"><span>' + esc(m.title) + '</span><span>' + (i + 1) + ' / ' + sl.length + '</span><button type="button" data-k="x">닫기 ✕</button></div><div class="bfs-body"><h1>' + esc(sl[i].h) + '</h1>' + sl[i].b + '</div><div class="bfs-nav"><button type="button" data-k="p"' + (i ? '' : ' disabled') + '>◀ 이전</button><button type="button" data-k="n"' + (i < sl.length - 1 ? '' : ' disabled') + '>다음 ▶</button></div>'; };
+  const draw = () => { box.innerHTML = '<div class="bfs-top"><span>' + esc(m.title) + '</span><span>' + (i + 1) + ' / ' + sl.length + '</span><button type="button" data-k="x">닫기 ✕</button></div><div class="bfs-body"><h1>' + esc(sl[i].h) + '</h1>' + sl[i].b + '</div><div class="bfs-nav"><button type="button" data-k="p"' + (i ? '' : ' disabled') + '>◀ 이전</button><button type="button" data-k="n"' + (i < sl.length - 1 ? '' : ' disabled') + '>다음 ▶</button></div>'; bfFillImgs(box); };
   const key = e => { if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); if (i < sl.length - 1) { i++; draw(); } } else if (e.key === 'ArrowLeft') { if (i) { i--; draw(); } } else if (e.key === 'Escape') close(); };
   const close = () => { box.remove(); document.removeEventListener('keydown', key); };
-  box.addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (!b) return; if (b.dataset.k === 'x') close(); else if (b.dataset.k === 'p' && i) { i--; draw(); } else if (b.dataset.k === 'n' && i < sl.length - 1) { i++; draw(); } });
+  box.addEventListener('click', e => { const f = e.target.closest('.bfs-fig'); if (f && e.target.tagName === 'IMG') { f.classList.toggle('zoom'); return; }
+    const b = e.target.closest('[data-k]'); if (!b) return; if (b.dataset.k === 'x') close(); else if (b.dataset.k === 'p' && i) { i--; draw(); } else if (b.dataset.k === 'n' && i < sl.length - 1) { i++; draw(); } });
   document.addEventListener('keydown', key); draw(); document.body.appendChild(box);
 }
 function bfPrint(m) {
   const el = $('a-brief'), keep = el.innerHTML;
-  el.innerHTML = bfCard(m);
+  el.innerHTML = bfCard(m); bfFillImgs(el);
   document.body.classList.add('mt-printing');
   setTimeout(() => { window.print(); setTimeout(() => { document.body.classList.remove('mt-printing'); el.innerHTML = keep; renderBrief(); }, 400); }, 50);
 }
