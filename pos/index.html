@@ -1292,7 +1292,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-11d';
+var BUILD = '2026-11-11e';
 (function () {
   var busy = false;
   function typing() {
@@ -7332,15 +7332,22 @@ function bfShrink(file) {
 async function bfAddImg(id, file) {
   const m = bfNorm(BF.items[id] || {});
   if (m.imgs.length >= 10) { toast('사진은 회의마다 10장까지예요'); return; }
+  let step = '사진 읽기';
   try {
     toast('사진 줄이는 중…');
     const data = await bfShrink(file), k = 'bfimg_' + Date.now().toString(36);
-    const cap = prompt('사진 아래에 붙일 설명 (직원이 읽을 쉬운 말, 비워도 돼요)', '');
+    let cap = ''; try { cap = prompt('사진 아래에 붙일 설명 (직원이 읽을 쉬운 말, 비워도 돼요)', '') || ''; } catch (e) { }
+    step = '사진 저장'; toast('사진 저장 중…');
     await setDoc(doc(db, C.config, k), { data, meet: id, name: bfClean(file.name, 80), at: serverTimestamp(), by: S.user.email || '' });
-    BF.img[k] = data; m.imgs.push({ k, cap: bfClean(cap || '', 300) });
+    BF.img[k] = data; m.imgs.push({ k, cap: bfClean(cap, 300) });
+    step = '회의 정리에 연결';
     const items = Object.assign({}, BF.items); items[id] = m;
     await bfSave(items); renderBrief(); toast('사진을 넣었어요 — 🎤 설명 모드 첫 장 다음에 나와요');
-  } catch (e) { toast('사진 넣기 실패: ' + errMsg(e)); }
+  } catch (e) {
+    const msg = '사진 넣기 실패 (' + step + ' 단계)\n' + errMsg(e) + (e && e.code ? '\n[' + e.code + ']' : '') + '\n파일: ' + (file.name || '') + ' · ' + (file.type || '형식 모름') + ' · ' + Math.round((file.size || 0) / 1024) + 'KB';
+    if ($('bfMsg')) $('bfMsg').textContent = msg.replace(/\n/g, ' · ');
+    alert(msg);
+  }
 }
 function bfZoom(src) {
   if (!src) return;
