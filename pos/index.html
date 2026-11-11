@@ -609,6 +609,19 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .tk-tbl .x { border: 0; background: transparent; color: var(--ink3); cursor: pointer; font-size: 1.05em; width: 36px; height: 36px; }
 .tk-tbl .x:hover { color: var(--bad-ink); }
 /* 📝 회의 자료 */
+.bf-h { font-size: 1em; margin: 14px 0 6px; }
+.bf-one { background: var(--warn-bg); border-radius: 10px; padding: 10px 14px; margin: 6px 0 0; font-weight: 600; line-height: 1.6; }
+.bf-ul { margin: 0; padding-left: 1.3em; line-height: 1.75; } .bf-q li { color: var(--ink2); font-style: italic; }
+.bf-dl { margin: 0; } .bf-dl dt { font-weight: 700; margin-top: 6px; } .bf-dl dd { margin: 2px 0 0 1em; color: var(--ink2); line-height: 1.6; }
+.bf-lb { display: block; margin-top: 10px; font-weight: 700; font-size: .92em; } .bf-lb input { width: 100%; }
+.bfs { position: fixed; inset: 0; z-index: 400; background: var(--bg); color: var(--ink); display: flex; flex-direction: column; }
+.bfs-top { display: flex; gap: 12px; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--line); font-weight: 700; } .bfs-top span:nth-child(2) { margin-left: auto; color: var(--ink3); }
+.bfs-top button, .bfs-nav button { font: inherit; font-weight: 700; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 12px; padding: 10px 18px; cursor: pointer; }
+.bfs-body { flex: 1; overflow: auto; padding: 4vh 6vw; font-size: clamp(20px, 3.2vw, 38px); line-height: 1.6; }
+.bfs-body h1 { font-size: 1.3em; margin: 0 0 .8em; } .bfs-body ul { padding-left: 1.2em; margin: 0; } .bfs-body li { margin: 0 0 .7em; } .bfs-body li small { display: block; font-size: .6em; color: var(--ink3); }
+.bfs-body dt { font-weight: 800; margin-top: .6em; } .bfs-body dd { margin: .2em 0 0 1em; color: var(--ink2); } .bfs-sub { color: var(--ink3); font-size: .7em; } .bfs-one { background: var(--warn-bg); border-radius: 16px; padding: .6em .9em; }
+.bfs-nav { display: flex; justify-content: space-between; padding: 14px 18px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); } .bfs-nav button { min-width: 140px; min-height: 56px; font-size: 1.1em; } .bfs-nav button:disabled { opacity: .35; }
+@media print { body.mt-printing #a-brief .card { break-inside: auto; box-shadow: none; } }
 .mt-easy { background: var(--warn-bg); color: var(--ink); border-radius: 12px; padding: 10px 14px; margin: 12px 0 0; line-height: 1.65; word-break: keep-all; }
 .mt-say { margin: 0; padding-left: 1.4em; line-height: 1.85; word-break: keep-all; }
 .mt-say li { margin: 2px 0; }
@@ -826,6 +839,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
         <button class="pill on" data-tab="upload">업로드</button>
         <button class="pill" data-tab="eval">월별 평가·원인</button>
         <button class="pill" data-tab="meet">📝 회의 자료</button>
+        <button class="pill" data-tab="brief">🗣 회의 전달</button>
         <button class="pill" data-tab="sga">판관비·BEP</button>
         <button class="pill" data-tab="close">월마감 체크</button>
         <button class="pill" data-tab="plans">예정 매출</button>
@@ -995,6 +1009,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
 
     <div id="a-eval" class="hide"></div>
     <div id="a-meet" class="hide"></div>
+    <div id="a-brief" class="hide"></div>
     <div id="a-sga" class="hide"></div>
     <div id="a-close" class="hide"></div>
     <div id="a-vip" class="hide"></div>
@@ -1268,7 +1283,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-10n';
+var BUILD = '2026-11-11a';
 (function () {
   var busy = false;
   function typing() {
@@ -2904,7 +2919,7 @@ window.addEventListener('resize', () => {
 
 /* ===================== 관리자: 탭 ===================== */
 document.querySelectorAll('#adminTabs .pill').forEach(b => b.addEventListener('click', () => showAdminTab(b.dataset.tab)));
-const ATABS = ['upload', 'eval', 'meet', 'sga', 'close', 'plans', 'acct', 'download', 'settings', 'tree', 'vip', 'members', 'help'];
+const ATABS = ['upload', 'eval', 'meet', 'brief', 'sga', 'close', 'plans', 'acct', 'download', 'settings', 'tree', 'vip', 'members', 'help'];
 function showAdminTab(t) {
   if (!ATABS.includes(t)) t = 'upload';
   S.adminTab = t;
@@ -2917,6 +2932,7 @@ function showAdminTab(t) {
   if (t === 'tree') loadTree();
   if (t === 'eval') loadEval();
   if (t === 'meet') loadMeet();
+  if (t === 'brief') loadBrief();
   if (t === 'sga') loadSga();
   if (t === 'close') loadClose();
   if (t === 'vip') loadMembersList();
@@ -7020,6 +7036,137 @@ function renderStockPreview(p, name) {
     catch (e) { this.disabled = false; $('stockMsg').textContent = '저장 실패: ' + errMsg(e); }
   });
 }
+/* ===================== 🗣 회의 전달 (관리자만) =====================
+   본사 회의(녹음 · 전사)를 직원에게 설명할 수 있게 정리한 내용. pos_config/mnotes 문서에 회의별로 저장 (점장만 봄).
+   📂 정리 파일(.json) 불러오기 · ✏️ 직접 쓰기 · 🎤 설명 모드(큰 글씨로 한 장씩) · 🖨 인쇄 */
+const BF = { items: null, open: '', edit: null };
+const bfLines = s => String(s || '').split('\n').map(x => x.trim()).filter(Boolean);
+const bfClean = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u0009\u000b-\u001f]/g, ' ').trim().slice(0, n || 400);
+/* 파일 · 편집 내용을 저장할 모양으로 다듬기 (글자 수 제한, 모르는 칸은 버림) */
+function bfNorm(x) {
+  const arr = (a, f, n) => (Array.isArray(a) ? a : []).slice(0, n || 40).map(f).filter(Boolean);
+  const d = toDateInt(String(x.date || '')) || todayInt();
+  return {
+    id: bfClean(x.id, 40).replace(/[^\w-]/g, '') || (d + '-' + Date.now().toString(36)),
+    date: d, title: bfClean(x.title, 80) || '본사 회의', who: bfClean(x.who, 80), one: bfClean(x.one, 300),
+    know: arr(x.know, s => bfClean(s, 300)),
+    todo: arr(x.todo, t => typeof t === 'string' ? { t: bfClean(t, 200), who: '', when: '' } : t && t.t ? { t: bfClean(t.t, 200), who: bfClean(t.who, 40), when: bfClean(t.when, 40) } : null),
+    words: arr(x.words, w => w && w.w ? { w: bfClean(w.w, 40), m: bfClean(w.m, 200) } : null),
+    nums: arr(x.nums, s => bfClean(s, 200)),
+    qa: arr(x.qa, q => q && q.q ? { q: bfClean(q.q, 200), a: bfClean(q.a, 400) } : null, 20),
+    quotes: arr(x.quotes, s => bfClean(s, 300), 20),
+    src: bfClean(x.src, 200)
+  };
+}
+async function loadBrief(force) {
+  const el = $('a-brief');
+  if (!BF.items || force) {
+    el.innerHTML = '<div class="card muted">불러오는 중…</div>';
+    try { const s = await getDoc(doc(db, C.config, 'mnotes')); BF.items = s.exists() ? (s.data().items || {}) : {}; }
+    catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
+  }
+  renderBrief();
+}
+async function bfSave(items) {
+  await setDoc(doc(db, C.config, 'mnotes'), { items, at: serverTimestamp(), by: S.user.email || '' });
+  BF.items = items;
+}
+function bfCard(m) {
+  const sec = (ic, t, body) => body ? '<h3 class="bf-h">' + ic + ' ' + t + '</h3>' + body : '';
+  const ul = a => a.length ? '<ul class="bf-ul">' + a.map(s => '<li>' + esc(s) + '</li>').join('') + '</ul>' : '';
+  return '<div class="card bf-card" data-bf="' + esc(m.id) + '"><div class="bk-h"><h2>🗣 ' + esc(m.title) + '</h2><span class="muted">' + dLabel(m.date) + (m.who ? ' · ' + esc(m.who) : '') + '</span></div>' +
+    (m.one ? '<p class="bf-one">💡 ' + esc(m.one) + '</p>' : '') +
+    sec('✅', '직원이 꼭 알아야 할 것', ul(m.know)) +
+    sec('🛠', '우리 매장에서 할 일', m.todo.length ? table(['할 일', '누가', '언제까지'], m.todo.map(t => [esc(t.t), esc(t.who || '-'), esc(t.when || '-')])) : '') +
+    sec('🔢', '알아 둘 숫자', ul(m.nums)) +
+    sec('📖', '쉬운 말 풀이', m.words.length ? '<dl class="bf-dl">' + m.words.map(w => '<dt>' + esc(w.w) + '</dt><dd>' + esc(w.m) + '</dd>').join('') + '</dl>' : '') +
+    sec('🙋', '직원이 물어볼 만한 것', m.qa.length ? '<dl class="bf-dl">' + m.qa.map(q => '<dt>Q. ' + esc(q.q) + '</dt><dd>A. ' + esc(q.a) + '</dd>').join('') + '</dl>' : '') +
+    sec('🗨', '회의에서 나온 말 (원문)', m.quotes.length ? '<ul class="bf-ul bf-q">' + m.quotes.map(s => '<li>"' + esc(s) + '"</li>').join('') + '</ul>' : '') +
+    (m.src ? '<p class="muted" style="margin:8px 0 0">출처: ' + esc(m.src) + '</p>' : '') +
+    '<div class="row mt-np" style="margin-top:10px"><button class="btn primary" type="button" data-bfa="show">🎤 설명 모드</button><button class="btn" type="button" data-bfa="print">🖨 인쇄</button><button class="btn ghost" type="button" data-bfa="edit">✏️ 고치기</button><button class="btn danger" type="button" data-bfa="del">삭제</button></div></div>';
+}
+function renderBrief() {
+  const el = $('a-brief'), list = Object.values(BF.items || {}).map(bfNorm).sort((a, b) => b.date - a.date || String(b.id).localeCompare(String(a.id)));
+  let h = '<div class="card"><h2>🗣 회의 전달 — 직원 설명용</h2><p class="muted" style="margin-top:-4px">본사 회의 녹음 · 전사를 직원이 알아야 할 내용으로 정리해 두는 곳이에요. <b>점장님만</b> 볼 수 있어요. 🎤 설명 모드로 태블릿 · 모니터에 크게 띄워 직원에게 설명하거나 🖨 인쇄해서 나눠 주세요.</p>' +
+    '<div class="row"><label class="btn primary" for="bfFile">📂 정리 파일 불러오기 (.json)</label><input type="file" id="bfFile" accept=".json,application/json" hidden><button class="btn" type="button" id="bfNew">✏️ 직접 쓰기</button><span class="muted" id="bfMsg"></span></div></div>';
+  if (BF.edit) h += bfEditor(BF.edit);
+  h += list.length ? list.map(bfCard).join('') : '<div class="card muted">아직 정리된 회의가 없어요. 녹음 · 전사 파일을 주시면 정리 파일을 만들어 드려요.</div>';
+  el.innerHTML = h;
+  $('bfFile').addEventListener('change', async e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    try {
+      const j = JSON.parse(await f.text()), arr = (Array.isArray(j) ? j : j.meetings || [j]).map(bfNorm);
+      if (!arr.length) throw new Error('회의 내용이 없어요');
+      if (!confirm(arr.map(m => dLabel(m.date) + ' ' + m.title).join('\n') + '\n\n이 ' + arr.length + '건을 저장할까요? (같은 회의는 새 내용으로 바뀌어요)')) return;
+      const items = Object.assign({}, BF.items); arr.forEach(m => { items[m.id] = m; });
+      if (JSON.stringify(items).length > 900000) throw new Error('내용이 너무 길어요 (문서 1MB 제한) — 오래된 회의를 지워 주세요');
+      await bfSave(items); renderBrief(); toast(arr.length + '건 저장했어요');
+    } catch (er) { $('bfMsg').textContent = '불러오지 못했어요: ' + errMsg(er); }
+  });
+  $('bfNew').addEventListener('click', () => { BF.edit = bfNorm({ date: todayInt() }); renderBrief(); });
+  el.querySelectorAll('[data-bfa]').forEach(b => b.addEventListener('click', async () => {
+    const id = b.closest('[data-bf]').dataset.bf, m = bfNorm(BF.items[id] || {}), a = b.dataset.bfa;
+    if (a === 'show') bfShow(m);
+    else if (a === 'print') bfPrint(m);
+    else if (a === 'edit') { BF.edit = m; renderBrief(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    else if (a === 'del') { if (!confirm('"' + m.title + '" 정리를 지울까요?')) return; const items = Object.assign({}, BF.items); delete items[id]; try { await bfSave(items); renderBrief(); } catch (e) { toast('실패: ' + errMsg(e)); } }
+  }));
+  if (BF.edit) bfBindEditor();
+}
+/* ✏️ 직접 쓰기 · 고치기: 줄마다 한 항목. 할 일은 "할 일 | 누가 | 언제", 풀이는 "말 | 뜻", 질문은 "질문 | 답" */
+function bfEditor(m) {
+  const ta = (k, lbl, v, ph, rows) => '<label class="bf-lb">' + lbl + '<textarea class="mt-memo" data-bfe="' + k + '" rows="' + (rows || 4) + '" placeholder="' + esc(ph) + '">' + esc(v) + '</textarea></label>';
+  return '<div class="card"><h2>✏️ ' + (BF.items && BF.items[m.id] ? '고치기' : '새 회의 정리') + '</h2>' +
+    '<div class="row"><label>회의 날짜<input type="date" data-bfe="date" value="' + dLabel(m.date) + '"></label><label style="flex:1;min-width:200px">제목<input type="text" data-bfe="title" maxlength="80" value="' + esc(m.title) + '"></label><label style="min-width:180px">누가 · 어디서<input type="text" data-bfe="who" maxlength="80" value="' + esc(m.who) + '"></label></div>' +
+    ta('one', '💡 한 줄 요약', m.one, '예) 11월부터 방한용품 · 10대 상품을 입구에 진열하고 매일 하루 목표를 확인해요', 2) +
+    ta('know', '✅ 직원이 꼭 알아야 할 것 (한 줄에 하나)', m.know.join('\n'), '예) 2년 넘은 재고는 FZ 행사로 싸게 팔아 정리해요') +
+    ta('todo', '🛠 할 일 (할 일 | 누가 | 언제)', m.todo.map(t => [t.t, t.who, t.when].join(' | ')).join('\n'), '예) 방한용품 입구 진열 | 전 직원 | 11/16') +
+    ta('nums', '🔢 알아 둘 숫자 (한 줄에 하나)', m.nums.join('\n'), '예) 11월 하루 목표 매출 약 1,440만원', 3) +
+    ta('words', '📖 쉬운 말 풀이 (말 | 뜻)', m.words.map(w => w.w + ' | ' + w.m).join('\n'), '예) PB | 우리 회사 이름을 붙여 파는 물건', 3) +
+    ta('qa', '🙋 물어볼 만한 것 (질문 | 답)', m.qa.map(q => q.q + ' | ' + q.a).join('\n'), '예) 할인은 얼마까지? | 점장 승인 없이는 에누리 금지', 3) +
+    ta('quotes', '🗨 회의에서 나온 말 (한 줄에 하나)', m.quotes.join('\n'), '', 3) +
+    '<label class="bf-lb">출처<input type="text" data-bfe="src" maxlength="200" value="' + esc(m.src) + '" placeholder="예) 11/11 본사 회의 녹음 1 · 전사"></label>' +
+    '<div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="bfSaveE">저장</button><button class="btn" type="button" id="bfCancelE">취소</button></div></div>';
+}
+function bfBindEditor() {
+  const v = k => { const e = document.querySelector('[data-bfe="' + k + '"]'); return e ? e.value : ''; }, split = s => s.split('|').map(x => x.trim());
+  $('bfCancelE').addEventListener('click', () => { BF.edit = null; renderBrief(); });
+  $('bfSaveE').addEventListener('click', async () => {
+    const m = bfNorm({ id: BF.edit.id, date: v('date').replace(/-/g, ''), title: v('title'), who: v('who'), one: v('one'), src: v('src'),
+      know: bfLines(v('know')), nums: bfLines(v('nums')), quotes: bfLines(v('quotes')),
+      todo: bfLines(v('todo')).map(l => { const [t, who, when] = split(l); return { t, who, when }; }),
+      words: bfLines(v('words')).map(l => { const [w, ...r] = split(l); return { w, m: r.join(' | ') }; }),
+      qa: bfLines(v('qa')).map(l => { const [q, ...r] = split(l); return { q, a: r.join(' | ') }; }) });
+    const items = Object.assign({}, BF.items); items[m.id] = m;
+    try { await bfSave(items); BF.edit = null; renderBrief(); toast('저장했어요'); } catch (e) { toast('실패: ' + errMsg(e)); }
+  });
+}
+/* 🎤 설명 모드: 한 장씩 크게 (◀ ▶ · 키보드 화살표 · 화면 누르기) */
+function bfSlides(m) {
+  const s = [{ h: m.title, b: '<p class="bfs-sub">' + dLabel(m.date) + (m.who ? ' · ' + esc(m.who) : '') + '</p>' + (m.one ? '<p class="bfs-one">💡 ' + esc(m.one) + '</p>' : '') }];
+  for (let i = 0; i < m.know.length; i += 3) s.push({ h: '✅ 꼭 알아야 할 것', b: '<ul>' + m.know.slice(i, i + 3).map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' });
+  for (let i = 0; i < m.todo.length; i += 3) s.push({ h: '🛠 우리 매장에서 할 일', b: '<ul>' + m.todo.slice(i, i + 3).map(t => '<li>' + esc(t.t) + (t.who || t.when ? '<small>' + esc([t.who, t.when].filter(Boolean).join(' · ')) + '</small>' : '') + '</li>').join('') + '</ul>' });
+  if (m.nums.length) s.push({ h: '🔢 알아 둘 숫자', b: '<ul>' + m.nums.slice(0, 5).map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' });
+  for (let i = 0; i < m.words.length; i += 3) s.push({ h: '📖 쉬운 말 풀이', b: '<dl>' + m.words.slice(i, i + 3).map(w => '<dt>' + esc(w.w) + '</dt><dd>' + esc(w.m) + '</dd>').join('') + '</dl>' });
+  for (let i = 0; i < m.qa.length; i += 2) s.push({ h: '🙋 이럴 땐 이렇게', b: '<dl>' + m.qa.slice(i, i + 2).map(q => '<dt>Q. ' + esc(q.q) + '</dt><dd>A. ' + esc(q.a) + '</dd>').join('') + '</dl>' });
+  return s;
+}
+function bfShow(m) {
+  const sl = bfSlides(m); let i = 0;
+  const box = document.createElement('div'); box.className = 'bfs';
+  const draw = () => { box.innerHTML = '<div class="bfs-top"><span>' + esc(m.title) + '</span><span>' + (i + 1) + ' / ' + sl.length + '</span><button type="button" data-k="x">닫기 ✕</button></div><div class="bfs-body"><h1>' + esc(sl[i].h) + '</h1>' + sl[i].b + '</div><div class="bfs-nav"><button type="button" data-k="p"' + (i ? '' : ' disabled') + '>◀ 이전</button><button type="button" data-k="n"' + (i < sl.length - 1 ? '' : ' disabled') + '>다음 ▶</button></div>'; };
+  const key = e => { if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); if (i < sl.length - 1) { i++; draw(); } } else if (e.key === 'ArrowLeft') { if (i) { i--; draw(); } } else if (e.key === 'Escape') close(); };
+  const close = () => { box.remove(); document.removeEventListener('keydown', key); };
+  box.addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (!b) return; if (b.dataset.k === 'x') close(); else if (b.dataset.k === 'p' && i) { i--; draw(); } else if (b.dataset.k === 'n' && i < sl.length - 1) { i++; draw(); } });
+  document.addEventListener('keydown', key); draw(); document.body.appendChild(box);
+}
+function bfPrint(m) {
+  const el = $('a-brief'), keep = el.innerHTML;
+  el.innerHTML = bfCard(m);
+  document.body.classList.add('mt-printing');
+  setTimeout(() => { window.print(); setTimeout(() => { document.body.classList.remove('mt-printing'); el.innerHTML = keep; renderBrief(); }, 400); }, 50);
+}
+
 /* ===================== 매출 구조 (관리자만) =====================
    목표 → 내판 / 외판 → 항목 → 세부 항목 … 단계 제한 없이 가지를 내림. 왼쪽(목표)에서 오른쪽으로 뻗는 그림, 누른 칸만 오른쪽에서 고침
    저장: pos_config/tree 문서. 월별은 'YYYYMM', 연간 계획은 'Y2027' 같은 필드 → { root: { name, amt, memo, key, children: [...] } } */
