@@ -622,6 +622,11 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .bfs-body dt { font-weight: 800; margin-top: .6em; } .bfs-body dd { margin: .2em 0 0 1em; color: var(--ink2); } .bfs-sub { color: var(--ink3); font-size: .7em; } .bfs-one { background: var(--warn-bg); border-radius: 16px; padding: .6em .9em; }
 .bfs-nav { display: flex; justify-content: space-between; padding: 14px 18px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); } .bfs-nav button { min-width: 140px; min-height: 56px; font-size: 1.1em; } .bfs-nav button:disabled { opacity: .35; }
 @media print { body.mt-printing #a-brief .card { break-inside: auto; box-shadow: none; } }
+.why-g { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; } @media (max-width: 860px) { .why-g { grid-template-columns: 1fr; } }
+.why-t { font-size: 1em; margin: 0 0 8px; } .why-t small { font-weight: 500; color: var(--ink3); }
+.why-i { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; background: var(--surface); }
+.why-h { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; } .why-a { font-weight: 800; white-space: nowrap; } .why-a.m { color: var(--bad-ink); } .why-a.p { color: var(--ok-ink); } .why-a small { font-weight: 500; color: var(--ink3); }
+.why-d { font-size: .86em; color: var(--ink2); margin-top: 4px; line-height: 1.5; } .why-e { font-size: .9em; margin-top: 4px; line-height: 1.5; } .why-x { font-size: .86em; margin-top: 4px; color: var(--s1); font-weight: 600; }
 .mt-easy { background: var(--warn-bg); color: var(--ink); border-radius: 12px; padding: 10px 14px; margin: 12px 0 0; line-height: 1.65; word-break: keep-all; }
 .mt-say { margin: 0; padding-left: 1.4em; line-height: 1.85; word-break: keep-all; }
 .mt-say li { margin: 2px 0; }
@@ -1283,7 +1288,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-11b';
+var BUILD = '2026-11-11c';
 (function () {
   var busy = false;
   function typing() {
@@ -6560,11 +6565,127 @@ function eaDrawMoves() {
   body.innerHTML = eaBars(rows.map(x => ({ name: x.name, d: x.d,
     sub: eokW(x.b) + ' → ' + eokW(x.a) + (k === 'cust' && x.b <= 0 ? ' · 신규' : k === 'cust' && x.a <= 0 ? ' · 이번엔 없음' : '') + (mv.d && x.d * mv.d > 0 ? ' · 전체 변화의 ' + pct(x.d / mv.d, 0) : '') })));
 }
+/* 🧭 목표 달성 · 미달 원인 — 외부 요인(바꾸기 어려운 것)과 내부 요인(우리가 바꿀 수 있는 것)으로 나눠 금액 영향을 추정.
+   비교 기준: 작년 같은 달(없으면 전달). 금액은 VAT 별도. 각 항목의 금액은 서로 다른 잣대로 잰 '추정 영향'이라 더해서 맞추지 않음 */
+function smsStoreMonth(ym, upto) {
+  /* 마감 문자 '당월매출' 지점별 (그 달 upto일까지 중 마지막 문자) → { d, stores: { 이름: { v, c } } } */
+  const rs = ((S.smsCache || {})[ym] || []).filter(r => r.kind === '지점마감' && String(r.metric).startsWith('당월|') && (!upto || r.d % 100 <= upto));
+  if (!rs.length) return null;
+  const d = Math.max(...rs.map(r => r.d)), out = {};
+  rs.filter(r => r.d === d).forEach(r => { out[String(r.metric).split('|')[1]] = { v: Number(r.v) || 0, c: Number(r.c) || 0 }; });
+  return { d, stores: out };
+}
+function eaWhyHtml(ym) {
+  const up = eaUpto(ym), live = eaLive(ym), cur = eaAgg(ym, up), tg = (S.targets || {})[ym] || {}, T = tg.total || 0;
+  const lyA = eaAgg(ym - 100, up), pvA = eaAgg(addMonths(ym, -1), up), useLy = lyA.days > 0, base = useLy ? lyA : pvA;
+  const bl = useLy ? '작년 ' + (ym % 100) + '월' : '전달';
+  if (!base.days) return '';
+  const ext = [], int = [], add = (arr, o) => arr.push(o);
+  const won2 = n => mtWon(n), sw = n => mtSW(n);
+
+  /* ── 외부 1 · 영업일 · 요일 구성 */
+  const en = eaExp(cur, base, 'n'), eo = eaExp(cur, base, 'o'), fDays = en + eo - base.tot, wk = a => a.ty['토'].c + a.ty['일'].c;
+  add(ext, { k: '📅', t: '영업일 · 요일 구성', amt: fDays, why: '영업일 ' + eaNum(base.days) + '일 → ' + cur.days + '일, 토 · 일 ' + eaNum(wk(base)) + ' → ' + wk(cur) + '일',
+    easy: Math.abs(fDays) < 3e6 ? '날짜 구성 차이는 거의 없어요.' : fDays < 0 ? '장사하는 날 · 주말이 ' + bl + '보다 적어서 그만큼 덜 팔린 거예요.' : '장사하는 날 · 주말이 많아서 그만큼 더 팔렸어요.', act: '' });
+
+  /* ── 외부 2 · 다른 매장도 같이 빠졌나 (마감 문자 지점별 당월, 전달 같은 날짜까지) */
+  const nowS = smsStoreMonth(ym, up), cut = nowS ? nowS.d % 100 : 0, prvS = nowS ? smsStoreMonth(addMonths(ym, -1), cut) : null;
+  if (nowS && prvS) {
+    const names = Object.keys(nowS.stores).filter(n => isStore(n) && n !== ME && prvS.stores[n]);
+    const a = names.reduce((s, n) => s + nowS.stores[n].v, 0), b = names.reduce((s, n) => s + prvS.stores[n].v, 0);
+    const me1 = (nowS.stores[ME] || {}).v, me0 = (prvS.stores[ME] || {}).v;
+    if (names.length && b && me0) {
+      const mk = a / b - 1, my = me1 / me0 - 1, mkAmt = pvA.tot * mk;
+      add(ext, { k: '🏬', t: '다른 매장 흐름 (시장 분위기)', amt: mkAmt, why: '전달 같은 기간 대비 다른 매장 ' + names.length + '곳 합계 ' + chgTxt(mk) + ' · 일산점 ' + chgTxt(my) + ' (마감 문자 ' + mdLabel(nowS.d) + '까지) · 금액 = 시장 흐름대로였다면 전달 대비 늘거나 줄었을 매출',
+        easy: Math.abs(my - mk) < 0.03 ? '다른 매장도 비슷하게 움직였어요. 시장 분위기 영향이 커요.' : my < mk ? '다른 매장보다 일산점이 ' + Math.round((mk - my) * 100) + '%p 더 나빴어요. 우리 매장만의 원인을 찾아야 해요.' : '다른 매장보다 일산점이 ' + Math.round((my - mk) * 100) + '%p 더 좋았어요.',
+        act: my < mk - 0.03 ? '내부 요인(아래)을 먼저 점검' : '' });
+    }
+  }
+
+  /* ── 외부 3 · 계절 (작년에도 이 시기에 이렇게 움직였나) */
+  const ly0 = eaAgg(addMonths(ym - 100, -1), 31), ly1 = eaAgg(ym - 100, 31), pv1 = eaAgg(addMonths(ym, -1), 31);
+  if (!live && ly0.days && ly1.days && pv1.days && ly0.tot && pv1.tot) {
+    const lyChg = ly1.tot / ly0.tot - 1, myChg = cur.tot / pv1.tot - 1;
+    add(ext, { k: '🍂', t: '계절 흐름', amt: pv1.tot * lyChg, why: '작년 ' + (addMonths(ym, -1) % 100) + '월 → ' + (ym % 100) + '월 ' + chgTxt(lyChg) + ' · 올해 ' + chgTxt(myChg) + ' · 금액 = 작년 흐름대로였다면 전달 대비 늘거나 줄었을 매출',
+      easy: Math.abs(myChg - lyChg) < 0.05 ? '작년에도 이맘때 비슷하게 움직였어요. 계절 영향이에요.' : myChg < lyChg ? '작년 같은 시기보다 더 많이 빠졌어요. 계절만으로는 설명이 안 돼요.' : '작년 같은 시기보다 좋았어요.', act: '', est: true });
+  }
+
+  /* ── 외부 4 · 거래처 사정 (예정 매출 연기 · 무산) */
+  const memo = ((MT && MT.memo) || {})['r' + ym] || {}, lost = mtLostAuto(ym).concat((memo.lost || []).filter(x => x.n || x.a));
+  if (lost.length) {
+    const sum = lost.reduce((s, x) => s + (Number(x.a) || 0), 0);
+    add(ext, { k: '🏗', t: '거래처 사정 (예정 매출 연기 · 무산)', amt: -sum, why: lost.slice(0, 5).map(x => esc(x.n || '') + ' ' + won2(x.a) + ' (' + mtKindTxt(x) + ')').join(', ') + (lost.length > 5 ? ' 외 ' + (lost.length - 5) + '건' : ''),
+      easy: '계획했던 업체 주문 ' + won2(sum) + '이 들어오지 않았어요.', act: '본사 기준: "일정 지연"은 이유가 안 됨 → 미리 플랜 B · C 매출 준비 (목표의 130% 계획)' });
+  }
+
+  /* ── 내부 1 · 손님 수 · 객단가 (마감 문자 / POS 객수 기준) */
+  const tx1 = mtTx(ym), tx0 = mtTx(useLy ? ym - 100 : addMonths(ym, -1));
+  if (tx1 && tx0 && tx0.n && !live) {
+    const a1 = tx1.v / tx1.n, a0 = tx0.v / tx0.n, cEff = (tx1.n - tx0.n) * a0, aEff = (a1 - a0) * tx1.n;
+    add(int, { k: '👥', t: '손님 수 (객수)', amt: cEff, why: bl + ' ' + tx0.n.toLocaleString('ko-KR') + '건 → ' + tx1.n.toLocaleString('ko-KR') + '건 (' + chgTxt(tx1.n / tx0.n - 1) + ', 하루 ' + ((tx1.n - tx0.n) >= 0 ? '+' : '−') + Math.abs(Math.round((tx1.n - tx0.n) / (cur.days || 1))) + '건)',
+      easy: tx1.n < tx0.n ? '찾아온 손님이 줄었어요. 진열대가 비어 있거나(결품) 찾는 상품이 없으면 손님이 다시 안 와요.' : '손님이 늘었어요.', act: tx1.n < tx0.n ? '매일 1~18번 순회 · 결품 0 · 회원 문자 · 라이브 방송 연계' : '' });
+    add(int, { k: '🧾', t: '객단가 (손님 1명이 쓴 돈)', amt: aEff, why: bl + ' ' + won(Math.round(a0)) + ' → ' + won(Math.round(a1)) + ' (' + chgTxt(a1 / a0 - 1) + ')',
+      easy: a1 < a0 ? '한 번에 사 가는 금액이 줄었어요.' : '한 번에 사 가는 금액이 늘었어요.', act: a1 < a0 ? '연관 상품 함께 권하기 · 세트 수량(철물) 걸기 · 패키지 제안' : '' });
+  } else {
+    const nEff = cur.n - en;
+    add(int, { k: '🏪', t: '매장(내판) 하루 판매력', amt: nEff, why: '요일 구성을 맞춰 보면 ' + bl + ' 대비 ' + chgTxt(chg(cur.n, en)) + (tx1 ? '' : ' · 객수 자료(마감 문자 · POS 원본)가 부족해 손님 수 · 객단가로 나누지 못했어요'),
+      easy: nEff < 0 ? '같은 날짜 구성이었어도 매장에서 덜 팔렸어요.' : '같은 날짜 구성보다 매장에서 더 팔렸어요.', act: nEff < 0 ? '결품 점검 · 진열 · 회원 재방문' : '' });
+  }
+
+  /* ── 내부 2 · 외판 하루 판매력 · 거래처 변화 */
+  const oEff = cur.o - eo;
+  let oWhy = '요일 구성을 맞춰 보면 ' + bl + ' 대비 ' + chgTxt(chg(cur.o, eo));
+  if (cur.det && base.det) { const cm = eaMoves(cur.cust, base.cust), gone = cm.filter(x => x.a <= 0 && x.b >= 3e6).slice(0, 3), nw = cm.filter(x => x.b <= 0 && x.a >= 3e6).slice(0, 3);
+    if (gone.length) oWhy += ' · 이번엔 없는 거래처: ' + gone.map(x => esc(x.name) + '(' + won2(x.b) + ')').join(', ');
+    if (nw.length) oWhy += ' · 새 거래처: ' + nw.map(x => esc(x.name) + '(' + won2(x.a) + ')').join(', '); }
+  add(int, { k: '🤝', t: '외판(B2B) 판매력 · 거래처', amt: oEff, why: oWhy, easy: oEff < 0 ? '업체 매출이 ' + bl + '보다 적었어요.' : '업체 매출이 ' + bl + '보다 많았어요.', act: oEff < 0 ? '빠진 거래처 재주문 연락 · 예정 매출 매주 점검 · 수주팀 견적 협업' : '' });
+
+  /* ── 내부 3 · 대분류 (매장) */
+  if (cur.det && base.det) {
+    const mv = eaMoves(cur.catn, base.catn).filter(x => Math.abs(x.d) >= 2e6), dn = mv.filter(x => x.d < 0).slice(0, 3), upc = mv.filter(x => x.d > 0).slice(0, 2);
+    if (dn.length || upc.length) add(int, { k: '🗂', t: '매장 대분류', amt: dn.reduce((s, x) => s + x.d, 0), why: (dn.length ? '줄어든 것: ' + dn.map(x => esc(x.name) + ' ' + sw(x.d)).join(', ') : '') + (upc.length ? (dn.length ? ' · ' : '') + '늘어난 것: ' + upc.map(x => esc(x.name) + ' ' + sw(x.d)).join(', ') : ''),
+      easy: dn.length ? '많이 줄어든 분류: ' + dn.map(x => x.name).join(' · ') + '.' : '크게 줄어든 분류는 없어요.', act: dn.length ? '해당 분류 결품 · 진열 · 가격표 · 행사 점검' : '' });
+  }
+
+  /* ── 내부 4 · 매총율 (할인 · 장기재고 정리) */
+  const r1 = eaRate(cur), r0 = eaRate(base);
+  if (r1 !== null && r0 !== null) {
+    const mEff = (cur.net.n + cur.net.o) * (r1 - r0);
+    add(int, { k: '💰', t: '매총율 (남는 돈 비율)', amt: mEff, money: true, why: bl + ' ' + pct(r0) + ' → ' + pct(r1) + ' (' + eaPP(r1 - r0) + ') · 매출 대비 매총이익 영향',
+      easy: r1 < r0 ? '100원 팔아 남는 돈이 ' + Math.round((r0 - r1) * 100) + '원 줄었어요. 할인 · 장기재고 정리 행사 · 원가 오류를 확인해요.' : '남는 돈 비율이 좋아졌어요.', act: r1 < r0 ? '에누리 기준 지키기 · 장기재고 할인은 계획된 비용으로 따로 보고 · 원가 오류 정정' : '' });
+  }
+
+  /* ── 내부 5 · 반품 · 취소 */
+  if (cur.det && base.det && Math.abs(cur.neg - base.neg) >= 1e6) add(int, { k: '↩️', t: '반품 · 취소', amt: cur.neg - base.neg, why: bl + ' ' + won2(-base.neg) + ' → ' + won2(-cur.neg), easy: cur.neg < base.neg ? '반품 · 취소가 늘었어요.' : '반품 · 취소가 줄었어요.', act: cur.neg < base.neg ? '반품 사유 확인 (상품 불량 · 설명 부족 · 늦은 정정)' : '' });
+
+  /* ── 내부 6 · 시공 */
+  const c1 = mtCons(ym, up), c0 = mtCons(useLy ? ym - 100 : addMonths(ym, -1), up);
+  if (c1.n || c0.n) add(int, { k: '🛁', t: '시공 건수', amt: c1.net - c0.net, why: bl + ' ' + c0.n + '건 · ' + won2(c0.net) + ' → ' + c1.n + '건 · ' + won2(c1.net), easy: c1.n < c0.n ? '시공이 ' + (c0.n - c1.n) + '건 줄었어요.' : '시공이 ' + (c1.n - c0.n) + '건 늘었어요.', act: c1.n < c0.n ? '상담 고객 재연락 · 노후 아파트 설치 상담 · 라이브 문의 빠르게 응대' : '' });
+
+  /* 화면 */
+  const top = ext.concat(int).filter(x => !x.money && x.amt < -1e6).sort((a, b) => a.amt - b.amt).slice(0, 3);
+  const row = x => '<div class="why-i"><div class="why-h"><span>' + x.k + ' <b>' + x.t + '</b></span><span class="why-a ' + (x.amt < 0 ? 'm' : 'p') + '">' + (x.money ? '매총 ' : '') + sw(x.amt) + (x.est ? ' <small>추정</small>' : '') + '</span></div><div class="why-d">' + x.why + '</div><div class="why-e">💬 ' + x.easy + '</div>' + (x.act ? '<div class="why-x">👉 ' + x.act + '</div>' : '') + '</div>';
+  const gap = T ? cur.tot - T : null;
+  let h = '<div class="card"><h2>🧭 ' + ymLabel(ym) + ' ' + (gap === null ? '' : gap >= 0 ? '목표를 달성한 이유' : '목표를 못 한 이유') + ' — 외부 요인 · 내부 요인</h2>' +
+    '<p class="muted" style="margin-top:-4px">비교 기준: <b>' + bl + '</b>' + (live ? ' (1~' + up + '일 같은 기간)' : '') + '. 금액은 각 원인이 매출(💰는 매총이익)에 준 <b>추정 영향</b>이라 모두 더해도 전체 차이와 딱 맞지는 않아요.</p>' +
+    '<div class="brief-tot"><b>' + won(cur.tot) + '</b><span class="muted">' + (T ? '목표 ' + won(T) + ' 대비 ' + sw(gap) + ' (' + pct(cur.tot / T, 0) + ')' + (tg.n && tg.o ? ' · 내판 ' + sw(cur.n - tg.n) + ' · 외판 ' + sw(cur.o - tg.o) : '') + ' · ' : '') + bl + ' 대비 ' + sw(cur.tot - base.tot) + ' (' + chgTxt(chg(cur.tot, base.tot)) + ')</span></div>' +
+    (top.length ? '<p class="mt-easy" style="margin-top:8px">💬 <b>쉽게 말하면</b> · 가장 크게 영향을 준 것은 ' + top.map((x, i) => (i + 1) + ') <b>' + x.t + '</b> ' + sw(x.amt)).join(', ') + '예요.</p>' : '') +
+    '<div class="why-g"><div><h3 class="why-t">🌦 외부 요인 <small>우리가 바꾸기 어려운 것</small></h3>' + (ext.length ? ext.map(row).join('') : '<p class="muted">자료가 부족해요</p>') + '</div>' +
+    '<div><h3 class="why-t">🏪 내부 요인 <small>우리가 바꿀 수 있는 것</small></h3>' + int.map(row).join('') + '</div></div>' +
+    '<p class="muted" style="margin:8px 0 0">자료로 직접 잴 수 없는 것: 결품 · 진열 상태 · 날씨 · 직원 수 · 경쟁 매장 행사. 회의 자료 ③의 메모 칸에 적어 두면 함께 설명할 수 있어요. 다른 매장 흐름은 마감 문자(지점별 당월)를 매일 올려야 나와요.</p></div>';
+  return h;
+}
+
 async function loadEval() {
   const el = $('a-eval');
   if (!S.daily || !S.detail) el.innerHTML = '<div class="card muted">불러오는 중…</div>';
   try { await loadBase(); await loadDetail(); }
   catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
+  /* 원인 분석(외부 · 내부)용: 마감 문자(객수 · 지점별) · 예정 매출 · 시공 · 회의 메모 */
+  try { await Promise.all(eaMonths().map(m => loadSms(m).catch(() => []))); } catch (e) { }
+  try { await loadPlans(); } catch (e) { S.plans = S.plans || []; }
+  try { await loadCons(); } catch (e) { S.cons = S.cons || []; }
+  if (!MT.memo) { try { const s = await getDoc(doc(db, C.config, 'meet')); MT.memo = s.exists() ? s.data() : {}; } catch (e) { MT.memo = {}; } }
   renderEval();
 }
 function renderEval() {
@@ -6589,6 +6710,7 @@ function renderEval() {
     if (miss.length) h += '<p class="muted" style="margin:6px 0 0">빠진 항목: ' + miss.join(' · ') + ' — 나머지 항목만으로 점수를 냈어요.</p>';
   }
   h += '</div>';
+  h += eaWhyHtml(ym);
   h += eaCauseHtml(ym);
   h += '<div class="card"><h2>🗓️ 월별 평가표</h2><p class="muted" style="margin-top:0">줄을 누르면 그 달의 평가와 원인 분석을 위에서 봅니다.</p><div class="scroll"><table id="eaTbl"><tr><th>월</th><th>매출</th><th>목표 달성</th><th>전월 대비</th><th>전년 대비</th><th>마진</th><th>마진율</th><th>점수</th><th>등급</th></tr>' +
     all.map(x => '<tr data-ym="' + x.ym + '"' + (x.ym === ym ? ' class="on"' : '') + '><td>' + ymLabel(x.ym) + (x.live ? ' <span class="tag">진행 중</span>' : '') + '</td><td>' + won(x.cur.tot) + '</td><td>' + (x.goal === null ? '-' : pct(x.goal) + (x.live ? ' (예상)' : '')) + '</td><td>' + chgTxt(x.prevChg) + '</td><td>' + chgTxt(x.lyChg) + '</td><td>' + (x.cur.det ? won(x.cur.mar.n + x.cur.mar.o) : '-') + '</td><td>' + (x.rate === null ? '-' : pct(x.rate)) + '</td><td>' + (x.score === null ? '-' : Math.round(x.score)) + '</td><td>' + (x.grade ? eaBadge(x.grade) + ' ' + EA_GL[x.grade] : '-') + '</td></tr>').join('') + '</table></div>' +
