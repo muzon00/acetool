@@ -995,6 +995,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
           </div>
         </div>
         <p class="muted" style="margin:8px 0 12px">칸을 누르면 오른쪽에서 금액·이름·메모를 고칩니다. 고른 칸 옆의 <b>+</b>나 "하위 항목 추가"로 가지를 계속 아래로 내릴 수 있어요. 관리자 화면에서만 보이고 금액은 VAT 별도 기준입니다.</p>
+        <div id="trWarn"></div>
         <div class="tr-grid">
           <div class="tr-svg" id="trSvg"></div>
           <aside class="tr-edit">
@@ -1293,7 +1294,7 @@ if (window.top !== window.self) { document.documentElement.style.display = 'none
 })();
 // 새 버전 자동 반영: 홈 화면 앱이 예전 화면을 붙잡고 있지 않게, 열 때·다시 볼 때 서버 버전을 확인해 다르면 새로고침
 // (고칠 때마다 BUILD 값을 바꿔 주세요) 입력 중이거나 창(대화상자)이 열려 있으면 다음 확인 때로 미룸
-var BUILD = '2026-11-12a';
+var BUILD = '2026-11-12b';
 (function () {
   var busy = false;
   function typing() {
@@ -7458,7 +7459,33 @@ function trDiff(n) {
 }
 const cut = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 // 그림: 왼쪽에서 오른쪽으로. 맨 끝 칸(잎)을 위에서부터 한 줄씩 놓고, 부모는 자식들의 가운데에
+/* ⚠️ 월별 구조의 목표 · 내판 · 외판 금액이 목표·설정의 월 목표와 다르면 경고 (금액이 두 곳에 따로 들어가 엇갈리지 않게) */
+function trGoalGap() {
+  if (trMode !== 'month' || !TR) return null;
+  const k = trKey(), t = k && S.targets ? S.targets[Number(k)] : null;
+  if (!t || !t.total) return { none: true };
+  const g = key => (TR.children.find(x => x.key === key) || {}).amt || null;
+  const rows = [['목표 합계', t.total, TR.amt || null], ['내판', t.n || null, g('n')], ['외판', t.o || null, g('o')]]
+    .filter(([l, a, b], i) => (i === 0 || a) && a !== b);  /* 월 목표에 내판 · 외판 나눔이 없으면 그 줄은 비교 안 함 */
+  return rows.length ? { t, rows } : null;
+}
+function trCheckGoal() {
+  const el = $('trWarn'); if (!el) return;
+  const gp = trGoalGap();
+  if (!gp) { el.innerHTML = ''; return; }
+  if (gp.none) { el.innerHTML = trMode === 'month' && TR && TR.amt ? '<div class="banner warn" style="margin:0 0 12px">ℹ️ 이 달은 목표·설정에 <b>월 목표가 아직 없어요</b>. 아래 "월 목표에도 반영"을 켜고 저장하면 이 구조 금액이 월 목표가 돼요.</div>' : ''; return; }
+  const w = v => v ? shortWon(v) : '없음';
+  el.innerHTML = '<div class="banner warn" style="margin:0 0 12px"><b>⚠️ 목표·설정의 월 목표와 금액이 달라요</b> — 홈 · 회의 자료 · 평가는 <b>월 목표</b>를 기준으로 계산해요.<ul style="margin:6px 0 8px;padding-left:1.2em">' +
+    gp.rows.map(([l, a, b]) => '<li>' + l + ': 월 목표 <b>' + w(a) + '</b> · 이 구조 <b>' + w(b) + '</b>' + (a && b ? ' (' + (b > a ? '+' : '−') + shortWon(Math.abs(b - a)) + ')' : '') + '</li>').join('') + '</ul>' +
+    '<div class="row" style="gap:8px"><button type="button" class="btn sm" id="trToGoal">이 구조를 월 목표 금액으로 맞추기</button><span class="muted">반대로 월 목표를 이 구조대로 바꾸려면 아래 "월 목표에도 반영"을 켜고 저장하세요.</span></div></div>';
+  $('trToGoal').addEventListener('click', () => {
+    const t = gp.t; TR.amt = t.total || TR.amt;
+    TR.children.forEach(x => { if (x.key === 'n' && t.n) x.amt = t.n; if (x.key === 'o' && t.o) x.amt = t.o; });
+    drawTree(); drawEdit(); $('trMsg').textContent = '월 목표 금액으로 맞췄어요. 저장을 눌러야 남아요.';
+  });
+}
 function drawTree() {
+  trCheckGoal();
   const CW = 150, NW = 124, NH = 50, RH = 62, PAD = 8;
   let leaf = 0, depthMax = 0;
   const pos = [];
@@ -7593,7 +7620,7 @@ $('trSave').addEventListener('click', async () => {
     if (trMode === 'month' && $('trSync').checked && root.amt) {
       const n = root.children.find(g => g.key === 'n'), o = root.children.find(g => g.key === 'o');
       await setDoc(doc(db, C.targets, k), { total: root.amt, n: n ? n.amt : null, o: o ? o.amt : null, updatedAt: serverTimestamp() }, { merge: true });
-      invalidate(); msg += ' 월 목표에도 반영했습니다.';
+      invalidate(); await loadBase().catch(() => { }); msg += ' 월 목표에도 반영했습니다.';
     }
     TR = JSON.parse(JSON.stringify(root)); if (!trAt(trSel)) trSel = '';
     drawTree(); drawEdit();
