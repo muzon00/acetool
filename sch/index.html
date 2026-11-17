@@ -32,21 +32,21 @@
 :root, [data-theme="classic"] {
   color-scheme: light;
   --bg: #f3f4f6; --surface: #ffffff; --surface2: #f8f9fb; --ink: #1f2937; --ink2: #5b6472; --ink3: #9aa3af;
-  --line: #e6e8ec; --s1: #2f6fe4; --accent: #1fa64d; --accent-ink: #ffffff; --dark: #4b5563; --dark-ink: #ffffff;
+  --line: #e6e8ec; --grid-line: #6b7480; --s1: #2f6fe4; --accent: #1fa64d; --accent-ink: #ffffff; --dark: #4b5563; --dark-ink: #ffffff;
   --chip: #eef3ff; --chip-ink: #1d4ed8; --warn-bg: #fff6dc; --warn-ink: #7a5200; --ok-bg: #e7f6ec; --ok-ink: #166534; --bad-bg: #fdecec; --bad-ink: #b42318;
   --alert: #dc2626; --radius: 16px; --radius-sm: 10px; --border: 1px solid var(--line); --shadow: 0 1px 3px rgba(16, 24, 40, .06), 0 1px 2px rgba(16, 24, 40, .04);
 }
 [data-theme="toss"] {
   color-scheme: light;
   --bg: #f2f4f6; --surface: #ffffff; --surface2: #f9fafb; --ink: #191f28; --ink2: #4e5968; --ink3: #8b95a1;
-  --line: #e5e8eb; --s1: #3182f6; --accent: #3182f6; --accent-ink: #ffffff; --dark: #e8f3ff; --dark-ink: #1b64da;
+  --line: #e5e8eb; --grid-line: #6b7684; --s1: #3182f6; --accent: #3182f6; --accent-ink: #ffffff; --dark: #e8f3ff; --dark-ink: #1b64da;
   --chip: #e8f3ff; --chip-ink: #1b64da; --warn-bg: #fff8e1; --warn-ink: #8a5a00; --ok-bg: #e8f8ef; --ok-ink: #0b7a3e; --bad-bg: #ffeeee; --bad-ink: #d22030;
   --alert: #f04452; --radius: 22px; --radius-sm: 14px; --border: 0 solid transparent; --shadow: none;
 }
 [data-theme="night"] {
   color-scheme: dark;
   --bg: #0d1220; --surface: #161e30; --surface2: #1b2539; --ink: #e8ecf3; --ink2: #a9b2c3; --ink3: #7c869a;
-  --line: #263046; --s1: #4a8ff0; --accent: #34d399; --accent-ink: #052e1c; --dark: #2a3550; --dark-ink: #e8ecf3;
+  --line: #263046; --grid-line: #7383a3; --s1: #4a8ff0; --accent: #34d399; --accent-ink: #052e1c; --dark: #2a3550; --dark-ink: #e8ecf3;
   --chip: #1e2a44; --chip-ink: #9cc4ff; --warn-bg: #3a2f10; --warn-ink: #f2d98a; --ok-bg: #12301f; --ok-ink: #9be0b4; --bad-bg: #3b1714; --bad-ink: #f3a39c;
   --alert: #ff7b72; --radius: 16px; --radius-sm: 10px; --border: 1px solid var(--line); --shadow: none;
 }
@@ -124,10 +124,10 @@ select, input[type=text], input[type=date], input[type=number] { background: var
 .cal-h span { text-align: center; font-size: .82em; color: var(--ink2); padding: 4px 0; }
 .cal-h .sun { color: var(--bad-ink); } .cal-h .sat { color: var(--chip-ink); }
 .grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
-.day { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-height: 140px; padding: 7px; display: flex; flex-direction: column; min-width: 0; }
-.day.empty { background: transparent; border: 1px dashed var(--line); }
+.day { background: var(--surface); border: 1px solid var(--grid-line); border-radius: 12px; min-height: 140px; padding: 7px; display: flex; flex-direction: column; min-width: 0; }
+.day.empty { background: transparent; border: 1px dashed var(--grid-line); }
 .day.today { border: 2px solid var(--s1); }
-.dl { display: flex; justify-content: space-between; align-items: baseline; gap: 4px; font-weight: 700; font-size: .82em; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid var(--line); color: var(--ink); }
+.dl { display: flex; justify-content: space-between; align-items: baseline; gap: 4px; font-weight: 700; font-size: .82em; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid var(--grid-line); color: var(--ink); }
 .dl.red { color: var(--bad-ink); } .dl.blue { color: var(--chip-ink); }
 .dl small { font-size: .82em; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .emps { display: flex; flex-direction: column; gap: 3px; }
@@ -161,7 +161,7 @@ select, input[type=text], input[type=date], input[type=number] { background: var
 .quota { text-align: center; background: var(--chip); color: var(--chip-ink); border-radius: var(--radius-sm); padding: 10px; font-weight: 700; font-size: .9em; margin-bottom: 10px; }
 .quota select { margin-left: 4px; padding: 4px 8px; }
 table { width: 100%; border-collapse: collapse; font-size: .88em; }
-th, td { padding: 7px 6px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }
+th, td { padding: 7px 6px; border-bottom: 1px solid var(--grid-line); text-align: center; white-space: nowrap; }
 th { color: var(--ink2); font-weight: 600; font-size: .85em; }
 td.l, th.l { text-align: left; }
 .over { color: var(--bad-ink); font-weight: 700; } .done { color: var(--ok-ink); font-weight: 700; }
@@ -169,7 +169,7 @@ td.l, th.l { text-align: left; }
 /* 엑셀 양식 보기 */
 .xl-wrap { overflow-x: auto; }
 .xl { border-collapse: collapse; width: max-content; font-size: 12px; }
-.xl th, .xl td { border: 1px solid #c9ced6; padding: 3px 4px; min-width: 28px; height: 26px; text-align: center; color: #111; background: #fff; }
+.xl th, .xl td { border: 1px solid #4b5563; padding: 3px 4px; min-width: 28px; height: 26px; text-align: center; color: #111; background: #fff; }
 .xl .hd { background: #f3f4f6; font-weight: 700; }
 .xl .red { color: #e00; }
 .xl .grp { font-weight: 700; background: #f7f8fa; }
