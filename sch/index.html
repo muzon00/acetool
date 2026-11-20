@@ -524,7 +524,10 @@ function membersForMonth(y, m) {
 }
 const status = (ds, m) => (S.sched[ds] && S.sched[ds][m.id]) || '';
 const me = () => S.roster.find(m => m.id === S.myId) || null;
-const tName = m => (m.title ? m.title + ' ' : '') + m.name;  // 직책 + 이름 (과장 김종현)
+// 직책 줄임 표시 (명단에는 그대로 두고 화면 · 엑셀에서만)
+const TITLE_SHORT = { '아르바이트': 'AR' };
+const tShort = t => TITLE_SHORT[t] || t || '';
+const tName = m => (m.title ? tShort(m.title) + ' ' : '') + m.name;  // 직책 + 이름 (과장 김종현)
 function quotaFor(y, m) {
   const v = S.quotas[ymKey(y, m)];
   if (v !== undefined && v !== null && v !== '') return Number(v);
@@ -580,7 +583,7 @@ function renderCalendar(y, m) {
       if (!isActiveOn(e, ds)) return;
       const s = status(ds, e), cls = ['emp', stClass(s)];
       if (!S.admin && e.id === S.myId) cls.push('mine');
-      h += '<div class="' + cls.join(' ') + '" data-ds="' + ds + '" data-id="' + esc(e.id) + '"><b>' + (e.title ? '<small>' + esc(e.title) + '</small> ' : '') + esc(e.name) + '</b><i>' + esc(s ? (s === '조출' ? '07~17' : s === '조출반차' ? '조출+반차' : s === '마감' ? '10~20' : s) : '') + '</i></div>';
+      h += '<div class="' + cls.join(' ') + '" data-ds="' + ds + '" data-id="' + esc(e.id) + '"><b>' + (e.title ? '<small>' + esc(tShort(e.title)) + '</small> ' : '') + esc(e.name) + '</b><i>' + esc(s ? (s === '조출' ? '07~17' : s === '조출반차' ? '조출+반차' : s === '마감' ? '10~20' : s) : '') + '</i></div>';
     });
     h += '</div></div>';
   }
@@ -677,7 +680,7 @@ function buildModel(y, m) {
       if (isActiveOn(mem, ds)) { if (!from) from = d; to = d; const s = status(ds, mem); codes.push(CODE[s] !== undefined ? CODE[s] : s); early.push(s === '조출' || s === '조출반차'); }
       else { codes.push(''); early.push(false); }
     }
-    return { title: mem.title, name: mem.name, duty: mem.duty || '', codes, early, from, to };
+    return { title: tShort(mem.title), name: mem.name, duty: mem.duty || '', codes, early, from, to };
   };
   const groups = groupsOf(membersForMonth(y, m)).map(g => ({ name: g.name, rows: g.members.map(toRow), count: g.members.length >= 2 && g.name !== '점장' }));
   return { year: y, month: m, quota: quotaFor(y, m), storeName: STORE_NAME, days, groups, total: groups.reduce((s, g) => s + g.rows.length, 0) };
