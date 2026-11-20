@@ -461,7 +461,7 @@ const DEFAULT_ROSTER = [
   { id: 'i5', group: '디자인', title: '과장', name: '이동현', duty: '인테리어' },
   { id: 'i6', group: '디자인', title: '대리', name: '최승동', duty: '전기조명/인테리어' },
   { id: 'i7', group: '디자인', title: '대리', name: '홍준형', duty: '생활/인테리어' },
-  { id: 'i8', group: '캐셔', title: '캐셔', name: '박지원', duty: '' }
+  { id: 'i9', group: '아르바이트', title: '아르바이트', name: '김다빈', duty: '' }
 ].map(m => Object.assign({ start: '', end: '' }, m));
 
 // 상태: 직원이 신청 / 관리자가 배정
@@ -923,6 +923,16 @@ show('main'); startLive(); setStatus();
 // 관리자 첫 로그인 때 기본 명단 저장 (서버 규칙이 이 명단의 ids로 직원 칸을 확인)
 function ensureRoster() {
   if (S.admin && S.rosterLoaded && !S.rosterExists) { S.rosterExists = true; saveRoster(S.roster).catch(e => { S.rosterExists = false; console.error(e); }); }
+  migrateCashier();
+}
+// 한 번만: 캐셔(박지원) 삭제, 아르바이트 김다빈 추가 (박지원 캐셔가 남아 있고 김다빈이 없을 때만)
+let cashierMigrating = false;
+function migrateCashier() {
+  if (!S.admin || !S.rosterLoaded || !S.rosterExists || cashierMigrating) return;
+  if (!S.roster.some(m => m.group === '캐셔' && m.name === '박지원') || S.roster.some(m => m.name === '김다빈')) return;
+  cashierMigrating = true;
+  const list = S.roster.filter(m => m.group !== '캐셔').concat([{ id: 'i' + Date.now().toString(36), group: '아르바이트', title: '아르바이트', name: '김다빈', duty: '', start: '', end: '' }]);
+  saveRoster(list).then(() => note({ action: 'roster' })).catch(e => console.error(e)).finally(() => { cashierMigrating = false; });
 }
 function startLive() {
   const on = (ref, fn) => S.unsub.push(onSnapshot(ref, fn, e => console.error(e)));
@@ -1135,7 +1145,7 @@ $('rosterBtn').addEventListener('click', async () => {
   drawRoster(); $('dlgRoster').showModal();
 });
 function drawRoster() {
-  const groups = [...new Set(draft.map(m => m.group).concat(['점장', '엔지니어링', '디자인', '캐셔']))].filter(Boolean);
+  const groups = [...new Set(draft.map(m => m.group).concat(['점장', '엔지니어링', '디자인', '아르바이트']))].filter(Boolean);
   $('rosterBody').innerHTML = draft.map((m, i) => '<tr data-i="' + i + '">' +
     '<td><input data-f="group" list="grpList" value="' + esc(m.group) + '" style="width:96px"></td>' +
     '<td><input data-f="title" value="' + esc(m.title) + '" style="width:64px"></td>' +
