@@ -468,7 +468,9 @@ const DEFAULT_ROSTER = [
 const STATES = ['조출', '조출반차', '마감', '휴무', '연차', '반차', '생일반차', '경조', '예비군', '시험', '교육', '건강검진', '결혼기념일', '본사회의', '육아휴직'];  // 누구나 아무 칸에나 넣을 수 있음
 // 엑셀 표기 (조출 = 노란 칸, 마감·미지정 = 빈 칸 = 10시~20시)
 const CODE = { '휴무': '휴', '연차': '연', '경조': '경', '육아휴직': '육휴', '예비군': '예비군', '생일반차': '생반\n반차', '반차': '반차', '조출반차': '반차', '시험': '시험', '교육': '교육', '본사회의': '본사\n회의', '건강검진': '건강\n검진', '결혼기념일': '결혼\n반차', '조출': '', '마감': '' };
-const ABSENT = ['휴', '연', '경', '육휴', '예비군', '생반\n반차', '반차', '시험', '교육', '건강\n검진', '결혼\n반차'];  // 근무인원에서 빠지는 표기
+const ABSENT = ['휴', '연', '경', '육휴', '예비군', '시험', '교육', '건강\n검진'];  // 근무인원에서 빠지는 표기
+const HALF = ['반차', '생반\n반차', '결혼\n반차'];  // 반차는 출근하는 인원이라 근무인원에 넣고, 엑셀에서 빨간 글씨만
+const RED_CODES = ABSENT.concat(HALF);
 const OFF_LEGEND = [['휴무일', '휴'], ['연차휴가', '연'], ['경조휴가', '경'], ['육아휴직', '육휴'], ['', '예비군'], ['', '생반\n반차'], ['', '시험']];
 
 const fixedHolidays = { '01-01': '신정', '03-01': '삼일절', '05-05': '어린이날', '06-06': '현충일', '08-15': '광복절', '10-03': '개천절', '10-09': '한글날', '12-25': '성탄절' };
@@ -867,7 +869,7 @@ function buildWorkbook(ExcelJS, md) {
   LUNCH.forEach((t, k) => put(R_LEG + 2 + k, 8, t, { font: { size: 10 }, alignment: LEFT }));
 
   // 조건부 서식: 엑셀에서 표기를 바꿔도 빨간 글씨 유지
-  const cf = ABSENT.map((c, i) => ({ type: 'cellIs', operator: 'equal', formulae: ['"' + c.replace('\n', '"&CHAR(10)&"') + '"'], style: { font: { bold: true, color: { argb: RED } } }, priority: i + 1 }));
+  const cf = RED_CODES.map((c, i) => ({ type: 'cellIs', operator: 'equal', formulae: ['"' + c.replace('\n', '"&CHAR(10)&"') + '"'], style: { font: { bold: true, color: { argb: RED } } }, priority: i + 1 }));
   md.groups.forEach(g => { const r1 = g.count ? g._r1 + 1 : g._r1; ws.addConditionalFormatting({ ref: L(D1) + r1 + ':' + L(DN) + g._r2, rules: cf }); });
 
   merges.forEach(([a, b, c, d]) => ws.mergeCells(a, b, c, d));
