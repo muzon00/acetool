@@ -2987,6 +2987,23 @@ async function goHomeSec(ym, sec) {
   setTimeout(() => { const el = [...document.querySelectorAll('#homeBody [data-sec]')].find(x => x.dataset.sec === sec); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 900);
 }
 
+/* 예상 마감 기준 마진: 지금까지 마진 + 남은 예상 매출(내판 · 외판)에 이번 달 지금까지의 내판 · 외판 마진율을 곱한 값 */
+function expMar(d, det, k) {
+  const f = d.forecast && d.forecast[k];
+  if (!f) return null;
+  const rN = det.net.n ? det.mar.n / det.net.n : 0, rO = det.net.o ? det.mar.o / det.net.o : rN;
+  const remN = Math.max(0, f.n - d.cum.n), remO = Math.max(0, f.o - d.cum.o);
+  const mar = det.mar.n + det.mar.o + remN * rN + remO * rO, net = det.net.n + det.net.o + remN + remO;
+  return net ? { mar: Math.round(mar), rate: mar / net, net: Math.round(net) } : null;
+}
+function expMarHtml(d, det) {
+  const b = expMar(d, det, '기본');
+  if (!b) return '';
+  const lo = expMar(d, det, '보수'), hi = expMar(d, det, '낙관');
+  return '<br>예상 마감 기준 마진 <b>' + won(b.mar) + '</b> · 예상 마진율 <b>' + pct(b.rate) + '</b>' +
+    (lo && hi ? ' <small class="muted">(보수 ' + eok(lo.mar) + ' ~ 낙관 ' + eok(hi.mar) + ')</small>' : '') +
+    '<br><small class="muted">지금 추세의 예상 마감 매출에 이번 달 내판 · 외판 마진율을 그대로 적용한 값</small>';
+}
 /* 홈 화면의 관리자 전용 칸: 상세 분석 · 시공 분석 (보기 권한 계정에는 아예 그리지 않음, 서버 규칙으로도 막힘) */
 async function homeAdminParts(d) {
   try {
@@ -2996,7 +3013,7 @@ async function homeAdminParts(d) {
     renderAnalysis(d, det, $('hDetail'));
     // 목표 진행 칸: 현재 마진 금액 · 마진율 (상세 자료의 순매출 기준)
     const marT = det.mar.n + det.mar.o, netT = det.net.n + det.net.o, gm = document.querySelector('#homeBody .gmar');
-    if (gm && netT) { gm.innerHTML = '현재 마진 <b>' + won(marT) + '</b> · 마진율 <b>' + pct(marT / netT) + '</b>'; gm.classList.remove('hide'); }
+    if (gm && netT) { gm.innerHTML = '현재 마진 <b>' + won(marT) + '</b> · 마진율 <b>' + pct(marT / netT) + '</b>' + expMarHtml(d, det); gm.classList.remove('hide'); }
     // 목표 진행: 매총이익 목표 대비 진행 · 매총율 목표 대비
     const gs = document.querySelector('#homeBody .gmar-sub'), tg = (S.targets || {})[d.ym], gpT = gpTarget(tg), grT = tg && tg.gr !== null && tg.gr !== undefined ? tg.gr : null;
     if (gs && netT && (gpT || grT !== null)) {
