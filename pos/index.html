@@ -159,6 +159,9 @@ svg text.wk { fill: var(--ink); font-weight: 700; }
 .pmemo:focus { border-style: solid; background: var(--surface, #fff); color: var(--ink, #111); outline: 2px solid var(--s1, #2f6fde); outline-offset: 0; }
 .pmemo::placeholder { color: var(--ink3, #888); opacity: 1; }
 .pamt { min-height: 36px; width: 9.5em; max-width: 100%; text-align: right; border: 1px solid var(--line, #dfe4ec); border-radius: 8px; padding: 0 8px; font: inherit; background: var(--surface, #fff); color: var(--ink, #111); font-variant-numeric: tabular-nums; }
+.pmgr { min-height: 36px; width: 7.5em; max-width: 100%; border: 1px dashed var(--line, #dfe4ec); border-radius: 8px; padding: 0 8px; font: inherit; background: transparent; color: var(--ink, #111); }
+.pmgr:focus { border-style: solid; background: var(--surface, #fff); outline: 2px solid var(--s1, #2f6fde); outline-offset: 0; }
+.pmgr::placeholder { color: var(--ink3, #888); opacity: 1; }
 .pdate { min-height: 36px; border: 1px solid var(--line, #dfe4ec); border-radius: 8px; padding: 0 6px; font: inherit; background: var(--surface, #fff); color: var(--ink, #111); width: 9.2em; max-width: 100%; }
 .pl { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .8em; font-weight: 700; white-space: nowrap; }
 .pl.p1 { background: var(--ok-bg); color: var(--ok-ink); }
@@ -4250,6 +4253,7 @@ async function loadPlansTab() {
       await loadDetail();
       const cs = new Set(), ms = new Set();
       Object.values(S.detail || {}).forEach(m => Object.values(m).forEach(rs => rs.forEach(r => { if (r.g === 'o') { if (r.c) cs.add(r.c); if (r.m) ms.add(r.m); } })));
+      (S.plans || []).forEach(p => { if (p.mgr) ms.add(p.mgr); });
       $('custList').innerHTML = [...cs].sort().map(c => '<option value="' + esc(c) + '">').join('');
       $('mgrList').innerHTML = [...ms].sort().map(c => '<option value="' + esc(c) + '">').join('');
     } catch (e) { }
@@ -4270,7 +4274,7 @@ function renderPlanList() {
     const editable = p.st === 'open' || p.st === 'hold';
     /* 아직 열린 건은 예정일을 바로 고칠 수 있음 (처음 예정일은 아래에 작게) */
     const dCell = editable ? '<input type="date" class="pdate" data-pdt="' + p.id + '" value="' + dLabel(p.d) + '" title="눌러서 예정일 바꾸기"><small class="muted"> (' + DOWK[dowOf(p.d)] + ')</small>' : mdLabel(p.d) + ' (' + DOWK[dowOf(p.d)] + ')';
-    return [dCell + (p.d0 && p.d0 !== p.d ? '<br><small class="muted">처음 ' + mdLabel(p.d0) + '</small>' : ''), esc(p.cust) + '<br><input type="text" class="pmemo" data-pmm="' + p.id + '" maxlength="200" value="' + esc(p.memo || '') + '" placeholder="✏️ 메모 쓰기" title="눌러서 메모 쓰기 · 고치기 (Enter로 저장)">', esc(p.mgr || '-'), (editable ? '<input type="text" inputmode="numeric" class="pamt" data-pam="' + p.id + '" value="' + won(p.amt) + '" title="눌러서 금액 고치기">' : won(p.amt)) + (p.amt0 && p.amt0 !== p.amt ? '<br><small class="muted">처음 ' + won(p.amt0) + '</small>' : ''),
+    return [dCell + (p.d0 && p.d0 !== p.d ? '<br><small class="muted">처음 ' + mdLabel(p.d0) + '</small>' : ''), esc(p.cust) + '<br><input type="text" class="pmemo" data-pmm="' + p.id + '" maxlength="200" value="' + esc(p.memo || '') + '" placeholder="✏️ 메모 쓰기" title="눌러서 메모 쓰기 · 고치기 (Enter로 저장)">', '<input type="text" class="pmgr" data-pmg="' + p.id + '" list="mgrList" maxlength="30" autocomplete="off" value="' + esc(p.mgr || '') + '" placeholder="✏️ 담당" title="눌러서 담당 바꾸기 · 직접 적기 (Enter로 저장)">', (editable ? '<input type="text" inputmode="numeric" class="pamt" data-pam="' + p.id + '" value="' + won(p.amt) + '" title="눌러서 금액 고치기">' : won(p.amt)) + (p.amt0 && p.amt0 !== p.amt ? '<br><small class="muted">처음 ' + won(p.amt0) + '</small>' : ''),
       st,
       '<button class="btn danger sm" data-px="' + p.id + '">삭제</button>'];
   };
@@ -4313,6 +4317,20 @@ function renderPlanList() {
       inp.disabled = true;
       try { await setDoc(doc(db, C.plans, id), { memo, editedAt: serverTimestamp() }, { merge: true }); p.memo = memo; inp.disabled = false; toast(memo ? '메모를 저장했어요' : '메모를 지웠어요'); }
       catch (e) { toast('실패: ' + errMsg(e)); inp.disabled = false; inp.value = p.memo || ''; }
+    });
+  });
+  /* 담당: 목록에서 고르거나 직접 적기 (Enter 또는 칸 밖을 누르면 저장) */
+  $('pList').querySelectorAll('[data-pmg]').forEach(inp => {
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
+    inp.addEventListener('change', async () => {
+      const id = inp.dataset.pmg, p = (S.plans || []).find(x => x.id === id), mgr = cleanText(inp.value, 30);
+      if (!p || mgr === (p.mgr || '')) { inp.value = mgr; return; }
+      inp.disabled = true;
+      try {
+        await setDoc(doc(db, C.plans, id), { mgr, editedAt: serverTimestamp() }, { merge: true });
+        const was = p.mgr || ''; p.mgr = mgr; inp.value = mgr; inp.disabled = false;
+        toast(String(p.cust || '').slice(0, 20) + ' 담당을 ' + (was || '(없음)') + ' → ' + (mgr || '(없음)') + '으로 바꿨어요');
+      } catch (e) { toast('실패: ' + errMsg(e)); inp.disabled = false; inp.value = p.mgr || ''; }
     });
   });
   $('pList').querySelectorAll('[data-pam]').forEach(inp => {
