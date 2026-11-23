@@ -162,6 +162,16 @@ svg text.wk { fill: var(--ink); font-weight: 700; }
 .pmgr { min-height: 36px; width: 7.5em; max-width: 100%; border: 1px dashed var(--line, #dfe4ec); border-radius: 8px; padding: 0 8px; font: inherit; background: transparent; color: var(--ink, #111); }
 .pmgr:focus { border-style: solid; background: var(--surface, #fff); outline: 2px solid var(--s1, #2f6fde); outline-offset: 0; }
 .pmgr::placeholder { color: var(--ink3, #888); opacity: 1; }
+.top-day { border-top: 1px solid var(--line); padding: 10px 0 6px; }
+.top-d { font-weight: 700; margin-bottom: 4px; }
+.top-r { display: flex; align-items: center; gap: 8px; padding: 3px 0; flex-wrap: wrap; }
+.top-m { width: 22px; }
+.top-c { flex: 1 1 120px; min-width: 0; overflow-wrap: anywhere; }
+.top-g { font-size: 12px; padding: 1px 7px; border-radius: 10px; background: var(--grid); }
+.top-a { text-align: right; margin-left: auto; }
+.top-a small { display: block; color: var(--ink3, #888); font-size: 11px; }
+.top-mon { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+.top-pv { margin: 12px 0 4px; }
 .pdate { min-height: 36px; border: 1px solid var(--line, #dfe4ec); border-radius: 8px; padding: 0 6px; font: inherit; background: var(--surface, #fff); color: var(--ink, #111); width: 9.2em; max-width: 100%; }
 .pl { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .8em; font-weight: 700; white-space: nowrap; }
 .pl.p1 { background: var(--ok-bg); color: var(--ok-ink); }
@@ -857,6 +867,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
         <button class="pill" data-tab="close">월마감 체크</button>
         <button class="pill" data-tab="plans">예정 매출</button>
         <button class="pill" data-tab="acct">담당 거래처</button>
+        <button class="pill" data-tab="top">🏆 고객 TOP3</button>
         <button class="pill" data-tab="download">다운로드</button>
         <button class="pill" data-tab="settings">목표·설정</button>
         <button class="pill" data-tab="tree">매출 구조</button>
@@ -1028,6 +1039,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
     <div id="a-close" class="hide"></div>
     <div id="a-vip" class="hide"></div>
     <div id="a-acct" class="hide"></div>
+    <div id="a-top" class="hide"></div>
     <div id="a-members" class="hide"></div>
 
     <div id="a-help" class="hide">
@@ -1455,6 +1467,8 @@ function salesAgg(headRow) {
   /* POS 원본이면 날짜별 객수를 본사 마감 문자와 똑같이 셈 (2026-10-31 · 10월 당월 문자와 1건 · 1원까지 맞춰 봄):
      매장 + 외판 모두, 판매 거래 수 − 반품 · 취소 거래 수, 그날 입력한 판매번호만 (판매번호 4~11번째 숫자 = 영업일자, 나중에 날짜를 거슬러 넣은 건 문자에 없음) */
   const hasTx = !aggMode && col['판매번호'] !== undefined, txm = {};
+  // POS 원본이면 날짜별 고객 매출 (고객명이 있는 줄만, 고객코드가 있으면 그것으로 묶음) → 그날 상위 3명
+  const hasCust = !aggMode && col['고객명'] !== undefined, custm = {};
   const get = (r, name) => { const k = col[name]; return k === undefined ? '' : r[k]; };
   const add = r => {
     if (!r || !r.length) return;
@@ -1467,14 +1481,15 @@ function salesAgg(headRow) {
     const gRaw = get(r, '구분');
     const g = mapG(gRaw);
     if (!g) { const uk = cleanText(gRaw, 30); st.unknown[uk] = (st.unknown[uk] || 0) + 1; return; }
-    let net, mar, mgr, cust, cat;
+    let net, mar, mgr, cust, cat, pay = 0;
     // 금액 칸은 엄격하게: 읽을 수 없는 값이 있으면 그 줄은 넣지 않고 기록 (등록 자체를 막음)
     const bad = [], num = name => { const raw = get(r, name), v = numStrict(raw); if (Number.isNaN(v)) { bad.push(name + ' "' + cleanText(raw, 20) + '"'); return 0; } return v; };
     if (aggMode) {
       net = num('순매출'); mar = num('마진');
       mgr = cleanText(get(r, '담당자'), 40); cust = cleanText(get(r, '거래처'), 80); cat = cleanText(get(r, '대분류'), 40);
     } else {
-      const tax = num('과세결제금액'), non = num('비과세결제금액'), pay = num('결제금액');
+      const tax = num('과세결제금액'), non = num('비과세결제금액');
+      pay = num('결제금액');
       net = tax + non;
       if (net === 0 && pay !== 0) { net = Math.round(pay / 1.1); st.adjusted++; }
       if (hasPay && !bad.length) st.payByDay[d] = (st.payByDay[d] || 0) + pay;
@@ -1492,6 +1507,15 @@ function salesAgg(headRow) {
     let o = map[key];
     if (!o) { o = map[key] = [d, g, mgr, cust, cat, 0, 0]; order.push(key); }
     o[5] += net; o[6] += mar;
+    if (hasCust) {
+      const cn = cleanText(get(r, '고객명'), 60);
+      if (cn) {
+        const ck = cleanText(get(r, '고객코드'), 30) || cn, m = custm[d] || (custm[d] = {});
+        const cu = m[ck] || (m[ck] = { c: cn, n: 0, o: 0, p: 0, tx: new Set() });
+        cu[g === '내판' ? 'n' : 'o'] += net; cu.p += pay;
+        const tn = String(get(r, '판매번호') || '').trim(); if (tn) cu.tx.add(tn);
+      }
+    }
     if (hasTx) {
       const tn = String(get(r, '판매번호') || '').trim(), td = /^\d{11,}$/.test(tn) ? Number(tn.slice(3, 11)) : 0;
       if (tn && !(td > 20000101 && td !== d)) { const kd = String(get(r, '거래형태') || ''), sale = kd ? /판매/.test(kd) : net > 0, m = txm[d] || (txm[d] = new Map()); m.set(tn, m.get(tn) || sale); }
@@ -1503,7 +1527,15 @@ function salesAgg(headRow) {
     const dates = Object.keys(st.dateSet).map(Number).sort((a, b) => a - b);
     let txByDay = null;
     if (hasTx) { txByDay = {}; dates.forEach(d => { let c = 0; if (txm[d]) txm[d].forEach(sale => { c += sale ? 1 : -1; }); txByDay[d] = c; }); }
-    return { rows, stats: { rowsRead: st.rowsRead, usedRows: st.usedRows, totalNet: st.totalNet, byG: st.byG, unknown: st.unknown, badDate: st.badDate, dates, adjusted: st.adjusted, other: st.other, badNum: st.badNum, badSamples: st.badSamples, txByDay, payByDay: hasPay ? st.payByDay : null, mode: aggMode ? '백업/집계 CSV' : 'POS 원본' } };
+    let topByDay = null;
+    if (hasCust) {
+      topByDay = {};
+      dates.forEach(d => {
+        topByDay[d] = Object.values(custm[d] || {}).map(u => ({ c: u.c, g: u.n && u.o ? 'no' : (u.o ? 'o' : 'n'), n: Math.round(u.n + u.o), p: Math.round(u.p), t: u.tx.size }))
+          .filter(u => u.n > 0).sort((a, b) => b.n - a.n).slice(0, 3);
+      });
+    }
+    return { rows, stats: { topByDay, rowsRead: st.rowsRead, usedRows: st.usedRows, totalNet: st.totalNet, byG: st.byG, unknown: st.unknown, badDate: st.badDate, dates, adjusted: st.adjusted, other: st.other, badNum: st.badNum, badSamples: st.badSamples, txByDay, payByDay: hasPay ? st.payByDay : null, mode: aggMode ? '백업/집계 CSV' : 'POS 원본' } };
   };
   return { add, done };
 }
@@ -1796,14 +1828,14 @@ async function loadDetail(force) {
   if (detailP) return detailP;
   detailP = (async () => {
     if (!S.daily) await loadBase();
-    const sig = S.dailySig, snap = await getDocs(collection(db, C.detail)), D = {};
-    snap.forEach(s => { D[Number(s.id)] = s.data().days || {}; });
-    S.detail = D; S.detailSig = sig;
+    const sig = S.dailySig, snap = await getDocs(collection(db, C.detail)), D = {}, T = {};
+    snap.forEach(s => { D[Number(s.id)] = s.data().days || {}; T[Number(s.id)] = s.data().top || {}; });
+    S.detail = D; S.topCust = T; S.detailSig = sig;
   })().finally(() => { detailP = null; });
   return detailP;
 }
 /* 화면으로 돌아오거나 새로고침 버튼: 작은 자료는 새로 받고, 상세 자료는 바뀌었을 때만 */
-function softInvalidate() { const d = S.detail, sg = S.detailSig; invalidate(); S.detail = d; S.detailSig = sg; }
+function softInvalidate() { const d = S.detail, t = S.topCust, sg = S.detailSig; invalidate(); S.detail = d; S.topCust = t; S.detailSig = sg; }
 async function summaryFor(ym, force) {
   await loadBase(force);
   const months = Object.keys(S.daily).map(Number).filter(m => Object.keys(S.daily[m]).length).sort((a, b) => a - b);
@@ -1836,6 +1868,7 @@ async function registerParsed(p) {
       const dRef = doc(db, C.detail, ym), sRef = doc(db, C.daily, ym);
       const dS = await tx.get(dRef), sS = await tx.get(sRef);
       const det = dS.exists() ? Object.assign({}, dS.data().days || {}) : {};
+      const top = dS.exists() ? Object.assign({}, dS.data().top || {}) : {};  // 날짜별 고객 매출 상위 3 (관리자 화면)
       const sum = sS.exists() ? Object.assign({}, sS.data().days || {}) : {};
       let rm = 0;
       Object.keys(byYm[ym]).forEach(day => {
@@ -1850,9 +1883,11 @@ async function registerParsed(p) {
         // 객수 (본사 마감 문자와 같은 방식): POS 원본 파일일 때만 있음
         const tc = p.stats.txByDay && p.stats.txByDay[Number(ym) * 100 + Number(day)];
         if (tc !== undefined && tc !== null) sum[day].tc = tc;
+        const tp = p.stats.topByDay && p.stats.topByDay[Number(ym) * 100 + Number(day)];
+        if (tp) top[day] = tp;
       });
       if (JSON.stringify(det).length > 900000) throw new Error(ymLabel(Number(ym)) + ' 데이터가 너무 큽니다(문서 1MB 제한). 관리자에게 문의해 주세요.');
-      tx.set(dRef, { ym: Number(ym), days: det, updatedAt: serverTimestamp() });
+      tx.set(dRef, { ym: Number(ym), days: det, top, updatedAt: serverTimestamp() });
       tx.set(sRef, { ym: Number(ym), days: sum, updatedAt: serverTimestamp() });
       return rm;
     });
@@ -2958,7 +2993,7 @@ window.addEventListener('resize', () => {
 
 /* ===================== 관리자: 탭 ===================== */
 document.querySelectorAll('#adminTabs .pill').forEach(b => b.addEventListener('click', () => showAdminTab(b.dataset.tab)));
-const ATABS = ['upload', 'eval', 'meet', 'brief', 'sga', 'close', 'plans', 'acct', 'download', 'settings', 'tree', 'vip', 'members', 'help'];
+const ATABS = ['upload', 'eval', 'meet', 'brief', 'sga', 'close', 'plans', 'acct', 'top', 'download', 'settings', 'tree', 'vip', 'members', 'help'];
 function showAdminTab(t) {
   if (!ATABS.includes(t)) t = 'upload';
   S.adminTab = t;
@@ -2976,6 +3011,7 @@ function showAdminTab(t) {
   if (t === 'close') loadClose();
   if (t === 'vip') loadMembersList();
   if (t === 'acct') loadAcct();
+  if (t === 'top') loadTopCust();
   if (t === 'members') loadMembers();
   if (t === 'upload') renderDataStatus();
 }
@@ -3858,6 +3894,7 @@ function renderPreview() {
   h += '<div class="kpis">' + kpi('기간', dLabel(st.dates[0] || 0) + '<br>~ ' + dLabel(st.dates[st.dates.length - 1] || 0), st.dates.length + '일') +
     kpi('읽은 행', st.usedRows.toLocaleString('ko-KR'), esc(st.mode) + ' 형식') +
     kpi('내판 합계', won(st.byG['내판']), '') + kpi('외판 합계', won(st.byG['외판']), '') + kpi('전체 순매출', won(st.totalNet), 'VAT 별도', true) + '</div>';
+  if (st.topByDay) h += topPreview(st);
   h += '<p class="muted">등록하면 위 기간(' + st.dates.length + '일)의 기존 데이터가 이 파일 내용으로 교체됩니다.</p>' +
     '<button class="btn primary" id="regBtn"' + (blocked ? ' disabled' : '') + '>등록</button> <span id="regMsg" class="muted"></span></div>';
   $('preview').innerHTML = h;
@@ -4586,6 +4623,34 @@ function acctData() {
   Object.values(C).forEach(o => { o.name = Object.entries(o.names).sort((a, b) => b[1] - a[1])[0][0]; o.nDays = Object.keys(o.days).length; });
   return { C, mgrs: Object.keys(mgrSet) };
 }
+/* ===================== 관리자: 고객 매출 TOP3 (날짜별) ===================== */
+const TOP_G = { n: '내판', o: '외판', no: '내판+외판' }, TOP_MD = ['🥇', '🥈', '🥉'];
+function topLine(u, i) {
+  return '<div class="top-r"><span class="top-m">' + TOP_MD[i] + '</span><b class="top-c">' + esc(u.c) + '</b><span class="top-g g-' + u.g + '">' + TOP_G[u.g] + '</span>' +
+    '<span class="top-a"><b>' + won(u.n) + '</b><small>결제 ' + won(u.p) + (u.t ? ' · ' + u.t + '건' : '') + '</small></span></div>';
+}
+function topPreview(st) {
+  const ds = st.dates.filter(d => (st.topByDay[d] || []).length).slice(-3).reverse();
+  if (!ds.length) return '';
+  return '<div class="top-pv"><p class="lb">🏆 고객 매출 TOP3 <small>등록하면 관리자 「고객 TOP3」 탭에 날짜별로 남습니다' + (st.dates.length > 3 ? ' · 여기에는 최근 3일만' : '') + '</small></p>' +
+    ds.map(d => '<div class="top-day"><div class="top-d">' + dLabel(d) + ' (' + DOWK[dowOf(d)] + ')</div>' + st.topByDay[d].map(topLine).join('') + '</div>').join('') + '</div>';
+}
+async function loadTopCust() {
+  const el = $('a-top');
+  el.innerHTML = '<div class="card muted">불러오는 중…</div>';
+  try { await loadDetail(); } catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
+  const T = S.topCust || {}, yms = Object.keys(T).map(Number).filter(ym => Object.keys(T[ym]).length).sort((a, b) => b - a);
+  let h = '<div class="card"><h2>🏆 고객 매출 TOP3 <small class="muted">날짜별 · 관리자만</small></h2>' +
+    '<p class="muted" style="margin:0 0 10px">실시간 판매 내역(POS 원본)을 올리면 그날 매출이 높은 고객 3명이 날짜별로 저장됩니다. 금액은 순매출(VAT 별도), 작은 글씨는 결제금액(VAT 포함) · 거래 건수. 고객명이 없는 비회원 결제는 빠집니다.</p>';
+  if (!yms.length) { el.innerHTML = h + '<p class="muted" style="margin:0">아직 저장된 자료가 없습니다. 업로드 탭에 실시간 판매 내역을 올려 주세요.</p></div>'; return; }
+  if (!yms.includes(S.topYm)) S.topYm = yms[0];
+  h += '<div class="top-mon">' + yms.map(ym => '<button class="pill' + (ym === S.topYm ? ' on' : '') + '" data-tym="' + ym + '">' + ymLabel(ym) + '</button>').join('') + '</div>';
+  const days = Object.keys(T[S.topYm]).map(Number).filter(day => (T[S.topYm][day] || []).length).sort((a, b) => b - a);
+  h += days.map(day => { const d = S.topYm * 100 + day; return '<div class="top-day"><div class="top-d">' + dLabel(d) + ' (' + DOWK[dowOf(d)] + ')</div>' + T[S.topYm][day].map(topLine).join('') + '</div>'; }).join('') + '</div>';
+  el.innerHTML = h;
+  el.querySelectorAll('[data-tym]').forEach(b => b.addEventListener('click', () => { S.topYm = Number(b.dataset.tym); loadTopCust(); }));
+}
+
 async function loadAcct() {
   const el = $('a-acct');
   el.innerHTML = '<div class="card muted">불러오는 중…</div>';
