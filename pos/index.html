@@ -3001,7 +3001,7 @@ function expMarHtml(d, det) {
   if (!b) return '';
   const lo = expMar(d, det, '보수'), hi = expMar(d, det, '낙관');
   const f = d.forecast, fl = f['보수'], fh = f['낙관'];
-  return '<br>예상 마감 매출 <b>' + won(f['기본'].total) + '</b> → 예상 마진 <b>' + won(b.mar) + '</b> · 예상 마진율 <b>' + pct(b.rate) + '</b>' +
+  return '<br>예상 마감 매출(VAT 별도) <b>' + won(f['기본'].total) + '</b> → 예상 마진 <b>' + won(b.mar) + '</b> · 예상 마진율 <b>' + pct(b.rate) + '</b>' +
     (lo && hi && fl && fh ? '<br><small class="muted">보수: 매출 ' + eok(fl.total) + ' · 마진 ' + eok(lo.mar) + ' (' + pct(lo.rate) + ') ~ 낙관: 매출 ' + eok(fh.total) + ' · 마진 ' + eok(hi.mar) + ' (' + pct(hi.rate) + ')</small>' : '') +
     '<br><small class="muted">지금 추세의 예상 마감 매출에 이번 달 내판 · 외판 마진율을 그대로 적용한 값</small>';
 }
