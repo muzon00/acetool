@@ -3917,8 +3917,9 @@ async function doRegister() {
       brief = briefHtml(briefBase(sum, lastD), briefDetail(lastD), '📋 ' + mdLabel(lastD) + '(' + DOWK[dowOf(lastD)] + ') 주요 내용 · 특이 사항');
     } catch (e) { brief = ''; }
     $('preview').innerHTML = '<div class="card"><div class="banner ' + (ok ? 'ok' : 'bad') + '"><b>' + (ok ? '등록 완료 · 검산 일치' : '검산 불일치 — 다시 올려 주세요') + '</b><br>올린 파일 합계 ' + won(v.fileNet) + '<br>저장된 합계 ' + won(v.savedNet) + (Math.round(v.fileNet) !== v.savedNet ? ' <small>(파일 금액에 소수점이 있어 줄마다 원 단위로 반올림한 차이 ' + won(v.savedNet - Math.round(v.fileNet)) + ')</small>' : '') + (ok ? '<br>날짜별 검산: ' + p.stats.dates.length + '일 모두 상세 자료·일별 합계가 1원까지 일치' : '<br>' + v.bad.slice(0, 10).map(esc).join('<br>')) + '<br>같은 날짜의 기존 데이터 ' + r.removed.toLocaleString('ko-KR') + '행을 교체했습니다' + (matched ? '<br>예정 매출 ' + matched + '건이 POS에 잡혀 자동 완료됐습니다' : '') + '</div>' +
-      '<button class="btn primary" id="goAnalysis">홈에서 상세 분석 보기</button></div>' + brief;
+      '<button class="btn primary" id="goAnalysis">홈에서 상세 분석 보기</button></div>' + topCard(p.stats) + brief;
     $('goAnalysis').addEventListener('click', () => goHomeSec(lastYm, '상세 분석'));
+    if ($('goTopTab')) $('goTopTab').addEventListener('click', () => showAdminTab('top'));
     S.parsed = null; fileIn.value = ''; $('upText').value = ''; S.logs = null; renderDataStatus();
   } catch (e) {
     btn.disabled = false;
@@ -4634,6 +4635,16 @@ function topPreview(st) {
   if (!ds.length) return '';
   return '<div class="top-pv"><p class="lb">🏆 고객 매출 TOP3 <small>등록하면 관리자 「고객 TOP3」 탭에 날짜별로 남습니다' + (st.dates.length > 3 ? ' · 여기에는 최근 3일만' : '') + '</small></p>' +
     ds.map(d => '<div class="top-day"><div class="top-d">' + dLabel(d) + ' (' + DOWK[dowOf(d)] + ')</div>' + st.topByDay[d].map(topLine).join('') + '</div>').join('') + '</div>';
+}
+// 등록 결과 화면: 올린 날짜(최근 3일)의 고객 매출 TOP3를 바로 보여 줌
+function topCard(st) {
+  if (!st || !st.topByDay) return '';
+  const ds = st.dates.filter(d => (st.topByDay[d] || []).length).slice(-3).reverse();
+  if (!ds.length) return '';
+  return '<div class="card"><h2>🏆 고객 매출 TOP3 <small class="muted">순매출(VAT 별도) · 저장 완료</small></h2>' +
+    ds.map(d => '<div class="top-day"><div class="top-d">' + dLabel(d) + ' (' + DOWK[dowOf(d)] + ')</div>' + st.topByDay[d].map(topLine).join('') + '</div>').join('') +
+    (st.dates.length > 3 ? '<p class="muted" style="margin:6px 0 0">여기에는 최근 3일만 · 나머지 날짜는 「고객 TOP3」 탭에서</p>' : '') +
+    '<button class="btn ghost" id="goTopTab" style="margin-top:8px">날짜별 TOP3 모두 보기</button></div>';
 }
 async function loadTopCust() {
   const el = $('a-top');
