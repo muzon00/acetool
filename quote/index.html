@@ -217,6 +217,9 @@ body.wideq .wrap { max-width: 1530px; }
 .xs input.bad { background: #fdecee; outline: 2px solid var(--bad); outline-offset: -2px; }
 .xs .cv { display: block; padding: 3px 6px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; }
 .xs .cv.red { color: #d22030; } .xs .cv.dim { color: #9aa0a6; }
+.pickbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0; padding: 8px 10px; border-radius: 10px; background: #fff4f4; border: 1px solid #f3c4c9; }
+.xs .pk { width: 18px; height: 18px; margin: 0 auto; display: block; cursor: pointer; }
+.xs tr.picked td { background: #ffecec; }
 .xs .del { width: 100%; height: 100%; border: 0; background: transparent; color: #9aa0a6; cursor: pointer; }
 .xs .del:hover { color: var(--bad); background: #fdecee; }
 .xs .ttl { height: 64px; }
@@ -495,7 +498,8 @@ const BUILD = '2026-11-12a';
       <p class="muted" style="margin:0 0 8px">2단계에서 %를 정하면 <b class="c1">1차 단가</b>와 <b class="c2">최종 단가</b>가 자동으로 채워져요. 단가를 이미 알면 그 칸에 바로 써도 돼요. Enter 키 = 아래 칸.</p>
       <label class="ckl"><input type="checkbox" id="tDetail"> 자세히 보기 (코드·브랜드 · 줄마다 % · 금액 · 마진)</label>
       <div class="xwrap" id="tSheet"></div>
-      <div class="btns"><button class="btn ghost sm" id="tAdd">＋ 줄 추가</button><button class="btn ghost sm" id="tAdd5">＋ 5줄 추가</button><button class="btn ghost sm" id="tSave">💾 저장</button><button class="btn ghost sm" id="tSheetXls" title="받는 분을 안 적어도, 빨간 칸이 있어도 지금 표에 적은 그대로 엑셀로 받아요">📗 엑셀로 받기 (입력한 그대로)</button><button class="btn ghost sm" id="tClear" style="color:var(--bad);border-color:#f3c4c9">🗑 전체 지우기</button></div>
+      <div class="btns"><button class="btn ghost sm" id="tAdd">＋ 줄 추가</button><button class="btn ghost sm" id="tAdd5">＋ 5줄 추가</button><button class="btn ghost sm" id="tSave">💾 저장</button><button class="btn ghost sm" id="tSheetXls" title="받는 분을 안 적어도, 빨간 칸이 있어도 지금 표에 적은 그대로 엑셀로 받아요">📗 엑셀로 받기 (입력한 그대로)</button><button class="btn ghost sm" id="tPick">☑ 골라서 지우기</button><button class="btn ghost sm" id="tClearL" style="color:var(--bad);border-color:#f3c4c9">🗑 품목 전체 지우기</button><button class="btn ghost sm" id="tClear" title="품목과 두 견적서의 받는 분 · 현장 · 비고까지 비우고 새로 시작">🆕 새 견적 (모두 비우기)</button></div>
+      <div id="tPickBar" class="pickbar hide"></div>
       <div id="tUndo"></div><div id="tErr"></div>
       <div class="cards4" id="tIn"></div>
       <details class="more"><summary>저장한 2단계 견적 불러오기</summary><div class="saved" id="tSaved" style="margin-top:8px"></div></details>
@@ -1125,17 +1129,25 @@ const TWO = (() => {
     ['m1', '우리 마진', 104, 'R', 'cv', '', '', 1], ['m2', '중간 마진', 104, 'R', 'cv', '', '', 1], ['m', '비고', 140, 'L', 'in', 'c', '']
   ];
   const cols = () => DEFS.filter(d => !d[7] || T.detail);
+  let pick = null;  // 골라서 지우기 중이면 고른 줄 번호 Set
+  function pickBar() {
+    const el = $('tPickBar'); if (!el) return;
+    el.classList.toggle('hide', !pick); $('tPick').classList.toggle('on', !!pick);
+    if (pick) el.innerHTML = '<b>지울 줄을 오른쪽 ☐에서 고르세요</b><span class="muted">' + pick.size + '줄 골랐어요</span><span style="flex:1"></span><button type="button" class="btn ghost sm" data-pb="all">전체 고르기</button><button type="button" class="btn sm" data-pb="del" style="background:var(--bad);border-color:var(--bad)">🗑 고른 ' + pick.size + '줄 지우기</button><button type="button" class="btn ghost sm" data-pb="cancel">취소</button>';
+  }
   function renderSheet() {
     const C = cols(), W = C.reduce((a, d) => a + d[2], 0) + 34;
     let h = '<table class="xs" style="width:' + W + 'px"><colgroup>' + C.map(d => '<col style="width:' + d[2] + 'px">').join('') + '<col style="width:34px"></colgroup>';
     h += '<tr>' + C.map(d => '<th class="' + d[3].replace('L', 'L').replace(/^R$/, 'R') + '">' + d[1] + '</th>').join('') + '<td class="G"></td></tr>';
     T.lines.forEach((l, i) => {
       h += '<tr data-i="' + i + '">' + C.map(d => '<td class="' + (d[3].startsWith('R') ? 'R' : 'L') + '">' + (d[4] === 'in' ? '<input type="text" class="' + d[5] + '" data-l="' + d[0] + '"' + (d[6] ? ' inputmode="' + d[6] + '"' : '') + ' maxlength="60">' : '<span class="cv" data-c="' + d[0] + '"></span>') + '</td>').join('') +
-        '<td class="G"><button class="del" data-ldel="' + i + '" aria-label="' + (i + 1) + '번 줄 지우기">✕</button></td></tr>';
+        '<td class="G">' + (pick ? '<input type="checkbox" class="pk" data-pk="' + i + '"' + (pick.has(i) ? ' checked' : '') + ' aria-label="' + (i + 1) + '번 줄 고르기">' : '<button class="del" data-ldel="' + i + '" aria-label="' + (i + 1) + '번 줄 지우기">✕</button>') + '</td></tr>';
     });
     if (T.detail) h += '<tr class="sum">' + C.map((d, k) => k === 0 ? '<th class="L">합계</th>' : '<td class="' + (d[3].startsWith('R') ? 'R' : 'L') + '"><span class="cv" id="tS_' + d[0] + '"></span></td>').join('') + '<td class="G"></td></tr>';
     h += '</table>';
     $('tSheet').innerHTML = h;
+    if (pick) $('tSheet').querySelectorAll('tr[data-i]').forEach(tr => tr.classList.toggle('picked', pick.has(+tr.dataset.i)));
+    pickBar();
     $('tSheet').querySelectorAll('tr[data-i]').forEach(tr => { const l = T.lines[+tr.dataset.i]; tr.querySelectorAll('[data-l]').forEach(x => { if (x.dataset.l !== 'p1' && x.dataset.l !== 'p2') x.value = l[x.dataset.l] == null ? '' : l[x.dataset.l]; }); });
     $('tDetail').checked = !!T.detail;
     update();
@@ -1608,13 +1620,39 @@ const TWO = (() => {
     const x = document.querySelector('[data-doc="' + o + '"][data-f="' + t.dataset.f + '"]'); if (x) { if (x.type === 'checkbox') x.checked = !!v; else x.value = v; }
   }
   let undoT = null, undoV = null;
+  /* 지운 뒤 10초 동안 되돌리기 */
+  function undoBox(msg) {
+    $('tUndo').innerHTML = '<div class="ok" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' + msg + ' <button class="btn sm" id="tUndoBtn">↩ 되돌리기</button></div>';
+    $('tUndoBtn').addEventListener('click', () => { if (!undoV) return; T = norm(undoV); undoV = null; pick = null; save(); render(); $('tUndo').innerHTML = ''; toast('되돌렸어요.'); });
+    clearTimeout(undoT); undoT = setTimeout(() => { undoV = null; $('tUndo').innerHTML = ''; }, 10000);
+  }
+  // 품목만 전체 지우기 (받는 분 · 현장 · 비고 · % 는 그대로)
+  $('tClearL').addEventListener('click', () => {
+    const n = T.lines.filter(l => !empty(l)).length;
+    if (!n) { toast('지울 품목이 없어요.'); return; }
+    if (!confirm('품목 ' + n + '줄을 모두 지울까요?\n(받는 분 · 현장명 · 비고 · 마진 %는 그대로 남아요)')) return;
+    undoV = JSON.parse(JSON.stringify(T)); T.lines = Array.from({ length: 10 }, blank); pick = null; save(); renderSheet(); update();
+    undoBox('품목 ' + n + '줄을 지웠어요.');
+  });
+  // 골라서 지우기: 줄 끝에 체크 칸 → 고른 줄만 지움
+  $('tPick').addEventListener('click', () => { pick = pick ? null : new Set(); renderSheet(); });
+  $('tSheet').addEventListener('change', e => { const c = e.target.closest('[data-pk]'); if (!c || !pick) return; const i = +c.dataset.pk; if (c.checked) pick.add(i); else pick.delete(i); c.closest('tr').classList.toggle('picked', c.checked); pickBar(); });
+  $('tPickBar').addEventListener('click', e => {
+    const b = e.target.closest('[data-pb]'); if (!b) return;
+    if (b.dataset.pb === 'all') { const fill = T.lines.map((l, i) => i).filter(i => !empty(T.lines[i])); pick = new Set(pick.size >= fill.length ? [] : fill); renderSheet(); }
+    else if (b.dataset.pb === 'cancel') { pick = null; renderSheet(); }
+    else if (b.dataset.pb === 'del') {
+      if (!pick.size) { toast('지울 줄을 먼저 골라 주세요.'); return; }
+      const n = pick.size; undoV = JSON.parse(JSON.stringify(T));
+      T.lines = T.lines.filter((l, i) => !pick.has(i)); while (T.lines.length < 10) T.lines.push(blank());
+      pick = null; save(); renderSheet(); update(); undoBox(n + '줄을 지웠어요.');
+    }
+  });
   $('tClear').addEventListener('click', () => {
     if (T.lines.every(empty) && !['to', 'site', 'cman', 'ctel', 'memo'].some(k => s_(T.d1[k]) || s_(T.d2[k]))) { toast('지울 내용이 없어요.'); return; }
     if (!confirm('입력한 품목과 두 견적서의 받는 분·현장·비고를 전체 지울까요?\n(마진 %, 중간 업체 정보, 저장한 견적은 그대로 남아요)')) return;
-    undoV = JSON.parse(JSON.stringify(T)); T = Object.assign(newT(), { a: T.a, b: T.b, mode: T.mode, ru: T.ru, sup2: T.sup2, detail: T.detail, step: 1, same: T.same }); save(); render();
-    $('tUndo').innerHTML = '<div class="ok" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">전체 지웠어요. <button class="btn sm" id="tUndoBtn">↩ 되돌리기</button></div>';
-    $('tUndoBtn').addEventListener('click', () => { if (!undoV) return; T = norm(undoV); undoV = null; save(); render(); $('tUndo').innerHTML = ''; toast('되돌렸어요.'); });
-    clearTimeout(undoT); undoT = setTimeout(() => { undoV = null; $('tUndo').innerHTML = ''; }, 10000);
+    undoV = JSON.parse(JSON.stringify(T)); T = Object.assign(newT(), { a: T.a, b: T.b, mode: T.mode, ru: T.ru, sup2: T.sup2, detail: T.detail, step: 1, same: T.same }); pick = null; save(); render();
+    undoBox('전체 지웠어요.');
   });
   /* ---------- 저장 · 불러오기 ---------- */
   const list = () => LS.get('h2saved', []);
