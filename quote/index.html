@@ -532,7 +532,7 @@ const BUILD = '2026-11-12a';
     <div class="card stp doc2" data-step="4">
       <h2>4. <span class="dn d2">최종</span> 견적서 — 중간 업체 → 최종 고객 <span class="muted" id="tSum2"></span></h2>
       <div class="grid3 dfm" data-doc="2"></div>
-      <details class="more" open><summary>중간 기업 정보 (1차 견적서의 ‘공급받는자’ = 최종 견적서의 ‘공급자’)</summary><div class="grid3" id="tSup2" style="margin-top:8px"></div></details>
+      <details class="more" open><summary>중간 기업 정보 (1차 견적서의 ‘공급받는자’ = 최종 견적서의 ‘공급자’)</summary><button type="button" class="btn ghost sm" id="tSup2Ace" style="margin-top:8px">🏪 ACE 일산점 정보 넣기</button><div class="grid3" id="tSup2" style="margin-top:8px"></div></details>
       <details class="more" open><summary>최종 업체 정보 (최종 견적서의 ‘공급받는자’)</summary><div class="grid3" id="tCust" style="margin-top:8px"></div></details>
       <details class="more" open><summary>양식 · 담당자 · 연락처 · 비고 · 로고</summary><div class="grid3 dfm2" data-doc="2"></div></details>
       <div class="btns sendbar" data-acts="2"></div>
@@ -1056,6 +1056,14 @@ const TWO = (() => {
   const SUP = () => supFill(Object.assign({ name: 'ACE 일산점', biz: '', ceo: '', addr: '', mgr: '', tel: '', fax: '', email: '', btype: '', bitem: '', seal: '' }, LS.get('supplier', null) || {}));
   const save = () => LS.set('h2quote', T);
   const s_ = v => String(v == null ? '' : v).trim();
+  /* ACE 일산점 사업자 정보 (최종 견적서 공급자 칸에 쓰던 값) */
+  const ACE_INFO = { name: '주식회사 유진홈센터 ACE Hardware 일산점', biz: '572-85-01118', ceo: '유순태', addr: '경기 고양시 일산서구 일중로 15번길 128', tel: '031-976-7626', fax: '', btype: '도매 및 소매업', bitem: '건축자재 外' };
+  // 2026-11-27 한 번만: 지금 쓰던 2단계 견적의 최종 견적서 위칸 (공급자 = ACE 일산점, 공급받는자 = 유진기업㈜) — 빈 칸만 채움
+  if (!LS.get('acefill1', 0)) {
+    Object.keys(ACE_INFO).forEach(k => { if (!s_(T.sup2[k])) T.sup2[k] = ACE_INFO[k]; });
+    if (!s_(T.cust.name)) T.cust.name = '유진기업㈜';
+    LS.set('h2quote', T); LS.set('acefill1', 1);
+  }
   const empty = l => !['code', 'n', 'br', 'sp', 'q', 'cost', 'p1', 'p2'].some(k => s_(l[k]));
   const pct = (a, b) => b ? (Math.round(a / b * 1000) / 10).toFixed(1) + '%' : '-';
   function hangulWon(n) {
@@ -1611,6 +1619,7 @@ const TWO = (() => {
   /* ---------- 저장 · 불러오기 ---------- */
   const list = () => LS.get('h2saved', []);
   function renderSaved() { const L = list(); $('tSaved').innerHTML = L.length ? L.map(s => '<div class="row"><span><b>' + esc(s.d1.to || '(1차 받는 분)') + '</b> → ' + esc(s.d2.to || '(최종 받는 분)') + ' <span class="muted">' + esc(s.d1.date || '') + ' · A ' + esc(s.a) + '% · B ' + esc(s.b) + '% · 최종 ' + won(s.total || 0) + '원</span></span><button class="btn ghost sm" data-open="' + esc(s.id) + '">열기</button><button class="btn ghost sm" data-sdel="' + esc(s.id) + '" aria-label="지우기">✕</button></div>').join('') : '<p class="muted" style="margin:0">아직 저장한 2단계 견적이 없어요.</p>'; }
+  $('tSup2Ace').addEventListener('click', () => { Object.assign(T.sup2, ACE_INFO); save(); renderForms(); update(); toast('ACE 일산점 정보를 넣었어요.'); });
   $('tSheetXls').addEventListener('click', ev => busy(ev.currentTarget, sheetXls));
   $('tSave').addEventListener('click', () => { const O = totals(); if (O.errs.length) { toast('빨간 칸을 먼저 고쳐 주세요.'); return; } if (!O.n) { toast('품목을 하나 이상 적어 주세요.'); return; } const L = list().filter(s => s.id !== T.id); L.unshift(Object.assign(JSON.parse(JSON.stringify(T)), { total: O.i2, savedAt: Date.now() })); if (!LS.set('h2saved', L.slice(0, 50))) { toast('저장하지 못했어요.'); return; } renderSaved(); toast('저장했어요.'); });
   $('tSaved').addEventListener('click', e => { const o = e.target.closest('[data-open]'), d = e.target.closest('[data-sdel]'); if (o) { const s = list().find(x => x.id === o.dataset.open); if (!s) return; T = norm(JSON.parse(JSON.stringify(s))); delete T.total; delete T.savedAt; save(); render(); window.scrollTo(0, 0); toast('불러왔어요.'); } if (d) { if (!confirm('이 견적을 지울까요?')) return; LS.set('h2saved', list().filter(x => x.id !== d.dataset.sdel)); renderSaved(); } });
