@@ -6950,11 +6950,13 @@ function vcSjParse(aoa) {
 }
 /* 자료 안에서 수주팀으로 셀 줄: 고객명 표기별로 고름 (F.inc). 안 골랐으면 — 표기에 '*'가 있는 줄과 없는 줄이 섞여 있으면 '*' 줄만
    (전산에서 수주팀 건은 '유진기업(주*'로 나옴), 아니면 전부 */
+/* 수주팀 = 담당자 김선재 건만: 판매원이 김선재이거나, 김선재 영업 건(전산 고객명 '유진기업(주*')을 다른 사람이 찍은 줄.
+   정리 파일의 '수주팀'(Y/N) 칸이 있으면 그대로, 화면에서 판매원 · 고객명 묶음별로 고른 것(F.inc)이 있으면 그것 */
+const vcSjKey = x => (x.sel || '-') + '|' + (x.c || '-');
 function vcSjInc(F, c, x) {
-  if (x && x.sj !== undefined) return !!x.sj;   // 정리 파일의 '수주팀' 칸 (Y/N)이 있으면 그대로
-  if (F.inc && Object.prototype.hasOwnProperty.call(F.inc, c)) return !!F.inc[c];
-  const star = F.rows.some(r => /\*/.test(r.c)), plain = F.rows.some(r => !/\*/.test(r.c));
-  return star && plain ? /\*/.test(c) : true;
+  if (x && x.sj !== undefined) return !!x.sj;
+  if (x && F.inc && Object.prototype.hasOwnProperty.call(F.inc, vcSjKey(x))) return !!F.inc[vcSjKey(x)];
+  return !!x && (vcSJ(x.sel) || /\*/.test(x.c || ''));
 }
 // 한 달 수주팀 합계: 자료가 있으면 자료로, 없으면 POS 담당자 '김선재' 외판 줄로
 function vcSjOf(k) {
@@ -7134,12 +7136,12 @@ function renderVc() {
   const sjPl = plans.filter(p => vcSJ(p.mgr));
   const mx = Math.max(1, ...ms.map(m => m.s));
   const bars = '<div class="vc-bars">' + ms.map(m => '<div class="vc-b' + (m.ym === ym ? ' on' : '') + '"><span>' + (m.ym % 100) + '월</span><i style="width:' + (Math.max(0, m.s) / mx * 100).toFixed(1) + '%"></i><b>' + eok(m.s) + '</b></div>').join('') + '</div>';
-  const SJF = sjO.src === 'file' ? VC.sj[ym] : null;
+  const SJF = sjO.src === 'file' ? VC.sj[ym] : null;   // (수주팀 = 담당 김선재 건)
   const up = '<div class="vc-up mt-np"><span>📎 <b>수주팀 매출 자료</b> ' + (SJF ? '— ' + esc(SJF.file || '') + ' · ' + Mm + ' ' + SJF.rows.filter(x => vcSjInc(SJF, x.c, x)).length + '건 · 올린 날 ' + (SJF.at ? new Date(SJF.at).toLocaleDateString('ko-KR') : '-') : '— ' + Mm + ' 자료 없음 (지금은 POS 담당자가 "김선재"인 외판 줄로 계산)') + '</span>' +
     '<label class="btn ghost sm">' + (SJF ? '다시 올리기' : '엑셀 올리기') + '<input type="file" id="vcSjFile" accept=".xlsx,.xls,.csv" hidden></label>' + (SJF ? '<button class="btn ghost sm" id="vcSjDel" type="button">' + Mm + ' 자료 지우기</button>' : '') + '</div>';
   let grp = '';
-  if (SJF && !SJF.rows.some(x => x.sj !== undefined)) { const G = {}; SJF.rows.forEach(x => { const g = G[x.c] || (G[x.c] = { n: 0, s: 0, sale: 0, sel: new Set() }); g.n++; g.s += x.net; if (x.net > 0) g.sale += x.net; if (x.sel) g.sel.add(x.sel); });
-    grp = '<div class="vc-grp mt-np"><b>수주팀으로 셀 줄 고르기</b> <small class="muted">(고객명 표기별)</small>' + Object.entries(G).map(([c, g]) => '<label><input type="checkbox" data-sjinc="' + esc(c) + '"' + (vcSjInc(SJF, c) ? ' checked' : '') + '> <b>' + esc(c) + '</b> — ' + g.n + '건 · ' + won(g.s) + ' <small class="muted">(판매원 ' + [...g.sel].map(esc).join(', ') + ')</small></label>').join('') + '</div>'; }
+  if (SJF && !SJF.rows.some(x => x.sj !== undefined)) { const G = {}; SJF.rows.forEach(x => { const k = vcSjKey(x), g = G[k] || (G[k] = { x, n: 0, sale: 0 }); g.n++; if (x.net > 0) g.sale += x.net; });
+    grp = '<div class="vc-grp mt-np"><b>수주팀(담당 김선재)으로 셀 줄</b> <small class="muted">(판매원 · 고객명 묶음별 — 기본: 판매원 김선재 + "(주*" 표기)</small>' + Object.entries(G).sort((a, b) => b[1].sale - a[1].sale).map(([k, g]) => '<label><input type="checkbox" data-sjinc="' + esc(k) + '"' + (vcSjInc(SJF, g.x.c, g.x) ? ' checked' : '') + '> 판매원 <b>' + esc(g.x.sel || '-') + '</b> · ' + esc(g.x.c || '-') + ' — ' + g.n + '건 · 판매 ' + won(g.sale) + '</label>').join('') + '</div>'; }
   // 영수증 목록: 수주팀 줄만
   const sjRowsF = SJF ? SJF.rows.filter(x => vcSjInc(SJF, x.c, x)).sort((a, b) => a.d - b.d) : [];
   const fileTbl = SJF ? grp + '<details><summary>' + Mm + ' 수주팀 영수증 ' + sjRowsF.length + '건 보기</summary>' + table(['날짜', '거래형태', '판매번호', '판매원', '매출 (VAT 별도)', '마진'], sjRowsF.map(x => [mdLabel(x.d), esc(x.k), esc(x.no), esc(x.sel), (x.net < 0 ? '<b class="down">' + won(x.net) + '</b>' : won(x.net)), won(x.mar)])) + '</details>' : '';
@@ -7183,7 +7185,7 @@ function renderVc() {
   });
   el.querySelectorAll('[data-sjinc]').forEach(cb => cb.addEventListener('change', async () => {
     const m = Object.assign({}, VC.sj || {}), F2 = Object.assign({}, m[ym]); F2.inc = Object.assign({}, F2.inc || {});
-    m[ym].rows.forEach(x => { if (!Object.prototype.hasOwnProperty.call(F2.inc, x.c)) F2.inc[x.c] = vcSjInc(m[ym], x.c); });   // 지금 보이는 대로 고정
+    m[ym].rows.forEach(x => { const k = vcSjKey(x); if (!Object.prototype.hasOwnProperty.call(F2.inc, k)) F2.inc[k] = vcSjInc(m[ym], x.c, x); });   // 지금 보이는 대로 고정
     F2.inc[cb.dataset.sjinc] = cb.checked; m[ym] = F2;
     try { await setDoc(doc(db, C.config, 'sujoo'), { m, at: serverTimestamp() }); VC.sj = m; renderVc(); } catch (e) { toast('저장하지 못했어요: ' + errMsg(e)); }
   }));
