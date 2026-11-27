@@ -6910,20 +6910,21 @@ function vcSjParse(aoa) {
   const hi = aoa.findIndex(r => (r || []).some(c => nz(c) === '판매원') && (r || []).some(c => nz(c) === '고객명'));
   if (hi < 0) return { error: '제목 줄(판매원 · 고객명)을 찾지 못했어요. 전산의 판매(영수증) 조회 엑셀을 그대로 올려 주세요.' };
   const H = aoa[hi].map(nz), at = re => H.findIndex(x => re.test(x));
-  const K = { d: at(/^영업일자$/), k: at(/^거래형태$/), no: at(/^판매.*번호$/), sel: at(/^판매원$/), c: at(/^고객명$/), net: at(/^과세결제금액/), non: at(/^비과세결제금액/), mar: at(/^마진금액$/), inc: at(/^결제금액/) };
+  const K = { d: at(/^영업일자$/), k: at(/^거래형태$/), no: at(/^판매.*번호$/), sel: at(/^판매원$/), c: at(/^고객명$/), net: at(/^과세결제금액/), non: at(/^비과세결제금액/), mar: at(/^마진금액$/), inc: at(/^결제금액/), sj: at(/^수주팀$/) };
   if (K.d < 0 || K.net < 0) return { error: '영업일자 · 과세결제금액(VAT제외) 칸이 있어야 해요.' };
   const byYm = {};
   aoa.slice(hi + 1).forEach(r => {
     if (!r) return; const d = toDateInt(r[K.d]); if (!d) return;
     const num = k => K[k] < 0 ? 0 : (Number(String(r[K[k]] == null ? '' : r[K[k]]).replace(/,/g, '')) || 0);
-    (byYm[ymOf(d)] = byYm[ymOf(d)] || []).push({ d, k: K.k < 0 ? '' : cleanText(r[K.k], 20), no: K.no < 0 ? '' : cleanText(r[K.no], 30), sel: K.sel < 0 ? '' : cleanText(r[K.sel], 30), c: K.c < 0 ? '' : cleanText(r[K.c], 60), net: Math.round(num('net') + num('non')), mar: Math.round(num('mar')), inc: Math.round(num('inc')) });
+    (byYm[ymOf(d)] = byYm[ymOf(d)] || []).push({ d, k: K.k < 0 ? '' : cleanText(r[K.k], 20), no: K.no < 0 ? '' : cleanText(r[K.no], 30), sel: K.sel < 0 ? '' : cleanText(r[K.sel], 30), c: K.c < 0 ? '' : cleanText(r[K.c], 60), net: Math.round(num('net') + num('non')), mar: Math.round(num('mar')), inc: Math.round(num('inc')), ...(K.sj >= 0 ? { sj: /^(Y|예|O|1|true)$/i.test(String(r[K.sj] == null ? '' : r[K.sj]).trim()) } : {}) });
   });
   if (!Object.keys(byYm).length) return { error: '날짜가 있는 줄이 없어요.' };
   return { byYm };
 }
 /* 자료 안에서 수주팀으로 셀 줄: 고객명 표기별로 고름 (F.inc). 안 골랐으면 — 표기에 '*'가 있는 줄과 없는 줄이 섞여 있으면 '*' 줄만
    (전산에서 수주팀 건은 '유진기업(주*'로 나옴), 아니면 전부 */
-function vcSjInc(F, c) {
+function vcSjInc(F, c, x) {
+  if (x && x.sj !== undefined) return !!x.sj;   // 정리 파일의 '수주팀' 칸 (Y/N)이 있으면 그대로
   if (F.inc && Object.prototype.hasOwnProperty.call(F.inc, c)) return !!F.inc[c];
   const star = F.rows.some(r => /\*/.test(r.c)), plain = F.rows.some(r => !/\*/.test(r.c));
   return star && plain ? /\*/.test(c) : true;
@@ -6932,7 +6933,7 @@ function vcSjInc(F, c) {
 function vcSjOf(k) {
   const F = VC.sj && VC.sj[k] && (VC.sj[k].rows || []).length ? VC.sj[k] : null;
   if (F) { const o = { src: 'file', s: 0, r: 0, sale: 0, ret: 0, eu: 0, eur: 0, n: 0, cust: new Set(), from: 99, to: 0, file: F.file || '', at: F.at || 0 };
-    F.rows.filter(x => vcSjInc(F, x.c)).forEach(x => { o.s += x.net; o.r += x.mar; if (x.net >= 0) o.sale += x.net; else o.ret += x.net; if (vcEugene(x.c)) { o.eu += x.net; o.eur += x.mar; } o.n++; o.cust.add(vcKey(x.c)); o.from = Math.min(o.from, x.d % 100); o.to = Math.max(o.to, x.d % 100); }); return o; }
+    F.rows.filter(x => vcSjInc(F, x.c, x)).forEach(x => { o.s += x.net; o.r += x.mar; if (x.net >= 0) o.sale += x.net; else o.ret += x.net; if (vcEugene(x.c)) { o.eu += x.net; o.eur += x.mar; } o.n++; o.cust.add(vcKey(x.c)); o.from = Math.min(o.from, x.d % 100); o.to = Math.max(o.to, x.d % 100); }); return o; }
   const o = { src: 'pos', s: 0, r: 0, sale: 0, ret: 0, eu: 0, eur: 0, n: 0, cust: new Set() };
   Object.keys((S.detail || {})[k] || {}).forEach(dd => (S.detail[k][dd] || []).forEach(x => { if (x.g === 'o' && vcSJ(x.m)) { const v = Number(x.n) || 0, m = Number(x.r) || 0; o.s += v; o.r += m; if (vcEugene(x.c)) { o.eu += v; o.eur += m; } o.cust.add(vcKey(x.c)); } }));
   return o;
@@ -7052,9 +7053,9 @@ function renderVc() {
   const up = '<div class="vc-up mt-np"><span>📎 <b>' + Mm + ' 수주팀 매출 자료</b> ' + (SJF ? '— ' + esc(SJF.file || '') + ' · ' + SJF.rows.length + '건 (' + sjO.from + '일 ~ ' + sjO.to + '일) · 올린 날 ' + (SJF.at ? new Date(SJF.at).toLocaleDateString('ko-KR') : '-') : '— 아직 없음 (지금은 POS 담당자가 "김선재"인 외판 줄로 계산)') + '</span>' +
     '<label class="btn ghost sm">' + (SJF ? '다시 올리기' : '엑셀 올리기') + '<input type="file" id="vcSjFile" accept=".xlsx,.xls,.csv" hidden></label>' + (SJF ? '<button class="btn ghost sm" id="vcSjDel" type="button">지우기</button>' : '') + '</div>';
   let grp = '';
-  if (SJF) { const G = {}; SJF.rows.forEach(x => { const g = G[x.c] || (G[x.c] = { n: 0, s: 0, sale: 0, sel: new Set() }); g.n++; g.s += x.net; if (x.net > 0) g.sale += x.net; if (x.sel) g.sel.add(x.sel); });
+  if (SJF && !SJF.rows.some(x => x.sj !== undefined)) { const G = {}; SJF.rows.forEach(x => { const g = G[x.c] || (G[x.c] = { n: 0, s: 0, sale: 0, sel: new Set() }); g.n++; g.s += x.net; if (x.net > 0) g.sale += x.net; if (x.sel) g.sel.add(x.sel); });
     grp = '<div class="vc-grp mt-np"><b>수주팀으로 셀 줄 고르기</b> <small class="muted">(고객명 표기별 · 고른 줄만 수주팀 금액에 들어가요)</small>' + Object.entries(G).map(([c, g]) => '<label><input type="checkbox" data-sjinc="' + esc(c) + '"' + (vcSjInc(SJF, c) ? ' checked' : '') + '> <b>' + esc(c) + '</b> — ' + g.n + '건 · ' + won(g.s) + ' <small class="muted">(판매만 ' + won(g.sale) + ' · 판매원 ' + [...g.sel].map(esc).join(', ') + ')</small></label>').join('') + '</div>'; }
-  const fileTbl = SJF ? grp + '<details><summary>수주팀 자료 ' + SJF.rows.length + '건 보기 (전산 그대로)</summary>' + table(['날짜', '거래형태', '판매번호', '판매원', '고객명', '매출 (VAT 별도)', '마진', '수주팀'], SJF.rows.slice().sort((a, b) => a.d - b.d).map(x => [mdLabel(x.d), esc(x.k), esc(x.no), esc(x.sel), esc(x.c), (x.net < 0 ? '<b class="down">' + won(x.net) + '</b>' : won(x.net)), won(x.mar), vcSjInc(SJF, x.c) ? '✅' : '—'])) +
+  const fileTbl = SJF ? grp + '<details><summary>수주팀 자료 ' + SJF.rows.length + '건 보기 (전산 그대로)</summary>' + table(['날짜', '거래형태', '판매번호', '판매원', '고객명', '매출 (VAT 별도)', '마진', '수주팀'], SJF.rows.slice().sort((a, b) => a.d - b.d).map(x => [mdLabel(x.d), esc(x.k), esc(x.no), esc(x.sel), esc(x.c), (x.net < 0 ? '<b class="down">' + won(x.net) + '</b>' : won(x.net)), won(x.mar), vcSjInc(SJF, x.c, x) ? '✅' : '—'])) +
     '</details><p class="muted" style="margin:6px 0 0">수주팀(고른 줄): 판매 ' + won(sjO.sale) + ' − 반품 ' + won(-sjO.ret) + ' = <b>' + won(sjO.s) + '</b> (VAT 별도, 반품 뺀 순매출) · 전산에서 판매만 보면 ' + won(sjO.sale) + '</p>' : '';
   const mTable = table(['월', '유진기업 전체', '수주팀', '그 외', '수주팀 비중'], ms.filter(m => m.s || m.j).map(m => [(m.ym % 100) + '월' + (m.src === 'file' ? ' <small class="muted">(자료)</small>' : ''), W(m.s), W(m.j), W(m.s - m.j), share(m.j, m.s)]).concat([['<b>' + Y + '년 누적</b>', '<b>' + W(eTot) + '</b>', '<b>' + W(jTot) + '</b>', '<b>' + W(eTot - jTot) + '</b>', share(jTot, eTot)]]));
   S2.push({ t: '5. 유진기업 매출 — 수주팀 따로', say: [
@@ -7085,7 +7086,8 @@ function renderVc() {
     const f = sjf.files[0]; if (!f) return;
     try {
       const X = await loadXlsx(), wb = X.read(await f.arrayBuffer(), { type: 'array' });
-      const aoa = X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: '' });
+      const sh = wb.SheetNames.includes('앱 올리기용') ? '앱 올리기용' : wb.SheetNames[0];
+      const aoa = X.utils.sheet_to_json(wb.Sheets[sh], { header: 1, raw: true, defval: '' });
       const R = vcSjParse(aoa); if (R.error) { toast(R.error); return; }
       const m = Object.assign({}, VC.sj || {}); Object.keys(R.byYm).forEach(k => { m[k] = { rows: R.byYm[k], file: cleanText(f.name, 120), at: Date.now(), by: (S.user && S.user.email) || '' }; });
       await setDoc(doc(db, C.config, 'sujoo'), { m, at: serverTimestamp() });
