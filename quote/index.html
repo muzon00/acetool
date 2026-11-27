@@ -382,6 +382,9 @@ body.print2 #tPrint .cdoc { border: 0; padding: 0; width: 100%; }
 .mg-g { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface2); }
 .mg-g .btn { margin-left: auto; }
 .mg-g .okt { color: var(--ok-ink); font-size: .88em; } .mg-g .badt { color: var(--bad); font-size: .88em; font-weight: 700; }
+.mg-t tr.mg-ck td { background: #ffecec; }
+.mg-in { border: 1px solid transparent; background: transparent; font: inherit; padding: 3px 4px; border-radius: 6px; }
+.mg-in:hover, .mg-in:focus { border-color: #b8c4d6; background: #fff; outline: none; }
 .mg-t td, .mg-t th { padding: 6px 8px; white-space: nowrap; } .mg-t td.r { text-align: right; } .mg-t td.c { text-align: center; }
 .imp { border: 2px dashed #9fb7d8; background: #f4f8fd; border-radius: 16px; padding: 12px 14px; }
 .imph { font-weight: 900; font-size: 1.08em; color: #1d4f91; }
@@ -1443,6 +1446,47 @@ const TWO = (() => {
     OCRP.onP = onP; return OCRP;
   }
   /* 글자 인식 결과 → 품목: 줄마다 '수량 × 단가 = 공급가액'이 맞는 숫자 세 개를 찾아야 넣음 (잘못 읽은 줄이 조용히 들어가지 않게) */
+  /* 칸 선(|)이 살아 있는 표 글자: 제목 줄(제품명 · 규격 · 단위 · 수량 · 단가 · 공급가액 · 비고) 칸 순서대로 읽음.
+     줄마다 수량 × 단가 = 공급가액 검산으로 칸 위치를 맞추고(앞 칸이 합쳐져 읽혀도), 단가가 흐리면 공급가액 ÷ 수량 */
+  function parsePipe(text) {
+    const L = String(text || '').replace(/\r/g, '').split('\n').map(l => l.replace(/[ㅣ｜\]\[]/g, '|'));
+    const cells = l => l.split('|').map(c => c.trim());
+    const nzc = c => c.replace(/\s+/g, '');
+    const hi = L.findIndex(l => (l.match(/\|/g) || []).length >= 4 && /제\s*품\s*명|품\s*명/.test(l) && /수\s*량/.test(l));
+    if (hi < 0) return null;
+    const H = cells(L[hi]).map(nzc), at = re => H.findIndex(x => re.test(x));
+    const C = { n: at(/^(제품명|품명|품목|상품명)$/), sp: at(/^(규격|사양)$/), u: at(/^단위$/), q: at(/^수량$/), p: at(/^단가/), a: at(/^(공급가액|금액)/), m: at(/^비고$/) };
+    if (C.n < 0 || C.q < 0) return null;
+    const toN = t => { let x = String(t || '').replace(/[Oo]/g, '0').replace(/[lI]/g, '1').replace(/[^\d.,]/g, '').replace(/^[.,]+|[.,]+$/g, '');
+      if (/^\d{1,3}([.,]\d{3})+$/.test(x)) x = x.replace(/[.,]/g, ''); else x = x.replace(/,/g, '');
+      return /^\d+(\.\d{1,2})?$/.test(x) ? Number(x) : NaN; };
+    const rows = [], skipped = []; let tot = null, site = '';
+    // 현장명: '현 장 명' 제목이 있는 줄 다음 줄의 마지막 한글 칸
+    const si = L.findIndex((l, i) => i < hi && /현\s*장\s*명/.test(l));
+    if (si >= 0 && L[si + 1]) { const c = cells(L[si + 1]).filter(x => /[가-힣]{2,}/.test(x)); if (c.length) site = c[c.length - 1]; }
+    for (let r = hi + 1; r < L.length; r++) {
+      const ln = L[r]; if (!ln.trim()) continue;
+      if (/^[^가-힣]{0,4}(총\s*계|합\s*계|소\s*계|계(?=\s|\|))/.test(ln.trim())) { const ns = cells(ln).map(toN).filter(n => n >= 1000); if (ns.length) tot = ns[0]; break; }
+      const c = cells(ln); if (c.length < 4) continue;
+      // 수량 · 단가 · 공급가액 세 칸 찾기 (제목 줄 위치 근처부터)
+      let qi = -1, q = 0, pr = 0, am = 0, guessed = false;
+      for (let k = 0; k + 2 < c.length && qi < 0; k++) {
+        const x = toN(c[k]), y = toN(c[k + 1]), z = toN(c[k + 2]);
+        if (!(x > 0) || !(z > 0)) continue;
+        if (y >= 10 && Math.abs(Math.round(x * 100) * y / 100 - z) < 1) { qi = k; q = x; pr = y; am = z; }
+        else if (Number.isInteger(x) && z % x === 0 && z / x >= 10 && C.p === C.q + 1 && C.a === C.q + 2 && /\d/.test(c[k + 1])) { qi = k; q = x; pr = z / x; am = z; guessed = true; }
+      }
+      if (qi < 0) { if (/[가-힣]{2,}/.test(ln) && /\d/.test(ln)) skipped.push(ln.replace(/\|/g, ' ').replace(/\s+/g, ' ').trim()); continue; }
+      const off = qi - C.q, g = k => { const i = C[k] + off; return C[k] >= 0 && i >= 0 && i < c.length ? c[i] : ''; };
+      let n = g('n'); const sp0 = g('sp'), u = g('u'), m = g('m');
+      if (C.n + off < 0 || !n) n = c.slice(0, Math.max(1, qi - (C.q - C.n))).join(' ');
+      n = n.replace(/^\d{1,3}\s*[.,。·:]*\s*/, '').replace(/^[^가-힣A-Za-z0-9(]+/, '').trim();
+      const sp = sp0.replace(/^[^가-힣A-Za-z0-9]+/, '').replace(/(^|\s)0(?=\d{3,4}(\*|용|$|\s))/g, '$1D');
+      let uu = u.replace(/[^가-힣A-Za-z]/g, ''); if (/^ea$/i.test(uu)) uu = 'EA';
+      rows.push({ no: null, code: '', n, sp, u: uu, q, p: pr, m: /[가-힣A-Za-z0-9]/.test(m) ? m.replace(/^[^가-힣A-Za-z0-9]+|[^가-힣A-Za-z0-9)]+$/g, '') : '', guessed, ck: !/[가-힣]{2,}/.test(n) });
+    }
+    return { rows, skipped, tot, site };
+  }
   function parseOcr(text) {
     const UNITS = /^(M|EA|ea|개|본|장|매|롤|통|포|대|식|SET|set|kg|KG|톤|㎡|m2|M2|㎥|m3|M3|BOX|box|박스|조|짝)$/;
     /* 숫자 읽기: 쉼표·점 천 단위(2,610 · 17.920 · 1.892000)도 숫자로. 소수는 점 뒤 1~2자리만 */
@@ -1554,16 +1598,17 @@ const TWO = (() => {
     (B ? B.rows : []).forEach(r => { const k = key(r); used[k] = (used[k] || 0) + 1; if (used[k] > (cA[k] || 0)) rows.push(r); });
     if (!A || !A.rows.length) rows = (B ? B.rows : []).slice();
     if (rows.every(r => r.no !== null)) rows.sort((a, b) => a.no - b.no);
-    rows.forEach((r, i) => { if (i && !/[가-힣]{2,}/.test(r.n) && /[가-힣]{2,}/.test(rows[i - 1].n)) { r.n = rows[i - 1].n; r.fixedName = true; } });
+    if (!(A && A.pipe)) rows.forEach((r, i) => { if (i && !/[가-힣]{2,}/.test(r.n) && /[가-힣]{2,}/.test(rows[i - 1].n)) { r.n = rows[i - 1].n; r.fixedName = true; } });
     const notes = [];
-    const g = rows.filter(r => r.guessed).length, fn = rows.filter(r => r.fixedName).length;
+    const g = rows.filter(r => r.guessed).length, fn = rows.filter(r => r.fixedName).length, ck = rows.filter(r => r.ck).length;
+    if (ck) notes.push('제품명을 읽지 못한 줄 ' + ck + '개 — 빨간 줄의 제품명을 고쳐 주세요');
     if (g) notes.push('단가 글자가 흐려서 공급가액 ÷ 수량으로 계산한 줄 ' + g + '개');
     if (fn) notes.push('제품명이 흐려서 윗줄 제품명을 쓴 줄 ' + fn + '개');
     const sum = rows.reduce((t, r) => t + Math.round(Math.round(r.q * 100) * r.p / 100), 0);
     const tot = (A && A.tot) || (B && B.tot) || null;
     const skipped = (A && A.skipped || []).filter(l => !rows.some(r => l.includes(String(r.p))));
     const warn = notes.slice(); if (skipped.length) warn.push('검산(수량×단가=공급가액)이 맞지 않아 넣지 않은 줄 ' + skipped.length + '개 — 아래 표에 직접 넣어 주세요: ' + skipped.slice(0, 4).join(' / '));
-    return { lines: rows.map(r => Object.assign(blank(), { code: r.code || '', n: r.n, sp: r.sp, u: r.u, q: String(r.q), cost: String(r.p) })), warn, sum, site: '', vendor: '', tot, ocr: true };
+    return { lines: rows.map(r => Object.assign(blank(), { code: r.code || '', n: r.n, sp: r.sp, u: r.u, q: String(r.q), cost: String(r.p), m: r.m || '', ck: !!r.ck })), warn, sum, site: (A && A.site) || '', vendor: '', tot, ocr: true };
   }
   /* 읽기 전 손질: 2~3배 키우기 · 흑백 · 표 선 지우기 (작은 글씨와 칸 선 때문에 잘못 읽는 것을 줄임) */
   async function prepImage(blob, scale, th) {
@@ -1589,7 +1634,9 @@ const TWO = (() => {
       const el = $('ocrPct'); if (el && sc) el.textContent = '다른 방식으로 다시 읽는 중';
       const c = await prepImage(blob, sc || undefined, th);
       await w.setParameters({ tessedit_pageseg_mode: '4', preserve_interword_spaces: '1' });
-      const r1 = await w.recognize(c, {}, { text: true, blocks: true }), A = parseOcr(r1.data.text || '');
+      const r1 = await w.recognize(c, {}, { text: true, blocks: true }); let A = parseOcr(r1.data.text || '');
+      const P = parsePipe(r1.data.text || '');
+      if (P && P.rows.length && P.rows.length >= A.rows.length) { A = Object.assign(P, { pipe: true }); }
       let B = null; raw += (raw ? '\n----- 다시 읽기 -----\n' : '') + (r1.data.text || '');
       const sumA = A.rows.reduce((t, r) => t + Math.round(Math.round(r.q * 100) * r.p / 100), 0);
       if (!A.rows.length || A.tot === null || sumA !== A.tot) {
@@ -1722,7 +1769,7 @@ const TWO = (() => {
       lines: o.lines.map(l => Object.assign(blank(), { n: l.n, sp: l.sp || '', u: l.u || '', q: String(l.q), p1: String(l.p), p2: String(l.p), m: l.m || '' })), step: 4 });
     save(); render(); showStep(4);
   }
-  return { render, totals, makeFile, price, smartParse, ocrBlob, loadFinal, get T() { return T; }, set T(v) { T = norm(v); } };
+  return { render, totals, makeFile, price, smartParse, ocrBlob, loadFinal, parsePipe, parseOcr, get T() { return T; }, set T(v) { T = norm(v); } };
 })();
 
 /* ===================== 견적 합치기: 캡처 여러 장 → 한 목록 → 2단계 최종 견적서 ===================== */
@@ -1745,14 +1792,29 @@ const MERGE = (() => {
     if (!M.groups.length) { $('mgList').innerHTML = '<p class="muted" style="margin:0">아직 넣은 견적이 없어요.</p>'; return; }
     const L = merged(), sup = L.reduce((t, l) => t + amt(l), 0), vat = Math.round(sup / 10);
     let h = '<div class="mg-groups">' + M.groups.map((g, i) => '<div class="mg-g"><b>견적 ' + (i + 1) + '</b> <span class="muted">' + esc(g.src) + ' · ' + g.lines.length + '줄 · ' + fmt(g.lines.reduce((t, l) => t + amt(l), 0)) + '원</span>' + (g.chk ? ' <span class="' + (g.chk.ok ? 'okt' : 'badt') + '">' + esc(g.chk.t) + '</span>' : '') + '<button class="btn ghost sm" data-mgdel="' + i + '" aria-label="견적 ' + (i + 1) + ' 빼기">✕ 빼기</button></div>').join('') + '</div>';
-    h += '<div class="xwrap"><table class="xs mg-t"><tr><th>순번</th><th class="L">제품명</th><th>규격</th><th>단위</th><th>수량</th><th>단가</th><th>공급가액</th><th class="L">비고</th></tr>' +
-      L.map((l, i) => '<tr><td class="c">' + (i + 1) + '</td><td>' + esc(l.n) + '</td><td class="c">' + esc(l.sp) + '</td><td class="c">' + esc(l.u) + '</td><td class="r">' + esc(l.q) + '</td><td class="r">' + fmt(l.p) + '</td><td class="r">' + fmt(amt(l)) + '</td><td>' + esc(l.m) + '</td></tr>').join('') +
+    // 한 줄로 합치기가 꺼져 있으면 칸을 바로 고칠 수 있음 (캡처에서 잘못 읽은 글자)
+    const ed = !M.same, refs = []; if (ed) M.groups.forEach((g, gi) => g.lines.forEach((l, li) => refs.push([gi, li])));
+    const inp = (i, k, v, w, num) => ed ? '<input class="mg-in" data-mi="' + i + '" data-mk="' + k + '" value="' + esc(v) + '" style="width:' + w + 'px' + (num ? ';text-align:right' : '') + '"' + (num ? ' inputmode="decimal"' : '') + '>' : esc(num && k === 'p' ? fmt(v) : v);
+    h += (ed ? '<p class="muted" style="margin:0 0 6px">칸을 눌러 바로 고칠 수 있어요. <b class="badt">빨간 줄</b>은 제품명을 읽지 못한 줄이에요.</p>' : '') +
+      '<div class="xwrap"><table class="xs mg-t"><tr><th>순번</th><th class="L">제품명</th><th>규격</th><th>단위</th><th>수량</th><th>단가</th><th>공급가액</th><th class="L">비고</th>' + (ed ? '<th></th>' : '') + '</tr>' +
+      L.map((l, i) => '<tr' + (l.ck ? ' class="mg-ck"' : '') + '><td class="c">' + (i + 1) + '</td><td>' + inp(i, 'n', l.n, 170) + '</td><td class="c">' + inp(i, 'sp', l.sp, 100) + '</td><td class="c">' + inp(i, 'u', l.u, 44) + '</td><td class="r">' + inp(i, 'q', l.q, 50, 1) + '</td><td class="r">' + inp(i, 'p', l.p, 84, 1) + '</td><td class="r" data-ma="' + i + '">' + fmt(amt(l)) + '</td><td>' + inp(i, 'm', l.m, 130) + '</td>' + (ed ? '<td><button class="del" data-mrow="' + i + '" aria-label="' + (i + 1) + '번 줄 지우기">✕</button></td>' : '') + '</tr>').join('') +
       '<tr class="sum"><th colspan="6">합계 (' + L.length + '줄)</th><td class="r"><b>' + fmt(sup) + '</b></td><td>부가세 ' + fmt(vat) + ' · 합계 <b>' + fmt(sup + vat) + '</b></td></tr></table></div>';
-    $('mgList').innerHTML = h;
+    $('mgList').innerHTML = h; MERGE_REFS = refs;
   }
+  let MERGE_REFS = [];
+  $('mgList').addEventListener('input', e => {
+    const t = e.target.closest('[data-mi]'); if (!t) return; const ref = MERGE_REFS[+t.dataset.mi]; if (!ref) return;
+    const l = M.groups[ref[0]].lines[ref[1]], k = t.dataset.mk;
+    l[k] = k === 'q' || k === 'p' ? (Number(t.value.replace(/,/g, '')) || 0) : t.value;
+    if (k === 'n' && /[가-힣]{2,}/.test(t.value)) { l.ck = false; t.closest('tr').classList.remove('mg-ck'); }
+    if (k === 'q' || k === 'p') { const c = $('mgList').querySelector('[data-ma="' + t.dataset.mi + '"]'); if (c) c.textContent = fmt(amt(l)); }
+    save();
+  });
+  $('mgList').addEventListener('change', e => { if (e.target.closest('[data-mi]')) render(); });   // 합계 다시 계산
+  $('mgList').addEventListener('click', e => { const b = e.target.closest('[data-mrow]'); if (!b) return; const ref = MERGE_REFS[+b.dataset.mrow]; if (!ref) return; M.groups[ref[0]].lines.splice(ref[1], 1); if (!M.groups[ref[0]].lines.length) M.groups.splice(ref[0], 1); save(); render(); });
   function addGroup(R, src) {
     if (!R || R.err || !R.lines || !R.lines.length) { $('mgMsg').innerHTML = '<div class="err">' + esc((R && R.err) || '품목 줄을 찾지 못했어요. 표가 크게 보이게 다시 캡처해 주세요.') + '</div>'; return; }
-    const lines = R.lines.map(l => ({ n: s_(l.n), sp: s_(l.sp), u: s_(l.u), q: Number(String(l.q).replace(/,/g, '')) || 0, p: Number(String(l.cost || l.p1 || '').replace(/,/g, '')) || 0, m: s_(l.m) })).filter(l => l.n);
+    const lines = R.lines.map(l => ({ n: s_(l.n), sp: s_(l.sp), u: s_(l.u), q: Number(String(l.q).replace(/,/g, '')) || 0, p: Number(String(l.cost || l.p1 || '').replace(/,/g, '')) || 0, m: s_(l.m), ck: !!l.ck })).filter(l => l.n || l.ck);
     const sum = lines.reduce((t, l) => t + amt(l), 0);
     const chk = R.tot != null ? { ok: R.tot === sum, t: R.tot === sum ? '✅ 견적 합계와 맞음' : '⚠ 견적 합계 ' + fmt(R.tot) + '원 ≠ ' + fmt(sum) + '원' } : null;
     M.groups.push({ src, lines, chk }); if (R.site && !s_(M.site)) M.site = R.site;
@@ -1785,6 +1847,7 @@ const MERGE = (() => {
     const L = merged();
     if (!L.length) { toast('먼저 견적 캡처를 붙여넣어 주세요.'); return; }
     if (!s_(M.to)) { toast('받는 분을 적어 주세요.'); $('mgTo').focus(); return; }
+    if (L.some(l => !s_(l.n))) { toast('제품명이 빈 줄이 있어요. 빨간 줄을 고쳐 주세요.'); return; }
     if (!confirm('2단계 견적서의 최종 견적서를 이 ' + L.length + '줄로 만들까요?\n(2단계에서 쓰던 견적은 「저장한 2단계 견적」에 자동으로 저장돼요)')) return;
     TWO.loadFinal({ lines: L, to: s_(M.to), site: s_(M.site), date: M.date || td() });
     showMode('two'); toast('최종 견적서를 만들었어요. 보내기 · PDF · 엑셀로 내보내세요.');
