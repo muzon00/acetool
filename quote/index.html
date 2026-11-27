@@ -683,6 +683,8 @@ function xlDoc(wb, name, S) {
   if (S.form === 'corp') {
     ws.columns = [6, 28, 15, 7, 9, 11, 13, 11, 13, 14].map(w => ({ width: w }));
     xPut(ws, 1, 1, 1, 10, L.t, { font: { size: 22, bold: true }, h: 'center' }); ws.getRow(1).height = 40;
+    // 오른쪽 위 로고 (EUGENE · ACE Hardware 그림, 화면 · 사진 · PDF와 같은 것) — 원본 297×85 비율
+    if (S.logo) { const id = wb.addImage({ base64: LOGO_EA, extension: 'png' }); ws.addImage(id, { tl: { col: 7.75, row: 0.12 }, ext: { width: 168, height: 48 }, editAs: 'oneCell' }); }
     const box = (c0, lab, X) => {
       xPut(ws, 3, c0, 7, c0, lab.split('').join('\n'), { font: { bold: true }, h: 'center', box: true, fill: 'FFF2F2F2' });
       xPut(ws, 3, c0 + 1, 3, c0 + 1, '사업자명', H); xPut(ws, 3, c0 + 2, 3, c0 + 4, X.name, { box: true, font: { bold: true, size: 11 }, ind: 1 });
@@ -718,7 +720,7 @@ function xlDoc(wb, name, S) {
   }
   /* 홈센터 기본 모양 */
   ws.columns = [10, 30, 11, 13, 12, 9, 14, 14, 18].map(w => ({ width: w }));
-  xPut(ws, 1, 1, 1, 2, 'ACE Hardware', { font: { bold: true, italic: true, size: 14, color: { argb: 'FFD71920' } } });
+  if (S.logo !== false) xPut(ws, 1, 1, 1, 2, 'ACE Hardware', { font: { bold: true, italic: true, size: 14, color: { argb: 'FFD71920' } } });
   xPut(ws, 1, 3, 1, 7, L.t, { font: { size: 22, bold: true }, h: 'center' }); ws.getRow(1).height = 42;
   xPut(ws, 3, 1, 3, 4, (S.to || '') + (S.to ? ' 귀하' : ''), { font: { size: 13, bold: true, underline: true }, h: 'center' });
   [[L.d, xDate(S.date)], ['현장명', S.site], ['담당자', S.cman], ['연락처', S.ctel]].forEach(([k, v], i) => { xPut(ws, 4 + i, 1, 4 + i, 1, k, { h: 'center' }); xPut(ws, 4 + i, 2, 4 + i, 4, v, { ind: 1 }); });
@@ -1315,7 +1317,7 @@ const TWO = (() => {
   function twoSpec(w, O) {
     const D = docD(w), A = w === 1 ? SUP() : T.sup2, rows = [];
     O.res.forEach((r, i) => { if (r.skip || r.err) return; const l = T.lines[i]; rows.push({ code: l.code || '', n: l.n, br: l.br || '', sp: l.sp || '', u: l.u || '', q: r.q, p: w === 1 ? r.p1 : r.p2, amt: w === 1 ? r.amt1 : r.amt2, inc: w === 1 ? r.inc1 : r.inc2, m: l.m || '' }); });
-    return { dk: D.dk, form: D.form === 'corp' ? 'corp' : 'home', to: D.to, date: D.date, site: D.site, cman: D.cman, ctel: D.ctel, memo: D.memo, sup: A, cust: w === 1 ? T.sup2 : Object.assign({}, T.cust, { name: s_(T.cust.name) || D.to }), seal: w === 1 ? A.seal : '', rows, supply: w === 1 ? O.s1 : O.s2, total: w === 1 ? O.i1 : O.i2 };
+    return { dk: D.dk, form: D.form === 'corp' ? 'corp' : 'home', logo: !!D.logo, to: D.to, date: D.date, site: D.site, cman: D.cman, ctel: D.ctel, memo: D.memo, sup: A, cust: w === 1 ? T.sup2 : Object.assign({}, T.cust, { name: s_(T.cust.name) || D.to }), seal: w === 1 ? A.seal : '', rows, supply: w === 1 ? O.s1 : O.s2, total: w === 1 ? O.i1 : O.i2 };
   }
   async function twoXls(w, internal) {
     const O = ready(w); if (!O) return;
