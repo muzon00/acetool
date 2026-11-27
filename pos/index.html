@@ -662,6 +662,8 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .mt-in { width: 100%; min-width: 90px; min-height: 36px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; font: inherit; background: var(--surface); color: var(--ink); } .mt-in.r { text-align: right; min-width: 120px; }
 #mtLost select { min-height: 36px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; }
 .vc-bars { display: grid; gap: 4px; margin: 10px 0; }
+.vc-grp { display: grid; gap: 4px; padding: 8px 12px; border-radius: 12px; background: var(--surface2, var(--bg)); margin: 6px 0; font-size: .92em; } .vc-grp label { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; cursor: pointer; }
+.vc-up { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 12px; border: 1px dashed var(--s2); border-radius: 12px; margin: 0 0 10px; font-size: .92em; } .vc-up > span { flex: 1; min-width: 220px; }
 .vc-say { background: var(--warn-bg); border-radius: 14px; padding: 10px 14px; margin: 0 0 12px; line-height: 1.75; word-break: keep-all; }
 .vc-say-h { font-weight: 800; color: var(--warn-ink); font-size: .9em; } .vc-say ul { margin: 4px 0 0; padding-left: 1.2em; }
 .vc-bigs { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 0 0 12px; }
@@ -6900,7 +6902,41 @@ function vcIsAff(name) {
   return /유진/.test(name);
 }
 const vcEugene = name => /유진기업/.test(String(name || '').replace(/\s+/g, ''));
-const vcSJ = m => /김선재/.test(String(m || '').replace(/\s+/g, ''));   // 수주팀 김선재 담당
+const vcSJ = m => /김선재/.test(String(m || '').replace(/\s+/g, ''));   // 수주팀 김선재 담당 (수주팀 자료가 없을 때만)
+/* 수주팀 매출 자료 (전산 '판매 영수증' 엑셀: 영업일자 · 거래형태 · 판매(영수증)번호 · 판매원 · 고객명 · 과세결제금액(VAT제외) · 마진금액)
+   올리면 그 달 수주팀 금액은 이 자료로 계산 (반품 줄은 빼서 = 순매출). 저장: pos_config/sujoo { m: { YYYYMM: { rows, file, at } } } */
+function vcSjParse(aoa) {
+  const nz = v => String(v == null ? '' : v).replace(/\s+/g, '');
+  const hi = aoa.findIndex(r => (r || []).some(c => nz(c) === '판매원') && (r || []).some(c => nz(c) === '고객명'));
+  if (hi < 0) return { error: '제목 줄(판매원 · 고객명)을 찾지 못했어요. 전산의 판매(영수증) 조회 엑셀을 그대로 올려 주세요.' };
+  const H = aoa[hi].map(nz), at = re => H.findIndex(x => re.test(x));
+  const K = { d: at(/^영업일자$/), k: at(/^거래형태$/), no: at(/^판매.*번호$/), sel: at(/^판매원$/), c: at(/^고객명$/), net: at(/^과세결제금액/), non: at(/^비과세결제금액/), mar: at(/^마진금액$/), inc: at(/^결제금액/) };
+  if (K.d < 0 || K.net < 0) return { error: '영업일자 · 과세결제금액(VAT제외) 칸이 있어야 해요.' };
+  const byYm = {};
+  aoa.slice(hi + 1).forEach(r => {
+    if (!r) return; const d = toDateInt(r[K.d]); if (!d) return;
+    const num = k => K[k] < 0 ? 0 : (Number(String(r[K[k]] == null ? '' : r[K[k]]).replace(/,/g, '')) || 0);
+    (byYm[ymOf(d)] = byYm[ymOf(d)] || []).push({ d, k: K.k < 0 ? '' : cleanText(r[K.k], 20), no: K.no < 0 ? '' : cleanText(r[K.no], 30), sel: K.sel < 0 ? '' : cleanText(r[K.sel], 30), c: K.c < 0 ? '' : cleanText(r[K.c], 60), net: Math.round(num('net') + num('non')), mar: Math.round(num('mar')), inc: Math.round(num('inc')) });
+  });
+  if (!Object.keys(byYm).length) return { error: '날짜가 있는 줄이 없어요.' };
+  return { byYm };
+}
+/* 자료 안에서 수주팀으로 셀 줄: 고객명 표기별로 고름 (F.inc). 안 골랐으면 — 표기에 '*'가 있는 줄과 없는 줄이 섞여 있으면 '*' 줄만
+   (전산에서 수주팀 건은 '유진기업(주*'로 나옴), 아니면 전부 */
+function vcSjInc(F, c) {
+  if (F.inc && Object.prototype.hasOwnProperty.call(F.inc, c)) return !!F.inc[c];
+  const star = F.rows.some(r => /\*/.test(r.c)), plain = F.rows.some(r => !/\*/.test(r.c));
+  return star && plain ? /\*/.test(c) : true;
+}
+// 한 달 수주팀 합계: 자료가 있으면 자료로, 없으면 POS 담당자 '김선재' 외판 줄로
+function vcSjOf(k) {
+  const F = VC.sj && VC.sj[k] && (VC.sj[k].rows || []).length ? VC.sj[k] : null;
+  if (F) { const o = { src: 'file', s: 0, r: 0, sale: 0, ret: 0, eu: 0, eur: 0, n: 0, cust: new Set(), from: 99, to: 0, file: F.file || '', at: F.at || 0 };
+    F.rows.filter(x => vcSjInc(F, x.c)).forEach(x => { o.s += x.net; o.r += x.mar; if (x.net >= 0) o.sale += x.net; else o.ret += x.net; if (vcEugene(x.c)) { o.eu += x.net; o.eur += x.mar; } o.n++; o.cust.add(vcKey(x.c)); o.from = Math.min(o.from, x.d % 100); o.to = Math.max(o.to, x.d % 100); }); return o; }
+  const o = { src: 'pos', s: 0, r: 0, sale: 0, ret: 0, eu: 0, eur: 0, n: 0, cust: new Set() };
+  Object.keys((S.detail || {})[k] || {}).forEach(dd => (S.detail[k][dd] || []).forEach(x => { if (x.g === 'o' && vcSJ(x.m)) { const v = Number(x.n) || 0, m = Number(x.r) || 0; o.s += v; o.r += m; if (vcEugene(x.c)) { o.eu += v; o.eur += m; } o.cust.add(vcKey(x.c)); } }));
+  return o;
+}
 async function loadVc() {
   const el = $('a-vc');
   el.innerHTML = '<div class="card muted">마감 회의 자료를 만드는 중…</div>';
@@ -6910,6 +6946,7 @@ async function loadVc() {
   try { if (!S.members) { const m = await getDoc(doc(db, C.members, 'ilsan')); S.members = m.exists() ? m.data() : { list: [] }; } } catch (e) { S.members = S.members || { list: [] }; }
   VC.mAff = new Set(((S.members || {}).list || []).filter(m => m.aff).map(m => vcKey(m.name)));
   try { const a = await getDoc(doc(db, C.config, 'aff')); VC.ov = a.exists() ? (a.data().ov || {}) : {}; } catch (e) { VC.ov = {}; }
+  try { const a = await getDoc(doc(db, C.config, 'sujoo')); VC.sj = a.exists() ? (a.data().m || {}) : {}; } catch (e) { VC.sj = {}; }
   renderVc();
 }
 // 한 달 외판 거래처별 매출 · 마진 (상세 자료)
@@ -6965,18 +7002,18 @@ function renderVc() {
   /* 2. 외판 = 관계사 + 점 B2B */
   const aS = sum(aff, 's'), bS = sum(b2b, 's'), aR = sum(aff, 'r'), bR = sum(b2b, 'r'), aP = pAmt(P.aff), bP = pAmt(P.b2b), oS = aS + bS;
   // 외판 중 수주팀 김선재 담당분 (거래처 상관없이)
-  const sjO = { s: 0, r: 0, cust: new Set() }; Object.keys((S.detail || {})[ym] || {}).forEach(dd => (S.detail[ym][dd] || []).forEach(x => { if (x.g === 'o' && vcSJ(x.m)) { sjO.s += Number(x.n) || 0; sjO.r += Number(x.r) || 0; sjO.cust.add(vcKey(x.c)); } }));
+  const sjO = vcSjOf(ym), SJL = sjO.src === 'file' ? '수주팀' : '수주팀 김선재';
   const sjP = pAmt(plans.filter(p => vcSJ(p.mgr)));
   S2.push({ t: '2. 외판 구성 — 관계사 · 점 B2B', say: [
       Mm + ' 외판 <b>' + W(oS) + '</b> 중 관계사가 <b>' + W(aS) + '(' + share(aS, oS) + ')</b>, 점 B2B가 <b>' + W(bS) + '(' + share(bS, oS) + ')</b>입니다.',
       '남은 예정 매출은 관계사 ' + W(aP) + ', 점 B2B ' + W(bP) + '입니다. 마진율은 관계사 ' + rate(aR, aS) + ', 점 B2B ' + rate(bR, bS) + '.',
-      '외판 중 <b>수주팀 김선재 담당은 ' + W(sjO.s) + '(' + share(sjO.s, oS) + ')</b>' + (sjP ? ', 남은 예정 ' + W(sjP) : '') + '입니다.'],
-    big: big('관계사', W(aS), share(aS, oS) + ' · 예정 ' + W(aP)) + big('점 B2B', W(bS), share(bS, oS) + ' · 예정 ' + W(bP)) + big('외판 합계', W(oS), '예정 포함 ' + W(oS + aP + bP)) + big('수주팀 김선재', W(sjO.s), '외판의 ' + share(sjO.s, oS) + (sjP ? ' · 예정 ' + W(sjP) : ''), 'sj'),
+      '외판 중 <b>' + SJL + ' 매출은 ' + W(sjO.s) + '(' + share(sjO.s, oS) + ')</b>' + (sjP ? ', 남은 예정 ' + W(sjP) : '') + '입니다.'],
+    big: big('관계사', W(aS), share(aS, oS) + ' · 예정 ' + W(aP)) + big('점 B2B', W(bS), share(bS, oS) + ' · 예정 ' + W(bP)) + big('외판 합계', W(oS), '예정 포함 ' + W(oS + aP + bP)) + big(SJL, W(sjO.s), '외판의 ' + share(sjO.s, oS) + (sjP ? ' · 예정 ' + W(sjP) : ''), 'sj'),
     body: table(['구분', Mm + ' 매출', '비중', '마진율', '거래처', '남은 예정', '매출 + 예정'], [
       ['<b>관계사</b>', W(aS), share(aS, oS), rate(aR, aS), aff.length + '곳', aP ? W(aP) + ' (' + P.aff.length + '건)' : '-', '<b>' + W(aS + aP) + '</b>'],
       ['<b>점 B2B</b>', W(bS), share(bS, oS), rate(bR, bS), b2b.length + '곳', bP ? W(bP) + ' (' + P.b2b.length + '건)' : '-', '<b>' + W(bS + bP) + '</b>'],
       ['<b>외판</b>', W(oS), '100%', rate(aR + bR, oS), cs.length + '곳', W(aP + bP), '<b>' + W(oS + aP + bP) + '</b>'],
-      ['<span class="vc-sjt">└ 그중 수주팀 김선재</span>', W(sjO.s), share(sjO.s, oS), rate(sjO.r, sjO.s), sjO.cust.size + '곳', sjP ? W(sjP) : '-', '<b>' + W(sjO.s + sjP) + '</b>']]) });
+      ['<span class="vc-sjt">└ 그중 ' + SJL + '</span>', W(sjO.s), share(sjO.s, oS), rate(sjO.r, sjO.s), sjO.cust.size + '곳', sjP ? W(sjP) : '-', '<b>' + W(sjO.s + sjP) + '</b>']]) });
 
   /* 3 · 4. 관계사 / 점 B2B 거래처 */
   const custRows = (list, pl) => {
@@ -6999,33 +7036,35 @@ function renderVc() {
   custSec(3, '관계사', aff, P.aff, true);
   custSec(4, '점 B2B', b2b, P.b2b, false);
 
-  /* 5. 유진기업 — 수주팀 김선재 담당분은 따로 */
+  /* 5. 유진기업 — 수주팀 따로 (수주팀 자료가 있으면 그 자료, 없으면 POS 담당자 '김선재') */
   const Y = Math.floor(ym / 100), ms = [];
   const scan = (k, f) => { const o = { s: 0, r: 0, days: new Set() }; Object.keys((S.detail || {})[k] || {}).forEach(dd => (S.detail[k][dd] || []).forEach(x => { if (x.g === 'o' && f(x)) { o.s += Number(x.n) || 0; o.r += Number(x.r) || 0; o.days.add(Number(dd)); } })); return o; };
-  for (let m = 1; m <= 12; m++) { const k = Y * 100 + m; if (k > ym) break; const e = scan(k, x => vcEugene(x.c)), j = scan(k, x => vcEugene(x.c) && vcSJ(x.m)); ms.push({ ym: k, s: e.s, r: e.r, n: e.days.size, j: j.s, jr: j.r }); }
-  const eTot = ms.reduce((t, m) => t + m.s, 0), eR = ms.reduce((t, m) => t + m.r, 0), jTot = ms.reduce((t, m) => t + m.j, 0), jRt = ms.reduce((t, m) => t + m.jr, 0);
+  for (let m = 1; m <= 12; m++) { const k = Y * 100 + m; if (k > ym) break; const e = scan(k, x => vcEugene(x.c)), j = vcSjOf(k); ms.push({ ym: k, s: e.s, r: e.r, n: e.days.size, j: j.eu, jr: j.eur, src: j.src }); }
+  const eTot = ms.reduce((t, m) => t + m.s, 0), eR = ms.reduce((t, m) => t + m.r, 0), jTot = ms.reduce((t, m) => t + m.j, 0);
   const eNow = ms.find(m => m.ym === ym) || { s: 0, r: 0, n: 0, j: 0, jr: 0 }, ePrev = ms.find(m => m.ym === addMonths(ym, -1));
-  const eEtc = eNow.s - eNow.j, eEtcR = eNow.r - eNow.jr;
+  const SJ5 = sjO.src === 'file' ? '수주팀' : '수주팀 김선재', eEtc = eNow.s - eNow.j, eEtcR = eNow.r - eNow.jr;
   const eP = plans.filter(p => vcEugene(p.cust)), eJP = eP.filter(p => vcSJ(p.mgr));
-  const eDays = {}; Object.keys((S.detail || {})[ym] || {}).forEach(dd => (S.detail[ym][dd] || []).forEach(x => { if (x.g === 'o' && vcEugene(x.c)) { const k2 = dd + '|' + (vcSJ(x.m) ? 1 : 0); const o = eDays[k2] || (eDays[k2] = { dd: Number(dd), sj: vcSJ(x.m), mg: new Set(), s: 0, r: 0, names: new Set() }); o.s += Number(x.n) || 0; o.r += Number(x.r) || 0; o.names.add(x.c); if (x.m) o.mg.add(x.m); } }));
-  const mx = Math.max(1, ...ms.map(m => m.s));
-  const bars = '<div class="legend" style="margin:6px 0 0"><span><i style="background:var(--s2)"></i>수주팀 김선재</span><span><i style="background:var(--ink3);opacity:.5"></i>그 외 담당</span></div><div class="vc-bars">' + ms.map(m => '<div class="vc-b' + (m.ym === ym ? ' on' : '') + '"><span>' + (m.ym % 100) + '월</span><i class="vc-st" style="width:' + (m.s / mx * 100).toFixed(1) + '%"><em style="width:' + (m.s ? (m.j / m.s * 100).toFixed(1) : 0) + '%"></em></i><b>' + (m.s ? eok(m.s) + (m.j ? ' <small>(김 ' + eok(m.j) + ')</small>' : '') : '-') + '</b></div>').join('') + '</div>';
-  // 🔍 전산과 맞춰 보기: 이 달 김선재 담당 외판 전체를 거래처별로 (유진기업으로 잡혔는지 표시)
-  const sjC = {}; Object.keys((S.detail || {})[ym] || {}).forEach(dd => (S.detail[ym][dd] || []).forEach(x => { if (x.g === 'o' && vcSJ(x.m)) { const o = sjC[x.c || '(거래처 미기재)'] || (sjC[x.c || '(거래처 미기재)'] = { s: 0, r: 0, days: new Set(), from: 99, to: 0 }); o.s += Number(x.n) || 0; o.r += Number(x.r) || 0; o.days.add(Number(dd)); o.from = Math.min(o.from, Number(dd)); o.to = Math.max(o.to, Number(dd)); } }));
-  const sjRows = Object.entries(sjC).sort((a, b) => b[1].s - a[1].s), sjAll = sjRows.reduce((t, [, o]) => t + o.s, 0);
-  const sjMg = new Set(); Object.keys((S.detail || {})[ym] || {}).forEach(dd => (S.detail[ym][dd] || []).forEach(x => { if (x.g === 'o' && vcEugene(x.c) && !vcSJ(x.m)) sjMg.add(x.m || '(미지정)'); }));
-  const check = '<details class="mt-np"><summary>🔍 전산 금액과 맞춰 보기 — ' + Mm + ' 김선재 담당 외판 전체 (거래처별)</summary>' +
-    '<p class="muted" style="margin:6px 0">이 앱 자료는 <b>' + Mm + ' 1일 ~ ' + (d.lastDay || 0) + '일</b>까지 올린 POS 판매 내역 기준 · <b>VAT 별도</b>(과세 + 비과세 결제금액, 반품 · 취소 뺌) · POS 파일의 <b>담당자</b> 칸이 "김선재"인 <b>외판(B2B)</b> 줄만. 전산 조회 기간 · 담당자 기준(판매원 / 영업담당) · 반품 포함 여부가 다르면 금액이 달라요.</p>' +
-    (sjRows.length ? table(['거래처 (POS 고객명)', '유진기업으로 잡힘', '매출 (VAT 별도)', '거래일', '기간'], sjRows.map(([nm, o]) => [esc(nm), vcEugene(nm) ? '✅' : '<b class="down">✕ (이름에 "유진기업" 없음)</b>', won(o.s), o.days.size + '일', o.from + '일 ~ ' + o.to + '일']).concat([['<b>김선재 외판 합계</b>', '', '<b>' + won(sjAll) + '</b>', '', ''], ['<b>그중 유진기업</b>', '', '<b>' + won(eNow.j) + '</b>', '', '']])) : '<p class="muted">이 달 담당자가 "김선재"인 외판 줄이 없어요.</p>') +
-    (sjMg.size ? '<p class="muted" style="margin:6px 0 0">유진기업 매출 중 담당자가 김선재가 아닌 줄의 담당자: ' + [...sjMg].map(esc).join(', ') + ' — 이 중 김선재 담당이 섞여 있으면 담당자 이름이 다르게 적힌 거예요.</p>' : '') + '</details>';
-  const mTable = table(['월', '유진기업 전체', '수주팀 김선재', '그 외 담당', '김선재 비중'], ms.filter(m => m.s).map(m => [(m.ym % 100) + '월', W(m.s), W(m.j), W(m.s - m.j), share(m.j, m.s)]).concat([['<b>' + Y + '년 누적</b>', '<b>' + W(eTot) + '</b>', '<b>' + W(jTot) + '</b>', '<b>' + W(eTot - jTot) + '</b>', share(jTot, eTot)]]));
-  S2.push({ t: '5. 유진기업 매출 — 수주팀 김선재 담당 따로', say: [
+  const eDays = {}; Object.keys((S.detail || {})[ym] || {}).forEach(dd => (S.detail[ym][dd] || []).forEach(x => { if (x.g === 'o' && vcEugene(x.c)) { const k2 = dd + '|' + (x.m || ''); const o = eDays[k2] || (eDays[k2] = { dd: Number(dd), m: x.m || '-', s: 0, r: 0, names: new Set() }); o.s += Number(x.n) || 0; o.r += Number(x.r) || 0; o.names.add(x.c); } }));
+  const mx = Math.max(1, ...ms.map(m => Math.max(m.s, m.j)));
+  const bars = '<div class="legend" style="margin:6px 0 0"><span><i style="background:var(--s2)"></i>수주팀</span><span><i style="background:var(--ink3);opacity:.5"></i>그 외</span></div><div class="vc-bars">' + ms.map(m => '<div class="vc-b' + (m.ym === ym ? ' on' : '') + '"><span>' + (m.ym % 100) + '월</span><i class="vc-st" style="width:' + (Math.max(m.s, m.j) / mx * 100).toFixed(1) + '%"><em style="width:' + (m.s ? Math.min(100, m.j / Math.max(m.s, m.j) * 100).toFixed(1) : 0) + '%"></em></i><b>' + (m.s ? eok(m.s) + (m.j ? ' <small>(수주 ' + eok(m.j) + ')</small>' : '') : '-') + '</b></div>').join('') + '</div>';
+  // 수주팀 자료 올리기 · 상태
+  const SJF = sjO.src === 'file' ? VC.sj[ym] : null;
+  const up = '<div class="vc-up mt-np"><span>📎 <b>' + Mm + ' 수주팀 매출 자료</b> ' + (SJF ? '— ' + esc(SJF.file || '') + ' · ' + SJF.rows.length + '건 (' + sjO.from + '일 ~ ' + sjO.to + '일) · 올린 날 ' + (SJF.at ? new Date(SJF.at).toLocaleDateString('ko-KR') : '-') : '— 아직 없음 (지금은 POS 담당자가 "김선재"인 외판 줄로 계산)') + '</span>' +
+    '<label class="btn ghost sm">' + (SJF ? '다시 올리기' : '엑셀 올리기') + '<input type="file" id="vcSjFile" accept=".xlsx,.xls,.csv" hidden></label>' + (SJF ? '<button class="btn ghost sm" id="vcSjDel" type="button">지우기</button>' : '') + '</div>';
+  let grp = '';
+  if (SJF) { const G = {}; SJF.rows.forEach(x => { const g = G[x.c] || (G[x.c] = { n: 0, s: 0, sale: 0, sel: new Set() }); g.n++; g.s += x.net; if (x.net > 0) g.sale += x.net; if (x.sel) g.sel.add(x.sel); });
+    grp = '<div class="vc-grp mt-np"><b>수주팀으로 셀 줄 고르기</b> <small class="muted">(고객명 표기별 · 고른 줄만 수주팀 금액에 들어가요)</small>' + Object.entries(G).map(([c, g]) => '<label><input type="checkbox" data-sjinc="' + esc(c) + '"' + (vcSjInc(SJF, c) ? ' checked' : '') + '> <b>' + esc(c) + '</b> — ' + g.n + '건 · ' + won(g.s) + ' <small class="muted">(판매만 ' + won(g.sale) + ' · 판매원 ' + [...g.sel].map(esc).join(', ') + ')</small></label>').join('') + '</div>'; }
+  const fileTbl = SJF ? grp + '<details><summary>수주팀 자료 ' + SJF.rows.length + '건 보기 (전산 그대로)</summary>' + table(['날짜', '거래형태', '판매번호', '판매원', '고객명', '매출 (VAT 별도)', '마진', '수주팀'], SJF.rows.slice().sort((a, b) => a.d - b.d).map(x => [mdLabel(x.d), esc(x.k), esc(x.no), esc(x.sel), esc(x.c), (x.net < 0 ? '<b class="down">' + won(x.net) + '</b>' : won(x.net)), won(x.mar), vcSjInc(SJF, x.c) ? '✅' : '—'])) +
+    '</details><p class="muted" style="margin:6px 0 0">수주팀(고른 줄): 판매 ' + won(sjO.sale) + ' − 반품 ' + won(-sjO.ret) + ' = <b>' + won(sjO.s) + '</b> (VAT 별도, 반품 뺀 순매출) · 전산에서 판매만 보면 ' + won(sjO.sale) + '</p>' : '';
+  const mTable = table(['월', '유진기업 전체', '수주팀', '그 외', '수주팀 비중'], ms.filter(m => m.s || m.j).map(m => [(m.ym % 100) + '월' + (m.src === 'file' ? ' <small class="muted">(자료)</small>' : ''), W(m.s), W(m.j), W(m.s - m.j), share(m.j, m.s)]).concat([['<b>' + Y + '년 누적</b>', '<b>' + W(eTot) + '</b>', '<b>' + W(jTot) + '</b>', '<b>' + W(eTot - jTot) + '</b>', share(jTot, eTot)]]));
+  S2.push({ t: '5. 유진기업 매출 — 수주팀 따로', say: [
       '유진기업 ' + Mm + ' 매출은 <b>' + W(eNow.s) + '</b>(외판의 ' + share(eNow.s, d.cum.o) + ')' + (ePrev && ePrev.s ? ', 지난달 ' + W(ePrev.s) + ' 대비 ' + chgTxt(eNow.s / ePrev.s - 1) : '') + '입니다.',
-      '그중 <b>수주팀 김선재 담당 ' + W(eNow.j) + '(' + share(eNow.j, eNow.s) + ')</b>, 그 외 담당 ' + W(eEtc) + '입니다.' + (eNow.j ? ' 마진율은 김선재 ' + rate(eNow.jr, eNow.j) + ', 그 외 ' + rate(eEtcR, eEtc) + '.' : ''),
-      Y + '년 누적 유진기업 <b>' + W(eTot) + '</b> 중 김선재 담당 ' + W(jTot) + '(' + share(jTot, eTot) + ').' + (eP.length ? ' 남은 예정 ' + W(pAmt(eP)) + '(' + eP.length + '건' + (eJP.length ? ', 그중 김선재 ' + W(pAmt(eJP)) : '') + ').' : '')],
-    big: big(Mm + ' 유진기업 전체', W(eNow.s), eNow.n + '일 거래 · 마진율 ' + rate(eNow.r, eNow.s)) + big('└ 수주팀 김선재', W(eNow.j), '유진기업의 ' + share(eNow.j, eNow.s) + ' · 마진율 ' + rate(eNow.jr, eNow.j), 'sj') + big('└ 그 외 담당', W(eEtc), share(eEtc, eNow.s) + ' · 마진율 ' + rate(eEtcR, eEtc)) + big('남은 예정', W(pAmt(eP)), eP.length + '건' + (eJP.length ? ' · 김선재 ' + W(pAmt(eJP)) : '')),
-    body: bars + mTable + check + (Object.keys(eDays).length ? '<details><summary>' + Mm + ' 거래일별 보기 (담당별)</summary>' + table(['날짜', '담당', '현장 · 거래처명', '매출', '마진율'], Object.values(eDays).sort((a, b) => a.dd - b.dd || b.sj - a.sj).map(o => { const dt = ym * 100 + o.dd; return [mdLabel(dt) + ' (' + DOWK[dowOf(dt)] + ')', (o.sj ? '<b>수주팀 김선재</b>' : esc([...o.mg].join(', ') || '-')), [...o.names].map(esc).join(', '), W(o.s), rate(o.r, o.s)]; })) + '</details>' : '') +
-      (eP.length ? table(['예정일', '거래처', '담당', '예정 금액'], eP.map(p => [mdLabel(p.d), esc(p.cust), (vcSJ(p.mgr) ? '<b>' + esc(p.mgr) + '</b>' : esc(p.mgr || '')), W(p.amt)])) : ''),
+      '그중 <b>' + SJ5 + ' ' + W(eNow.j) + '(' + share(eNow.j, eNow.s) + ')</b>, 그 외 ' + W(eEtc) + '입니다.' + (eNow.j ? ' 마진율은 수주팀 ' + rate(eNow.jr, eNow.j) + ', 그 외 ' + rate(eEtcR, eEtc) + '.' : ''),
+      Y + '년 누적 유진기업 <b>' + W(eTot) + '</b> 중 수주팀 ' + W(jTot) + '(' + share(jTot, eTot) + ').' + (eP.length ? ' 남은 예정 ' + W(pAmt(eP)) + '(' + eP.length + '건).' : '')],
+    big: big(Mm + ' 유진기업 전체', W(eNow.s), eNow.n + '일 거래 · 마진율 ' + rate(eNow.r, eNow.s)) + big('└ ' + SJ5, W(eNow.j), '유진기업의 ' + share(eNow.j, eNow.s) + ' · 마진율 ' + rate(eNow.jr, eNow.j) + (SJF ? ' · 자료 기준' : ''), 'sj') + big('└ 그 외', W(eEtc), share(eEtc, eNow.s) + ' · 마진율 ' + rate(eEtcR, eEtc)) + big('남은 예정', W(pAmt(eP)), eP.length + '건'),
+    body: up + bars + mTable + fileTbl + (Object.keys(eDays).length ? '<details><summary>' + Mm + ' 유진기업 POS 거래일별 보기 (담당자별)</summary>' + table(['날짜', 'POS 담당자', '현장 · 거래처명', '매출', '마진율'], Object.values(eDays).sort((a, b) => a.dd - b.dd).map(o => { const dt = ym * 100 + o.dd; return [mdLabel(dt) + ' (' + DOWK[dowOf(dt)] + ')', esc(o.m), [...o.names].map(esc).join(', '), W(o.s), rate(o.r, o.s)]; })) + '</details>' : '') +
+      (eP.length ? table(['예정일', '거래처', '담당', '예정 금액'], eP.map(p => [mdLabel(p.d), esc(p.cust), esc(p.mgr || ''), W(p.amt)])) : '') +
+      '<p class="muted" style="margin:6px 0 0">' + (SJF ? '수주팀 금액은 올린 <b>수주팀 매출 자료</b>(반품 뺀 순매출, VAT 별도) 기준이에요. 그 외 = POS 유진기업 전체 − 수주팀.' : '수주팀 자료가 없어서 POS 담당자가 "김선재"인 외판 줄로 계산했어요. 전산과 맞추려면 위 📎에서 수주팀 매출 엑셀을 올려 주세요.') + '</p>',
     slide: bars + mTable });
 
   /* 화면 */
@@ -7041,6 +7080,31 @@ function renderVc() {
     .concat(S2.map(x => ({ t: x.t, b: '<div class="vc-bigs">' + x.big + '</div><div class="bfs-one vc-sl-say">' + x.say.join('<br>') + '</div>' + (x.slide != null ? x.slide : x.body) })));
   $('vcYm').addEventListener('change', () => { VC.ym = Number($('vcYm').value); renderVc(); });
   $('vcShow').addEventListener('click', () => vcShow(VC.slides));
+  const sjf = $('vcSjFile');
+  if (sjf) sjf.addEventListener('change', async () => {
+    const f = sjf.files[0]; if (!f) return;
+    try {
+      const X = await loadXlsx(), wb = X.read(await f.arrayBuffer(), { type: 'array' });
+      const aoa = X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: '' });
+      const R = vcSjParse(aoa); if (R.error) { toast(R.error); return; }
+      const m = Object.assign({}, VC.sj || {}); Object.keys(R.byYm).forEach(k => { m[k] = { rows: R.byYm[k], file: cleanText(f.name, 120), at: Date.now(), by: (S.user && S.user.email) || '' }; });
+      await setDoc(doc(db, C.config, 'sujoo'), { m, at: serverTimestamp() });
+      VC.sj = m; renderVc();
+      toast('수주팀 자료를 올렸어요: ' + Object.keys(R.byYm).map(k => ymLabel(Number(k)) + ' ' + R.byYm[k].length + '건').join(', '));
+    } catch (e) { toast('올리지 못했어요: ' + errMsg(e)); }
+  });
+  el.querySelectorAll('[data-sjinc]').forEach(cb => cb.addEventListener('change', async () => {
+    const m = Object.assign({}, VC.sj || {}), F2 = Object.assign({}, m[ym]); F2.inc = Object.assign({}, F2.inc || {});
+    m[ym].rows.forEach(x => { if (!Object.prototype.hasOwnProperty.call(F2.inc, x.c)) F2.inc[x.c] = vcSjInc(m[ym], x.c); });   // 지금 보이는 대로 고정
+    F2.inc[cb.dataset.sjinc] = cb.checked; m[ym] = F2;
+    try { await setDoc(doc(db, C.config, 'sujoo'), { m, at: serverTimestamp() }); VC.sj = m; renderVc(); } catch (e) { toast('저장하지 못했어요: ' + errMsg(e)); }
+  }));
+  const sjd = $('vcSjDel');
+  if (sjd) sjd.addEventListener('click', async () => {
+    if (!confirm(ymLabel(ym) + ' 수주팀 자료를 지울까요? (지우면 POS 담당자 "김선재" 기준으로 계산)')) return;
+    const m = Object.assign({}, VC.sj || {}); delete m[ym];
+    try { await setDoc(doc(db, C.config, 'sujoo'), { m, at: serverTimestamp() }); VC.sj = m; renderVc(); toast('지웠어요'); } catch (e) { toast('지우지 못했어요: ' + errMsg(e)); }
+  });
   $('vcPrint').addEventListener('click', () => { document.body.classList.add('mt-printing'); setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('mt-printing'), 500); }, 50); });
   el.querySelectorAll('[data-vcsw]').forEach(b => b.addEventListener('click', async () => {
     const name = b.dataset.vcsw, k = vcKey(name), to = !vcIsAff(name);
