@@ -667,11 +667,13 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .vc-bigs { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 0 0 12px; }
 .vc-big { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; background: var(--surface); }
 .vc-big span { display: block; font-size: .85em; color: var(--ink3); font-weight: 700; } .vc-big b { display: block; font-size: 1.55em; line-height: 1.3; letter-spacing: -.02em; }
-.vc-big small { display: block; color: var(--ink2); font-size: .85em; } .vc-big.ok b { color: var(--ok-ink); } .vc-big.bad b { color: var(--bad-ink); }
+.vc-big small { display: block; color: var(--ink2); font-size: .85em; } .vc-big.sj { border-color: var(--s2); background: color-mix(in srgb, var(--s2) 8%, var(--surface)); } .vc-big.sj b { color: var(--s2); }
+.vc-b i.vc-st { position: relative; opacity: 1; background: color-mix(in srgb, var(--ink3) 45%, transparent); overflow: hidden; } .vc-b i.vc-st em { position: absolute; left: 0; top: 0; bottom: 0; background: var(--s2); }
+.vc-b.on i.vc-st { background: color-mix(in srgb, var(--s1) 55%, transparent); } .vc-b b small { font-weight: 500; color: var(--s2); } .vc-sjt { color: var(--s2); font-weight: 700; padding-left: 6px; } .vc-big.ok b { color: var(--ok-ink); } .vc-big.bad b { color: var(--bad-ink); }
 .vc-sl .bfs-body { font-size: clamp(16px, 1.9vw, 26px); } .vc-sl .bfs-body h1 { font-size: 1.5em; margin-bottom: .6em; }
 .vc-sl .vc-big b { font-size: 1.6em; } .vc-sl .vc-sl-say { margin: 0 0 .8em; font-size: .95em; line-height: 1.7; }
 .vc-sl table { font-size: .8em; } .vc-sl .vc-sl-ol li { margin: 0 0 .5em; line-height: 1.6; }
-.vc-b { display: grid; grid-template-columns: 40px 1fr 70px; align-items: center; gap: 8px; font-size: .9em; }
+.vc-b { display: grid; grid-template-columns: 40px 1fr 130px; align-items: center; gap: 8px; font-size: .9em; }
 .vc-b i { display: block; height: 14px; border-radius: 4px; background: var(--ink3); opacity: .45; min-width: 2px; }
 .vc-b.on i { background: var(--s1); opacity: 1; } .vc-b b { text-align: right; font-weight: 600; }
 #a-vc small.up { color: var(--ok-ink); } #a-vc small.down { color: var(--bad-ink); }
@@ -6898,6 +6900,7 @@ function vcIsAff(name) {
   return /유진/.test(name);
 }
 const vcEugene = name => /유진기업/.test(String(name || '').replace(/\s+/g, ''));
+const vcSJ = m => /김선재/.test(String(m || '').replace(/\s+/g, ''));   // 수주팀 김선재 담당
 async function loadVc() {
   const el = $('a-vc');
   el.innerHTML = '<div class="card muted">마감 회의 자료를 만드는 중…</div>';
@@ -6961,14 +6964,19 @@ function renderVc() {
 
   /* 2. 외판 = 관계사 + 점 B2B */
   const aS = sum(aff, 's'), bS = sum(b2b, 's'), aR = sum(aff, 'r'), bR = sum(b2b, 'r'), aP = pAmt(P.aff), bP = pAmt(P.b2b), oS = aS + bS;
+  // 외판 중 수주팀 김선재 담당분 (거래처 상관없이)
+  const sjO = { s: 0, r: 0, cust: new Set() }; Object.keys((S.detail || {})[ym] || {}).forEach(dd => (S.detail[ym][dd] || []).forEach(x => { if (x.g === 'o' && vcSJ(x.m)) { sjO.s += Number(x.n) || 0; sjO.r += Number(x.r) || 0; sjO.cust.add(vcKey(x.c)); } }));
+  const sjP = pAmt(plans.filter(p => vcSJ(p.mgr)));
   S2.push({ t: '2. 외판 구성 — 관계사 · 점 B2B', say: [
       Mm + ' 외판 <b>' + W(oS) + '</b> 중 관계사가 <b>' + W(aS) + '(' + share(aS, oS) + ')</b>, 점 B2B가 <b>' + W(bS) + '(' + share(bS, oS) + ')</b>입니다.',
-      '남은 예정 매출은 관계사 ' + W(aP) + ', 점 B2B ' + W(bP) + '입니다. 마진율은 관계사 ' + rate(aR, aS) + ', 점 B2B ' + rate(bR, bS) + '.'],
-    big: big('관계사', W(aS), share(aS, oS) + ' · 예정 ' + W(aP)) + big('점 B2B', W(bS), share(bS, oS) + ' · 예정 ' + W(bP)) + big('외판 합계', W(oS), '예정 포함 ' + W(oS + aP + bP)),
+      '남은 예정 매출은 관계사 ' + W(aP) + ', 점 B2B ' + W(bP) + '입니다. 마진율은 관계사 ' + rate(aR, aS) + ', 점 B2B ' + rate(bR, bS) + '.',
+      '외판 중 <b>수주팀 김선재 담당은 ' + W(sjO.s) + '(' + share(sjO.s, oS) + ')</b>' + (sjP ? ', 남은 예정 ' + W(sjP) : '') + '입니다.'],
+    big: big('관계사', W(aS), share(aS, oS) + ' · 예정 ' + W(aP)) + big('점 B2B', W(bS), share(bS, oS) + ' · 예정 ' + W(bP)) + big('외판 합계', W(oS), '예정 포함 ' + W(oS + aP + bP)) + big('수주팀 김선재', W(sjO.s), '외판의 ' + share(sjO.s, oS) + (sjP ? ' · 예정 ' + W(sjP) : ''), 'sj'),
     body: table(['구분', Mm + ' 매출', '비중', '마진율', '거래처', '남은 예정', '매출 + 예정'], [
       ['<b>관계사</b>', W(aS), share(aS, oS), rate(aR, aS), aff.length + '곳', aP ? W(aP) + ' (' + P.aff.length + '건)' : '-', '<b>' + W(aS + aP) + '</b>'],
       ['<b>점 B2B</b>', W(bS), share(bS, oS), rate(bR, bS), b2b.length + '곳', bP ? W(bP) + ' (' + P.b2b.length + '건)' : '-', '<b>' + W(bS + bP) + '</b>'],
-      ['<b>외판</b>', W(oS), '100%', rate(aR + bR, oS), cs.length + '곳', W(aP + bP), '<b>' + W(oS + aP + bP) + '</b>']]) });
+      ['<b>외판</b>', W(oS), '100%', rate(aR + bR, oS), cs.length + '곳', W(aP + bP), '<b>' + W(oS + aP + bP) + '</b>'],
+      ['<span class="vc-sjt">└ 그중 수주팀 김선재</span>', W(sjO.s), share(sjO.s, oS), rate(sjO.r, sjO.s), sjO.cust.size + '곳', sjP ? W(sjP) : '-', '<b>' + W(sjO.s + sjP) + '</b>']]) });
 
   /* 3 · 4. 관계사 / 점 B2B 거래처 */
   const custRows = (list, pl) => {
@@ -6991,21 +6999,26 @@ function renderVc() {
   custSec(3, '관계사', aff, P.aff, true);
   custSec(4, '점 B2B', b2b, P.b2b, false);
 
-  /* 5. 유진기업 */
+  /* 5. 유진기업 — 수주팀 김선재 담당분은 따로 */
   const Y = Math.floor(ym / 100), ms = [];
-  for (let m = 1; m <= 12; m++) { const k = Y * 100 + m; if (k > ym) break; const c3 = Object.values(vcCust(k)).filter(c => vcEugene(c.name)); ms.push({ ym: k, s: sum(c3, 's'), r: sum(c3, 'r'), n: c3.reduce((t, c) => t + c.days.size, 0) }); }
-  const eTot = ms.reduce((t, m) => t + m.s, 0), eR = ms.reduce((t, m) => t + m.r, 0), eNow = ms.find(m => m.ym === ym) || { s: 0, r: 0, n: 0 }, ePrev = ms.find(m => m.ym === addMonths(ym, -1));
-  const eP = plans.filter(p => vcEugene(p.cust));
-  const eDays = {}; Object.keys((S.detail || {})[ym] || {}).forEach(dd => (S.detail[ym][dd] || []).forEach(x => { if (x.g === 'o' && vcEugene(x.c)) { const o = eDays[dd] || (eDays[dd] = { s: 0, r: 0, names: new Set() }); o.s += Number(x.n) || 0; o.r += Number(x.r) || 0; o.names.add(x.c); } }));
+  const scan = (k, f) => { const o = { s: 0, r: 0, days: new Set() }; Object.keys((S.detail || {})[k] || {}).forEach(dd => (S.detail[k][dd] || []).forEach(x => { if (x.g === 'o' && f(x)) { o.s += Number(x.n) || 0; o.r += Number(x.r) || 0; o.days.add(Number(dd)); } })); return o; };
+  for (let m = 1; m <= 12; m++) { const k = Y * 100 + m; if (k > ym) break; const e = scan(k, x => vcEugene(x.c)), j = scan(k, x => vcEugene(x.c) && vcSJ(x.m)); ms.push({ ym: k, s: e.s, r: e.r, n: e.days.size, j: j.s, jr: j.r }); }
+  const eTot = ms.reduce((t, m) => t + m.s, 0), eR = ms.reduce((t, m) => t + m.r, 0), jTot = ms.reduce((t, m) => t + m.j, 0), jRt = ms.reduce((t, m) => t + m.jr, 0);
+  const eNow = ms.find(m => m.ym === ym) || { s: 0, r: 0, n: 0, j: 0, jr: 0 }, ePrev = ms.find(m => m.ym === addMonths(ym, -1));
+  const eEtc = eNow.s - eNow.j, eEtcR = eNow.r - eNow.jr;
+  const eP = plans.filter(p => vcEugene(p.cust)), eJP = eP.filter(p => vcSJ(p.mgr));
+  const eDays = {}; Object.keys((S.detail || {})[ym] || {}).forEach(dd => (S.detail[ym][dd] || []).forEach(x => { if (x.g === 'o' && vcEugene(x.c)) { const k2 = dd + '|' + (vcSJ(x.m) ? 1 : 0); const o = eDays[k2] || (eDays[k2] = { dd: Number(dd), sj: vcSJ(x.m), mg: new Set(), s: 0, r: 0, names: new Set() }); o.s += Number(x.n) || 0; o.r += Number(x.r) || 0; o.names.add(x.c); if (x.m) o.mg.add(x.m); } }));
   const mx = Math.max(1, ...ms.map(m => m.s));
-  const bars = '<div class="vc-bars">' + ms.map(m => '<div class="vc-b' + (m.ym === ym ? ' on' : '') + '"><span>' + (m.ym % 100) + '월</span><i style="width:' + (m.s / mx * 100).toFixed(1) + '%"></i><b>' + (m.s ? eok(m.s) : '-') + '</b></div>').join('') + '</div>';
-  S2.push({ t: '5. 유진기업 매출', say: [
-      '유진기업 ' + Mm + ' 매출은 <b>' + W(eNow.s) + '</b>(' + eNow.n + '일 거래, 외판의 ' + share(eNow.s, d.cum.o) + ')' + (ePrev && ePrev.s ? ', 지난달 ' + W(ePrev.s) + ' 대비 ' + chgTxt(eNow.s / ePrev.s - 1) : '') + '입니다.',
-      Y + '년 누적 <b>' + W(eTot) + '</b>, 마진율 ' + rate(eR, eTot) + '.' + (eP.length ? ' 남은 예정 ' + W(pAmt(eP)) + '(' + eP.length + '건).' : '')],
-    big: big(Mm + ' 유진기업', W(eNow.s), eNow.n + '일 · 마진율 ' + rate(eNow.r, eNow.s)) + big('남은 예정', W(pAmt(eP)), eP.length + '건') + big(Y + '년 누적', W(eTot), '마진율 ' + rate(eR, eTot)),
-    body: bars + (Object.keys(eDays).length ? '<details><summary>' + Mm + ' 거래일별 보기</summary>' + table(['날짜', '현장 · 거래처명', '매출', '마진율'], Object.keys(eDays).map(Number).sort((a, b) => a - b).map(dd => { const o = eDays[dd], dt = ym * 100 + dd; return [mdLabel(dt) + ' (' + DOWK[dowOf(dt)] + ')', [...o.names].map(esc).join(', '), W(o.s), rate(o.r, o.s)]; })) + '</details>' : '') +
-      (eP.length ? table(['예정일', '거래처', '담당', '예정 금액'], eP.map(p => [mdLabel(p.d), esc(p.cust), esc(p.mgr || ''), W(p.amt)])) : ''),
-    slide: bars });
+  const bars = '<div class="legend" style="margin:6px 0 0"><span><i style="background:var(--s2)"></i>수주팀 김선재</span><span><i style="background:var(--ink3);opacity:.5"></i>그 외 담당</span></div><div class="vc-bars">' + ms.map(m => '<div class="vc-b' + (m.ym === ym ? ' on' : '') + '"><span>' + (m.ym % 100) + '월</span><i class="vc-st" style="width:' + (m.s / mx * 100).toFixed(1) + '%"><em style="width:' + (m.s ? (m.j / m.s * 100).toFixed(1) : 0) + '%"></em></i><b>' + (m.s ? eok(m.s) + (m.j ? ' <small>(김 ' + eok(m.j) + ')</small>' : '') : '-') + '</b></div>').join('') + '</div>';
+  const mTable = table(['월', '유진기업 전체', '수주팀 김선재', '그 외 담당', '김선재 비중'], ms.filter(m => m.s).map(m => [(m.ym % 100) + '월', W(m.s), W(m.j), W(m.s - m.j), share(m.j, m.s)]).concat([['<b>' + Y + '년 누적</b>', '<b>' + W(eTot) + '</b>', '<b>' + W(jTot) + '</b>', '<b>' + W(eTot - jTot) + '</b>', share(jTot, eTot)]]));
+  S2.push({ t: '5. 유진기업 매출 — 수주팀 김선재 담당 따로', say: [
+      '유진기업 ' + Mm + ' 매출은 <b>' + W(eNow.s) + '</b>(외판의 ' + share(eNow.s, d.cum.o) + ')' + (ePrev && ePrev.s ? ', 지난달 ' + W(ePrev.s) + ' 대비 ' + chgTxt(eNow.s / ePrev.s - 1) : '') + '입니다.',
+      '그중 <b>수주팀 김선재 담당 ' + W(eNow.j) + '(' + share(eNow.j, eNow.s) + ')</b>, 그 외 담당 ' + W(eEtc) + '입니다.' + (eNow.j ? ' 마진율은 김선재 ' + rate(eNow.jr, eNow.j) + ', 그 외 ' + rate(eEtcR, eEtc) + '.' : ''),
+      Y + '년 누적 유진기업 <b>' + W(eTot) + '</b> 중 김선재 담당 ' + W(jTot) + '(' + share(jTot, eTot) + ').' + (eP.length ? ' 남은 예정 ' + W(pAmt(eP)) + '(' + eP.length + '건' + (eJP.length ? ', 그중 김선재 ' + W(pAmt(eJP)) : '') + ').' : '')],
+    big: big(Mm + ' 유진기업 전체', W(eNow.s), eNow.n + '일 거래 · 마진율 ' + rate(eNow.r, eNow.s)) + big('└ 수주팀 김선재', W(eNow.j), '유진기업의 ' + share(eNow.j, eNow.s) + ' · 마진율 ' + rate(eNow.jr, eNow.j), 'sj') + big('└ 그 외 담당', W(eEtc), share(eEtc, eNow.s) + ' · 마진율 ' + rate(eEtcR, eEtc)) + big('남은 예정', W(pAmt(eP)), eP.length + '건' + (eJP.length ? ' · 김선재 ' + W(pAmt(eJP)) : '')),
+    body: bars + mTable + (Object.keys(eDays).length ? '<details><summary>' + Mm + ' 거래일별 보기 (담당별)</summary>' + table(['날짜', '담당', '현장 · 거래처명', '매출', '마진율'], Object.values(eDays).sort((a, b) => a.dd - b.dd || b.sj - a.sj).map(o => { const dt = ym * 100 + o.dd; return [mdLabel(dt) + ' (' + DOWK[dowOf(dt)] + ')', (o.sj ? '<b>수주팀 김선재</b>' : esc([...o.mg].join(', ') || '-')), [...o.names].map(esc).join(', '), W(o.s), rate(o.r, o.s)]; })) + '</details>' : '') +
+      (eP.length ? table(['예정일', '거래처', '담당', '예정 금액'], eP.map(p => [mdLabel(p.d), esc(p.cust), (vcSJ(p.mgr) ? '<b>' + esc(p.mgr) + '</b>' : esc(p.mgr || '')), W(p.amt)])) : ''),
+    slide: bars + mTable });
 
   /* 화면 */
   let h = '<div class="card"><div class="bk-h"><h2>🎥 ' + ymLabel(ym) + ' 마감 회의</h2><div class="mt-np" style="display:flex;gap:8px;flex-wrap:wrap">' +
