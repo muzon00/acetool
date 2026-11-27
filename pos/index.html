@@ -661,6 +661,11 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .mt-bar small { color: var(--ink3); }
 .mt-in { width: 100%; min-width: 90px; min-height: 36px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; font: inherit; background: var(--surface); color: var(--ink); } .mt-in.r { text-align: right; min-width: 120px; }
 #mtLost select { min-height: 36px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; }
+.vc-bars { display: grid; gap: 4px; margin: 10px 0; }
+.vc-b { display: grid; grid-template-columns: 40px 1fr 70px; align-items: center; gap: 8px; font-size: .9em; }
+.vc-b i { display: block; height: 14px; border-radius: 4px; background: var(--ink3); opacity: .45; min-width: 2px; }
+.vc-b.on i { background: var(--s1); opacity: 1; } .vc-b b { text-align: right; font-weight: 600; }
+#a-vc small.up { color: var(--ok-ink); } #a-vc small.down { color: var(--bad-ink); }
 .mt-sp { display: block; } .mt-sp polyline { fill: none; stroke: var(--ink3); stroke-width: 2; stroke-linejoin: round; } .mt-sp circle { fill: var(--ink3); }
 .mt-sp.up polyline, .mt-sp.dip polyline { stroke: var(--ok-ink); } .mt-sp.up circle, .mt-sp.dip circle { fill: var(--ok-ink); }
 .mt-sp.down polyline, .mt-sp.peak polyline { stroke: var(--bad-ink); } .mt-sp.down circle, .mt-sp.peak circle { fill: var(--bad-ink); }
@@ -670,6 +675,7 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
   body.mt-printing #adminHead, body.mt-printing #adminAlert, body.mt-printing #v-admin > p.muted, body.mt-printing .mt-np, body.mt-printing #a-meet textarea { display: none !important; }
   body.mt-printing .mt-pv { display: block !important; }
   body.mt-printing #a-meet .card { break-inside: avoid; box-shadow: none; }
+  body.mt-printing #a-vc .card { break-inside: avoid; box-shadow: none; }
 }
 @media print {
   body.tp-printing > *:not(#printArea) { display: none !important; }
@@ -861,6 +867,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
       <nav class="secnav" id="adminTabs" aria-label="관리자 메뉴">
         <button class="pill on" data-tab="upload">업로드</button>
         <button class="pill" data-tab="eval">월별 평가·원인</button>
+        <button class="pill" data-tab="vc">🎥 마감 회의</button>
         <button class="pill" data-tab="meet">📝 회의 자료</button>
         <button class="pill" data-tab="brief">🗣 회의 전달</button>
         <button class="pill" data-tab="sga">판관비·BEP</button>
@@ -1033,6 +1040,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
     </div>
 
     <div id="a-eval" class="hide"></div>
+    <div id="a-vc" class="hide"></div>
     <div id="a-meet" class="hide"></div>
     <div id="a-brief" class="hide"></div>
     <div id="a-sga" class="hide"></div>
@@ -2993,7 +3001,7 @@ window.addEventListener('resize', () => {
 
 /* ===================== 관리자: 탭 ===================== */
 document.querySelectorAll('#adminTabs .pill').forEach(b => b.addEventListener('click', () => showAdminTab(b.dataset.tab)));
-const ATABS = ['upload', 'eval', 'meet', 'brief', 'sga', 'close', 'plans', 'acct', 'top', 'download', 'settings', 'tree', 'vip', 'members', 'help'];
+const ATABS = ['upload', 'eval', 'vc', 'meet', 'brief', 'sga', 'close', 'plans', 'acct', 'top', 'download', 'settings', 'tree', 'vip', 'members', 'help'];
 function showAdminTab(t) {
   if (!ATABS.includes(t)) t = 'upload';
   S.adminTab = t;
@@ -3006,6 +3014,7 @@ function showAdminTab(t) {
   if (t === 'tree') loadTree();
   if (t === 'eval') loadEval();
   if (t === 'meet') loadMeet();
+  if (t === 'vc') loadVc();
   if (t === 'brief') loadBrief();
   if (t === 'sga') loadSga();
   if (t === 'close') loadClose();
@@ -6856,6 +6865,121 @@ function renderEval() {
    지난달 리뷰(목표 · 전년 대비 · 잘한 점 / 아쉬운 점 · 시공) + 이번 달 전망 · 목표 달성 방법을 한 화면에.
    숫자마다 "쉽게 말하면" 설명을 붙임. 점장 메모는 pos_config/meet 문서에 리뷰 달별(r202610)로 저장 */
 let MT = { ym: 0, memo: null };
+/* ===================== 🎥 마감 회의 (관리자만): 이번 달 실적 · 마감 예상 · 관계사 / 점 B2B · 유진기업 =====================
+   금액은 모두 VAT 별도 실매출. 외판 거래처를 관계사 / 점 B2B로 나눔:
+   직접 고른 것(pos_config/aff.ov) → 없으면 회원 명단의 관계사여부 Y 또는 이름에 '유진' → 나머지는 점 B2B */
+const VC = { ym: 0, ov: null };
+const vcKey = n => String(n || '').replace(/\s+/g, '').replace(/\(주\)|㈜|주식회사|\(유\)|유한회사/g, '').toLowerCase();
+function vcIsAff(name) {
+  const k = vcKey(name); if (!k) return false;
+  if (VC.ov && Object.prototype.hasOwnProperty.call(VC.ov, k)) return !!VC.ov[k];
+  if (VC.mAff && VC.mAff.has(k)) return true;
+  return /유진/.test(name);
+}
+const vcEugene = name => /유진기업/.test(String(name || '').replace(/\s+/g, ''));
+async function loadVc() {
+  const el = $('a-vc');
+  el.innerHTML = '<div class="card muted">마감 회의 자료를 만드는 중…</div>';
+  try { await loadBase(); await loadDetail(); }
+  catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
+  try { await loadPlans(true); } catch (e) { S.plans = S.plans || []; }
+  try { if (!S.members) { const m = await getDoc(doc(db, C.members, 'ilsan')); S.members = m.exists() ? m.data() : { list: [] }; } } catch (e) { S.members = S.members || { list: [] }; }
+  VC.mAff = new Set(((S.members || {}).list || []).filter(m => m.aff).map(m => vcKey(m.name)));
+  try { const a = await getDoc(doc(db, C.config, 'aff')); VC.ov = a.exists() ? (a.data().ov || {}) : {}; } catch (e) { VC.ov = {}; }
+  renderVc();
+}
+// 한 달 외판 거래처별 매출 · 마진 (상세 자료)
+function vcCust(ym, upTo) {
+  const days = (S.detail || {})[ym] || {}, C2 = {};
+  Object.keys(days).forEach(d => { if (upTo && Number(d) > upTo) return; (days[d] || []).forEach(x => {
+    if (x.g !== 'o') return; const nm = x.c || '(거래처 미기재)', k = vcKey(nm);
+    const o = C2[k] || (C2[k] = { name: nm, s: 0, r: 0, days: new Set() }); o.s += Number(x.n) || 0; o.r += Number(x.r) || 0; o.days.add(Number(d));
+  }); });
+  return C2;
+}
+function renderVc() {
+  const el = $('a-vc'), today = todayInt(), cur = ymOf(today);
+  const months = Object.keys(S.daily || {}).map(Number).filter(m => Object.keys(S.daily[m] || {}).length).sort((a, b) => a - b);
+  if (!months.includes(cur)) months.push(cur);
+  if (!VC.ym || !months.includes(VC.ym)) VC.ym = cur;
+  const ym = VC.ym, Mm = (ym % 100) + '월';
+  const d = buildSummary(S.daily, S.targets, (S.settings || {}).holidays || [], ym, today, [], (S.settings || {}).smsVat);
+  const tg = (S.targets || {})[ym] || {}, F = d.forecast || {}, fb = F['기본'], lo = F['보수'], hi = F['낙관'];
+  // 이번 달 남은 예정 매출 (상태 '예정'인 것만)
+  const plans = (S.plans || []).filter(p => p.st === 'open' && ymOf(p.d) === ym);
+  const pAmt = a => a.reduce((t, p) => t + (Number(p.amt) || 0), 0);
+  const P = { aff: plans.filter(p => vcIsAff(p.cust)), b2b: plans.filter(p => !vcIsAff(p.cust)) };
+  const pO = pAmt(plans);
+  const C2 = vcCust(ym), cs = Object.values(C2).sort((a, b) => b.s - a.s);
+  const aff = cs.filter(c => vcIsAff(c.name)), b2b = cs.filter(c => !vcIsAff(c.name));
+  const sum = (a, k) => a.reduce((t, c) => t + c[k], 0);
+  const rate = (r, s) => s ? pct(r / s) : '-';
+  let h = '<div class="card"><div class="bk-h"><h2>🎥 ' + ymLabel(ym) + ' 마감 회의 — 매출 실적 · 마감 예상</h2><div class="mt-np" style="display:flex;gap:8px;flex-wrap:wrap">' +
+    '<select id="vcYm" aria-label="달">' + months.slice().reverse().map(m => '<option value="' + m + '"' + (m === ym ? ' selected' : '') + '>' + ymLabel(m) + '</option>').join('') + '</select>' +
+    '<button class="btn primary" id="vcPrint" type="button">🖨 인쇄 · PDF</button></div></div>' +
+    '<p class="muted" style="margin:0">' + (d.lastDay ? d.lastDay + '일까지 자료 기준' : '아직 자료 없음') + ' · 금액은 모두 <b>VAT 별도 실매출</b> · 예상 마감 = 지금 추세(남은 영업일 요일별 평균) · 예정 매출 = 「예정 매출」 탭에서 상태가 <b>예정</b>인 이번 달 건</p></div>';
+
+  /* 1. 내판 · 외판 마감 예상 */
+  const row = (lab, t, cum, f, l, hh, pl) => {
+    const exp = f != null ? f + (pl || 0) : null;
+    return ['<b>' + lab + '</b>', t ? won(t) : '-', won(cum) + (t ? '<br><small class="muted">달성 ' + pct(cum / t, 0) + '</small>' : ''), f != null ? won(f) + (t ? '<br><small class="muted">목표의 ' + pct(f / t, 0) + '</small>' : '') : '-',
+      l != null && hh != null ? '<small>' + eok(l) + ' ~ ' + eok(hh) + '</small>' : '-', pl ? won(pl) : '-', exp != null ? '<b>' + won(exp) + '</b>' + (t ? '<br><small class="' + (exp >= t ? 'up' : 'down') + '">' + (exp >= t ? '목표 +' + eok(exp - t) : '목표까지 ' + eok(t - exp)) + '</small>' : '') : '-'];
+  };
+  h += '<div class="card"><h2>1. 내판 · 외판 마감 예상</h2>' +
+    '<div class="kpis">' + kpi(Mm + ' 누적 (' + (d.lastDay || 0) + '일까지)', mtWon(d.cum.total), '내판 ' + mtWon(d.cum.n) + ' · 외판 ' + mtWon(d.cum.o), true) +
+    kpi('예상 마감 (추세)', fb ? mtWon(fb.total) : '-', fb && d.target ? '목표의 ' + pct(fb.total / d.target, 0) : '') +
+    kpi('＋ 남은 예정 매출', mtWon(pO), plans.length + '건 (외판)') +
+    kpi('예상 마감 + 예정', fb ? mtWon(fb.total + pO) : '-', d.target ? '목표 ' + mtWon(d.target) + (fb ? ' · ' + pct((fb.total + pO) / d.target, 0) : '') : '목표 없음') + '</div>' +
+    table(['구분', '목표', '누적 실적', '예상 마감 (추세)', '보수 ~ 낙관', '남은 예정 매출', '예상 마감 + 예정'], [
+      row('내판', tg.n, d.cum.n, fb ? fb.n : null, lo ? lo.n : null, hi ? hi.n : null, 0),
+      row('외판', tg.o, d.cum.o, fb ? fb.o : null, lo ? lo.o : null, hi ? hi.o : null, pO),
+      row('합계', d.target || tg.total, d.cum.total, fb ? fb.total : null, lo ? lo.total : null, hi ? hi.total : null, pO)]) +
+    '<p class="muted" style="margin:6px 0 0">예정 매출은 모두 외판(B2B) 건으로 보고 외판에 더했어요. 추세 예상에는 큰 외판 건이 들어 있지 않아 예정 매출을 따로 더해요.</p></div>';
+
+  /* 2. 외판 구성: 관계사 · 점 B2B */
+  const aS = sum(aff, 's'), bS = sum(b2b, 's'), aR = sum(aff, 'r'), bR = sum(b2b, 'r'), aP = pAmt(P.aff), bP = pAmt(P.b2b);
+  h += '<div class="card"><h2>2. 외판 = 관계사 + 점 B2B</h2>' +
+    table(['구분', Mm + ' 매출', '마진 · 마진율', '거래처 수', '남은 예정 매출', '매출 + 예정'], [
+      ['<b>관계사</b>', won(aS), won(aR) + ' · ' + rate(aR, aS), aff.length + '곳', aP ? won(aP) + ' (' + P.aff.length + '건)' : '-', '<b>' + won(aS + aP) + '</b>'],
+      ['<b>점 B2B</b>', won(bS), won(bR) + ' · ' + rate(bR, bS), b2b.length + '곳', bP ? won(bP) + ' (' + P.b2b.length + '건)' : '-', '<b>' + won(bS + bP) + '</b>'],
+      ['<b>외판 합계</b>', won(aS + bS), won(aR + bR) + ' · ' + rate(aR + bR, aS + bS), cs.length + '곳', won(aP + bP), '<b>' + won(aS + bS + aP + bP) + '</b>']]) +
+    '<p class="muted mt-np" style="margin:6px 0 0">관계사 구분: 직접 고른 것 → 회원 명단의 관계사 표시 → 이름에 "유진" 이 들어가면 관계사. 아래 표의 <b>⇄</b> 버튼으로 바꿀 수 있어요 (저장됨).</p></div>';
+
+  /* 3 · 4. 관계사 / 점 B2B — 예정 매출 및 매출 */
+  const custTable = (list, pl, isAff) => {
+    const byC = {}; list.forEach(c => { byC[vcKey(c.name)] = { name: c.name, s: c.s, r: c.r, n: c.days.size, p: [] }; });
+    pl.forEach(p => { const k = vcKey(p.cust); (byC[k] || (byC[k] = { name: p.cust, s: 0, r: 0, n: 0, p: [] })).p.push(p); });
+    const rows = Object.values(byC).sort((a, b) => (b.s + pAmt(b.p)) - (a.s + pAmt(a.p)));
+    if (!rows.length) return '<p class="muted" style="margin:0">이번 달 ' + (isAff ? '관계사' : '점 B2B') + ' 매출 · 예정이 없어요.</p>';
+    return table(['거래처', Mm + ' 매출', '마진율', '거래일', '남은 예정 매출', '매출 + 예정', ''], rows.map(c => [esc(c.name), c.s ? won(c.s) : '-', rate(c.r, c.s), c.n ? c.n + '일' : '-',
+      c.p.length ? won(pAmt(c.p)) + '<br><small class="muted">' + c.p.map(p => mdLabel(p.d) + (p.mgr ? ' ' + esc(p.mgr) : '')).join(', ') + '</small>' : '-', '<b>' + won(c.s + pAmt(c.p)) + '</b>',
+      '<button class="btn ghost sm mt-np" data-vcsw="' + esc(c.name) + '" title="' + (isAff ? '점 B2B로 옮기기' : '관계사로 옮기기') + '">⇄ ' + (isAff ? '점 B2B로' : '관계사로') + '</button>']));
+  };
+  h += '<div class="card"><h2>3. 관계사 — 예정 매출 및 매출 <small class="muted">' + won(aS) + ' + 예정 ' + won(aP) + '</small></h2>' + custTable(aff, P.aff, true) + '</div>';
+  h += '<div class="card"><h2>4. 점 B2B — 예정 매출 및 매출 <small class="muted">' + won(bS) + ' + 예정 ' + won(bP) + '</small></h2>' + custTable(b2b, P.b2b, false) + '</div>';
+
+  /* 5. 유진기업 매출 (올해 월별 + 이번 달 거래일별) */
+  const Y = Math.floor(ym / 100), ms = [];
+  for (let m = 1; m <= 12; m++) { const k = Y * 100 + m; if (k > ym) break; const c3 = Object.values(vcCust(k)).filter(c => vcEugene(c.name)); ms.push({ ym: k, s: sum(c3, 's'), r: sum(c3, 'r'), n: c3.reduce((t, c) => t + c.days.size, 0) }); }
+  const eTot = ms.reduce((t, m) => t + m.s, 0), eR = ms.reduce((t, m) => t + m.r, 0), eNow = ms.find(m => m.ym === ym) || { s: 0, r: 0, n: 0 };
+  const eP = plans.filter(p => vcEugene(p.cust));
+  const eDays = {}; Object.keys((S.detail || {})[ym] || {}).forEach(dd => (S.detail[ym][dd] || []).forEach(x => { if (x.g === 'o' && vcEugene(x.c)) { const o = eDays[dd] || (eDays[dd] = { s: 0, r: 0, names: new Set() }); o.s += Number(x.n) || 0; o.r += Number(x.r) || 0; o.names.add(x.c); } }));
+  const mx = Math.max(1, ...ms.map(m => m.s));
+  h += '<div class="card"><h2>5. 유진기업 매출</h2>' +
+    '<div class="kpis">' + kpi(Mm + ' 유진기업', mtWon(eNow.s), eNow.n + '일 거래 · 마진율 ' + rate(eNow.r, eNow.s), true) + kpi('남은 예정', mtWon(pAmt(eP)), eP.length + '건') + kpi(Y + '년 누적 (1~' + (ym % 100) + '월)', mtWon(eTot), '마진율 ' + rate(eR, eTot)) +
+    kpi('외판 중 비중', d.cum.o ? pct(eNow.s / d.cum.o, 0) : '-', Mm + ' 외판 ' + mtWon(d.cum.o)) + '</div>' +
+    '<div class="vc-bars">' + ms.map(m => '<div class="vc-b' + (m.ym === ym ? ' on' : '') + '"><span>' + (m.ym % 100) + '월</span><i style="width:' + (m.s / mx * 100).toFixed(1) + '%"></i><b>' + (m.s ? eok(m.s) : '-') + '</b></div>').join('') + '</div>' +
+    (Object.keys(eDays).length ? '<details open><summary>' + Mm + ' 거래일별</summary>' + table(['날짜', '현장 · 거래처명', '매출', '마진율'], Object.keys(eDays).map(Number).sort((a, b) => a - b).map(dd => { const o = eDays[dd], dt = ym * 100 + dd; return [mdLabel(dt) + ' (' + DOWK[dowOf(dt)] + ')', [...o.names].map(esc).join(', '), won(o.s), rate(o.r, o.s)]; })) + '</details>' : '') +
+    (eP.length ? table(['예정일', '거래처', '담당', '예정 금액'], eP.map(p => [mdLabel(p.d), esc(p.cust), esc(p.mgr || ''), won(p.amt)])) : '') + '</div>';
+  el.innerHTML = h;
+  $('vcYm').addEventListener('change', () => { VC.ym = Number($('vcYm').value); renderVc(); });
+  $('vcPrint').addEventListener('click', () => { document.body.classList.add('mt-printing'); setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('mt-printing'), 500); }, 50); });
+  el.querySelectorAll('[data-vcsw]').forEach(b => b.addEventListener('click', async () => {
+    const name = b.dataset.vcsw, k = vcKey(name), to = !vcIsAff(name);
+    VC.ov = Object.assign({}, VC.ov, { [k]: to }); renderVc();
+    try { await setDoc(doc(db, C.config, 'aff'), { ov: VC.ov, at: serverTimestamp() }, { merge: true }); toast(name + ' → ' + (to ? '관계사' : '점 B2B')); } catch (e) { toast('저장하지 못했어요: ' + errMsg(e)); }
+  }));
+}
 function mtWon(n) {
   n = Math.round(Number(n) || 0); if (!n) return '0원';
   const s = shortWon(Math.abs(n)); return (n < 0 ? '−' : '') + s + (/원$/.test(s) ? '' : '원');
