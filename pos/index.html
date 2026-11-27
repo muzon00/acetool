@@ -908,6 +908,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
         <button class="pill on" data-tab="upload">업로드</button>
         <button class="pill" data-tab="eval">월별 평가·원인</button>
         <button class="pill" data-tab="vc">🎥 마감 회의</button>
+        <button class="pill" data-tab="cust">👥 내판 객수</button>
         <button class="pill" data-tab="meet">📝 회의 자료</button>
         <button class="pill" data-tab="brief">🗣 회의 전달</button>
         <button class="pill" data-tab="sga">판관비·BEP</button>
@@ -1081,6 +1082,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
 
     <div id="a-eval" class="hide"></div>
     <div id="a-vc" class="hide"></div>
+    <div id="a-cust" class="hide"></div>
     <div id="a-meet" class="hide"></div>
     <div id="a-brief" class="hide"></div>
     <div id="a-sga" class="hide"></div>
@@ -1484,6 +1486,15 @@ function mapG(v) {
   if (s === 'B2B' || s === 'b2b' || s === '외판') return '외판';
   return '';
 }
+// 영업시간 → 시 ('0709' · 709 · '07:09:00' · 엑셀 시각 0.297 → 7)
+function hourOf(v) {
+  if (v === null || v === undefined || v === '') return null;
+  if (typeof v === 'number' && v > 0 && v < 1) return Math.floor(v * 24 + 1e-9);
+  if (v instanceof Date) return v.getHours();
+  const t = String(v).replace(/\D/g, ''); if (!t) return null;
+  const h = t.length >= 5 ? Number(t.slice(0, t.length - 4)) : Math.floor(Number(t) / 100);
+  return h >= 0 && h < 24 ? h : null;
+}
 function cleanText(v, max) { return String(v === null || v === undefined ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max || 100); }
 function aggregateRows(aoa) {
   let hi = -1, i;
@@ -1515,6 +1526,8 @@ function salesAgg(headRow) {
   /* POS 원본이면 날짜별 객수를 본사 마감 문자와 똑같이 셈 (2026-10-31 · 10월 당월 문자와 1건 · 1원까지 맞춰 봄):
      매장 + 외판 모두, 판매 거래 수 − 반품 · 취소 거래 수, 그날 입력한 판매번호만 (판매번호 4~11번째 숫자 = 영업일자, 나중에 날짜를 거슬러 넣은 건 문자에 없음) */
   const hasTx = !aggMode && col['판매번호'] !== undefined, txm = {};
+  // 내판(구분 '일반')만 따로 센 객수 + 시간대별 객수 (첫 줄의 영업시간 기준) → 👥 내판 객수 탭
+  const hasHr = col['영업시간'] !== undefined, txn = {};
   // POS 원본이면 날짜별 고객 매출 (고객명이 있는 줄만, 고객코드가 있으면 그것으로 묶음) → 그날 상위 3명
   const hasCust = !aggMode && col['고객명'] !== undefined, custm = {};
   const get = (r, name) => { const k = col[name]; return k === undefined ? '' : r[k]; };
@@ -1566,7 +1579,11 @@ function salesAgg(headRow) {
     }
     if (hasTx) {
       const tn = String(get(r, '판매번호') || '').trim(), td = /^\d{11,}$/.test(tn) ? Number(tn.slice(3, 11)) : 0;
-      if (tn && !(td > 20000101 && td !== d)) { const kd = String(get(r, '거래형태') || ''), sale = kd ? /판매/.test(kd) : net > 0, m = txm[d] || (txm[d] = new Map()); m.set(tn, m.get(tn) || sale); }
+      if (tn && !(td > 20000101 && td !== d)) {
+        const kd = String(get(r, '거래형태') || ''), sale = kd ? /판매/.test(kd) : net > 0, m = txm[d] || (txm[d] = new Map()); m.set(tn, m.get(tn) || sale);
+        if (g === '내판') { const mn = txn[d] || (txn[d] = new Map()), pv = mn.get(tn), hr = hasHr ? hourOf(get(r, '영업시간')) : null;
+          mn.set(tn, { s: (pv && pv.s) || sale, h: pv && pv.h !== null && (hr === null || pv.h <= hr) ? pv.h : hr }); }
+      }
     }
     st.usedRows++; st.totalNet += net; st.byG[g] += net; st.dateSet[d] = 1;
   };
@@ -1575,6 +1592,8 @@ function salesAgg(headRow) {
     const dates = Object.keys(st.dateSet).map(Number).sort((a, b) => a - b);
     let txByDay = null;
     if (hasTx) { txByDay = {}; dates.forEach(d => { let c = 0; if (txm[d]) txm[d].forEach(sale => { c += sale ? 1 : -1; }); txByDay[d] = c; }); }
+    let txnByDay = null, txhByDay = null;
+    if (hasTx) { txnByDay = {}; txhByDay = {}; dates.forEach(d => { let c = 0; const hh = {}; if (txn[d]) txn[d].forEach(x => { const v = x.s ? 1 : -1; c += v; if (x.h !== null) hh[x.h] = (hh[x.h] || 0) + v; }); txnByDay[d] = c; if (hasHr) txhByDay[d] = hh; }); }
     let topByDay = null;
     if (hasCust) {
       topByDay = {};
@@ -1583,7 +1602,7 @@ function salesAgg(headRow) {
           .filter(u => u.n > 0).sort((a, b) => b.n - a.n).slice(0, 3);
       });
     }
-    return { rows, stats: { topByDay, rowsRead: st.rowsRead, usedRows: st.usedRows, totalNet: st.totalNet, byG: st.byG, unknown: st.unknown, badDate: st.badDate, dates, adjusted: st.adjusted, other: st.other, badNum: st.badNum, badSamples: st.badSamples, txByDay, payByDay: hasPay ? st.payByDay : null, mode: aggMode ? '백업/집계 CSV' : 'POS 원본' } };
+    return { rows, stats: { topByDay, rowsRead: st.rowsRead, usedRows: st.usedRows, totalNet: st.totalNet, byG: st.byG, unknown: st.unknown, badDate: st.badDate, dates, adjusted: st.adjusted, other: st.other, badNum: st.badNum, badSamples: st.badSamples, txByDay, txnByDay, txhByDay, payByDay: hasPay ? st.payByDay : null, mode: aggMode ? '백업/집계 CSV' : 'POS 원본' } };
   };
   return { add, done };
 }
@@ -1931,6 +1950,11 @@ async function registerParsed(p) {
         // 객수 (본사 마감 문자와 같은 방식): POS 원본 파일일 때만 있음
         const tc = p.stats.txByDay && p.stats.txByDay[Number(ym) * 100 + Number(day)];
         if (tc !== undefined && tc !== null) sum[day].tc = tc;
+        // 내판만 센 객수 + 시간대별 (POS 원본일 때만)
+        const tcn = p.stats.txnByDay && p.stats.txnByDay[Number(ym) * 100 + Number(day)];
+        if (tcn !== undefined && tcn !== null) sum[day].tcn = tcn;
+        const tch = p.stats.txhByDay && p.stats.txhByDay[Number(ym) * 100 + Number(day)];
+        if (tch && Object.keys(tch).length) sum[day].tch = tch;
         const tp = p.stats.topByDay && p.stats.topByDay[Number(ym) * 100 + Number(day)];
         if (tp) top[day] = tp;
       });
@@ -3042,7 +3066,7 @@ window.addEventListener('resize', () => {
 
 /* ===================== 관리자: 탭 ===================== */
 document.querySelectorAll('#adminTabs .pill').forEach(b => b.addEventListener('click', () => showAdminTab(b.dataset.tab)));
-const ATABS = ['upload', 'eval', 'vc', 'meet', 'brief', 'sga', 'close', 'plans', 'acct', 'top', 'download', 'settings', 'tree', 'vip', 'members', 'help'];
+const ATABS = ['upload', 'eval', 'vc', 'cust', 'meet', 'brief', 'sga', 'close', 'plans', 'acct', 'top', 'download', 'settings', 'tree', 'vip', 'members', 'help'];
 function showAdminTab(t) {
   if (!ATABS.includes(t)) t = 'upload';
   S.adminTab = t;
@@ -3056,6 +3080,7 @@ function showAdminTab(t) {
   if (t === 'eval') loadEval();
   if (t === 'meet') loadMeet();
   if (t === 'vc') loadVc();
+  if (t === 'cust') loadCust();
   if (t === 'brief') loadBrief();
   if (t === 'sga') loadSga();
   if (t === 'close') loadClose();
@@ -6917,6 +6942,111 @@ function renderEval() {
    지난달 리뷰(목표 · 전년 대비 · 잘한 점 / 아쉬운 점 · 시공) + 이번 달 전망 · 목표 달성 방법을 한 화면에.
    숫자마다 "쉽게 말하면" 설명을 붙임. 점장 메모는 pos_config/meet 문서에 리뷰 달별(r202610)로 저장 */
 let MT = { ym: 0, memo: null };
+/* ===================== 👥 내판 객수 (관리자): 전년 같은 달 대비 객수 · 객단가 =====================
+   객수 = POS 원본에서 내판(구분 '일반') 판매 거래 수 − 반품·취소 거래 수 (본사 마감 문자와 같은 방식, 내판만 · tcn)
+   객단가 = 내판 순매출(VAT 별도) ÷ 객수. 날마다 손님 수가 요일에 따라 크게 달라서 전년과는 "같은 요일 평균"끼리 비교.
+   하루가 끝나기 전에 올린 날(마지막 거래 시간이 19시 전)은 "진행 중"으로 따로 보고, 전년도 그 시각까지만 비교 */
+const CU = { ym: null };
+const CU_W = ['일', '월', '화', '수', '목', '금', '토'];
+function cuDays(ym) {
+  const md = (S.daily || {})[ym] || {}, today = todayInt();
+  return Object.keys(md).map(Number).sort((a, b) => a - b).filter(k => md[k] && md[k].tcn !== undefined && md[k].tcn !== null).map(k => {
+    const x = md[k], d = ym * 100 + k, hs = Object.keys(x.tch || {}).map(Number).filter(h => x.tch[h] > 0), hm = hs.length ? Math.max(...hs) : null;
+    return { d, k, w: dowOf(d), c: Number(x.tcn) || 0, s: Number(x.n) || 0, h: x.tch || null, hm, part: hm !== null ? hm < 19 : d >= today };
+  });
+}
+const cuMissing = ym => { const md = (S.daily || {})[ym] || {}; return Object.keys(md).filter(k => md[k] && (md[k].tcn === undefined || md[k].tcn === null)).length; };
+function cuSum(ym) {
+  const ty = cuDays(ym), ly = cuDays(ym - 100), tyF = ty.filter(x => !x.part), lyF = ly.filter(x => !x.part);
+  const lyW = {}; lyF.forEach(x => { const o = lyW[x.w] || (lyW[x.w] = { c: 0, s: 0, n: 0, h: {} }); o.c += x.c; o.s += x.s; o.n++; Object.keys(x.h || {}).forEach(h => { o.h[h] = (o.h[h] || 0) + x.h[h]; }); });
+  Object.values(lyW).forEach(o => { o.ac = o.c / o.n; o.as = o.s / o.n; });
+  const tot = a => ({ c: a.reduce((t, x) => t + x.c, 0), s: a.reduce((t, x) => t + x.s, 0), n: a.length });
+  const T = tot(tyF), L = tot(lyF);
+  // 같은 요일끼리: 올해 하루 전체 자료가 있는 날 ↔ 전년 같은 달 그 요일 평균
+  let act = 0, exp = 0, actS = 0, expS = 0, cmpN = 0;
+  tyF.forEach(x => { const o = lyW[x.w]; if (!o) return; act += x.c; exp += o.ac; actS += x.s; expS += o.as; cmpN++; });
+  const tyW = {}; tyF.forEach(x => { const o = tyW[x.w] || (tyW[x.w] = { c: 0, s: 0, n: 0 }); o.c += x.c; o.s += x.s; o.n++; });
+  return { ty, ly, tyF, lyF, lyW, tyW, T, L, act, exp, actS, expS, cmpN, chg: exp ? act / exp - 1 : null, cuT: T.c ? T.s / T.c : null, cuL: L.c ? L.s / L.c : null };
+}
+// 진행 중인 날: 전년 같은 요일 평균을 그 시각(hm시대)까지만
+function cuPartExp(R, x) { const o = R.lyW[x.w]; if (!o || x.hm === null) return null; let c = 0; Object.keys(o.h).forEach(h => { if (Number(h) <= x.hm) c += o.h[h]; }); return c / o.n; }
+const cuN = n => Math.round(n).toLocaleString('ko-KR');
+const cuCh = r => r === null || r === undefined || !isFinite(r) ? '-' : '<b class="' + (r >= 0 ? 'up' : 'down') + '">' + chgTxt(r) + '</b>';
+// 말하기 문장 (탭 · 마감 회의 같이 씀)
+function cuSay(ym, R) {
+  const M = (ym % 100) + '월', LYm = Math.floor((ym - 100) / 100) + '년 ' + ((ym - 100) % 100) + '월', out = [];
+  if (!R.T.n) return out;
+  const avg = R.T.c / R.T.n;
+  if (R.chg !== null) out.push('올해 ' + M + ' 내판 객수는 하루 평균 <b>' + cuN(avg) + '명</b>으로, 전년 ' + LYm + ' 같은 요일 평균보다 <b>' + chgTxt(R.chg) + '</b>(하루 ' + (R.act - R.exp >= 0 ? '+' : '−') + cuN(Math.abs(R.act - R.exp) / R.cmpN) + '명)입니다.');
+  else out.push('올해 ' + M + ' 내판 객수는 하루 평균 <b>' + cuN(avg) + '명</b>입니다 (전년 ' + LYm + ' 내판 객수 자료가 아직 없어요).');
+  if (R.cuT && R.cuL) out.push('객단가는 <b>' + won(R.cuT) + '</b>으로 전년 ' + won(R.cuL) + '보다 <b>' + chgTxt(R.cuT / R.cuL - 1) + '</b>입니다.');
+  if (R.chg !== null && R.expS) {
+    const sc = R.actS / R.expS - 1, cc = R.chg, uc = (1 + sc) / (1 + cc) - 1;
+    const why = cc < -0.03 && uc < -0.03 ? '손님 수와 1인당 구매액이 <b>둘 다 줄어서</b>' : cc < -0.03 ? '1인당 구매액보다 <b>손님 수가 줄어서</b>' : uc < -0.03 ? '손님 수보다 <b>1인당 구매액이 줄어서</b>' : cc > 0.03 && uc > 0.03 ? '손님 수와 1인당 구매액이 <b>둘 다 늘어서</b>' : cc > 0.03 ? '<b>손님 수가 늘어서</b>' : uc > 0.03 ? '<b>1인당 구매액이 늘어서</b>' : '손님 수와 구매액이 비슷해서';
+    out.push('같은 요일끼리 내판 매출은 ' + chgTxt(sc) + ' — ' + why + '입니다.');
+  }
+  const ws = Object.keys(R.tyW).map(Number).filter(w => R.lyW[w]).map(w => ({ w, r: (R.tyW[w].c / R.tyW[w].n) / R.lyW[w].ac - 1 })).sort((a, b) => a.r - b.r);
+  if (ws.length >= 2) { const a = ws[0], b = ws[ws.length - 1]; out.push('요일별로는 <b>' + CU_W[a.w] + '요일 ' + chgTxt(a.r) + '</b>로 가장 많이 ' + (a.r < 0 ? '줄었고' : '늘었고') + ', ' + CU_W[b.w] + '요일은 ' + chgTxt(b.r) + '입니다.'); }
+  return out;
+}
+async function loadCust() {
+  const el = $('a-cust');
+  el.innerHTML = '<div class="card muted">내판 객수를 모으는 중…</div>';
+  try { await loadBase(); } catch (e) { el.innerHTML = '<div class="banner bad">' + esc(errMsg(e)) + '</div>'; return; }
+  renderCust();
+}
+function renderCust() {
+  const el = $('a-cust'), months = Object.keys(S.daily || {}).map(Number).filter(m => Object.keys(S.daily[m] || {}).length).sort((a, b) => a - b);
+  const withC = months.filter(m => cuDays(m).length);
+  const cur = ymOf(todayInt());
+  if (!CU.ym || !months.includes(CU.ym)) CU.ym = months.includes(cur) ? cur : (withC.length ? withC[withC.length - 1] : months[months.length - 1]);
+  const ym = CU.ym, LY = ym - 100, M = ymLabel(ym), LYm = ymLabel(LY), R = cuSum(ym);
+  const big = (lab, v, sub, cls) => '<div class="vc-big' + (cls ? ' ' + cls : '') + '"><span>' + lab + '</span><b>' + v + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>';
+  let h = '<div class="card"><div class="bk-h"><h2>👥 내판 객수 · 전년 대비</h2><select id="cuYm" aria-label="달">' + months.slice().reverse().map(m => '<option value="' + m + '"' + (m === ym ? ' selected' : '') + '>' + ymLabel(m) + (cuDays(m).length ? '' : ' (객수 없음)') + '</option>').join('') + '</select></div>' +
+    '<p class="muted" style="margin:0 0 10px">객수 = 내판 판매 거래 수 − 반품·취소 거래 수 (본사 마감 문자와 같은 방식, <b>내판만</b>) · 객단가 = 내판 순매출(VAT 별도) ÷ 객수 · 날마다 요일 차이가 커서 전년과는 <b>같은 요일 평균</b>끼리 비교해요.</p>';
+  // 자료 안내
+  const missT = cuMissing(ym), missL = cuMissing(LY), need = [];
+  if (missT) need.push(M + ' ' + missT + '일');
+  if (missL) need.push(LYm + ' ' + missL + '일');
+  if (need.length) h += '<div class="banner warn" style="margin:0 0 10px">📎 내판 객수가 없는 날이 있어요: <b>' + need.join(', ') + '</b>. 예전에 올린 자료에는 내판 · 외판을 합친 객수만 있어서, <b>업로드 탭에서 그 달 POS 판매 원본을 한 번 더 올리면</b> 내판 객수가 채워져요 (매출 금액은 그대로).</div>';
+  if (!R.ty.length) { el.innerHTML = h + '<p class="muted">' + M + '은 아직 내판 객수 자료가 없어요.</p></div>'; cuBind(); return; }
+  const say = cuSay(ym, R), pr = R.ty.filter(x => x.part);
+  h += '<div class="vc-say"><div class="vc-say-h">💬 이렇게 말하세요</div><ul>' + say.map(x => '<li>' + x + '</li>').join('') + '</ul></div>';
+  const avgT = R.T.n ? R.T.c / R.T.n : null, avgL = R.L.n ? R.L.c / R.L.n : null;
+  h += '<div class="vc-bigs">' +
+    big(M + ' 내판 객수', cuN(R.T.c) + '명', R.T.n + '일 · 하루 평균 ' + (avgT ? cuN(avgT) + '명' : '-') + (pr.length ? ' (진행 중 ' + pr.length + '일 제외)' : '')) +
+    big('같은 요일 전년 대비', R.chg !== null ? chgTxt(R.chg) : '-', R.chg !== null ? '올해 ' + cuN(R.act) + '명 ↔ 전년 같은 요일 평균 ' + cuN(R.exp) + '명' : '전년 내판 객수 자료 없음', R.chg !== null ? (R.chg >= 0 ? 'ok' : 'bad') : '') +
+    big('객단가', R.cuT ? won(R.cuT) : '-', R.cuL ? '전년 ' + won(R.cuL) + ' · ' + chgTxt(R.cuT / R.cuL - 1) : '', R.cuT && R.cuL ? (R.cuT >= R.cuL ? 'ok' : 'bad') : '') +
+    big('전년 ' + LYm + ' 내판 객수', R.L.n ? cuN(R.L.c) + '명' : '-', R.L.n ? R.L.n + '일 · 하루 평균 ' + cuN(avgL) + '명' : '자료 없음') + '</div>';
+  // 요일별
+  const wOrder = [1, 2, 3, 4, 5, 6, 0];
+  h += '<h3 class="ea-h">요일별 하루 평균</h3>' + table(['요일', '전년 객수', '올해 객수', '변화', '전년 객단가', '올해 객단가', '변화'], wOrder.filter(w => R.tyW[w] || R.lyW[w]).map(w => {
+    const a = R.tyW[w], b = R.lyW[w], ac = a ? a.c / a.n : null, uA = a && a.c ? a.s / a.c : null, uB = b && b.c ? b.s / b.c : null;
+    return ['<b>' + CU_W[w] + '</b>', b ? cuN(b.ac) + ' <small class="muted">(' + b.n + '일)</small>' : '-', a ? cuN(ac) + ' <small class="muted">(' + a.n + '일)</small>' : '-', a && b ? cuCh(ac / b.ac - 1) : '-', uB ? won(uB) : '-', uA ? won(uA) : '-', uA && uB ? cuCh(uA / uB - 1) : '-'];
+  }));
+  // 날짜별
+  h += '<h3 class="ea-h" style="margin-top:10px">날짜별 (올해 ↔ 전년 같은 요일 평균)</h3>' + table(['날짜', '내판 객수', '객단가', '내판 매출', '전년 같은 요일 평균', '변화'], R.ty.slice().reverse().map(x => {
+    const o = R.lyW[x.w], e = x.part ? cuPartExp(R, x) : (o ? o.ac : null);
+    return [mdLabel(x.d) + ' (' + CU_W[x.w] + ')' + (x.part ? ' <small class="muted">' + (x.hm !== null ? x.hm + '시대까지 · ' : '') + '진행 중</small>' : ''), cuN(x.c) + '명', x.c ? won(x.s / x.c) : '-', won(x.s), e !== null ? cuN(e) + '명' + (x.part && x.hm !== null ? ' <small class="muted">(' + x.hm + '시대까지)</small>' : '') : '-', e ? cuCh(x.c / e - 1) : '-'];
+  }));
+  // 시간대별
+  const hT = {}, hL = {}, nT = R.tyF.filter(x => x.h).length, nL = R.lyF.filter(x => x.h).length;
+  R.tyF.forEach(x => Object.keys(x.h || {}).forEach(k => { hT[k] = (hT[k] || 0) + x.h[k]; }));
+  R.lyF.forEach(x => Object.keys(x.h || {}).forEach(k => { hL[k] = (hL[k] || 0) + x.h[k]; }));
+  const hrs = [...new Set(Object.keys(hT).concat(Object.keys(hL)).map(Number))].filter(k => Math.max(nT ? (hT[k] || 0) / nT : 0, nL ? (hL[k] || 0) / nL : 0) >= 0.5).sort((a, b) => a - b);
+  if (nT && hrs.length) h += '<h3 class="ea-h" style="margin-top:10px">시간대별 하루 평균 객수</h3>' + table(['시간', '전년', '올해', '변화'], hrs.map(k => {
+    const a = nT ? (hT[k] || 0) / nT : null, b = nL ? (hL[k] || 0) / nL : null;
+    return [k + '시대', b !== null ? b.toFixed(1) : '-', a.toFixed(1), b ? cuCh(a / b - 1) : '-'];
+  })) + '<p class="muted" style="margin:4px 0 0">하루 전체 자료가 있는 날만 · 올해 ' + nT + '일, 전년 ' + nL + '일 평균 · 거래가 시작된 시각 기준</p>';
+  // 달별 흐름 (작년부터)
+  const mRows = withC.map(m => { const r = cuSum(m), a = r.T.n ? r.T.c / r.T.n : null, l = r.L.n ? r.L.c / r.L.n : null;
+    return [(m === ym ? '<b>' + ymLabel(m) + '</b>' : ymLabel(m)), r.T.n + '일', r.T.n ? cuN(r.T.c) + '명' : '-', a !== null ? cuN(a) + '명' : '-', r.cuT ? won(r.cuT) : '-', l !== null ? cuN(l) + '명' : '-', r.chg !== null ? cuCh(r.chg) : '-', r.cuT && r.cuL ? cuCh(r.cuT / r.cuL - 1) : '-']; });
+  h += '<h3 class="ea-h" style="margin-top:10px">달별 흐름</h3>' + table(['달', '영업일', '내판 객수', '하루 평균', '객단가', '전년 같은 달 하루 평균', '객수 변화 (같은 요일)', '객단가 변화'], mRows.reverse()) +
+    '<p class="muted" style="margin:4px 0 0">내판 객수가 있는 달만 나와요. 작년부터 달마다 보려면 그 달의 POS 판매 원본을 업로드 탭에 올려 주세요.</p></div>';
+  el.innerHTML = h; cuBind();
+}
+function cuBind() { const s = $('cuYm'); if (s) s.addEventListener('change', () => { CU.ym = Number(s.value); renderCust(); }); }
+
 /* ===================== 🎥 마감 회의 (관리자만): 이번 달 실적 · 마감 예상 · 관계사 / 점 B2B · 유진기업 =====================
    금액은 모두 VAT 별도 실매출. 외판 거래처를 관계사 / 점 B2B로 나눔:
    직접 고른 것(pos_config/aff.ov) → 없으면 회원 명단의 관계사여부 Y 또는 이름에 '유진' → 나머지는 점 B2B */
@@ -7087,6 +7217,21 @@ function renderVc() {
           (hasG ? big('전년 매총이익 · 매총율', W(lyGt), '매총율 ' + pr(lyRate)) + big('올해 예상 매총', eG != null ? W(eG) : '-', eG != null ? '매총율 ' + pr(eR) + ' · 전년 대비 ' + ch(eG, lyGt) : '', eG != null ? (eG >= lyGt ? 'ok' : 'bad') : '') : big('전년 매총', '-', '전년 상세 자료가 없어요')),
         body: tb + tb2 + (hasG ? '' : '<p class="muted" style="margin:6px 0 0">전년 ' + LYm + ' 상세 판매 내역(마진)이 없어 매총이익 · 매총율은 비교하지 못했어요. 업로드 탭에 그달 POS 판매 내역을 올리면 나와요.</p>') +
           '<p class="muted" style="margin:6px 0 0">전년 금액도 VAT 별도 실매출 · 매총이익은 POS 마진금액 기준. 올해 마감 예상은 1번 · 1-2와 같은 값.</p>' });
+    }
+  }
+
+  /* 1-4. 내판 객수 · 객단가 전년 대비 (👥 내판 객수 탭과 같은 계산) */
+  {
+    const R = cuSum(ym);
+    if (R.T.n) {
+      const ss = cuSay(ym, R), wO = [1, 2, 3, 4, 5, 6, 0];
+      S2.push({ t: '1-4. 내판 객수 · 객단가 전년 대비', say: ss,
+        big: big(Mm + ' 내판 객수', cuN(R.T.c) + '명', R.T.n + '일 · 하루 평균 ' + cuN(R.T.c / R.T.n) + '명') +
+          big('같은 요일 전년 대비', R.chg !== null ? chgTxt(R.chg) : '-', R.chg !== null ? '하루 ' + cuN(R.act / R.cmpN) + '명 ↔ 전년 ' + cuN(R.exp / R.cmpN) + '명' : '전년 내판 객수 자료 없음', R.chg !== null ? (R.chg >= 0 ? 'ok' : 'bad') : '') +
+          big('객단가', R.cuT ? W(R.cuT) : '-', R.cuL ? '전년 ' + W(R.cuL) + ' · ' + chgTxt(R.cuT / R.cuL - 1) : '', R.cuT && R.cuL ? (R.cuT >= R.cuL ? 'ok' : 'bad') : ''),
+        body: table(['요일', '전년 객수', '올해 객수', '변화', '올해 객단가'], wO.filter(w => R.tyW[w]).map(w => { const a = R.tyW[w], b = R.lyW[w], ac = a.c / a.n;
+          return [CU_W[w], b ? cuN(b.ac) : '-', cuN(ac) + ' <small class="muted">(' + a.n + '일)</small>', b ? cuCh(ac / b.ac - 1) : '-', a.c ? W(a.s / a.c) : '-']; })) +
+          '<p class="muted" style="margin:6px 0 0">객수 = 내판 판매 거래 − 반품·취소 거래 (본사 마감 문자 방식, 내판만). 하루 평균 · 요일 평균은 하루 전체 자료가 있는 날만. 자세히는 「👥 내판 객수」 탭.</p>' });
     }
   }
 
