@@ -7003,7 +7003,7 @@ function renderVc() {
   /* 2. 외판 = 관계사 + 점 B2B */
   const aS = sum(aff, 's'), bS = sum(b2b, 's'), aR = sum(aff, 'r'), bR = sum(b2b, 'r'), aP = pAmt(P.aff), bP = pAmt(P.b2b), oS = aS + bS;
   // 외판 중 수주팀 김선재 담당분 (거래처 상관없이)
-  const sjO = vcSjOf(ym), SJL = sjO.src === 'file' ? '수주팀' : '수주팀 김선재';
+  const sjO = vcSjOf(ym), SJL = '수주팀';
   const sjP = pAmt(plans.filter(p => vcSJ(p.mgr)));
   S2.push({ t: '2. 외판 구성 — 관계사 · 점 B2B', say: [
       Mm + ' 외판 <b>' + W(oS) + '</b> 중 관계사가 <b>' + W(aS) + '(' + share(aS, oS) + ')</b>, 점 B2B가 <b>' + W(bS) + '(' + share(bS, oS) + ')</b>입니다.',
@@ -7037,35 +7037,33 @@ function renderVc() {
   custSec(3, '관계사', aff, P.aff, true);
   custSec(4, '점 B2B', b2b, P.b2b, false);
 
-  /* 5. 유진기업 — 수주팀 따로 (수주팀 자료가 있으면 그 자료, 없으면 POS 담당자 '김선재') */
+  /* 5. 수주팀 매출만 (보고용 — 유진기업 전체는 보이지 않음). 수주팀 자료가 있으면 그 자료, 없으면 POS 담당자 '김선재' 외판 */
   const Y = Math.floor(ym / 100), ms = [];
-  const scan = (k, f) => { const o = { s: 0, r: 0, days: new Set() }; Object.keys((S.detail || {})[k] || {}).forEach(dd => (S.detail[k][dd] || []).forEach(x => { if (x.g === 'o' && f(x)) { o.s += Number(x.n) || 0; o.r += Number(x.r) || 0; o.days.add(Number(dd)); } })); return o; };
-  for (let m = 1; m <= 12; m++) { const k = Y * 100 + m; if (k > ym) break; const e = scan(k, x => vcEugene(x.c)), j = vcSjOf(k); ms.push({ ym: k, s: e.s, r: e.r, n: e.days.size, j: j.eu, jr: j.eur, src: j.src }); }
-  const eTot = ms.reduce((t, m) => t + m.s, 0), eR = ms.reduce((t, m) => t + m.r, 0), jTot = ms.reduce((t, m) => t + m.j, 0);
-  const eNow = ms.find(m => m.ym === ym) || { s: 0, r: 0, n: 0, j: 0, jr: 0 }, ePrev = ms.find(m => m.ym === addMonths(ym, -1));
-  const SJ5 = sjO.src === 'file' ? '수주팀' : '수주팀 김선재', eEtc = eNow.s - eNow.j, eEtcR = eNow.r - eNow.jr;
-  const eP = plans.filter(p => vcEugene(p.cust)), eJP = eP.filter(p => vcSJ(p.mgr));
-  const eDays = {}; Object.keys((S.detail || {})[ym] || {}).forEach(dd => (S.detail[ym][dd] || []).forEach(x => { if (x.g === 'o' && vcEugene(x.c)) { const k2 = dd + '|' + (x.m || ''); const o = eDays[k2] || (eDays[k2] = { dd: Number(dd), m: x.m || '-', s: 0, r: 0, names: new Set() }); o.s += Number(x.n) || 0; o.r += Number(x.r) || 0; o.names.add(x.c); } }));
-  const mx = Math.max(1, ...ms.map(m => Math.max(m.s, m.j)));
-  const bars = '<div class="legend" style="margin:6px 0 0"><span><i style="background:var(--s2)"></i>수주팀</span><span><i style="background:var(--ink3);opacity:.5"></i>그 외</span></div><div class="vc-bars">' + ms.map(m => '<div class="vc-b' + (m.ym === ym ? ' on' : '') + '"><span>' + (m.ym % 100) + '월</span><i class="vc-st" style="width:' + (Math.max(m.s, m.j) / mx * 100).toFixed(1) + '%"><em style="width:' + (m.s ? Math.min(100, m.j / Math.max(m.s, m.j) * 100).toFixed(1) : 0) + '%"></em></i><b>' + (m.s ? eok(m.s) + (m.j ? ' <small>(수주 ' + eok(m.j) + ')</small>' : '') : '-') + '</b></div>').join('') + '</div>';
-  // 수주팀 자료 올리기 · 상태
+  for (let m = 1; m <= 12; m++) { const k = Y * 100 + m; if (k > ym) break; const j = vcSjOf(k); if (j.s || j.sale) ms.push({ ym: k, s: j.s, r: j.r, sale: j.sale, ret: j.ret, src: j.src }); }
+  const jTot = ms.reduce((t, m) => t + m.s, 0), jR = ms.reduce((t, m) => t + m.r, 0), jSale = ms.reduce((t, m) => t + m.sale, 0), jRet = ms.reduce((t, m) => t + m.ret, 0);
+  const jNow = { s: sjO.s, r: sjO.r, sale: sjO.sale, ret: sjO.ret }, jPrev = ms.find(m => m.ym === addMonths(ym, -1));
+  const SJ5 = '수주팀', first = ms.length ? ms[0].ym : ym;
+  const sjPl = plans.filter(p => vcSJ(p.mgr));
+  const mx = Math.max(1, ...ms.map(m => m.s));
+  const bars = '<div class="vc-bars">' + ms.map(m => '<div class="vc-b' + (m.ym === ym ? ' on' : '') + '"><span>' + (m.ym % 100) + '월</span><i style="width:' + (Math.max(0, m.s) / mx * 100).toFixed(1) + '%"></i><b>' + eok(m.s) + '</b></div>').join('') + '</div>';
   const SJF = sjO.src === 'file' ? VC.sj[ym] : null;
-  const up = '<div class="vc-up mt-np"><span>📎 <b>' + Mm + ' 수주팀 매출 자료</b> ' + (SJF ? '— ' + esc(SJF.file || '') + ' · ' + SJF.rows.length + '건 (' + sjO.from + '일 ~ ' + sjO.to + '일) · 올린 날 ' + (SJF.at ? new Date(SJF.at).toLocaleDateString('ko-KR') : '-') : '— 아직 없음 (지금은 POS 담당자가 "김선재"인 외판 줄로 계산)') + '</span>' +
-    '<label class="btn ghost sm">' + (SJF ? '다시 올리기' : '엑셀 올리기') + '<input type="file" id="vcSjFile" accept=".xlsx,.xls,.csv" hidden></label>' + (SJF ? '<button class="btn ghost sm" id="vcSjDel" type="button">지우기</button>' : '') + '</div>';
+  const up = '<div class="vc-up mt-np"><span>📎 <b>수주팀 매출 자료</b> ' + (SJF ? '— ' + esc(SJF.file || '') + ' · ' + Mm + ' ' + SJF.rows.filter(x => vcSjInc(SJF, x.c, x)).length + '건 · 올린 날 ' + (SJF.at ? new Date(SJF.at).toLocaleDateString('ko-KR') : '-') : '— ' + Mm + ' 자료 없음 (지금은 POS 담당자가 "김선재"인 외판 줄로 계산)') + '</span>' +
+    '<label class="btn ghost sm">' + (SJF ? '다시 올리기' : '엑셀 올리기') + '<input type="file" id="vcSjFile" accept=".xlsx,.xls,.csv" hidden></label>' + (SJF ? '<button class="btn ghost sm" id="vcSjDel" type="button">' + Mm + ' 자료 지우기</button>' : '') + '</div>';
   let grp = '';
   if (SJF && !SJF.rows.some(x => x.sj !== undefined)) { const G = {}; SJF.rows.forEach(x => { const g = G[x.c] || (G[x.c] = { n: 0, s: 0, sale: 0, sel: new Set() }); g.n++; g.s += x.net; if (x.net > 0) g.sale += x.net; if (x.sel) g.sel.add(x.sel); });
-    grp = '<div class="vc-grp mt-np"><b>수주팀으로 셀 줄 고르기</b> <small class="muted">(고객명 표기별 · 고른 줄만 수주팀 금액에 들어가요)</small>' + Object.entries(G).map(([c, g]) => '<label><input type="checkbox" data-sjinc="' + esc(c) + '"' + (vcSjInc(SJF, c) ? ' checked' : '') + '> <b>' + esc(c) + '</b> — ' + g.n + '건 · ' + won(g.s) + ' <small class="muted">(판매만 ' + won(g.sale) + ' · 판매원 ' + [...g.sel].map(esc).join(', ') + ')</small></label>').join('') + '</div>'; }
-  const fileTbl = SJF ? grp + '<details><summary>수주팀 자료 ' + SJF.rows.length + '건 보기 (전산 그대로)</summary>' + table(['날짜', '거래형태', '판매번호', '판매원', '고객명', '매출 (VAT 별도)', '마진', '수주팀'], SJF.rows.slice().sort((a, b) => a.d - b.d).map(x => [mdLabel(x.d), esc(x.k), esc(x.no), esc(x.sel), esc(x.c), (x.net < 0 ? '<b class="down">' + won(x.net) + '</b>' : won(x.net)), won(x.mar), vcSjInc(SJF, x.c, x) ? '✅' : '—'])) +
-    '</details><p class="muted" style="margin:6px 0 0">수주팀(고른 줄): 판매 ' + won(sjO.sale) + ' − 반품 ' + won(-sjO.ret) + ' = <b>' + won(sjO.s) + '</b> (VAT 별도, 반품 뺀 순매출) · 전산에서 판매만 보면 ' + won(sjO.sale) + '</p>' : '';
-  const mTable = table(['월', '유진기업 전체', '수주팀', '그 외', '수주팀 비중'], ms.filter(m => m.s || m.j).map(m => [(m.ym % 100) + '월' + (m.src === 'file' ? ' <small class="muted">(자료)</small>' : ''), W(m.s), W(m.j), W(m.s - m.j), share(m.j, m.s)]).concat([['<b>' + Y + '년 누적</b>', '<b>' + W(eTot) + '</b>', '<b>' + W(jTot) + '</b>', '<b>' + W(eTot - jTot) + '</b>', share(jTot, eTot)]]));
-  S2.push({ t: '5. 유진기업 매출 — 수주팀 따로', say: [
-      '유진기업 ' + Mm + ' 매출은 <b>' + W(eNow.s) + '</b>(외판의 ' + share(eNow.s, d.cum.o) + ')' + (ePrev && ePrev.s ? ', 지난달 ' + W(ePrev.s) + ' 대비 ' + chgTxt(eNow.s / ePrev.s - 1) : '') + '입니다.',
-      '그중 <b>' + SJ5 + ' ' + W(eNow.j) + '(' + share(eNow.j, eNow.s) + ')</b>, 그 외 ' + W(eEtc) + '입니다.' + (eNow.j ? ' 마진율은 수주팀 ' + rate(eNow.jr, eNow.j) + ', 그 외 ' + rate(eEtcR, eEtc) + '.' : ''),
-      Y + '년 누적 유진기업 <b>' + W(eTot) + '</b> 중 수주팀 ' + W(jTot) + '(' + share(jTot, eTot) + ').' + (eP.length ? ' 남은 예정 ' + W(pAmt(eP)) + '(' + eP.length + '건).' : '')],
-    big: big(Mm + ' 유진기업 전체', W(eNow.s), eNow.n + '일 거래 · 마진율 ' + rate(eNow.r, eNow.s)) + big('└ ' + SJ5, W(eNow.j), '유진기업의 ' + share(eNow.j, eNow.s) + ' · 마진율 ' + rate(eNow.jr, eNow.j) + (SJF ? ' · 자료 기준' : ''), 'sj') + big('└ 그 외', W(eEtc), share(eEtc, eNow.s) + ' · 마진율 ' + rate(eEtcR, eEtc)) + big('남은 예정', W(pAmt(eP)), eP.length + '건'),
-    body: up + bars + mTable + fileTbl + (Object.keys(eDays).length ? '<details><summary>' + Mm + ' 유진기업 POS 거래일별 보기 (담당자별)</summary>' + table(['날짜', 'POS 담당자', '현장 · 거래처명', '매출', '마진율'], Object.values(eDays).sort((a, b) => a.dd - b.dd).map(o => { const dt = ym * 100 + o.dd; return [mdLabel(dt) + ' (' + DOWK[dowOf(dt)] + ')', esc(o.m), [...o.names].map(esc).join(', '), W(o.s), rate(o.r, o.s)]; })) + '</details>' : '') +
-      (eP.length ? table(['예정일', '거래처', '담당', '예정 금액'], eP.map(p => [mdLabel(p.d), esc(p.cust), esc(p.mgr || ''), W(p.amt)])) : '') +
-      '<p class="muted" style="margin:6px 0 0">' + (SJF ? '수주팀 금액은 올린 <b>수주팀 매출 자료</b>(반품 뺀 순매출, VAT 별도) 기준이에요. 그 외 = POS 유진기업 전체 − 수주팀.' : '수주팀 자료가 없어서 POS 담당자가 "김선재"인 외판 줄로 계산했어요. 전산과 맞추려면 위 📎에서 수주팀 매출 엑셀을 올려 주세요.') + '</p>',
+    grp = '<div class="vc-grp mt-np"><b>수주팀으로 셀 줄 고르기</b> <small class="muted">(고객명 표기별)</small>' + Object.entries(G).map(([c, g]) => '<label><input type="checkbox" data-sjinc="' + esc(c) + '"' + (vcSjInc(SJF, c) ? ' checked' : '') + '> <b>' + esc(c) + '</b> — ' + g.n + '건 · ' + won(g.s) + ' <small class="muted">(판매원 ' + [...g.sel].map(esc).join(', ') + ')</small></label>').join('') + '</div>'; }
+  // 영수증 목록: 수주팀 줄만
+  const sjRowsF = SJF ? SJF.rows.filter(x => vcSjInc(SJF, x.c, x)).sort((a, b) => a.d - b.d) : [];
+  const fileTbl = SJF ? grp + '<details><summary>' + Mm + ' 수주팀 영수증 ' + sjRowsF.length + '건 보기</summary>' + table(['날짜', '거래형태', '판매번호', '판매원', '매출 (VAT 별도)', '마진'], sjRowsF.map(x => [mdLabel(x.d), esc(x.k), esc(x.no), esc(x.sel), (x.net < 0 ? '<b class="down">' + won(x.net) + '</b>' : won(x.net)), won(x.mar)])) + '</details>' : '';
+  const mTable = table(['월', '판매', '반품', '순매출 (VAT 별도)', '마진율'], ms.map(m => [(m.ym % 100) + '월', W(m.sale), m.ret ? '−' + W(-m.ret) : '-', '<b>' + W(m.s) + '</b>', rate(m.r, m.s)])
+    .concat([['<b>' + (first % 100) + '~' + (ym % 100) + '월 누적</b>', W(jSale), jRet ? '−' + W(-jRet) : '-', '<b>' + W(jTot) + '</b>', rate(jR, jTot)]]));
+  S2.push({ t: '5. 수주팀 매출 (HP시너지 · 건자재 수주 4팀)', say: [
+      Mm + ' 수주팀 매출은 <b>' + W(jNow.s) + '</b>' + (jNow.ret ? '(판매 ' + W(jNow.sale) + ', 반품 ' + W(-jNow.ret) + ' 차감)' : '') + (jPrev && jPrev.s ? ', 지난달 ' + W(jPrev.s) + ' 대비 ' + chgTxt(jNow.s / jPrev.s - 1) : '') + '입니다.',
+      '마진율은 ' + rate(jNow.r, jNow.s) + '이고, 외판의 ' + share(jNow.s, d.cum.o) + '를 차지합니다.',
+      (first % 100) + '월 시작 후 누적 <b>' + W(jTot) + '</b>(마진율 ' + rate(jR, jTot) + ')입니다.' + (sjPl.length ? ' 남은 예정 ' + W(pAmt(sjPl)) + '(' + sjPl.length + '건).' : '')],
+    big: big(Mm + ' 수주팀 매출', W(jNow.s), (jNow.ret ? '판매 ' + W(jNow.sale) + ' − 반품 ' + W(-jNow.ret) : 'VAT 별도') , 'sj') + big('마진율', rate(jNow.r, jNow.s), '마진 ' + W(jNow.r)) + big('외판 중 비중', share(jNow.s, d.cum.o), Mm + ' 외판 ' + W(d.cum.o)) + big((first % 100) + '~' + (ym % 100) + '월 누적', W(jTot), '마진율 ' + rate(jR, jTot)),
+    body: up + bars + mTable + fileTbl + (sjPl.length ? table(['예정일', '거래처', '담당', '예정 금액'], sjPl.map(p => [mdLabel(p.d), esc(p.cust), esc(p.mgr || ''), W(p.amt)])) : '') +
+      '<p class="muted" style="margin:6px 0 0">금액은 VAT 별도 순매출(판매 − 반품). ' + (SJF ? '올린 수주팀 매출 자료 기준이에요.' : '수주팀 자료가 없어서 POS 담당자가 "김선재"인 외판 줄로 계산했어요 — 📎에서 수주팀 정리 파일을 올려 주세요.') + '</p>',
     slide: bars + mTable });
 
   /* 화면 */
