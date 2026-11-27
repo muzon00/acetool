@@ -662,6 +662,15 @@ details summary { cursor: pointer; color: var(--ink2); font-size: .87em; margin-
 .mt-in { width: 100%; min-width: 90px; min-height: 36px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; font: inherit; background: var(--surface); color: var(--ink); } .mt-in.r { text-align: right; min-width: 120px; }
 #mtLost select { min-height: 36px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; }
 .vc-bars { display: grid; gap: 4px; margin: 10px 0; }
+.vc-say { background: var(--warn-bg); border-radius: 14px; padding: 10px 14px; margin: 0 0 12px; line-height: 1.75; word-break: keep-all; }
+.vc-say-h { font-weight: 800; color: var(--warn-ink); font-size: .9em; } .vc-say ul { margin: 4px 0 0; padding-left: 1.2em; }
+.vc-bigs { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 0 0 12px; }
+.vc-big { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; background: var(--surface); }
+.vc-big span { display: block; font-size: .85em; color: var(--ink3); font-weight: 700; } .vc-big b { display: block; font-size: 1.55em; line-height: 1.3; letter-spacing: -.02em; }
+.vc-big small { display: block; color: var(--ink2); font-size: .85em; } .vc-big.ok b { color: var(--ok-ink); } .vc-big.bad b { color: var(--bad-ink); }
+.vc-sl .bfs-body { font-size: clamp(16px, 1.9vw, 26px); } .vc-sl .bfs-body h1 { font-size: 1.5em; margin-bottom: .6em; }
+.vc-sl .vc-big b { font-size: 1.6em; } .vc-sl .vc-sl-say { margin: 0 0 .8em; font-size: .95em; line-height: 1.7; }
+.vc-sl table { font-size: .8em; } .vc-sl .vc-sl-ol li { margin: 0 0 .5em; line-height: 1.6; }
 .vc-b { display: grid; grid-template-columns: 40px 1fr 70px; align-items: center; gap: 8px; font-size: .9em; }
 .vc-b i { display: block; height: 14px; border-radius: 4px; background: var(--ink3); opacity: .45; min-width: 2px; }
 .vc-b.on i { background: var(--s1); opacity: 1; } .vc-b b { text-align: right; font-weight: 600; }
@@ -6902,83 +6911,114 @@ function renderVc() {
   const months = Object.keys(S.daily || {}).map(Number).filter(m => Object.keys(S.daily[m] || {}).length).sort((a, b) => a - b);
   if (!months.includes(cur)) months.push(cur);
   if (!VC.ym || !months.includes(VC.ym)) VC.ym = cur;
-  const ym = VC.ym, Mm = (ym % 100) + '월';
+  const ym = VC.ym, Mm = (ym % 100) + '월', W = mtWon;
   const d = buildSummary(S.daily, S.targets, (S.settings || {}).holidays || [], ym, today, [], (S.settings || {}).smsVat);
   const tg = (S.targets || {})[ym] || {}, F = d.forecast || {}, fb = F['기본'], lo = F['보수'], hi = F['낙관'];
-  // 이번 달 남은 예정 매출 (상태 '예정'인 것만)
+  const T = d.target || tg.total || 0;
   const plans = (S.plans || []).filter(p => p.st === 'open' && ymOf(p.d) === ym);
   const pAmt = a => a.reduce((t, p) => t + (Number(p.amt) || 0), 0);
   const P = { aff: plans.filter(p => vcIsAff(p.cust)), b2b: plans.filter(p => !vcIsAff(p.cust)) };
   const pO = pAmt(plans);
-  const C2 = vcCust(ym), cs = Object.values(C2).sort((a, b) => b.s - a.s);
+  const cs = Object.values(vcCust(ym)).sort((a, b) => b.s - a.s);
   const aff = cs.filter(c => vcIsAff(c.name)), b2b = cs.filter(c => !vcIsAff(c.name));
   const sum = (a, k) => a.reduce((t, c) => t + c[k], 0);
-  const rate = (r, s) => s ? pct(r / s) : '-';
-  let h = '<div class="card"><div class="bk-h"><h2>🎥 ' + ymLabel(ym) + ' 마감 회의 — 매출 실적 · 마감 예상</h2><div class="mt-np" style="display:flex;gap:8px;flex-wrap:wrap">' +
-    '<select id="vcYm" aria-label="달">' + months.slice().reverse().map(m => '<option value="' + m + '"' + (m === ym ? ' selected' : '') + '>' + ymLabel(m) + '</option>').join('') + '</select>' +
-    '<button class="btn primary" id="vcPrint" type="button">🖨 인쇄 · PDF</button></div></div>' +
-    '<p class="muted" style="margin:0">' + (d.lastDay ? d.lastDay + '일까지 자료 기준' : '아직 자료 없음') + ' · 금액은 모두 <b>VAT 별도 실매출</b> · 예상 마감 = 지금 추세(남은 영업일 요일별 평균) · 예정 매출 = 「예정 매출」 탭에서 상태가 <b>예정</b>인 이번 달 건</p></div>';
+  const rate = (r, s2) => s2 ? pct(r / s2) : '-';
+  const share = (a, t) => t ? pct(a / t, 0) : '-';
+  const big = (lab, v, sub, cls) => '<div class="vc-big' + (cls ? ' ' + cls : '') + '"><span>' + lab + '</span><b>' + v + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>';
+  const sayBox = arr => '<div class="vc-say"><div class="vc-say-h">💬 이렇게 말하세요</div><ul>' + arr.map(x => '<li>' + x + '</li>').join('') + '</ul></div>';
+  const S2 = [];   // 섹션: { t, say[], big, body, slide }
 
   /* 1. 내판 · 외판 마감 예상 */
-  const row = (lab, t, cum, f, l, hh, pl) => {
-    const exp = f != null ? f + (pl || 0) : null;
-    return ['<b>' + lab + '</b>', t ? won(t) : '-', won(cum) + (t ? '<br><small class="muted">달성 ' + pct(cum / t, 0) + '</small>' : ''), f != null ? won(f) + (t ? '<br><small class="muted">목표의 ' + pct(f / t, 0) + '</small>' : '') : '-',
-      l != null && hh != null ? '<small>' + eok(l) + ' ~ ' + eok(hh) + '</small>' : '-', pl ? won(pl) : '-', exp != null ? '<b>' + won(exp) + '</b>' + (t ? '<br><small class="' + (exp >= t ? 'up' : 'down') + '">' + (exp >= t ? '목표 +' + eok(exp - t) : '목표까지 ' + eok(t - exp)) + '</small>' : '') : '-'];
-  };
-  h += '<div class="card"><h2>1. 내판 · 외판 마감 예상</h2>' +
-    '<div class="kpis">' + kpi(Mm + ' 누적 (' + (d.lastDay || 0) + '일까지)', mtWon(d.cum.total), '내판 ' + mtWon(d.cum.n) + ' · 외판 ' + mtWon(d.cum.o), true) +
-    kpi('예상 마감 (추세)', fb ? mtWon(fb.total) : '-', fb && d.target ? '목표의 ' + pct(fb.total / d.target, 0) : '') +
-    kpi('＋ 남은 예정 매출', mtWon(pO), plans.length + '건 (외판)') +
-    kpi('예상 마감 + 예정', fb ? mtWon(fb.total + pO) : '-', d.target ? '목표 ' + mtWon(d.target) + (fb ? ' · ' + pct((fb.total + pO) / d.target, 0) : '') : '목표 없음') + '</div>' +
-    table(['구분', '목표', '누적 실적', '예상 마감 (추세)', '보수 ~ 낙관', '남은 예정 매출', '예상 마감 + 예정'], [
-      row('내판', tg.n, d.cum.n, fb ? fb.n : null, lo ? lo.n : null, hi ? hi.n : null, 0),
-      row('외판', tg.o, d.cum.o, fb ? fb.o : null, lo ? lo.o : null, hi ? hi.o : null, pO),
-      row('합계', d.target || tg.total, d.cum.total, fb ? fb.total : null, lo ? lo.total : null, hi ? hi.total : null, pO)]) +
-    '<p class="muted" style="margin:6px 0 0">예정 매출은 모두 외판(B2B) 건으로 보고 외판에 더했어요. 추세 예상에는 큰 외판 건이 들어 있지 않아 예정 매출을 따로 더해요.</p></div>';
+  const fT = fb ? fb.total : null, expT = fT != null ? fT + pO : null;
+  const gap = expT != null && T ? expT - T : null;
+  const s1 = [];
+  s1.push(Mm + '은 <b>' + (d.lastDay || 0) + '일까지 ' + W(d.cum.total) + '</b>' + (T ? ', 목표 ' + W(T) + '의 <b>' + pct(d.cum.total / T, 0) + '</b>' : '') + '입니다. 내판 ' + W(d.cum.n) + ', 외판 ' + W(d.cum.o) + '.');
+  if (fT != null) s1.push('지금 추세면 <b>' + W(fT) + '</b>으로 마감하고, 남은 예정 매출 ' + W(pO) + '을 더하면 <b>' + W(expT) + '</b>' + (T ? '(목표의 ' + pct(expT / T, 0) + ')' : '') + '입니다.');
+  if (gap != null) s1.push(gap >= 0 ? '목표를 <b>' + W(gap) + ' 넘길</b> 것으로 봅니다.' : '목표까지 <b>' + W(-gap) + ' 부족</b>합니다 — 남은 기간 추가 매출이 필요합니다.');
+  const r1 = (lab, t, cum, f, pl) => { const e = f != null ? f + pl : null; return ['<b>' + lab + '</b>', t ? W(t) : '-', W(cum) + (t ? ' <small class="muted">(' + pct(cum / t, 0) + ')</small>' : ''), f != null ? W(f) : '-', pl ? W(pl) : '-', e != null ? '<b>' + W(e) + '</b>' + (t ? ' <small class="' + (e >= t ? 'up' : 'down') + '">' + (e >= t ? '+' + W(e - t) : '−' + W(t - e)) + '</small>' : '') : '-']; };
+  const t1 = table(['구분', '목표', '누적 실적', '예상 마감', '＋ 예정', '마감 예상 (목표 대비)'], [
+    r1('내판', tg.n, d.cum.n, fb ? fb.n : null, 0), r1('외판', tg.o, d.cum.o, fb ? fb.o : null, pO), r1('합계', T, d.cum.total, fT, pO)]);
+  S2.push({ t: '1. 내판 · 외판 마감 예상', say: s1,
+    big: big(Mm + ' 누적', W(d.cum.total), T ? '목표의 ' + pct(d.cum.total / T, 0) : '') + big('추세 마감', fT != null ? W(fT) : '-', lo && hi ? '범위 ' + eok(lo.total) + ' ~ ' + eok(hi.total) : '') + big('＋ 예정 매출', W(pO), plans.length + '건') + big('마감 예상', expT != null ? W(expT) : '-', gap != null ? (gap >= 0 ? '목표 +' + W(gap) : '목표까지 ' + W(-gap)) : '', gap != null ? (gap >= 0 ? 'ok' : 'bad') : ''),
+    body: t1 + '<p class="muted" style="margin:6px 0 0">추세 = 남은 영업일의 요일별 평균. 예정 매출(「예정 매출」 탭의 이번 달 <b>예정</b> 건)은 외판에 더했어요. 보수 ~ 낙관: ' + (lo && hi ? W(lo.total) + ' ~ ' + W(hi.total) : '-') + '</p>' });
 
-  /* 2. 외판 구성: 관계사 · 점 B2B */
-  const aS = sum(aff, 's'), bS = sum(b2b, 's'), aR = sum(aff, 'r'), bR = sum(b2b, 'r'), aP = pAmt(P.aff), bP = pAmt(P.b2b);
-  h += '<div class="card"><h2>2. 외판 = 관계사 + 점 B2B</h2>' +
-    table(['구분', Mm + ' 매출', '마진 · 마진율', '거래처 수', '남은 예정 매출', '매출 + 예정'], [
-      ['<b>관계사</b>', won(aS), won(aR) + ' · ' + rate(aR, aS), aff.length + '곳', aP ? won(aP) + ' (' + P.aff.length + '건)' : '-', '<b>' + won(aS + aP) + '</b>'],
-      ['<b>점 B2B</b>', won(bS), won(bR) + ' · ' + rate(bR, bS), b2b.length + '곳', bP ? won(bP) + ' (' + P.b2b.length + '건)' : '-', '<b>' + won(bS + bP) + '</b>'],
-      ['<b>외판 합계</b>', won(aS + bS), won(aR + bR) + ' · ' + rate(aR + bR, aS + bS), cs.length + '곳', won(aP + bP), '<b>' + won(aS + bS + aP + bP) + '</b>']]) +
-    '<p class="muted mt-np" style="margin:6px 0 0">관계사 구분: 직접 고른 것 → 회원 명단의 관계사 표시 → 이름에 "유진" 이 들어가면 관계사. 아래 표의 <b>⇄</b> 버튼으로 바꿀 수 있어요 (저장됨).</p></div>';
+  /* 2. 외판 = 관계사 + 점 B2B */
+  const aS = sum(aff, 's'), bS = sum(b2b, 's'), aR = sum(aff, 'r'), bR = sum(b2b, 'r'), aP = pAmt(P.aff), bP = pAmt(P.b2b), oS = aS + bS;
+  S2.push({ t: '2. 외판 구성 — 관계사 · 점 B2B', say: [
+      Mm + ' 외판 <b>' + W(oS) + '</b> 중 관계사가 <b>' + W(aS) + '(' + share(aS, oS) + ')</b>, 점 B2B가 <b>' + W(bS) + '(' + share(bS, oS) + ')</b>입니다.',
+      '남은 예정 매출은 관계사 ' + W(aP) + ', 점 B2B ' + W(bP) + '입니다. 마진율은 관계사 ' + rate(aR, aS) + ', 점 B2B ' + rate(bR, bS) + '.'],
+    big: big('관계사', W(aS), share(aS, oS) + ' · 예정 ' + W(aP)) + big('점 B2B', W(bS), share(bS, oS) + ' · 예정 ' + W(bP)) + big('외판 합계', W(oS), '예정 포함 ' + W(oS + aP + bP)),
+    body: table(['구분', Mm + ' 매출', '비중', '마진율', '거래처', '남은 예정', '매출 + 예정'], [
+      ['<b>관계사</b>', W(aS), share(aS, oS), rate(aR, aS), aff.length + '곳', aP ? W(aP) + ' (' + P.aff.length + '건)' : '-', '<b>' + W(aS + aP) + '</b>'],
+      ['<b>점 B2B</b>', W(bS), share(bS, oS), rate(bR, bS), b2b.length + '곳', bP ? W(bP) + ' (' + P.b2b.length + '건)' : '-', '<b>' + W(bS + bP) + '</b>'],
+      ['<b>외판</b>', W(oS), '100%', rate(aR + bR, oS), cs.length + '곳', W(aP + bP), '<b>' + W(oS + aP + bP) + '</b>']]) });
 
-  /* 3 · 4. 관계사 / 점 B2B — 예정 매출 및 매출 */
-  const custTable = (list, pl, isAff) => {
+  /* 3 · 4. 관계사 / 점 B2B 거래처 */
+  const custRows = (list, pl) => {
     const byC = {}; list.forEach(c => { byC[vcKey(c.name)] = { name: c.name, s: c.s, r: c.r, n: c.days.size, p: [] }; });
     pl.forEach(p => { const k = vcKey(p.cust); (byC[k] || (byC[k] = { name: p.cust, s: 0, r: 0, n: 0, p: [] })).p.push(p); });
-    const rows = Object.values(byC).sort((a, b) => (b.s + pAmt(b.p)) - (a.s + pAmt(a.p)));
-    if (!rows.length) return '<p class="muted" style="margin:0">이번 달 ' + (isAff ? '관계사' : '점 B2B') + ' 매출 · 예정이 없어요.</p>';
-    return table(['거래처', Mm + ' 매출', '마진율', '거래일', '남은 예정 매출', '매출 + 예정', ''], rows.map(c => [esc(c.name), c.s ? won(c.s) : '-', rate(c.r, c.s), c.n ? c.n + '일' : '-',
-      c.p.length ? won(pAmt(c.p)) + '<br><small class="muted">' + c.p.map(p => mdLabel(p.d) + (p.mgr ? ' ' + esc(p.mgr) : '')).join(', ') + '</small>' : '-', '<b>' + won(c.s + pAmt(c.p)) + '</b>',
-      '<button class="btn ghost sm mt-np" data-vcsw="' + esc(c.name) + '" title="' + (isAff ? '점 B2B로 옮기기' : '관계사로 옮기기') + '">⇄ ' + (isAff ? '점 B2B로' : '관계사로') + '</button>']));
+    return Object.values(byC).sort((a, b) => (b.s + pAmt(b.p)) - (a.s + pAmt(a.p)));
   };
-  h += '<div class="card"><h2>3. 관계사 — 예정 매출 및 매출 <small class="muted">' + won(aS) + ' + 예정 ' + won(aP) + '</small></h2>' + custTable(aff, P.aff, true) + '</div>';
-  h += '<div class="card"><h2>4. 점 B2B — 예정 매출 및 매출 <small class="muted">' + won(bS) + ' + 예정 ' + won(bP) + '</small></h2>' + custTable(b2b, P.b2b, false) + '</div>';
+  const custSec = (no, lab, list, pl, isAff) => {
+    const rows = custRows(list, pl), tot = sum(list, 's'), pp = pAmt(pl), top = rows.slice(0, 3);
+    const say = rows.length ? [lab + ' ' + Mm + ' 매출 <b>' + W(tot) + '</b>(' + list.length + '곳)' + (pp ? ', 남은 예정 <b>' + W(pp) + '</b>(' + pl.length + '건)' : '') + '입니다.',
+      '큰 곳은 ' + top.map((c, i) => '<b>' + (i + 1) + '. ' + esc(c.name) + '</b> ' + W(c.s) + (c.p.length ? ' (+예정 ' + W(pAmt(c.p)) + ')' : '')).join(', ') + '입니다.'] : ['이번 달 ' + lab + ' 매출 · 예정이 없습니다.'];
+    const tr = (c, btn) => [esc(c.name), c.s ? W(c.s) : '-', rate(c.r, c.s), c.n ? c.n + '일' : '-',
+      c.p.length ? W(pAmt(c.p)) + '<br><small class="muted">' + c.p.map(p => mdLabel(p.d) + (p.mgr ? ' ' + esc(p.mgr) : '')).join(', ') + '</small>' : '-', '<b>' + W(c.s + pAmt(c.p)) + '</b>']
+      .concat(btn ? ['<button class="btn ghost sm mt-np" data-vcsw="' + esc(c.name) + '">⇄ ' + (isAff ? '점 B2B로' : '관계사로') + '</button>'] : []);
+    const hd = ['거래처', Mm + ' 매출', '마진율', '거래일', '남은 예정', '매출 + 예정'];
+    const body = rows.length ? table(hd.concat(['']), rows.slice(0, 5).map(c => tr(c, 1))) + (rows.length > 5 ? '<details><summary>나머지 ' + (rows.length - 5) + '곳 더 보기</summary>' + table(hd.concat(['']), rows.slice(5).map(c => tr(c, 1))) + '</details>' : '') : '';
+    S2.push({ t: no + '. ' + lab + ' — 예정 매출 및 매출', say, big: big(lab + ' 매출', W(tot), list.length + '곳') + big('남은 예정', W(pp), pl.length + '건') + big('매출 + 예정', W(tot + pp), ''), body,
+      slide: rows.length ? table(hd, rows.slice(0, 6).map(c => tr(c, 0))) : '' });
+  };
+  custSec(3, '관계사', aff, P.aff, true);
+  custSec(4, '점 B2B', b2b, P.b2b, false);
 
-  /* 5. 유진기업 매출 (올해 월별 + 이번 달 거래일별) */
+  /* 5. 유진기업 */
   const Y = Math.floor(ym / 100), ms = [];
   for (let m = 1; m <= 12; m++) { const k = Y * 100 + m; if (k > ym) break; const c3 = Object.values(vcCust(k)).filter(c => vcEugene(c.name)); ms.push({ ym: k, s: sum(c3, 's'), r: sum(c3, 'r'), n: c3.reduce((t, c) => t + c.days.size, 0) }); }
-  const eTot = ms.reduce((t, m) => t + m.s, 0), eR = ms.reduce((t, m) => t + m.r, 0), eNow = ms.find(m => m.ym === ym) || { s: 0, r: 0, n: 0 };
+  const eTot = ms.reduce((t, m) => t + m.s, 0), eR = ms.reduce((t, m) => t + m.r, 0), eNow = ms.find(m => m.ym === ym) || { s: 0, r: 0, n: 0 }, ePrev = ms.find(m => m.ym === addMonths(ym, -1));
   const eP = plans.filter(p => vcEugene(p.cust));
   const eDays = {}; Object.keys((S.detail || {})[ym] || {}).forEach(dd => (S.detail[ym][dd] || []).forEach(x => { if (x.g === 'o' && vcEugene(x.c)) { const o = eDays[dd] || (eDays[dd] = { s: 0, r: 0, names: new Set() }); o.s += Number(x.n) || 0; o.r += Number(x.r) || 0; o.names.add(x.c); } }));
   const mx = Math.max(1, ...ms.map(m => m.s));
-  h += '<div class="card"><h2>5. 유진기업 매출</h2>' +
-    '<div class="kpis">' + kpi(Mm + ' 유진기업', mtWon(eNow.s), eNow.n + '일 거래 · 마진율 ' + rate(eNow.r, eNow.s), true) + kpi('남은 예정', mtWon(pAmt(eP)), eP.length + '건') + kpi(Y + '년 누적 (1~' + (ym % 100) + '월)', mtWon(eTot), '마진율 ' + rate(eR, eTot)) +
-    kpi('외판 중 비중', d.cum.o ? pct(eNow.s / d.cum.o, 0) : '-', Mm + ' 외판 ' + mtWon(d.cum.o)) + '</div>' +
-    '<div class="vc-bars">' + ms.map(m => '<div class="vc-b' + (m.ym === ym ? ' on' : '') + '"><span>' + (m.ym % 100) + '월</span><i style="width:' + (m.s / mx * 100).toFixed(1) + '%"></i><b>' + (m.s ? eok(m.s) : '-') + '</b></div>').join('') + '</div>' +
-    (Object.keys(eDays).length ? '<details open><summary>' + Mm + ' 거래일별</summary>' + table(['날짜', '현장 · 거래처명', '매출', '마진율'], Object.keys(eDays).map(Number).sort((a, b) => a - b).map(dd => { const o = eDays[dd], dt = ym * 100 + dd; return [mdLabel(dt) + ' (' + DOWK[dowOf(dt)] + ')', [...o.names].map(esc).join(', '), won(o.s), rate(o.r, o.s)]; })) + '</details>' : '') +
-    (eP.length ? table(['예정일', '거래처', '담당', '예정 금액'], eP.map(p => [mdLabel(p.d), esc(p.cust), esc(p.mgr || ''), won(p.amt)])) : '') + '</div>';
+  const bars = '<div class="vc-bars">' + ms.map(m => '<div class="vc-b' + (m.ym === ym ? ' on' : '') + '"><span>' + (m.ym % 100) + '월</span><i style="width:' + (m.s / mx * 100).toFixed(1) + '%"></i><b>' + (m.s ? eok(m.s) : '-') + '</b></div>').join('') + '</div>';
+  S2.push({ t: '5. 유진기업 매출', say: [
+      '유진기업 ' + Mm + ' 매출은 <b>' + W(eNow.s) + '</b>(' + eNow.n + '일 거래, 외판의 ' + share(eNow.s, d.cum.o) + ')' + (ePrev && ePrev.s ? ', 지난달 ' + W(ePrev.s) + ' 대비 ' + chgTxt(eNow.s / ePrev.s - 1) : '') + '입니다.',
+      Y + '년 누적 <b>' + W(eTot) + '</b>, 마진율 ' + rate(eR, eTot) + '.' + (eP.length ? ' 남은 예정 ' + W(pAmt(eP)) + '(' + eP.length + '건).' : '')],
+    big: big(Mm + ' 유진기업', W(eNow.s), eNow.n + '일 · 마진율 ' + rate(eNow.r, eNow.s)) + big('남은 예정', W(pAmt(eP)), eP.length + '건') + big(Y + '년 누적', W(eTot), '마진율 ' + rate(eR, eTot)),
+    body: bars + (Object.keys(eDays).length ? '<details><summary>' + Mm + ' 거래일별 보기</summary>' + table(['날짜', '현장 · 거래처명', '매출', '마진율'], Object.keys(eDays).map(Number).sort((a, b) => a - b).map(dd => { const o = eDays[dd], dt = ym * 100 + dd; return [mdLabel(dt) + ' (' + DOWK[dowOf(dt)] + ')', [...o.names].map(esc).join(', '), W(o.s), rate(o.r, o.s)]; })) + '</details>' : '') +
+      (eP.length ? table(['예정일', '거래처', '담당', '예정 금액'], eP.map(p => [mdLabel(p.d), esc(p.cust), esc(p.mgr || ''), W(p.amt)])) : ''),
+    slide: bars });
+
+  /* 화면 */
+  let h = '<div class="card"><div class="bk-h"><h2>🎥 ' + ymLabel(ym) + ' 마감 회의</h2><div class="mt-np" style="display:flex;gap:8px;flex-wrap:wrap">' +
+    '<select id="vcYm" aria-label="달">' + months.slice().reverse().map(m => '<option value="' + m + '"' + (m === ym ? ' selected' : '') + '>' + ymLabel(m) + '</option>').join('') + '</select>' +
+    '<button class="btn primary" id="vcShow" type="button">🖥 발표 모드 (한 장씩)</button><button class="btn" id="vcPrint" type="button">🖨 인쇄 · PDF</button></div></div>' +
+    '<p class="muted" style="margin:0 0 10px">' + (d.lastDay ? d.lastDay + '일까지 자료 기준' : '아직 자료 없음') + ' · 금액은 모두 <b>VAT 별도 실매출</b> · 화상회의에서는 <b>🖥 발표 모드</b>를 화면 공유하고 → 키로 넘기세요.</p>' +
+    '<h3 class="ea-h">🎤 한눈에 요약 (순서대로 읽으세요)</h3><ol class="mt-say">' + S2.map(x => '<li>' + x.say[0] + '</li>').join('') + '</ol></div>';
+  S2.forEach(x => { h += '<div class="card"><h2>' + x.t + '</h2>' + sayBox(x.say) + '<div class="vc-bigs">' + x.big + '</div>' + x.body + '</div>'; });
+  h += '<p class="muted mt-np" style="margin:4px 4px 16px">관계사 구분: 직접 고른 것 → 회원 명단의 관계사 표시 → 이름에 "유진"이 들어가면 관계사, 나머지는 점 B2B. 3 · 4번 표의 <b>⇄</b> 버튼으로 옮기면 저장돼요.</p>';
   el.innerHTML = h;
+  VC.slides = [{ t: '🎥 ' + ymLabel(ym) + ' 마감 회의', b: '<p class="bfs-sub">' + (d.lastDay ? d.lastDay + '일까지 · ' : '') + 'VAT 별도 실매출</p><ol class="vc-sl-ol">' + S2.map(x => '<li>' + x.say[0] + '</li>').join('') + '</ol>' }]
+    .concat(S2.map(x => ({ t: x.t, b: '<div class="vc-bigs">' + x.big + '</div><div class="bfs-one vc-sl-say">' + x.say.join('<br>') + '</div>' + (x.slide != null ? x.slide : x.body) })));
   $('vcYm').addEventListener('change', () => { VC.ym = Number($('vcYm').value); renderVc(); });
+  $('vcShow').addEventListener('click', () => vcShow(VC.slides));
   $('vcPrint').addEventListener('click', () => { document.body.classList.add('mt-printing'); setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('mt-printing'), 500); }, 50); });
   el.querySelectorAll('[data-vcsw]').forEach(b => b.addEventListener('click', async () => {
     const name = b.dataset.vcsw, k = vcKey(name), to = !vcIsAff(name);
     VC.ov = Object.assign({}, VC.ov, { [k]: to }); renderVc();
     try { await setDoc(doc(db, C.config, 'aff'), { ov: VC.ov, at: serverTimestamp() }, { merge: true }); toast(name + ' → ' + (to ? '관계사' : '점 B2B')); } catch (e) { toast('저장하지 못했어요: ' + errMsg(e)); }
   }));
+}
+// 발표 모드: 전체 화면 한 장씩 (← → · 스페이스 · Esc)
+function vcShow(sl) {
+  let i = 0; const box = document.createElement('div'); box.className = 'bfs vc-sl';
+  const draw = () => { box.innerHTML = '<div class="bfs-top"><span>' + esc(sl[0].t) + '</span><span>' + (i + 1) + ' / ' + sl.length + '</span><button type="button" data-k="x">닫기 ✕</button></div><div class="bfs-body"><h1>' + sl[i].t + '</h1>' + sl[i].b + '</div><div class="bfs-nav"><button type="button" data-k="p"' + (i ? '' : ' disabled') + '>◀ 이전</button><button type="button" data-k="n"' + (i < sl.length - 1 ? '' : ' disabled') + '>다음 ▶</button></div>'; };
+  const close = () => { box.remove(); document.removeEventListener('keydown', key); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); };
+  const key = e => { if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); if (i < sl.length - 1) { i++; draw(); } } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { if (i) { i--; draw(); } } else if (e.key === 'Escape') close(); };
+  box.addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (!b) return; if (b.dataset.k === 'x') close(); else if (b.dataset.k === 'p' && i) { i--; draw(); } else if (b.dataset.k === 'n' && i < sl.length - 1) { i++; draw(); } });
+  document.addEventListener('keydown', key); draw(); document.body.appendChild(box);
+  if (box.requestFullscreen) box.requestFullscreen().catch(() => {});
 }
 function mtWon(n) {
   n = Math.round(Number(n) || 0); if (!n) return '0원';
