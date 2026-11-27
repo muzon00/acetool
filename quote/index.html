@@ -383,8 +383,8 @@ body.print2 #tPrint .cdoc { border: 0; padding: 0; width: 100%; }
 .mg-g .btn { margin-left: auto; }
 .mg-g .okt { color: var(--ok-ink); font-size: .88em; } .mg-g .badt { color: var(--bad); font-size: .88em; font-weight: 700; }
 .mg-t tr.mg-ck td { background: #ffecec; }
-.mg-in { border: 1px solid transparent; background: transparent; font: inherit; padding: 3px 4px; border-radius: 6px; }
-.mg-in:hover, .mg-in:focus { border-color: #b8c4d6; background: #fff; outline: none; }
+.mg-in, .ed4 { border: 1px solid #cfd6e0; background: #fff; font: inherit; padding: 4px 6px; border-radius: 6px; min-height: 30px; }
+.mg-in:focus, .ed4:focus { border-color: #2f6fe4; outline: 2px solid #d6e4fb; }
 .mg-t td, .mg-t th { padding: 6px 8px; white-space: nowrap; } .mg-t td.r { text-align: right; } .mg-t td.c { text-align: center; }
 .imp { border: 2px dashed #9fb7d8; background: #f4f8fd; border-radius: 16px; padding: 12px 14px; }
 .imph { font-weight: 900; font-size: 1.08em; color: #1d4f91; }
@@ -572,6 +572,7 @@ const BUILD = '2026-11-12a';
       <details class="more" open><summary>중간 기업 정보 (1차 견적서의 ‘공급받는자’ = 최종 견적서의 ‘공급자’)</summary><button type="button" class="btn ghost sm" id="tSup2Ace" style="margin-top:8px">🏪 ACE 일산점 정보 넣기</button><div class="grid3" id="tSup2" style="margin-top:8px"></div></details>
       <details class="more" open><summary>최종 업체 정보 (최종 견적서의 ‘공급받는자’)</summary><div class="grid3" id="tCust" style="margin-top:8px"></div></details>
       <details class="more" open><summary>양식 · 담당자 · 연락처 · 비고 · 로고</summary><div class="grid3 dfm2" data-doc="2"></div></details>
+      <details class="more" open><summary>✏️ 품목 고치기 (제품명 · 규격 · 수량 · 단가 · 비고 — 고치면 아래 견적서에 바로 반영)</summary><div class="xwrap" id="tEdit4" style="margin-top:8px"></div><div class="btns"><button class="btn ghost sm" id="tE4Add">＋ 줄 추가</button></div></details>
       <div class="btns sendbar" data-acts="2"></div>
       <div id="tReady2"></div>
       <div class="docbox"><div id="tDoc2"></div></div>
@@ -1268,7 +1269,7 @@ const TWO = (() => {
     $('tSup1').querySelectorAll('input').forEach(x => { x.value = S1[x.dataset.s1] || ''; });
   }
   function showStep(n) {
-    T.step = n; save();
+    T.step = n; save(); if (n === 4) renderEdit4();
     document.querySelectorAll('#t-two .stp').forEach(c => c.classList.toggle('hide', +c.dataset.step !== n));
     document.querySelectorAll('#tSteps button').forEach(b => { const k = +b.dataset.st; b.classList.toggle('on', k === n); b.classList.toggle('done', k < n); });
     window.scrollTo(0, 0);
@@ -1756,10 +1757,29 @@ const TWO = (() => {
   /* ---------- 저장 · 불러오기 ---------- */
   const list = () => LS.get('h2saved', []);
   function renderSaved() { const L = list(); $('tSaved').innerHTML = L.length ? L.map(s => '<div class="row"><span><b>' + esc(s.d1.to || '(1차 받는 분)') + '</b> → ' + esc(s.d2.to || '(최종 받는 분)') + ' <span class="muted">' + esc(s.d1.date || '') + ' · A ' + esc(s.a) + '% · B ' + esc(s.b) + '% · 최종 ' + won(s.total || 0) + '원</span></span><button class="btn ghost sm" data-open="' + esc(s.id) + '">열기</button><button class="btn ghost sm" data-sdel="' + esc(s.id) + '" aria-label="지우기">✕</button></div>').join('') : '<p class="muted" style="margin:0">아직 저장한 2단계 견적이 없어요.</p>'; }
+  $('tEdit4').addEventListener('input', e => {
+    const t = e.target.closest('[data-e4]'); if (!t) return; const i = +t.dataset.e4, k = t.dataset.k, l = T.lines[i]; if (!l) return;
+    l[k] = t.value; if (k === 'p2' && !s_(l.cost)) l.p1 = t.value;   // 매입가 없는 줄(견적 합치기)은 1차 = 최종
+    save(); update();
+    const O = totals(), r = O.res[i], c = $('tEdit4').querySelector('[data-e4a="' + i + '"]'); if (c) c.textContent = r && !r.err && !r.skip ? won(r.amt2) : '확인';
+    const sm = $('tEdit4').querySelector('tr.sum'); if (sm) sm.innerHTML = '<th colspan="6">합계</th><td class="r"><b>' + won(O.s2) + '</b></td><td colspan="2">부가세 포함 <b>' + won(O.i2) + '</b></td>';
+  });
+  $('tEdit4').addEventListener('change', () => { renderSheet(); renderEdit4(); });
+  $('tEdit4').addEventListener('click', e => { const b = e.target.closest('[data-e4del]'); if (!b) return; const i = +b.dataset.e4del; if (!confirm('이 줄을 지울까요?')) return; T.lines.splice(i, 1); if (!T.lines.length) T.lines.push(blank()); save(); renderSheet(); renderEdit4(); });
+  $('tE4Add').addEventListener('click', () => { const i = T.lines.findIndex(empty); const l = Object.assign(blank(), { n: '새 품목', q: '1', p1: '0', p2: '0' }); if (i >= 0) T.lines[i] = l; else T.lines.push(l); save(); renderSheet(); renderEdit4(); const x = $('tEdit4').querySelectorAll('[data-k="n"]'); if (x.length) { x[x.length - 1].focus(); x[x.length - 1].select(); } });
   $('tSup2Ace').addEventListener('click', () => { Object.assign(T.sup2, ACE_INFO); save(); renderForms(); update(); toast('ACE 일산점 정보를 넣었어요.'); });
   $('tSheetXls').addEventListener('click', ev => busy(ev.currentTarget, sheetXls));
   $('tSave').addEventListener('click', () => { const O = totals(); if (O.errs.length) { toast('빨간 칸을 먼저 고쳐 주세요.'); return; } if (!O.n) { toast('품목을 하나 이상 적어 주세요.'); return; } const L = list().filter(s => s.id !== T.id); L.unshift(Object.assign(JSON.parse(JSON.stringify(T)), { total: O.i2, savedAt: Date.now() })); if (!LS.set('h2saved', L.slice(0, 50))) { toast('저장하지 못했어요.'); return; } renderSaved(); toast('저장했어요.'); });
   $('tSaved').addEventListener('click', e => { const o = e.target.closest('[data-open]'), d = e.target.closest('[data-sdel]'); if (o) { const s = list().find(x => x.id === o.dataset.open); if (!s) return; T = norm(JSON.parse(JSON.stringify(s))); delete T.total; delete T.savedAt; save(); render(); window.scrollTo(0, 0); toast('불러왔어요.'); } if (d) { if (!confirm('이 견적을 지울까요?')) return; LS.set('h2saved', list().filter(x => x.id !== d.dataset.sdel)); renderSaved(); } });
+  /* 4단계 품목 고치기: 최종 견적서에 나가는 칸만 (최종 단가를 고치면 그 줄은 그 값으로 고정) */
+  function renderEdit4() {
+    const el = $('tEdit4'); if (!el) return;
+    const O = totals(), rows = T.lines.map((l, i) => [l, i, O.res[i]]).filter(([l]) => !empty(l));
+    const inp = (i, k, v, w, num) => '<input class="ed4" data-e4="' + i + '" data-k="' + k + '" value="' + esc(v == null ? '' : v) + '" style="width:' + w + 'px' + (num ? ';text-align:right' : '') + '"' + (num ? ' inputmode="decimal"' : '') + '>';
+    el.innerHTML = '<table class="xs mg-t"><tr><th>순번</th><th class="L">제품명</th><th>규격</th><th>단위</th><th>수량</th><th>최종 단가</th><th>공급가액</th><th class="L">비고</th><th></th></tr>' +
+      rows.map(([l, i, r], n) => '<tr' + (r && r.err ? ' class="mg-ck"' : '') + '><td class="c">' + (n + 1) + '</td><td>' + inp(i, 'n', l.n, 180) + '</td><td>' + inp(i, 'sp', l.sp, 110) + '</td><td>' + inp(i, 'u', l.u, 46) + '</td><td>' + inp(i, 'q', l.q, 54, 1) + '</td><td>' + inp(i, 'p2', s_(l.p2) ? l.p2 : (r && r.p2 != null ? r.p2 : ''), 90, 1) + '</td><td class="r" data-e4a="' + i + '">' + (r && !r.err && !r.skip ? won(r.amt2) : '확인') + '</td><td>' + inp(i, 'm', l.m, 140) + '</td><td><button class="del" data-e4del="' + i + '" aria-label="줄 지우기">✕</button></td></tr>').join('') +
+      '<tr class="sum"><th colspan="6">합계</th><td class="r"><b>' + won(O.s2) + '</b></td><td colspan="2">부가세 포함 <b>' + won(O.i2) + '</b></td></tr></table>';
+  }
   /* 견적 합치기 → 2단계 최종 견적서 (단가 그대로: 1차 = 최종 = 캡처 단가, 매입가 없음) */
   function loadFinal(o) {
     if (T.lines.some(l => !empty(l))) { const L = list().filter(x => x.id !== T.id); L.unshift(Object.assign(JSON.parse(JSON.stringify(T)), { total: totals().i2, savedAt: Date.now() })); LS.set('h2saved', L.slice(0, 50)); }
@@ -1795,10 +1815,11 @@ const MERGE = (() => {
     // 한 줄로 합치기가 꺼져 있으면 칸을 바로 고칠 수 있음 (캡처에서 잘못 읽은 글자)
     const ed = !M.same, refs = []; if (ed) M.groups.forEach((g, gi) => g.lines.forEach((l, li) => refs.push([gi, li])));
     const inp = (i, k, v, w, num) => ed ? '<input class="mg-in" data-mi="' + i + '" data-mk="' + k + '" value="' + esc(v) + '" style="width:' + w + 'px' + (num ? ';text-align:right' : '') + '"' + (num ? ' inputmode="decimal"' : '') + '>' : esc(num && k === 'p' ? fmt(v) : v);
-    h += (ed ? '<p class="muted" style="margin:0 0 6px">칸을 눌러 바로 고칠 수 있어요. <b class="badt">빨간 줄</b>은 제품명을 읽지 못한 줄이에요.</p>' : '') +
+    h += (ed ? '<p class="muted" style="margin:0 0 6px">✏️ 칸을 눌러 바로 고칠 수 있어요. <b class="badt">빨간 줄</b>은 제품명을 읽지 못한 줄이에요.</p>' : '<p class="muted" style="margin:0 0 6px">✏️ 고치려면 아래 「한 줄로 합치기」 체크를 끄세요.</p>') +
       '<div class="xwrap"><table class="xs mg-t"><tr><th>순번</th><th class="L">제품명</th><th>규격</th><th>단위</th><th>수량</th><th>단가</th><th>공급가액</th><th class="L">비고</th>' + (ed ? '<th></th>' : '') + '</tr>' +
       L.map((l, i) => '<tr' + (l.ck ? ' class="mg-ck"' : '') + '><td class="c">' + (i + 1) + '</td><td>' + inp(i, 'n', l.n, 170) + '</td><td class="c">' + inp(i, 'sp', l.sp, 100) + '</td><td class="c">' + inp(i, 'u', l.u, 44) + '</td><td class="r">' + inp(i, 'q', l.q, 50, 1) + '</td><td class="r">' + inp(i, 'p', l.p, 84, 1) + '</td><td class="r" data-ma="' + i + '">' + fmt(amt(l)) + '</td><td>' + inp(i, 'm', l.m, 130) + '</td>' + (ed ? '<td><button class="del" data-mrow="' + i + '" aria-label="' + (i + 1) + '번 줄 지우기">✕</button></td>' : '') + '</tr>').join('') +
       '<tr class="sum"><th colspan="6">합계 (' + L.length + '줄)</th><td class="r"><b>' + fmt(sup) + '</b></td><td>부가세 ' + fmt(vat) + ' · 합계 <b>' + fmt(sup + vat) + '</b></td></tr></table></div>';
+    if (ed) h += '<div class="btns"><button class="btn ghost sm" id="mgAdd">＋ 줄 추가</button></div>';
     $('mgList').innerHTML = h; MERGE_REFS = refs;
   }
   let MERGE_REFS = [];
@@ -1811,6 +1832,7 @@ const MERGE = (() => {
     save();
   });
   $('mgList').addEventListener('change', e => { if (e.target.closest('[data-mi]')) render(); });   // 합계 다시 계산
+  $('mgList').addEventListener('click', e => { if (e.target.id !== 'mgAdd') return; const g = M.groups[M.groups.length - 1]; g.lines.push({ n: '', sp: '', u: 'EA', q: 1, p: 0, m: '', ck: true }); save(); render(); const x = $('mgList').querySelectorAll('[data-mk="n"]'); if (x.length) x[x.length - 1].focus(); });
   $('mgList').addEventListener('click', e => { const b = e.target.closest('[data-mrow]'); if (!b) return; const ref = MERGE_REFS[+b.dataset.mrow]; if (!ref) return; M.groups[ref[0]].lines.splice(ref[1], 1); if (!M.groups[ref[0]].lines.length) M.groups.splice(ref[0], 1); save(); render(); });
   function addGroup(R, src) {
     if (!R || R.err || !R.lines || !R.lines.length) { $('mgMsg').innerHTML = '<div class="err">' + esc((R && R.err) || '품목 줄을 찾지 못했어요. 표가 크게 보이게 다시 캡처해 주세요.') + '</div>'; return; }
