@@ -7046,6 +7046,38 @@ function renderVc() {
         '<p class="muted" style="margin:6px 0 0">매총액 = 매출총이익(마진, VAT 별도). 예상 = 지금까지 매총 + 남은 예상 매출 × 이번 달 지금까지의 내판 · 외판 매총율. 보수 ~ 낙관 매총액: ' + (G.lo && G.hi ? W(G.lo.g) + ' (' + pr(G.lo.r) + ') ~ ' + W(G.hi.g) + ' (' + pr(G.hi.r) + ')' : '-') + '</p>' });
   }
 
+  /* 1-3. 전년 같은 달 대비 (전년 마감 매출 · 매총이익 · 매총율 ↔ 올해 마감 예상, 같은 기간 비교도) */
+  {
+    const LY = ym - 100, LYm = Math.floor(LY / 100) + '년 ' + (LY % 100) + '월', dl = (S.daily || {})[LY] || {}, dt = (S.detail || {})[LY] || {};
+    const sumD = (obj, upTo) => { const o = { n: 0, o: 0 }; Object.keys(obj).forEach(k => { if (upTo && Number(k) > upTo) return; o.n += Number(obj[k].n) || 0; o.o += Number(obj[k].o) || 0; }); return o; };
+    const sumG = upTo => { const o = { n: 0, o: 0, sn: 0, so: 0 }; Object.keys(dt).forEach(k => { if (upTo && Number(k) > upTo) return; (dt[k] || []).forEach(x => { const g = x.g === 'o' ? 'o' : 'n'; o[g] += Number(x.r) || 0; o['s' + g] += Number(x.n) || 0; }); }); return o; };
+    const lyF = sumD(dl), lyFt = lyF.n + lyF.o;
+    if (lyFt) {
+      const lyG = sumG(0), hasG = !!Object.keys(dt).length, lyGt = lyG.n + lyG.o, lyRate = (lyG.sn + lyG.so) ? lyGt / (lyG.sn + lyG.so) : null;
+      const up = d.lastDay || 0, lyS = sumD(dl, up), lySt = lyS.n + lyS.o, lyGS = sumG(up);
+      const pr = x => x === null || x === undefined ? '-' : pct(x);
+      const ch = (a2, b2) => b2 ? chgTxt(a2 / b2 - 1) : '-';
+      const dW = (a2, b2) => (a2 - b2 >= 0 ? '+' : '−') + W(Math.abs(a2 - b2));
+      const eT = E.b ? E.b.total : null, eG = G.b ? G.b.g : null, eR = G.b ? G.b.r : null;
+      const s13 = [];
+      if (eT != null) s13.push('전년 ' + LYm + ' 마감 <b>' + W(lyFt) + '</b> 대비 올해 마감 예상 <b>' + W(eT) + '</b>, <b>' + ch(eT, lyFt) + '</b>(' + dW(eT, lyFt) + ')입니다.');
+      s13.push('같은 기간(1~' + up + '일)으로 보면 올해 ' + W(d.cum.total) + ' vs 전년 ' + W(lySt) + ', ' + ch(d.cum.total, lySt) + ' — 내판 ' + ch(d.cum.n, lyS.n) + ', 외판 ' + ch(d.cum.o, lyS.o) + '.');
+      if (hasG && eG != null) s13.push('매총이익은 전년 ' + W(lyGt) + '(매총율 ' + pr(lyRate) + ') → 올해 예상 ' + W(eG) + '(매총율 ' + pr(eR) + '), ' + ch(eG, lyGt) + ' · 매총율 ' + (eR !== null && lyRate !== null ? ((eR - lyRate) * 100 >= 0 ? '+' : '−') + Math.abs((eR - lyRate) * 100).toFixed(1) + '%p' : '-') + '.');
+      const row = (lab, ly, now, exp) => ['<b>' + lab + '</b>', W(ly), exp != null ? W(exp) : '-', exp != null ? '<b class="' + (exp >= ly ? 'up' : 'down') + '">' + ch(exp, ly) + '</b><br><small class="muted">' + dW(exp, ly) + '</small>' : '-'];
+      const tb = table(['구분', '전년 ' + LYm + ' 마감', '올해 ' + Mm + ' 마감 예상', '증감'], [
+        row('내판 매출', lyF.n, 0, E.b ? E.b.n : null), row('외판 매출', lyF.o, 0, E.b ? E.b.o : null), row('합계 매출', lyFt, 0, eT)]
+        .concat(hasG ? [row('매총이익', lyGt, 0, eG), ['<b>매총율</b>', pr(lyRate), eR !== null ? pr(eR) : '-', eR !== null && lyRate !== null ? '<b class="' + (eR >= lyRate ? 'up' : 'down') + '">' + ((eR - lyRate) * 100 >= 0 ? '+' : '−') + Math.abs((eR - lyRate) * 100).toFixed(1) + '%p</b>' : '-']] : []));
+      const tb2 = table(['같은 기간 (1~' + up + '일)', '전년', '올해', '증감'], [
+        ['내판', W(lyS.n), W(d.cum.n), ch(d.cum.n, lyS.n)], ['외판', W(lyS.o), W(d.cum.o), ch(d.cum.o, lyS.o)], ['<b>합계</b>', W(lySt), '<b>' + W(d.cum.total) + '</b>', '<b>' + ch(d.cum.total, lySt) + '</b>']]
+        .concat(hasG ? [['매총이익', W(lyGS.n + lyGS.o), W(gNow), ch(gNow, lyGS.n + lyGS.o)], ['매총율', pr((lyGS.sn + lyGS.so) ? (lyGS.n + lyGS.o) / (lyGS.sn + lyGS.so) : null), pr(sNow ? gNow / sNow : null), '']] : []));
+      S2.push({ t: '1-3. 전년 ' + LYm + ' 대비', say: s13,
+        big: big('전년 ' + LYm + ' 마감', W(lyFt), '내판 ' + W(lyF.n) + ' · 외판 ' + W(lyF.o)) + big('올해 마감 예상', eT != null ? W(eT) : '-', eT != null ? '전년 대비 ' + ch(eT, lyFt) : '', eT != null ? (eT >= lyFt ? 'ok' : 'bad') : '') +
+          (hasG ? big('전년 매총이익 · 매총율', W(lyGt), '매총율 ' + pr(lyRate)) + big('올해 예상 매총', eG != null ? W(eG) : '-', eG != null ? '매총율 ' + pr(eR) + ' · 전년 대비 ' + ch(eG, lyGt) : '', eG != null ? (eG >= lyGt ? 'ok' : 'bad') : '') : big('전년 매총', '-', '전년 상세 자료가 없어요')),
+        body: tb + tb2 + (hasG ? '' : '<p class="muted" style="margin:6px 0 0">전년 ' + LYm + ' 상세 판매 내역(마진)이 없어 매총이익 · 매총율은 비교하지 못했어요. 업로드 탭에 그달 POS 판매 내역을 올리면 나와요.</p>') +
+          '<p class="muted" style="margin:6px 0 0">전년 금액도 VAT 별도 실매출 · 매총이익은 POS 마진금액 기준. 올해 마감 예상은 1번 · 1-2와 같은 값.</p>' });
+    }
+  }
+
   /* 2. 외판 = 관계사 + 점 B2B */
   const aS = sum(aff, 's'), bS = sum(b2b, 's'), aR = sum(aff, 'r'), bR = sum(b2b, 'r'), aP = pAmt(P.aff), bP = pAmt(P.b2b), oS = aS + bS;
   // 외판 중 수주팀 김선재 담당분 (거래처 상관없이)
