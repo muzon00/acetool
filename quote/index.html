@@ -1381,6 +1381,13 @@ const TWO = (() => {
     const site = below(/^현장명$/, h), vendor = (() => { const f = find(/^(사업자명|상호|상호명|업체명|회사명)$/, 0, h); return f ? (rows[f[0]].slice(f[1] + 1).find(x => x) || '') : ''; })(), tot = cellNum(below(/^공급가액$/, h));
     return { lines, warn, sum, site, vendor, tot: tot === null || Number.isNaN(tot) ? null : tot };
   }
+  /* 제목 줄이 있으면 제목대로, 없으면 줄마다 수량 × 단가 = 공급가액 검산으로 찾아 넣음 (엑셀에서 품목 줄만 복사한 경우 등) */
+  function smartParse(txt) {
+    const PQ = parseQuote(txt); if (!PQ.err) return PQ;
+    const O = parseOcr(String(txt || '').replace(/\t/g, '  '));
+    if (!O.rows.length) return /\t/.test(txt) ? { err: '품목 줄을 찾지 못했어요. 제목 줄(제품명 · 수량 · 단가)까지 함께 복사하거나, 줄마다 수량 · 단가 · 공급가액이 있는지 확인해 주세요.' } : PQ;
+    const M = mergeOcr(O, null); M.ocr = false; M.headless = true; return M;
+  }
   function applyImport(R0) {
     const box = $('tImpMsg');
     if (R0.err) { box.innerHTML = '<div class="err">' + esc(R0.err) + '</div>'; return false; }
@@ -1418,17 +1425,20 @@ const TWO = (() => {
     const pFirst = hdr && hdr.search(/단가/) < hdr.search(/수량/);
     String(text || '').replace(/\r/g, '').split('\n').forEach(raw => {
       let ln = raw.replace(/[|｜ㅣ\]\[「」、。“”‘’]/g, ' ').replace(/\s+/g, ' ').trim(); if (!ln) return;
-      if (/^[^가-힣]{0,4}[총종합]\s*계(?!금액)|공급가[액엑]|합계금액/.test(ln)) { if (/^[^가-힣]{0,4}[총종합]\s*계(?!금액)/.test(ln)) { const ns = ln.split(' ').map(toN).filter(n => n >= 1000); if (ns.length) tot = ns[0]; } return; }
+      if (/^[^가-힣]{0,4}([총종합]\s*계(?!금액)|계(?=\s|$))|공급가[액엑]|합계금액/.test(ln)) { if (/^[^가-힣]{0,4}([총종합]\s*계(?!금액)|계(?=\s|$))/.test(ln)) { const ns = ln.split(' ').map(toN).filter(n => n >= 1000); if (ns.length) tot = ns[0]; } return; }
       ln = ln.replace(/\(?(\d+\.\d)[1lImT]\)/g, '($1T)');
       const tk = ln.split(' '), nums = [];
       tk.forEach((t, i) => { const n = toN(t.replace(/원$/, '')); if (!Number.isNaN(n)) nums.push({ i, n }); });
       let hit = null;
       const ok = (q, p, am) => q > 0 && p >= 10 && Number.isInteger(p) && Math.abs(Math.round(q * 100) * p / 100 - am) < 1;
-      for (let a = 0; a + 2 < nums.length && !hit; a++) {
-        for (const [b, c] of [[a + 1, a + 2], [a + 1, a + 3]]) {
+      /* 바로 붙은 세 칸(수량 · 단가 · 금액)을 먼저 찾고, 없을 때만 한 칸 건너뛴 것 (제품명 속 숫자 예: '운반비 10000'을 수량으로 읽지 않게) */
+      for (const gap of [2, 3]) {
+        for (let a = 0; a + 2 < nums.length && !hit; a++) {
+          const b = a + 1, c = a + gap;
           if (!nums[c]) continue; const x = nums[a].n, y = nums[b].n, am = nums[c].n;
-          if (pFirst ? ok(y, x, am) : ok(x, y, am)) { hit = { qi: nums[a].i, q: pFirst ? y : x, p: pFirst ? x : y, a: am }; break; }
+          if (pFirst ? ok(y, x, am) : ok(x, y, am)) hit = { qi: nums[a].i, q: pFirst ? y : x, p: pFirst ? x : y, a: am };
         }
+        if (hit) break;
       }
       if (!hit) {
         /* 단가 글자가 흐린 줄: 공급가액 다음 칸이 부가세(10%)나 부가세 포함(110%)이면 단가 = 공급가액 ÷ 수량 */
@@ -1447,7 +1457,9 @@ const TWO = (() => {
       const fi = head.findIndex(t => /\d|[*×xX]/.test(t) && !/^[가-힣]+$/.test(t));
       const n = (fi > 0 ? head.slice(0, fi) : head).join(' ').replace(/^[^가-힣A-Za-z0-9]+/, ''), sp = fi > 0 ? head.slice(fi).join(' ') : '';
       if (!n) { skipped.push(ln); return; }
-      rows.push({ no, code, n, sp, u, q: hit.q, p: hit.p, guessed: !!hit.guessed });
+      /* 관경 'D900' 의 D를 0으로 읽는 경우: 맨 앞 0 + 숫자 3~4자리(뒤에 * · 용 · 끝) 는 D로 */
+      const sp2 = sp.replace(/(^|\s)0(?=\d{3,4}(\*|용|$|\s))/g, '$1D');
+      rows.push({ no, code, n, sp: sp2, u, q: hit.q, p: hit.p, guessed: !!hit.guessed });
     });
     return { rows, skipped, tot };
   }
@@ -1589,16 +1601,20 @@ const TWO = (() => {
     const txt = cd.getData('text') || ''; if (!txt.trim()) return; e.preventDefault();
     const PQ = parseQuote(txt);
     /* 제목 줄이 없는 글(예: 맥에서 그림 속 글자를 복사한 것)은 줄마다 검산으로 읽기 */
-    applyImport(PQ.err && !/\t/.test(txt) ? mergeOcr(parseOcr(txt), null) : PQ);
+    applyImport(PQ.err ? smartParse(txt) : PQ);
   });
-  $('tImp').addEventListener('input', () => { const v = $('tImp').value; if (/\t/.test(v) && /\n/.test(v)) applyImport(parseQuote(v)); });
+  $('tImp').addEventListener('input', () => { const v = $('tImp').value; if (/\t/.test(v) && /\n/.test(v)) applyImport(smartParse(v)); });
   /* 엑셀에서 여러 칸을 복사해 붙여넣기: 견적서 제목 줄이 있으면 통째로 불러오기, 아니면 누른 칸부터 오른쪽·아래로 채움 */
   $('tSheet').addEventListener('paste', e => {
     const t = e.target; if (!t.dataset.l) return;
-    const txt = (e.clipboardData || window.clipboardData).getData('text') || '';
+    const cd = e.clipboardData || window.clipboardData;
+    // 표 칸에 캡처 그림을 붙여도 그림 읽기로
+    const img = cd && cd.items ? [...cd.items].find(it => it.kind === 'file' && /^image\//.test(it.type)) : null;
+    if (img) { e.preventDefault(); const f = img.getAsFile(); if (f) { $('tImpMsg').scrollIntoView({ block: 'center', behavior: 'smooth' }); readImage(f); } return; }
+    const txt = cd.getData('text') || '';
     if (!/[\t\n]/.test(txt.replace(/\s+$/, ''))) return;
     e.preventDefault();
-    const PQ = parseQuote(txt); if (!PQ.err && PQ.lines.length) { applyImport(PQ); return; }
+    const PQ = smartParse(txt); if (!PQ.err && PQ.lines.length) { applyImport(PQ); return; }
     const rows = txt.replace(/\r/g, '').replace(/\n+$/, '').split('\n').map(r => r.split('\t'));
     const keys = cols().filter(d => d[4] === 'in').map(d => d[0]), c0 = keys.indexOf(t.dataset.l), r0 = +t.closest('tr').dataset.i;
     if (c0 < 0) return;
