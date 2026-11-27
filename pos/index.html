@@ -2956,7 +2956,8 @@ function renderHome(d) {
   } else {
     k += kpi('현재 일평균', won(d.avgPerDay), '데이터가 있는 ' + d.daysWithData + '일 기준');
   }
-  if (fb) k += kpi('예상 마감(기본)', won(fb.total), (d.target ? '목표 대비 ' + pct(fb.rate) + ' · ' : '') + '보수 ' + (d.forecast['보수'] ? eok(d.forecast['보수'].total) : '-') + ' · 낙관 ' + (d.forecast['낙관'] ? eok(d.forecast['낙관'].total) : '-'));
+  const cE = closeEst(d, '기본'), cL = closeEst(d, '보수'), cH = closeEst(d, '낙관');
+  if (fb && cE) k += kpi('예상 마감(기본)', won(cE.total), (d.target ? '목표 대비 ' + pct(cE.rate) + ' · ' : '') + (cE.plan ? '외판 예정 ' + eok(cE.plan) + ' 반영 · ' : '') + '보수 ' + (cL ? eok(cL.total) : '-') + ' · 낙관 ' + (cH ? eok(cH.total) : '-'));
   if (d.prev.same) { const r = (d.cum.total / d.prev.same - 1) * 100; k += kpi('전월 같은 기간 대비', (r >= 0 ? '+' : '−') + Math.abs(r).toFixed(1) + '%', '전월 같은 기간 ' + eok(d.prev.same)); }
   {
     const ly = d.ly, lyL = Math.floor(ly.ym / 100) + '년 ' + (ly.ym % 100) + '월';
@@ -3041,9 +3042,19 @@ async function goHomeSec(ym, sec) {
   setTimeout(() => { const el = [...document.querySelectorAll('#homeBody [data-sec]')].find(x => x.dataset.sec === sec); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 900);
 }
 
+/* 예상 마감 매출 (홈 목표 진행 칸과 같은 방식 — 모든 화면이 이 값을 씀):
+   남은 날짜에 예정 매출 건이 있으면 외판 = 누적 외판 + 예정 매출 (외판 추세 대신), 내판 = 추세 예상.
+   예정 건이 없으면 추세 예상(내판 · 외판 모두) 그대로. planAmt를 주면 그 금액을 예정 매출로 씀 */
+function closeEst(d, k, planAmt) {
+  const f = d.forecast && d.forecast[k]; if (!f) return null;
+  const pa = planAmt !== undefined ? planAmt : (d.ended ? 0 : (planAgg(d.ym, d.lastDay).amt || 0));
+  if (!pa) return { n: f.n, o: f.o, total: f.total, plan: 0, rate: d.target ? f.total / d.target : null };
+  const n = Math.max(f.n, d.cum.n), o = d.cum.o + pa;
+  return { n, o, total: n + o, plan: pa, rate: d.target ? (n + o) / d.target : null };
+}
 /* 예상 마감 기준 마진: 지금까지 마진 + 남은 예상 매출(내판 · 외판)에 이번 달 지금까지의 내판 · 외판 마진율을 곱한 값 */
 function expMar(d, det, k) {
-  const f = d.forecast && d.forecast[k];
+  const f = closeEst(d, k);
   if (!f) return null;
   const rN = det.net.n ? det.mar.n / det.net.n : 0, rO = det.net.o ? det.mar.o / det.net.o : rN;
   const remN = Math.max(0, f.n - d.cum.n), remO = Math.max(0, f.o - d.cum.o);
@@ -3054,10 +3065,10 @@ function expMarHtml(d, det) {
   const b = expMar(d, det, '기본');
   if (!b) return '';
   const lo = expMar(d, det, '보수'), hi = expMar(d, det, '낙관');
-  const f = d.forecast, fl = f['보수'], fh = f['낙관'];
-  return '<br>예상 마감 매출(VAT 별도) <b>' + won(f['기본'].total) + '</b> → 예상 마진 <b>' + won(b.mar) + '</b> · 예상 마진율 <b>' + pct(b.rate) + '</b>' +
+  const fb = closeEst(d, '기본'), fl = closeEst(d, '보수'), fh = closeEst(d, '낙관');
+  return '<br>예상 마감 매출(VAT 별도) <b>' + won(fb.total) + '</b> → 예상 마진 <b>' + won(b.mar) + '</b> · 예상 마진율 <b>' + pct(b.rate) + '</b>' +
     (lo && hi && fl && fh ? '<br><small class="muted">보수: 매출 ' + eok(fl.total) + ' · 마진 ' + eok(lo.mar) + ' (' + pct(lo.rate) + ') ~ 낙관: 매출 ' + eok(fh.total) + ' · 마진 ' + eok(hi.mar) + ' (' + pct(hi.rate) + ')</small>' : '') +
-    '<br><small class="muted">지금 추세의 예상 마감 매출에 이번 달 내판 · 외판 마진율을 그대로 적용한 값</small>';
+    '<br><small class="muted">' + (fb.plan ? '내판은 지금 추세, 외판은 남은 예정 매출 ' + eok(fb.plan) + '로 잡은 예상 마감(위 목표 진행의 예상 마감과 같음)에' : '지금 추세의 예상 마감 매출에') + ' 이번 달 내판 · 외판 마진율을 그대로 적용한 값</small>';
 }
 /* 홈 화면의 관리자 전용 칸: 상세 분석 · 시공 분석 (보기 권한 계정에는 아예 그리지 않음, 서버 규칙으로도 막힘) */
 async function homeAdminParts(d) {
@@ -3128,10 +3139,11 @@ function renderAnalysis(d, det, el) {
 
   if (d.forecast) {
     const rows = ['보수', '기본', '낙관'].map(key => {
-      const f = d.forecast[key]; if (!f) return [key, '-', '-', '-', '-'];
+      const f = closeEst(d, key); if (!f) return [key, '-', '-', '-', '-'];
       return [key, eok(f.n), eok(f.o), '<b>' + eok(f.total) + '</b>', f.rate === null ? '-' : pct(f.rate)];
     });
-    h += '<div class="card"><h2>예상 마감금액</h2>' + table(['시나리오', '내판', '외판', '합계', '목표 대비'], rows) +
+    const cP = closeEst(d, '기본');
+    h += '<div class="card"><h2>예상 마감금액</h2>' + table(['시나리오', '내판', '외판', '합계', '목표 대비'], rows) + (cP && cP.plan ? '<p class="muted" style="margin:8px 0 0">외판은 남은 날짜의 <b>예정 매출 ' + won(cP.plan) + '</b>을 누적에 더한 값이에요 (홈 「목표 진행」의 예상 마감과 같은 계산). 예정 건이 없으면 외판도 아래 추세로 계산해요.</p>' : '') +
       '<p class="muted" style="margin:8px 0 0">현재 누적에 남은 영업일(평일 ' + d.remainTypes['평일'] + '일, 토 ' + d.remainTypes['토'] + '일, 일 ' + d.remainTypes['일'] + '일)의 요일별 평균 매출을 더한 추정치입니다. 보수 = 최근 6개월(외판은 매출이 큰 상위 5% 일자 제외), 기본 = 최근 6개월, 낙관 = 최근 3개월 평균입니다. 외판 대형 건은 반영되지 않습니다.</p></div>';
   }
 
@@ -6915,10 +6927,13 @@ function renderVc() {
   const d = buildSummary(S.daily, S.targets, (S.settings || {}).holidays || [], ym, today, [], (S.settings || {}).smsVat);
   const tg = (S.targets || {})[ym] || {}, F = d.forecast || {}, fb = F['기본'], lo = F['보수'], hi = F['낙관'];
   const T = d.target || tg.total || 0;
-  const plans = (S.plans || []).filter(p => p.st === 'open' && ymOf(p.d) === ym);
+  // 예정 매출: 홈 목표 진행과 같게 '자료 마지막 날 다음부터' 예정일인 열린 건만 (예정일이 지난 건은 따로 표시)
+  const openM = (S.plans || []).filter(p => p.st === 'open' && ymOf(p.d) === ym);
+  const plans = d.ended ? [] : openM.filter(p => dayOf(p.d) > (d.lastDay || 0)), late = openM.filter(p => !plans.includes(p));
   const pAmt = a => a.reduce((t, p) => t + (Number(p.amt) || 0), 0);
   const P = { aff: plans.filter(p => vcIsAff(p.cust)), b2b: plans.filter(p => !vcIsAff(p.cust)) };
   const pO = pAmt(plans);
+  const E = { b: closeEst(d, '기본', pO), lo: closeEst(d, '보수', pO), hi: closeEst(d, '낙관', pO) };
   const cs = Object.values(vcCust(ym)).sort((a, b) => b.s - a.s);
   const aff = cs.filter(c => vcIsAff(c.name)), b2b = cs.filter(c => !vcIsAff(c.name));
   const sum = (a, k) => a.reduce((t, c) => t + c[k], 0);
@@ -6929,18 +6944,20 @@ function renderVc() {
   const S2 = [];   // 섹션: { t, say[], big, body, slide }
 
   /* 1. 내판 · 외판 마감 예상 */
-  const fT = fb ? fb.total : null, expT = fT != null ? fT + pO : null;
-  const gap = expT != null && T ? expT - T : null;
+  const expT = E.b ? E.b.total : null, gap = expT != null && T ? expT - T : null;
   const s1 = [];
   s1.push(Mm + '은 <b>' + (d.lastDay || 0) + '일까지 ' + W(d.cum.total) + '</b>' + (T ? ', 목표 ' + W(T) + '의 <b>' + pct(d.cum.total / T, 0) + '</b>' : '') + '입니다. 내판 ' + W(d.cum.n) + ', 외판 ' + W(d.cum.o) + '.');
-  if (fT != null) s1.push('지금 추세면 <b>' + W(fT) + '</b>으로 마감하고, 남은 예정 매출 ' + W(pO) + '을 더하면 <b>' + W(expT) + '</b>' + (T ? '(목표의 ' + pct(expT / T, 0) + ')' : '') + '입니다.');
+  if (E.b) s1.push('마감 예상은 <b>' + W(expT) + '</b>' + (T ? '(목표의 ' + pct(expT / T, 0) + ')' : '') + '입니다 — 내판은 지금 추세로 ' + W(E.b.n) + ', 외판은 ' + (pO ? '남은 예정 매출 ' + W(pO) + '을 더해 ' : '지금 추세로 ') + W(E.b.o) + '.');
   if (gap != null) s1.push(gap >= 0 ? '목표를 <b>' + W(gap) + ' 넘길</b> 것으로 봅니다.' : '목표까지 <b>' + W(-gap) + ' 부족</b>합니다 — 남은 기간 추가 매출이 필요합니다.');
-  const r1 = (lab, t, cum, f, pl) => { const e = f != null ? f + pl : null; return ['<b>' + lab + '</b>', t ? W(t) : '-', W(cum) + (t ? ' <small class="muted">(' + pct(cum / t, 0) + ')</small>' : ''), f != null ? W(f) : '-', pl ? W(pl) : '-', e != null ? '<b>' + W(e) + '</b>' + (t ? ' <small class="' + (e >= t ? 'up' : 'down') + '">' + (e >= t ? '+' + W(e - t) : '−' + W(t - e)) + '</small>' : '') : '-']; };
-  const t1 = table(['구분', '목표', '누적 실적', '예상 마감', '＋ 예정', '마감 예상 (목표 대비)'], [
-    r1('내판', tg.n, d.cum.n, fb ? fb.n : null, 0), r1('외판', tg.o, d.cum.o, fb ? fb.o : null, pO), r1('합계', T, d.cum.total, fT, pO)]);
+  const r1 = (lab, t, cum, e, how) => ['<b>' + lab + '</b>', t ? W(t) : '-', W(cum) + (t ? ' <small class="muted">(' + pct(cum / t, 0) + ')</small>' : ''), e != null ? W(Math.max(0, e - cum)) + '<br><small class="muted">' + how + '</small>' : '-',
+    e != null ? '<b>' + W(e) + '</b>' + (t ? ' <small class="' + (e >= t ? 'up' : 'down') + '">' + (e >= t ? '+' + W(e - t) : '−' + W(t - e)) + '</small>' : '') : '-'];
+  const t1 = table(['구분', '목표', '누적 실적', '남은 기간 예상', '마감 예상 (목표 대비)'], [
+    r1('내판', tg.n, d.cum.n, E.b ? E.b.n : null, '지금 추세'), r1('외판', tg.o, d.cum.o, E.b ? E.b.o : null, pO ? '예정 매출 ' + plans.length + '건' : '지금 추세'), r1('합계', T, d.cum.total, expT, '')]);
   S2.push({ t: '1. 내판 · 외판 마감 예상', say: s1,
-    big: big(Mm + ' 누적', W(d.cum.total), T ? '목표의 ' + pct(d.cum.total / T, 0) : '') + big('추세 마감', fT != null ? W(fT) : '-', lo && hi ? '범위 ' + eok(lo.total) + ' ~ ' + eok(hi.total) : '') + big('＋ 예정 매출', W(pO), plans.length + '건') + big('마감 예상', expT != null ? W(expT) : '-', gap != null ? (gap >= 0 ? '목표 +' + W(gap) : '목표까지 ' + W(-gap)) : '', gap != null ? (gap >= 0 ? 'ok' : 'bad') : ''),
-    body: t1 + '<p class="muted" style="margin:6px 0 0">추세 = 남은 영업일의 요일별 평균. 예정 매출(「예정 매출」 탭의 이번 달 <b>예정</b> 건)은 외판에 더했어요. 보수 ~ 낙관: ' + (lo && hi ? W(lo.total) + ' ~ ' + W(hi.total) : '-') + '</p>' });
+    big: big(Mm + ' 누적', W(d.cum.total), T ? '목표의 ' + pct(d.cum.total / T, 0) : '') + big('내판 마감 예상', E.b ? W(E.b.n) : '-', tg.n && E.b ? '목표의 ' + pct(E.b.n / tg.n, 0) : '지금 추세') + big('외판 마감 예상', E.b ? W(E.b.o) : '-', pO ? '누적 + 예정 ' + plans.length + '건' : '지금 추세') +
+      big('마감 예상', expT != null ? W(expT) : '-', gap != null ? (gap >= 0 ? '목표 +' + W(gap) : '목표까지 ' + W(-gap)) : '', gap != null ? (gap >= 0 ? 'ok' : 'bad') : ''),
+    body: t1 + (late.length ? '<p class="muted" style="margin:6px 0 0">⚠️ 예정일이 지났는데 아직 POS에 안 잡힌 예정 건 ' + late.length + '건 · ' + W(pAmt(late)) + '은 마감 예상에 넣지 않았어요 (「예정 매출」 탭에서 확인).</p>' : '') +
+      '<p class="muted" style="margin:6px 0 0">홈 화면 「목표 진행」의 예상 마감과 같은 계산: 내판 = 남은 영업일의 요일별 평균(추세), 외판 = ' + (pO ? '누적 + 남은 예정 매출' : '추세 (남은 예정 매출이 없어서)') + '. 보수 ~ 낙관: ' + (E.lo && E.hi ? W(E.lo.total) + ' ~ ' + W(E.hi.total) : '-') + '</p>' });
 
   /* 2. 외판 = 관계사 + 점 B2B */
   const aS = sum(aff, 's'), bS = sum(b2b, 's'), aR = sum(aff, 'r'), bR = sum(b2b, 'r'), aP = pAmt(P.aff), bP = pAmt(P.b2b), oS = aS + bS;
