@@ -792,6 +792,30 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
 }
 @media print { .wrap { padding-bottom: 0; } }
 @media print { .prefs, .toolbar, .tabsbar, .topbar .userbox, #pageRefresh, .secnav, .site-foot { display: none !important; } .topbar, .sticky-head { position: static; } }
+/* 🎥 마감 회의 인쇄: 장수를 줄이는 촘촘한 모양 (A4 세로, 여백 7mm, 작은 글씨 · 카드 4칸 · 표 줄 간격 좁게, 카드가 페이지 사이에서 나뉘어도 됨) */
+@page vcp { size: A4 portrait; margin: 7mm; }
+@media print {
+  body.vc-printing { page: vcp; background: #fff !important; font-size: 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body.vc-printing header.topbar, body.vc-printing .site-foot, body.vc-printing .fab-bar { display: none !important; }
+  html:has(body.vc-printing), body.vc-printing .wrap, body.vc-printing #v-admin, body.vc-printing #a-vc { background: #fff !important; }
+  body.vc-printing .wrap, body.vc-printing main, body.vc-printing #v-admin { max-width: none !important; width: auto !important; padding: 0 !important; margin: 0 !important; }
+  body.vc-printing #a-vc .card { padding: 5px 8px !important; margin: 0 0 5px !important; border: 1px solid #c9ced6 !important; border-radius: 6px !important; box-shadow: none !important; break-inside: auto !important; }
+  body.vc-printing #a-vc h2 { font-size: 12.5px !important; margin: 0 0 3px !important; break-after: avoid; }
+  body.vc-printing #a-vc h3.ea-h { font-size: 11px !important; margin: 3px 0 2px !important; }
+  body.vc-printing #a-vc .mt-say { font-size: 10px; line-height: 1.4; margin: 0; padding-left: 1.3em; }
+  body.vc-printing #a-vc .vc-say { padding: 3px 8px !important; margin: 0 0 4px !important; line-height: 1.4; font-size: 9.5px; border-radius: 6px; }
+  body.vc-printing #a-vc .vc-say-h { font-size: 9px; } body.vc-printing #a-vc .vc-say ul { margin: 1px 0 0; }
+  body.vc-printing #a-vc .vc-bigs { grid-template-columns: repeat(4, 1fr) !important; gap: 4px !important; margin: 0 0 4px !important; }
+  body.vc-printing #a-vc .vc-big { padding: 3px 6px !important; border-radius: 6px !important; }
+  body.vc-printing #a-vc .vc-big b { font-size: 12.5px !important; line-height: 1.25; } body.vc-printing #a-vc .vc-big span, body.vc-printing #a-vc .vc-big small { font-size: 8.5px !important; }
+  body.vc-printing #a-vc .scroll { overflow: visible !important; }
+  body.vc-printing #a-vc table { font-size: 9px !important; width: 100%; } body.vc-printing #a-vc th, body.vc-printing #a-vc td { padding: 1.5px 4px !important; line-height: 1.3; }
+  body.vc-printing #a-vc tr { break-inside: avoid; } body.vc-printing #a-vc td small, body.vc-printing #a-vc td br + small { font-size: 8px; }
+  body.vc-printing #a-vc .vc-bars { gap: 1px !important; margin: 3px 0 !important; } body.vc-printing #a-vc .vc-b { font-size: 8.5px; grid-template-columns: 28px 1fr 100px !important; } body.vc-printing #a-vc .vc-b i { height: 7px !important; }
+  body.vc-printing #a-vc p.muted { font-size: 8.5px !important; margin: 2px 0 0 !important; line-height: 1.35; }
+  body.vc-printing #a-vc details > summary { font-size: 8.5px; margin: 1px 0; }
+  body.vc-printing #a-vc .legend { font-size: 8.5px; margin: 0 !important; }
+}
 
 /* 큰 모니터(1800px 넘는 화면)에서는 글씨 · 버튼을 조금 크게 */
 @media screen and (min-width: 1800px) { html { zoom: 1.12; --z: 1.12; } }
@@ -7105,7 +7129,8 @@ function renderVc() {
     const m = Object.assign({}, VC.sj || {}); delete m[ym];
     try { await setDoc(doc(db, C.config, 'sujoo'), { m, at: serverTimestamp() }); VC.sj = m; renderVc(); toast('지웠어요'); } catch (e) { toast('지우지 못했어요: ' + errMsg(e)); }
   });
-  $('vcPrint').addEventListener('click', () => { document.body.classList.add('mt-printing'); setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('mt-printing'), 500); }, 50); });
+  // 인쇄: 종이를 아끼게 촘촘한 인쇄 모양(vc-printing) — 내용은 화면과 같음
+  $('vcPrint').addEventListener('click', () => { document.body.classList.add('mt-printing', 'vc-printing'); setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('mt-printing', 'vc-printing'), 500); }, 50); });
   el.querySelectorAll('[data-vcsw]').forEach(b => b.addEventListener('click', async () => {
     const name = b.dataset.vcsw, k = vcKey(name), to = !vcIsAff(name);
     VC.ov = Object.assign({}, VC.ov, { [k]: to }); renderVc();
