@@ -7024,6 +7024,28 @@ function renderVc() {
     body: t1 + (late.length ? '<p class="muted" style="margin:6px 0 0">⚠️ 예정일이 지났는데 아직 POS에 안 잡힌 예정 건 ' + late.length + '건 · ' + W(pAmt(late)) + '은 마감 예상에 넣지 않았어요 (「예정 매출」 탭에서 확인).</p>' : '') +
       '<p class="muted" style="margin:6px 0 0">홈 화면 「목표 진행」의 예상 마감과 같은 계산: 내판 = 남은 영업일의 요일별 평균(추세), 외판 = ' + (pO ? '누적 + 남은 예정 매출' : '추세 (남은 예정 매출이 없어서)') + '. 보수 ~ 낙관: ' + (E.lo && E.hi ? W(E.lo.total) + ' ~ ' + W(E.hi.total) : '-') + '</p>' });
 
+  /* 1-2. 매총액 · 매총율 마감 예상 (지금까지 매총 + 남은 예상 매출 × 이번 달 내판 · 외판 매총율 — 홈의 예상 마진과 같은 계산) */
+  const det = buildDetail(S.detail || {}, ym, d.lastDay);
+  const rN = det.net.n ? det.mar.n / det.net.n : 0, rO = det.net.o ? det.mar.o / det.net.o : rN;
+  const gpE = e => { if (!e) return null; const remN = Math.max(0, e.n - d.cum.n), remO = Math.max(0, e.o - d.cum.o), sN = det.net.n + remN, sO = det.net.o + remO, gN = det.mar.n + remN * rN, gO = det.mar.o + remO * rO;
+    return { sN, sO, gN, gO, s: sN + sO, g: gN + gO, rN: sN ? gN / sN : null, rO: sO ? gO / sO : null, r: sN + sO ? (gN + gO) / (sN + sO) : null }; };
+  const G = { b: gpE(E.b), lo: gpE(E.lo), hi: gpE(E.hi) }, gNow = det.mar.n + det.mar.o, sNow = det.net.n + det.net.o;
+  const gpT = gpTarget(tg), grT = tg && tg.gr !== null && tg.gr !== undefined ? tg.gr : null;
+  if (sNow) {
+    const pr = x => x === null || x === undefined ? '-' : pct(x);
+    const s12 = [Mm + ' 지금까지 매총액 <b>' + W(gNow) + '</b>, 매총율 <b>' + pr(gNow / sNow) + '</b>입니다 (내판 ' + pr(det.net.n ? det.mar.n / det.net.n : null) + ', 외판 ' + pr(det.net.o ? det.mar.o / det.net.o : null) + ').'];
+    if (G.b) s12.unshift('마감 예상 매총액은 <b>' + W(G.b.g) + '</b>, 매총율 <b>' + pr(G.b.r) + '</b>입니다' + (gpT ? ' — 목표 매총 ' + W(gpT) + '의 ' + pct(G.b.g / gpT, 0) + (G.b.g >= gpT ? '(달성 예상)' : ', ' + W(gpT - G.b.g) + ' 부족') : '') + (grT !== null ? ' · 목표 매총율 ' + grT + '%' : '') + '.');
+    const gRow = (lab, sC, gC, sE, gE, tG) => ['<b>' + lab + '</b>', W(sC), W(gC), pr(sC ? gC / sC : null), sE != null ? W(sE) : '-', gE != null ? '<b>' + W(gE) + '</b>' : '-', gE != null && sE ? '<b>' + pr(gE / sE) + '</b>' : '-', tG ? W(tG) + ' <small class="' + (gE >= tG ? 'up' : 'down') + '">' + (gE >= tG ? '+' + W(gE - tG) : '−' + W(tG - gE)) + '</small>' : '-'];
+    S2.push({ t: '1-2. 매총액 · 매총율 마감 예상', say: s12,
+      big: big(Mm + ' 매총액 (지금까지)', W(gNow), '매총율 ' + pr(gNow / sNow)) + big('마감 예상 매총액', G.b ? W(G.b.g) : '-', gpT && G.b ? '목표 ' + W(gpT) + ' 대비 ' + pct(G.b.g / gpT, 0) : (G.lo && G.hi ? '범위 ' + eok(G.lo.g) + ' ~ ' + eok(G.hi.g) : ''), gpT && G.b ? (G.b.g >= gpT ? 'ok' : 'bad') : '') +
+        big('마감 예상 매총율', G.b ? pr(G.b.r) : '-', grT !== null ? '목표 ' + grT + '%' : '내판 ' + pr(G.b && G.b.rN) + ' · 외판 ' + pr(G.b && G.b.rO)) + big('마감 예상 매출', E.b ? W(E.b.total) : '-', '1번과 같은 예상'),
+      body: table(['구분', '지금까지 매출', '매총액', '매총율', '마감 예상 매출', '예상 매총액', '예상 매총율', '목표 매총 대비'], [
+        gRow('내판', det.net.n, det.mar.n, G.b ? G.b.sN : null, G.b ? G.b.gN : null, null),
+        gRow('외판', det.net.o, det.mar.o, G.b ? G.b.sO : null, G.b ? G.b.gO : null, null),
+        gRow('합계', sNow, gNow, G.b ? G.b.s : null, G.b ? G.b.g : null, gpT)]) +
+        '<p class="muted" style="margin:6px 0 0">매총액 = 매출총이익(마진, VAT 별도). 예상 = 지금까지 매총 + 남은 예상 매출 × 이번 달 지금까지의 내판 · 외판 매총율. 보수 ~ 낙관 매총액: ' + (G.lo && G.hi ? W(G.lo.g) + ' (' + pr(G.lo.r) + ') ~ ' + W(G.hi.g) + ' (' + pr(G.hi.r) + ')' : '-') + '</p>' });
+  }
+
   /* 2. 외판 = 관계사 + 점 B2B */
   const aS = sum(aff, 's'), bS = sum(b2b, 's'), aR = sum(aff, 'r'), bR = sum(b2b, 'r'), aP = pAmt(P.aff), bP = pAmt(P.b2b), oS = aS + bS;
   // 외판 중 수주팀 김선재 담당분 (거래처 상관없이)
