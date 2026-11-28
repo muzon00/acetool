@@ -8,7 +8,19 @@
 <meta name="robots" content="noindex, nofollow">
 <title>전체 인테리어 견적 · ACE</title>
 <meta name="theme-color" content="#1d3557">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<script>/* 가벼운 모드: 구형 · 느린 태블릿이면 저절로 켬 (맨 위 🐢 버튼으로 켜고 끔, 기기마다 기억)
+   켜지면: 웹 글꼴(Pretendard, 한글 조각 파일 수십 개) 대신 기기 글꼴 · 그림자 · 움직임 효과 없음 · 상품 카드 24장씩 */
+(function () {
+  var v = null; try { v = localStorage.getItem('int.lite'); } catch (e) { }
+  var n = navigator, ua = n.userAgent || '';
+  var slow = (n.deviceMemory && n.deviceMemory <= 3) || (n.hardwareConcurrency && n.hardwareConcurrency <= 4) || /Android [4-9]\.|CPU OS (9|1[0-3])_/.test(ua);
+  var lite = v === '1' || (v !== '0' && !!slow);
+  window.LITE = lite; window.LITE_AUTO = v === null;
+  if (lite) document.documentElement.className += ' lite';
+  else { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css'; document.head.appendChild(l); }
+})();
+function liteToggle() { try { localStorage.setItem('int.lite', window.LITE ? '0' : '1'); } catch (e) { } location.reload(); }
+</script>
 <style>
 :root { --bg: #eef1f5; --surface: #fff; --surface2: #f6f8fb; --line: #dfe4ec; --ink: #172033; --ink2: #4d586b; --ink3: #8a94a6; --navy: #1d3557; --red: #d71920; --ok: #1f7a4d; --warn: #b26a00; --r: 14px; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -160,6 +172,13 @@ input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
 @media screen and (min-width: 1800px) { html { zoom: 1.12; --z: 1.12; } }
 @media screen and (min-width: 2200px) { html { zoom: 1.3; --z: 1.3; } }
 @media screen and (min-width: 3000px) { html { zoom: 1.6; --z: 1.6; } }
+/* ===== 🐢 가벼운 모드 (구형 태블릿) ===== */
+html.lite body { font-family: -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif; }
+html.lite *, html.lite *::before, html.lite *::after { box-shadow: none !important; text-shadow: none !important; transition: none !important; animation: none !important; }
+html.lite .pcard:active { transform: none; }
+html.lite table.xg td:nth-child(1), html.lite table.xg th:nth-child(1) { box-shadow: 1px 0 0 #d5dbe4 !important; }
+.litebtn { border: 1px solid rgba(255,255,255,.35) !important; background: rgba(255,255,255,.1) !important; color: #fff !important; }
+html.lite .litebtn { background: #fff1c2 !important; color: #6b4300 !important; border-color: #fff1c2 !important; }
 </style>
 <script>/* 화면 높이 = 실제 보이는 높이 (오래된 태블릿 브라우저는 100dvh를 몰라 화면 아래가 잘림 → 직접 재서 넣음) */
 (function () { function f() { document.documentElement.style.setProperty('--app-h', window.innerHeight + 'px'); } f(); window.addEventListener('resize', f); window.addEventListener('orientationchange', function () { setTimeout(f, 300); }); })();</script>
@@ -168,7 +187,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
 <div class="app">
   <div class="top">
     <div class="apptabs"><a href="index.html">🧾 상품 견적 (바코드)</a><a href="package.html" class="on">🏠 전체 인테리어 견적</a></div>
-    <button class="btn sm" id="cloudBtn" type="button" style="margin-left:auto;color:var(--navy)">☁️ 로그인 (기기 연동)</button>
+    <button class="btn sm litebtn" id="liteBtn" type="button" onclick="liteToggle()" title="구형 태블릿이면 켜 두세요 (글꼴 · 효과를 줄여 빨라져요)" style="margin-left:auto"></button><button class="btn sm" id="cloudBtn" type="button" style="color:var(--navy)">☁️ 로그인 (기기 연동)</button>
 
   </div>
   <div class="main" id="main"></div>
@@ -178,7 +197,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
 <div class="toast" id="toast" role="status"></div>
 <script>
 'use strict';
-const BUILD = '2026-11-10p1';
+const BUILD = '2026-11-28a';
 (function () {
   const check = async () => { if (document.querySelector('.modal')) return; try { const t = await (await fetch(location.pathname + '?b=' + Date.now(), { cache: 'no-store' })).text(); const m = t.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD) location.reload(); } catch (e) { } };
   addEventListener('focus', check); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); }); setInterval(check, 5 * 60 * 1000);
@@ -600,6 +619,9 @@ addEventListener('dragleave', e => { if (!hasF(e)) return; if (!--dd && $('dov')
 addEventListener('drop', e => { if (!hasF(e)) return; e.preventDefault(); dd = 0; if ($('dov')) $('dov').remove(); importFiles([...e.dataTransfer.files]); });
 render();
 </script>
-<script type="module" src="cloud.js?v=2"></script>
+<script>/* 클라우드 연동 도구(Firebase)는 화면을 먼저 그린 뒤 불러옴 — 구형 태블릿에서 처음 열 때 덜 멈춤 */
+window.addEventListener('load', function () { setTimeout(function () { var s = document.createElement('script'); s.type = 'module'; s.src = 'cloud.js?v=2'; document.body.appendChild(s); }, window.LITE ? 1200 : 300); });
+</script>
+<script>document.getElementById('liteBtn').textContent = window.LITE ? '🐢 가벼운 모드 켜짐' : '🐢 가벼운 모드';</script>
 </body>
 </html>

@@ -8,7 +8,19 @@
 <meta name="robots" content="noindex, nofollow">
 <title>인테리어 상담 견적 · ACE</title>
 <meta name="theme-color" content="#1d3557">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<script>/* 가벼운 모드: 구형 · 느린 태블릿이면 저절로 켬 (맨 위 🐢 버튼으로 켜고 끔, 기기마다 기억)
+   켜지면: 웹 글꼴(Pretendard, 한글 조각 파일 수십 개) 대신 기기 글꼴 · 그림자 · 움직임 효과 없음 · 상품 카드 24장씩 */
+(function () {
+  var v = null; try { v = localStorage.getItem('int.lite'); } catch (e) { }
+  var n = navigator, ua = n.userAgent || '';
+  var slow = (n.deviceMemory && n.deviceMemory <= 3) || (n.hardwareConcurrency && n.hardwareConcurrency <= 4) || /Android [4-9]\.|CPU OS (9|1[0-3])_/.test(ua);
+  var lite = v === '1' || (v !== '0' && !!slow);
+  window.LITE = lite; window.LITE_AUTO = v === null;
+  if (lite) document.documentElement.className += ' lite';
+  else { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css'; document.head.appendChild(l); }
+})();
+function liteToggle() { try { localStorage.setItem('int.lite', window.LITE ? '0' : '1'); } catch (e) { } location.reload(); }
+</script>
 <style>
 :root { --bg: #eef1f5; --surface: #fff; --surface2: #f6f8fb; --line: #dfe4ec; --ink: #172033; --ink2: #4d586b; --ink3: #8a94a6; --navy: #1d3557; --red: #d71920; --ok: #1f7a4d; --warn: #b26a00; --r: 14px; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -197,6 +209,13 @@ input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
 @media screen and (min-width: 1800px) { html { zoom: 1.12; --z: 1.12; } }
 @media screen and (min-width: 2200px) { html { zoom: 1.3; --z: 1.3; } }
 @media screen and (min-width: 3000px) { html { zoom: 1.6; --z: 1.6; } }
+/* ===== 🐢 가벼운 모드 (구형 태블릿) ===== */
+html.lite body { font-family: -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif; }
+html.lite *, html.lite *::before, html.lite *::after { box-shadow: none !important; text-shadow: none !important; transition: none !important; animation: none !important; }
+html.lite .pcard:active { transform: none; }
+html.lite table.xg td:nth-child(1), html.lite table.xg th:nth-child(1) { box-shadow: 1px 0 0 #d5dbe4 !important; }
+.litebtn { border: 1px solid rgba(255,255,255,.35) !important; background: rgba(255,255,255,.1) !important; color: #fff !important; }
+html.lite .litebtn { background: #fff1c2 !important; color: #6b4300 !important; border-color: #fff1c2 !important; }
 </style>
 <script>/* 화면 높이 = 실제 보이는 높이 (오래된 태블릿 브라우저는 100dvh를 몰라 화면 아래가 잘림 → 직접 재서 넣음) */
 (function () { function f() { document.documentElement.style.setProperty('--app-h', window.innerHeight + 'px'); } f(); window.addEventListener('resize', f); window.addEventListener('orientationchange', function () { setTimeout(f, 300); }); })();</script>
@@ -210,7 +229,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
   <div class="top">
     <div class="apptabs"><a href="index.html" class="on">🧾 상품 견적 (바코드)</a><a href="package.html">🏠 전체 인테리어 견적</a></div>
     <span class="note" id="dbNote"></span>
-    <button class="btn sm" id="cloudBtn" type="button" style="margin-left:auto">☁️ 로그인 (기기 연동)</button>
+    <button class="btn sm litebtn" id="liteBtn" type="button" onclick="liteToggle()" title="구형 태블릿이면 켜 두세요 (글꼴 · 효과를 줄여 빨라져요)" style="margin-left:auto"></button><button class="btn sm" id="cloudBtn" type="button">☁️ 로그인 (기기 연동)</button>
     <button class="btn sm" type="button" data-act="upload">📥 상품 · 판매 데이터 올리기</button>
   </div>
   <div class="split" id="split">
@@ -236,7 +255,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
 <div class="toast" id="toast" role="status"></div>
 <script>
 'use strict';
-const BUILD = '2026-11-10a';
+const BUILD = '2026-11-28a';
 /* 새 버전이 올라오면 저절로 새로 고침 (창으로 돌아올 때 · 5분마다). 고르는 창이나 스캔 화면을 쓰는 중이면 기다림 */
 (function () {
   const check = async () => {
@@ -325,16 +344,21 @@ function lineBc(l, h) {
   if (SAMPLE_C.has(l.c)) return '<div class="nobc">샘플 상품 · 바코드 없음<br><small>📥 실제 상품 목록을 올려 주세요</small></div>';
   if (!l.b) return '<div class="nobc">바코드 정보 없음<br><small>PMS를 올리면 나와요</small></div>';
   const p = PC[l.c], warn = !DB ? '' : !DB.bm ? 'PMS 미확인 — 전산 바코드 아님' : p && p.reg === false ? '전산 미등록 상품' : !p ? '지금 목록에 없는 상품' : '';
-  return BC.svg(l.b || l.c, { h }) + (warn ? '<div class="nobc">⚠ ' + warn + '</div>' : '');
+  return bcSvg(l.b || l.c, h) + (warn ? '<div class="nobc">⚠ ' + warn + '</div>' : '');
 }
 const products = () => PL;
+/* 바코드 그림은 한 번 그린 것을 다시 씀 (담을 때마다 견적서 전체 바코드를 새로 계산하던 것) */
+const BCM = new Map();
+function bcSvg(code, h) { const k = code + '|' + h; let v = BCM.get(k); if (v === undefined) { v = BC.svg(code, { h }); if (BCM.size > 400) BCM.clear(); BCM.set(k, v); } return v; }
 let SOLD = {};
 const reindex = () => {
   const base = DB ? DB.products : SAMPLE; let extra = []; SOLD = {};
   if (DB && DB.stock) { const have = new Set(base.map(p => p.c)); extra = Object.entries(DB.stock).filter(([c, x]) => !have.has(c) && x.n && (x.q > 0 || x.inb > 0)).map(([c, x]) => ({ c, b: '', n: x.n, s: x.s || '', m: '', p: x.p || 0, k: 0, q: 0, so: true }));
     Object.values(DB.soldTx || {}).forEach(([c, q]) => { SOLD[c] = (SOLD[c] || 0) + q; }); }
-  PL = base.concat(extra).map(view); PC = {}; PL.forEach(p => { PC[p.c] = p; });
+  PL = base.concat(extra).map(view); PC = {}; PL.forEach(p => { PC[p.c] = p; p._q = (p.n + p.c + (p.b || '') + (p.s || '')).toLowerCase().replace(/\s+/g, ''); });
+  MEMO = {};  /* 상품 목록이 바뀔 때만 다시 계산: 분류 순서 · 브랜드 개수 · 인기 기준 */
 };
+let MEMO = {};
 /* 매장 재고: 재고 파일 수량 − 기준 시각 뒤 판매 */
 function stockOf(c) { const x = DB && DB.stock && DB.stock[c]; if (!x) return null; const sold = Math.round((SOLD[c] || 0) * 100) / 100; return { q: x.q, est: Math.round((x.q - sold) * 100) / 100, sold, st: x.st, inb: x.inb || 0 }; }
 reindex();
@@ -376,19 +400,21 @@ function renderLeft() {
 
 /* ===== 오른쪽: 상품 · 자주 사는 구성 · 같이 산 상품 ===== */
 function catList() {
+  if (MEMO.cats) return MEMO.cats;
   const m = {}; products().forEach(p => { const s = p.s || '기타'; m[s] = (m[s] || 0) + (p.k || 1); });
-  return Object.entries(m).sort((a, b) => b[1] - a[1]).map(x => x[0]);
+  return (MEMO.cats = Object.entries(m).sort((a, b) => b[1] - a[1]).map(x => x[0]));
 }
 /* 브랜드 모아 보기: 이름으로 찾음 (플러스엣지 · 패키지 전용 코드 EG PKG) */
 const BRANDS = [['b:pe', '➕ 플러스엣지', /플러스\s*엣지|\+\s*EDGE/i], ['b:pkg', '📦 EG PKG', /^\s*(EDGE\s*)?EG\s*PKG/i]];
 const brandOf = k => BRANDS.find(b => b[0] === k);
 function visible() {
   const q = ST.q.trim().toLowerCase().replace(/\s+/g, ''), br = brandOf(ST.cat);
-  const L = products().filter(p => (!ST.instock || (stockOf(p.c) || {}).est > 0) && (ST.cat === 'all' || (br ? br[2].test(p.n) : (p.s || '기타') === ST.cat)) && (!q || (p.n + p.c + p.b + (p.s || '')).toLowerCase().replace(/\s+/g, '').includes(q)));
+  const L = products().filter(p => (!ST.instock || (stockOf(p.c) || {}).est > 0) && (ST.cat === 'all' || (br ? br[2].test(p.n) : (p.s || '기타') === ST.cat)) && (!q || p._q.includes(q)));
   if (br) { const order = catList(), rank = s => { const i = order.indexOf(s || '기타'); return i < 0 ? 999 : i; }; return L.sort((a, b) => rank(a.s) - rank(b.s) || (b.k || 0) - (a.k || 0) || a.n.localeCompare(b.n, 'ko')); }
   return L.sort((a, b) => (b.k || 0) - (a.k || 0) || a.n.localeCompare(b.n, 'ko'));
 }
-function hotCut() { const ks = products().map(p => p.k || 0).filter(Boolean).sort((a, b) => b - a); return ks.length >= 10 ? ks[Math.floor(ks.length * 0.05)] : Infinity; }
+function hotCut() { return MEMO.hot != null ? MEMO.hot : (MEMO.hot = hotCut0()); }
+function hotCut0() { const ks = products().map(p => p.k || 0).filter(Boolean).sort((a, b) => b - a); return ks.length >= 10 ? ks[Math.floor(ks.length * 0.05)] : Infinity; }
 /* 오른쪽 다시 그리기 — 오래된 태블릿에서 버벅이지 않게:
    ① 상품 카드는 처음 48장만 그리고 아래로 내리면 48장씩 더 (한 번에 300장 그리던 것이 느림의 대부분)
    ② 담기 · 수량 바꾸기는 카드 전체를 다시 그리지 않고 바뀐 카드의 숫자만 고침
@@ -408,13 +434,14 @@ function renderSide() {
   setHtml('CO', co.length ? '<div class="co"><div class="ch">🔗 ' + esc(PC[ST.last].n.slice(0, 24)) + ' — 같이 많이 산 상품<button type="button" data-act="coX" aria-label="닫기">✕</button></div><div class="cl">' +
     co.map(([c, n]) => '<div class="ci"><b>' + esc(PC[c].n) + '</b><small>' + esc(c) + ' · ' + won(PC[c].p) + '원 · 같이 산 ' + pctTxt(n / (PC[ST.last].k || 1)) + '</small><button type="button" data-add="' + c + '" aria-label="담기">＋</button></div>').join('') + '</div></div>' : '');
   const cats = catList().slice(0, 18);
-  const brandChips = BRANDS.map(([k, t, re]) => [k, t, products().filter(p => re.test(p.n)).length]).filter(x => x[2]).map(([k, t, n]) => '<button type="button" data-cat="' + k + '" class="brand' + (ST.cat === k ? ' on' : '') + '">' + t + ' <small>' + n + '</small></button>').join('');
+  const brandN = MEMO.brandN || (MEMO.brandN = BRANDS.map(([k, t, re]) => [k, t, products().filter(p => re.test(p.n)).length]));
+  const brandChips = brandN.filter(x => x[2]).map(([k, t, n]) => '<button type="button" data-cat="' + k + '" class="brand' + (ST.cat === k ? ' on' : '') + '">' + t + ' <small>' + n + '</small></button>').join('');
   setHtml('chips', (st ? '<button type="button" data-act="instock" class="stockchip' + (ST.instock ? ' on' : '') + '">📦 재고 있는 것만</button>' : '') + '<button type="button" data-cat="all" class="' + (ST.cat === 'all' ? 'on' : '') + '">전체</button>' + brandChips + cats.map(c => '<button type="button" data-cat="' + esc(c) + '" class="' + (ST.cat === c ? 'on' : '') + '">' + look({ n: '', s: c }).e + ' ' + esc(c) + '</button>').join(''));
 }
 /* 내용이 같으면 다시 그리지 않음 (화면을 새로 짜는 일이 오래된 기기에서 가장 느림) */
 const HTMLC = {};
 function setHtml(id, h) { if (HTMLC[id] === h) return; HTMLC[id] = h; $(id).innerHTML = h; }
-const GRID_STEP = 48, GRID_MAX = 600;
+const GRID_STEP = window.LITE ? 24 : 48, GRID_MAX = 600;
 const G = { list: [], n: 0, lastG: null, hot: Infinity, grouped: false, gcount: {} };
 function cardHtml(p) {
   const st = DB && DB.stock, g = p.s || '기타', head = G.grouped && g !== G.lastG ? '<div class="ghead">' + look({ n: '', s: g }).e + ' ' + esc(g) + ' <small>' + G.gcount[g] + '</small></div>' : ''; G.lastG = g;
@@ -726,9 +753,13 @@ document.addEventListener('pointermove', e => {
     ghost = document.createElement('div'); ghost.className = 'dragghost'; ghost.textContent = look(PC[drag.pid]).e + ' ' + PC[drag.pid].n; document.body.appendChild(ghost);
     if (window.innerWidth < 900) $('Rp').classList.remove('open');
   }
-  e.preventDefault(); ghost.style.left = e.clientX + 'px'; ghost.style.top = e.clientY + 'px';
-  const t = document.elementFromPoint(e.clientX, e.clientY), z = t && t.closest('[data-drop]');
-  if (z !== drag.over) { if (drag.over) drag.over.classList.remove('over'); if (z) z.classList.add('over'); drag.over = z; }
+  e.preventDefault(); drag.mx = e.clientX; drag.my = e.clientY;
+  /* 손가락 움직임마다가 아니라 화면 한 번 그릴 때 한 번만 (구형 태블릿 끌기 끊김 줄이기) */
+  if (drag.raf) return;
+  drag.raf = requestAnimationFrame(() => { if (!drag || !ghost) return; drag.raf = 0;
+    ghost.style.left = drag.mx + 'px'; ghost.style.top = drag.my + 'px';
+    const t = document.elementFromPoint(drag.mx, drag.my), z = t && t.closest('[data-drop]');
+    if (z !== drag.over) { if (drag.over) drag.over.classList.remove('over'); if (z) z.classList.add('over'); drag.over = z; } });
 }, { passive: false });
 function endDrag(e, ok) {
   if (!drag) return;
@@ -804,6 +835,9 @@ document.addEventListener('keydown', e => {
 });
 renderLeft(); renderRight();
 </script>
-<script type="module" src="cloud.js?v=2"></script>
+<script>/* 클라우드 연동 도구(Firebase)는 화면을 먼저 그린 뒤 불러옴 — 구형 태블릿에서 처음 열 때 덜 멈춤 */
+window.addEventListener('load', function () { setTimeout(function () { var s = document.createElement('script'); s.type = 'module'; s.src = 'cloud.js?v=2'; document.body.appendChild(s); }, window.LITE ? 1200 : 300); });
+</script>
+<script>document.getElementById('liteBtn').textContent = window.LITE ? '🐢 가벼운 모드 켜짐' : '🐢 가벼운 모드';</script>
 </body>
 </html>
