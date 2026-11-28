@@ -124,6 +124,11 @@ table.qt td.bcc { width: 108px; min-width: 108px; } table.qt td.bcc svg { min-wi
 .chips button.brand { border: 1.5px solid var(--navy); color: var(--navy); font-weight: 800; } .chips button.brand.on { background: var(--navy); color: #fff; } .chips button small { opacity: .7; }
 .pcard .pcode { font-size: .8em; color: var(--ink2); font-variant-numeric: tabular-nums; letter-spacing: .02em; } .pcard .pcode b { color: var(--navy); font-weight: 800; }
 .pcard .stk { font-size: .8em; font-weight: 800; } .pcard .stk.ok { color: var(--ok); } .pcard .stk.no { color: var(--red); } .pcard .stk small { font-weight: 500; color: var(--ink3); }
+.stkseg { display: inline-flex; border: 1.5px solid var(--ok); border-radius: 12px; overflow: hidden; flex: none; }
+.stkseg button { border: 0; background: #fff; color: var(--ok); font-weight: 800; min-height: 41px; padding: 0 12px; white-space: nowrap; }
+.stkseg button.on { background: var(--ok); color: #fff; }
+.stkseg.off { border-color: var(--line); } .stkseg.off button { color: var(--ink3); font-weight: 600; }
+.hidnote { grid-column: 1 / -1; font-size: .85em; color: var(--ok); background: #eef8f2; border-radius: 10px; padding: 6px 10px; }
 .chips button.stockchip { border: 1.5px solid var(--ok); color: var(--ok); font-weight: 800; } .chips button.stockchip.on { background: var(--ok); color: #fff; }
 .ghead { grid-column: 1 / -1; font-weight: 800; color: var(--ink2); padding: 8px 2px 4px; border-bottom: 2px solid var(--line); } .ghead small { color: var(--ink3); font-weight: 600; }
 .info-strip { padding: 8px 12px; background: #fff8e6; color: #7a5200; font-size: .85em; border-bottom: 1px solid #f3e2b8; flex: none; }
@@ -239,7 +244,7 @@ html.lite .litebtn { background: #fff1c2 !important; color: #6b4300 !important; 
       <div class="scroll paperwrap" data-drop="main"><div class="paper" id="L"></div></div>
     </section>
     <section class="pane right" id="Rp">
-      <div class="bar"><input class="search" id="q" type="search" placeholder="상품명 · 상품코드 · 바코드 찾기"><button class="btn ghost closecat" type="button" data-act="closecat">닫기 ✕</button></div>
+      <div class="bar"><input class="search" id="q" type="search" placeholder="상품명 · 상품코드 · 바코드 찾기"><span class="stkseg" id="stkseg"></span><button class="btn ghost closecat" type="button" data-act="closecat">닫기 ✕</button></div>
       <div id="info"></div>
       <div class="bundles" id="BND"></div>
       <div id="CO"></div>
@@ -364,7 +369,9 @@ function stockOf(c) { const x = DB && DB.stock && DB.stock[c]; if (!x) return nu
 reindex();
 
 /* ===== 견적 (이 기기에만 저장) — 줄마다 상품 정보를 그대로 적어 둠 (상품 목록이 바뀌어도 견적은 그대로) ===== */
-const ST = { cat: 'all', q: '', last: '' };
+const ST = { cat: 'all', q: '', last: '', instock: LS.get('instock', false) };  /* 재고 있는 것만: 기기마다 기억 (전체 인테리어 견적의 상품 찾기도 같이 따름) */
+const hasStock = () => !!(DB && DB.stock);
+const inStockOk = c => !ST.instock || !hasStock() || ((stockOf(c) || {}).est > 0);
 const newCart = () => ({ info: { date: today() }, lines: [] });
 let C = LS.get('cartA2', null); if (!C || !Array.isArray(C.lines)) C = newCart();
 const save = () => LS.set('cartA2', C);
@@ -409,7 +416,7 @@ const BRANDS = [['b:pe', '➕ 플러스엣지', /플러스\s*엣지|\+\s*EDGE/i]
 const brandOf = k => BRANDS.find(b => b[0] === k);
 function visible() {
   const q = ST.q.trim().toLowerCase().replace(/\s+/g, ''), br = brandOf(ST.cat);
-  const L = products().filter(p => (!ST.instock || (stockOf(p.c) || {}).est > 0) && (ST.cat === 'all' || (br ? br[2].test(p.n) : (p.s || '기타') === ST.cat)) && (!q || p._q.includes(q)));
+  const L = products().filter(p => inStockOk(p.c) && (ST.cat === 'all' || (br ? br[2].test(p.n) : (p.s || '기타') === ST.cat)) && (!q || p._q.includes(q)));
   if (br) { const order = catList(), rank = s => { const i = order.indexOf(s || '기타'); return i < 0 ? 999 : i; }; return L.sort((a, b) => rank(a.s) - rank(b.s) || (b.k || 0) - (a.k || 0) || a.n.localeCompare(b.n, 'ko')); }
   return L.sort((a, b) => (b.k || 0) - (a.k || 0) || a.n.localeCompare(b.n, 'ko'));
 }
@@ -430,13 +437,16 @@ function renderSide() {
   $('BND').style.display = DB && DB.bundles && DB.bundles.length ? '' : 'none';
   if (DB && DB.bundles) setHtml('BND', DB.bundles.map((b, i) => '<button type="button" data-bnd="' + i + '">⚡ ' + esc(b.name) + '<small>판매 ' + b.n + '건 기준 · ' + b.items.length + '가지</small></button>').join(''));
   // 같이 많이 산 상품 (방금 담은 상품 기준)
-  const co = DB && ST.last && DB.co[ST.last] && PC[ST.last] ? DB.co[ST.last].filter(([c]) => PC[c] && !inCart(c)).slice(0, 8) : [];
+  const co = DB && ST.last && DB.co[ST.last] && PC[ST.last] ? DB.co[ST.last].filter(([c]) => PC[c] && !inCart(c) && inStockOk(c)).slice(0, 8) : [];
   setHtml('CO', co.length ? '<div class="co"><div class="ch">🔗 ' + esc(PC[ST.last].n.slice(0, 24)) + ' — 같이 많이 산 상품<button type="button" data-act="coX" aria-label="닫기">✕</button></div><div class="cl">' +
     co.map(([c, n]) => '<div class="ci"><b>' + esc(PC[c].n) + '</b><small>' + esc(c) + ' · ' + won(PC[c].p) + '원 · 같이 산 ' + pctTxt(n / (PC[ST.last].k || 1)) + '</small><button type="button" data-add="' + c + '" aria-label="담기">＋</button></div>').join('') + '</div></div>' : '');
   const cats = catList().slice(0, 18);
   const brandN = MEMO.brandN || (MEMO.brandN = BRANDS.map(([k, t, re]) => [k, t, products().filter(p => re.test(p.n)).length]));
   const brandChips = brandN.filter(x => x[2]).map(([k, t, n]) => '<button type="button" data-cat="' + k + '" class="brand' + (ST.cat === k ? ' on' : '') + '">' + t + ' <small>' + n + '</small></button>').join('');
-  setHtml('chips', (st ? '<button type="button" data-act="instock" class="stockchip' + (ST.instock ? ' on' : '') + '">📦 재고 있는 것만</button>' : '') + '<button type="button" data-cat="all" class="' + (ST.cat === 'all' ? 'on' : '') + '">전체</button>' + brandChips + cats.map(c => '<button type="button" data-cat="' + esc(c) + '" class="' + (ST.cat === c ? 'on' : '') + '">' + look({ n: '', s: c }).e + ' ' + esc(c) + '</button>').join(''));
+  setHtml('stkseg', st ? '<button type="button" data-act="stkall" class="' + (ST.instock ? '' : 'on') + '">전체 상품</button><button type="button" data-act="stkon" class="' + (ST.instock ? 'on' : '') + '">📦 재고 있는 것만</button>'
+    : '<button type="button" data-act="stkhelp" title="재고 파일을 올리면 쓸 수 있어요">📦 재고 파일 없음</button>');
+  $('stkseg').classList.toggle('off', !st);
+  setHtml('chips', '<button type="button" data-cat="all" class="' + (ST.cat === 'all' ? 'on' : '') + '">전체</button>' + brandChips + cats.map(c => '<button type="button" data-cat="' + esc(c) + '" class="' + (ST.cat === c ? 'on' : '') + '">' + look({ n: '', s: c }).e + ' ' + esc(c) + '</button>').join(''));
 }
 /* 내용이 같으면 다시 그리지 않음 (화면을 새로 짜는 일이 오래된 기기에서 가장 느림) */
 const HTMLC = {};
@@ -457,7 +467,10 @@ function renderGrid() {
   G.list = visible(); G.hot = hotCut(); G.grouped = !!brandOf(ST.cat); G.gcount = {}; G.lastG = null;
   if (G.grouped) G.list.slice(0, GRID_MAX).forEach(p => { const g = p.s || '기타'; G.gcount[g] = (G.gcount[g] || 0) + 1; });
   const first = G.list.slice(0, GRID_STEP); G.n = first.length;
-  HTMLC.R = null; $('R').innerHTML = G.list.length ? first.map(cardHtml).join('') + gridTail() : '<div class="empty" style="grid-column:1/-1">찾는 상품이 없어요</div>';
+  let hid = '';
+  if (ST.instock && hasStock()) { const q = ST.q.trim().toLowerCase().replace(/\s+/g, ''), br = brandOf(ST.cat); const n = products().filter(p => !inStockOk(p.c) && (ST.cat === 'all' || (br ? br[2].test(p.n) : (p.s || '기타') === ST.cat)) && (!q || p._q.includes(q))).length;
+    if (n) hid = '<div class="hidnote">📦 재고 없는 상품 ' + n.toLocaleString('ko-KR') + '개는 숨겼어요 · 위 「전체 상품」을 누르면 다 보여요</div>'; }
+  HTMLC.R = null; $('R').innerHTML = hid + (G.list.length ? first.map(cardHtml).join('') + gridTail() : '<div class="empty" style="grid-column:1/-1">' + (hid ? '재고 있는 상품 중에는 찾는 상품이 없어요' : '찾는 상품이 없어요') + '</div>');
   watchMore();
 }
 function moreCards() {
@@ -486,7 +499,7 @@ function cartChanged(codes) { save(); renderLeft(); renderSide(); patchCards(cod
 const ROLE = { toilet: ['🚽 양변기 본체', '보통 하나'], basin: ['🚰 세면기 본체', '보통 하나'], faucet: ['🚿 수전', ''], etc: ['🔩 부속 · 설치 · 소품', '자주 같이 산 순서'] };
 function openBundle(i) {
   const b = DB.bundles[i], sel = {};
-  const items = b.items.filter(x => PC[x.c]);
+  const all = b.items.filter(x => PC[x.c]), items = all.filter(x => inStockOk(x.c)), hidN = all.length - items.length;
   const byRole = r => items.filter(x => x.role === r);
   ['toilet', 'basin'].forEach(r => { const f = byRole(r)[0]; if (f) sel[f.c] = f.q; });
   items.filter(x => (x.role === 'faucet' || x.role === 'etc') && x.share >= 0.3).forEach(x => { sel[x.c] = x.q; });
@@ -495,6 +508,7 @@ function openBundle(i) {
     const sum = Object.entries(sel).reduce((s, [c, q]) => s + PC[c].p * q, 0), n = Object.keys(sel).length;
     box.innerHTML = '<div class="mbox" role="dialog" aria-modal="true"><div class="mh"><b>⚡ ' + esc(b.name) + '</b><span class="muted">판매 ' + b.n + '건에서 자주 같이 산 상품</span><button class="btn sm x" type="button" data-bx="close">닫기 ✕</button></div><div class="mb">' +
       '<p class="muted" style="margin:0 0 6px;font-size:.88em">막대 = 이 구성을 산 손님 10명 중 몇 명이 같이 샀는지. 수량은 보통 산 개수예요. 체크를 바꾸고 수량을 고친 뒤 담으세요.</p>' +
+      (hidN ? '<div class="hidnote" style="margin-bottom:6px">📦 재고 없는 상품 ' + hidN + '가지는 숨겼어요 (위 「전체 상품」을 누르면 다 보여요)</div>' : '') +
       Object.keys(ROLE).map(r => { const xs = byRole(r); if (!xs.length) return ''; return '<div class="bsec">' + ROLE[r][0] + ' <small>' + ROLE[r][1] + '</small></div>' + xs.map(x => { const on = sel[x.c] != null, p = PC[x.c];
         return '<label class="bi"><input type="checkbox" data-bc="' + esc(x.c) + '"' + (on ? ' checked' : '') + '><div class="nm">' + esc(p.n) + '<small><span class="share" style="width:' + Math.max(4, Math.round(x.share * 60)) + 'px"></span>' + pctTxt(x.share) + ' · ' + won(p.p) + '원</small></div>' +
           '<span class="qtyb"><button type="button" data-bq="' + esc(x.c) + '" data-d="-1">−</button><input type="number" min="1" value="' + (sel[x.c] || x.q) + '" data-bqi="' + esc(x.c) + '"><button type="button" data-bq="' + esc(x.c) + '" data-d="1">＋</button></span><div class="pr">' + won(p.p * (sel[x.c] || x.q)) + '</div></label>'; }).join(''); }).join('') +
@@ -781,7 +795,8 @@ document.addEventListener('click', e => {
     else if (k === 'upload') openUpload();
     else if (k === 'coX') { ST.last = ''; renderSide(); }
     else if (k === 'more') moreCards();
-    else if (k === 'instock') { ST.instock = !ST.instock; renderRight(); $('Rs').scrollTop = 0; }
+    else if (k === 'stkall' || k === 'stkon') { ST.instock = k === 'stkon'; LS.set('instock', ST.instock); renderRight(); $('Rs').scrollTop = 0; toast(ST.instock ? '📦 재고 있는 상품만 보여요' : '전체 상품이 보여요'); }
+    else if (k === 'stkhelp') toast('📥 상품 · 판매 데이터 올리기에서 재고 파일(LOC 재고조회)을 올리면 재고 있는 것만 볼 수 있어요');
     else if (k === 'print') { if (!C.lines.length) { toast('담은 상품이 없어요'); return; } window.print(); }
     else if (k === 'clear') { if (C.lines.length && confirm('담은 상품을 모두 지울까요?')) { C.lines = []; ST.last = ''; save(); renderLeft(); renderRight(); } }
     else if (k === 'scan') openScan();

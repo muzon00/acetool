@@ -392,9 +392,14 @@ function ourProducts(q) {
   if (OPDB === undefined) { try { OPDB = JSON.parse(localStorage.getItem('int.db') || 'null'); } catch (e) { OPDB = null; } }
   const db = OPDB;
   if (!db) return null; q = hn(q).toLowerCase(); if (!q) return [];
-  return db.products.filter(p => (p.n + p.c).toLowerCase().replace(/\s+/g, '').includes(q)).sort((a, b) => (b.k || 0) - (a.k || 0)).slice(0, 12).map(p => { const m = db.bm && db.bm[p.c]; return { c: p.c, n: p.n, p: m && m[1] > 0 ? m[1] : p.p, b: m ? ((m[0] || []).includes(p.b) ? p.b : (m[0] || [])[0] || p.b) : p.b }; });
+  /* 상품 견적 탭의 「재고 있는 것만」을 켜 두면 여기서도 재고 없는 상품은 빼고 찾음 (재고 파일 수량 − 그 뒤 판매) */
+  let only = false; try { only = JSON.parse(localStorage.getItem('int.instock') || 'false'); } catch (e) { }
+  let sold = null; if (only && db.stock) { sold = {}; Object.values(db.soldTx || {}).forEach(([c, n]) => { sold[c] = (sold[c] || 0) + n; }); }
+  const okS = p => !sold || (db.stock[p.c] && db.stock[p.c].q - (sold[p.c] || 0) > 0);
+  return db.products.filter(p => (p.n + p.c).toLowerCase().replace(/\s+/g, '').includes(q) && okS(p)).sort((a, b) => (b.k || 0) - (a.k || 0)).slice(0, 12).map(p => { const m = db.bm && db.bm[p.c]; return { c: p.c, n: p.n, p: m && m[1] > 0 ? m[1] : p.p, b: m ? ((m[0] || []).includes(p.b) ? p.b : (m[0] || [])[0] || p.b) : p.b }; });
 }
-const prodSearch = sid => '<div class="psearch"><input class="cell" style="border:1px solid var(--line);min-height:40px;background:#fff" placeholder="🔎 우리 매장 상품 찾아 넣기 (예: 양변기, 수전)" data-ps="' + sid + '"><div class="pl" hidden></div></div>';
+const stkOnly = () => { try { return JSON.parse(localStorage.getItem('int.instock') || 'false'); } catch (e) { return false; } };
+const prodSearch = sid => '<div class="psearch"><input class="cell" style="border:1px solid var(--line);min-height:40px;background:#fff" placeholder="🔎 우리 매장 상품 찾아 넣기 (예: 양변기, 수전)' + (stkOnly() ? ' · 재고 있는 것만' : '') + '" data-ps="' + sid + '"><div class="pl" hidden></div></div>';
 
 /* ===================== 시안 A: 업체 원본 표 그대로 + 오른쪽 회색 마진 칸 ===================== */
 function renderA() {
