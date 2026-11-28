@@ -73,6 +73,7 @@ button { cursor: pointer; }
 .pcard .sp { font-size: .8em; color: var(--ink3); }
 .pcard .pr { font-weight: 800; }
 .pcard .add { position: absolute; right: 8px; top: 8px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--navy); color: #fff; font-size: 20px; line-height: 1; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+.pcard .mall { border: 1px solid #c9d6e6; background: #f3f7fc; color: var(--navy); border-radius: 9px; min-height: 34px; font-size: .8em; font-weight: 700; padding: 0 8px; }
 .pcard .grip { font-size: .72em; color: var(--ink3); }
 .pcard.in { border-color: #9fc7b0; box-shadow: inset 0 0 0 2px #cfe8da; }
 .pcard .cnt { position: absolute; left: 8px; top: 8px; background: var(--ok); color: #fff; border-radius: 999px; font-size: .75em; font-weight: 800; padding: 2px 8px; }
@@ -260,7 +261,7 @@ html.lite .litebtn { background: #fff1c2 !important; color: #6b4300 !important; 
 <div class="toast" id="toast" role="status"></div>
 <script>
 'use strict';
-const BUILD = '2026-11-28a';
+const BUILD = '2026-11-28b';
 /* 새 버전이 올라오면 저절로 새로 고침 (창으로 돌아올 때 · 5분마다). 고르는 창이나 스캔 화면을 쓰는 중이면 기다림 */
 (function () {
   const check = async () => {
@@ -352,6 +353,8 @@ function lineBc(l, h) {
   return bcSvg(l.b || l.c, h) + (warn ? '<div class="nobc">⚠ ' + warn + '</div>' : '');
 }
 const products = () => PL;
+/* 쇼핑몰 찾기 글자: 괄호 안 · 특수문자 빼고 앞 40자 (전산 이름 그대로면 쇼핑몰에서 안 찾아지는 경우가 많음) */
+const mallWord = n => String(n || '').replace(/[\(\[\{（][^\)\]\}）]*[\)\]\}）]/g, ' ').replace(/[_*#"'<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
 /* 바코드 그림은 한 번 그린 것을 다시 씀 (담을 때마다 견적서 전체 바코드를 새로 계산하던 것) */
 const BCM = new Map();
 function bcSvg(code, h) { const k = code + '|' + h; let v = BCM.get(k); if (v === undefined) { v = BC.svg(code, { h }); if (BCM.size > 400) BCM.clear(); BCM.set(k, v); } return v; }
@@ -459,7 +462,7 @@ function cardHtml(p) {
   const badges = (p.promo ? '<span class="badge hot">' + (p.promo.note ? esc(p.promo.note) + ' ' : '') + '행사 ~' + esc(String(p.promo.pr).split(/[-~]/)[1] || '') + '</span>' : '') + (p.reg === false ? '<span class="badge stop">전산 미등록</span>' : '') + (p.bad ? '<span class="badge low">바코드 확인</span>' : '') + (p.k >= G.hot ? '<span class="badge hot">인기</span>' : '') + (s && s.st && s.st !== '정상' ? '<span class="badge stop">' + esc(s.st) + '</span>' : '');
   const stk = !st ? '' : !s ? '<div class="stk no">매장 재고 없음</div>' : s.est > 0 ? '<div class="stk ok">재고 ' + (s.sold ? '약 ' : '') + qf(s.est) + '개' + (s.sold ? ' <small>(판매 ' + qf(s.sold) + ' 빼고)</small>' : '') + '</div>' : '<div class="stk no">재고 없음' + (s.inb ? ' · 입고예정 ' + qf(s.inb) : '') + '</div>';
   return head + '<div class="pcard' + (n ? ' in' : '') + '" data-pid="' + esc(p.c) + '"><span class="cnt"' + (n ? '' : ' hidden') + '>' + n + '</span><button class="add" type="button" data-add="' + esc(p.c) + '" aria-label="담기">＋</button>' +
-    '<div class="ic" style="background:' + lk.bg + '">' + lk.e + '</div><div class="nm">' + badges + esc(p.n) + '</div><div class="pcode">상품코드 <b>' + esc(p.c) + '</b></div><div class="sp">' + esc(p.s || '') + (p.k ? ' · 판매 ' + p.k + '건' : p.so ? ' · 판매 기록 없음' : '') + '</div>' + stk + '<div class="pr">' + won(p.p) + '원' + (p.promo && p.promo.rp > p.p ? ' <s class="muted" style="font-weight:500;font-size:.8em">' + won(p.promo.rp) + '</s>' : '') + '</div><div class="grip">⟵ 끌어서 담기 · ' + (DB ? esc(p.b || p.c) + (p.reg ? ' ✓' : '') : '샘플 (바코드 없음)') + '</div></div>';
+    '<div class="ic" style="background:' + lk.bg + '">' + lk.e + '</div><div class="nm">' + badges + esc(p.n) + '</div><div class="pcode">상품코드 <b>' + esc(p.c) + '</b></div><div class="sp">' + esc(p.s || '') + (p.k ? ' · 판매 ' + p.k + '건' : p.so ? ' · 판매 기록 없음' : '') + '</div>' + stk + '<div class="pr">' + won(p.p) + '원' + (p.promo && p.promo.rp > p.p ? ' <s class="muted" style="font-weight:500;font-size:.8em">' + won(p.promo.rp) + '</s>' : '') + '</div><button class="mall" type="button" data-mall="' + esc(p.c) + '">🛒 쇼핑몰에서 사진 보기</button><div class="grip">⟵ 끌어서 담기 · ' + (DB ? esc(p.b || p.c) + (p.reg ? ' ✓' : '') : '샘플 (바코드 없음)') + '</div></div>';
 }
 const gridTail = () => G.n < Math.min(G.list.length, GRID_MAX) ? '<div class="more" id="gmore" style="grid-column:1/-1"><button class="btn" type="button" data-act="more">아래로 내리면 더 나와요 · ' + (Math.min(G.list.length, GRID_MAX) - G.n).toLocaleString('ko-KR') + '개 더 보기</button></div>'
   : G.list.length > GRID_MAX ? '<div class="empty" style="grid-column:1/-1">상품이 많아 ' + GRID_MAX + '개까지만 보여요. 위에서 찾거나 분류를 골라 주세요.</div>' : '';
@@ -802,6 +805,8 @@ document.addEventListener('click', e => {
     else if (k === 'scan') openScan();
     return; }
   const bd = t.closest('[data-bnd]'); if (bd) { openBundle(+bd.dataset.bnd); return; }
+  /* 🛒 ACE 쇼핑몰에서 상품명으로 찾기 (누를 때만 새 창으로 엶 — 앱이 쇼핑몰 자료를 따로 가져오지 않아 느려지지 않음) */
+  const ml = t.closest('[data-mall]'); if (ml) { const p = PC[ml.dataset.mall]; if (p) window.open('https://www.ace-hardware.co.kr/search/goodsSearch.do?searchWord=' + encodeURIComponent(mallWord(p.n)), '_blank', 'noopener'); return; }
   const ad = t.closest('[data-add]'); if (ad) { addItem(ad.dataset.add); return; }
   const qd = t.closest('[data-qd]'); if (qd) { const l = C.lines[+qd.dataset.qd]; if (!l) return; l.q = Math.max(1, l.q + Number(qd.dataset.d)); cartChanged([l.c]); return; }
   const dl = t.closest('[data-del]'); if (dl) { const gone = C.lines.splice(+dl.dataset.del, 1); cartChanged(gone.map(l => l.c)); return; }
