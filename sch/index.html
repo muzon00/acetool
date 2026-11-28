@@ -180,6 +180,21 @@ td.l, th.l { text-align: left; }
 .xl .sum { background: #ffff00; font-weight: 700; }
 .xl .rate { font-size: 10px; }
 .xl .duty { font-size: 11px; white-space: normal; min-width: 90px; }
+/* 엑셀 양식에서 바로 고르기: 칸 누르기 · 붓(고른 근무를 누르는 칸마다 바로 넣기) · 이름 칸 고정 · 오늘 · 내 줄 */
+.xl td.ed { cursor: pointer; min-width: 32px; height: 32px; }
+.xl td.ed:hover { box-shadow: inset 0 0 0 2px #2f6fe4; background: #eef4ff; }
+.xl td.ed.y:hover { background: #ffd54a; }
+.xl .tdy { box-shadow: inset 2px 0 0 #2f6fe4, inset -2px 0 0 #2f6fe4; }
+.xl th.tdy { background: #dbe7ff; }
+.xl tr.mine td.nm { background: #d9f2e1; }
+.xl .c1, .xl .c2, .xl .c3 { position: sticky; z-index: 2; }
+.xl .c1 { left: 0; } .xl .c2 { left: var(--x2, 56px); } .xl .c3 { left: var(--x3, 100px); box-shadow: 2px 0 0 #4b5563; }
+.xl-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 10px; }
+.xl-tools .hint { width: 100%; font-size: .9em; color: var(--ink2); margin-bottom: 2px; }
+.xl-tools .btn { padding: 7px 12px; font-size: .92em; }
+.xl-tools .btn.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.xl-wrap.brush td.ed { cursor: copy; }
+aside.side.xl-side { position: static; max-width: 520px; margin: 0 auto 16px; }
 [data-theme="night"] .xl th, [data-theme="night"] .xl td { filter: none; }
 
 /* 로그인 */
@@ -251,6 +266,8 @@ body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .
   .topbar, .sticky-head, .side { position: static; box-shadow: none; }
   body, html { background: #fff; }
   .day { break-inside: avoid; min-height: 100px; }
+  .xl-tools { display: none !important; }
+  .xl .c1, .xl .c2, .xl .c3 { position: static; box-shadow: none; }
 }
 
 /* 큰 모니터(1800px 넘는 화면)에서는 글씨 · 버튼을 조금 크게 */
@@ -315,7 +332,7 @@ body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .
       </aside>
     </div>
 
-    <div id="xlView" class="card hide"><div class="xl-wrap"><table class="xl" id="xlTable"></table></div></div>
+    <div id="xlView" class="card hide"><div class="xl-tools" id="xlTools"></div><div class="xl-wrap" id="xlWrap"><table class="xl" id="xlTable"></table></div></div>
   </section>
 </div>
 
@@ -482,7 +499,7 @@ const variableHolidays = {
 };
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 
-const S = { user: null, role: null, admin: false, authReady: false, mode: 'employee', page: 'home', view: 'cal', roster: DEFAULT_ROSTER.map(m => ({ ...m })), rosterExists: false, rosterLoaded: false,
+const S = { user: null, role: null, admin: false, authReady: false, mode: 'employee', page: 'home', view: (() => { try { return localStorage.getItem('sch.view') === 'cal' ? 'cal' : 'xl'; } catch (e) { return 'xl'; } })(), brush: null, roster: DEFAULT_ROSTER.map(m => ({ ...m })), rosterExists: false, rosterLoaded: false,
   sched: {}, quotas: {}, hols: {}, myId: '', unsub: [], lastTs: 0, firstMeta: true };
 const clientId = 'c_' + Math.random().toString(36).slice(2);
 const $ = id => document.getElementById(id);
@@ -682,7 +699,7 @@ function buildModel(y, m) {
       if (isActiveOn(mem, ds)) { if (!from) from = d; to = d; const s = status(ds, mem); codes.push(CODE[s] !== undefined ? CODE[s] : s); early.push(s === '조출' || s === '조출반차'); }
       else { codes.push(''); early.push(false); }
     }
-    return { title: tShort(mem.title), name: mem.name, duty: mem.duty || '', codes, early, from, to };
+    return { id: mem.id, title: tShort(mem.title), name: mem.name, duty: mem.duty || '', codes, early, from, to };
   };
   const groups = groupsOf(membersForMonth(y, m)).map(g => ({ name: g.name, rows: g.members.map(toRow), count: g.members.length >= 2 && g.name !== '점장' }));
   return { year: y, month: m, quota: quotaFor(y, m), storeName: STORE_NAME, days, groups, total: groups.reduce((s, g) => s + g.rows.length, 0) };
@@ -695,28 +712,54 @@ function renderXl(y, m) {
   let h = '<tr><th colspan="' + (N + 6) + '" style="text-align:left;border:0;font-size:15px">■ ' + y + '년 ' + m + '월 근무 계획</th></tr>' +
     '<tr><th class="hd">총원</th><td colspan="2">' + md.total + '명</td><td colspan="' + (N + 3) + '" style="border:0"></td></tr>' +
     '<tr><th class="hd">기준 휴무일</th><td colspan="2">' + md.quota + '일</td><td colspan="' + N + '" style="border:0"></td><td colspan="3" style="border:0;text-align:right;font-weight:700">[ ' + STORE_NAME + ' ]</td></tr>';
-  h += '<tr><th class="hd" rowspan="2">구분</th><th class="hd" rowspan="2">직급</th><th class="hd" rowspan="2">성명</th>' + md.days.map(x => '<th class="hd' + (x.red ? ' red' : '') + '">' + x.day + '</th>').join('') + '<th class="hd" rowspan="2">휴일<br>근무</th><th class="hd" rowspan="2">담당</th><th class="hd" rowspan="2">본인<br>서명</th></tr>';
-  h += '<tr>' + md.days.map(x => '<th class="hd' + (x.red ? ' red' : '') + '">' + x.label + '</th>').join('') + '</tr>';
+  const t0 = new Date(), tDay = t0.getFullYear() === y && t0.getMonth() + 1 === m ? t0.getDate() : 0, td = x => x.day === tDay ? ' tdy' : '';
+  h += '<tr><th class="hd c1" rowspan="2">구분</th><th class="hd c2" rowspan="2">직급</th><th class="hd c3" rowspan="2">성명</th>' + md.days.map(x => '<th class="hd' + (x.red ? ' red' : '') + td(x) + '">' + x.day + '</th>').join('') + '<th class="hd" rowspan="2">휴일<br>근무</th><th class="hd" rowspan="2">담당</th><th class="hd" rowspan="2">본인<br>서명</th></tr>';
+  h += '<tr>' + md.days.map(x => '<th class="hd' + (x.red ? ' red' : '') + td(x) + '">' + x.label + '</th>').join('') + '</tr>';
   md.groups.forEach(g => {
     const span = g.rows.length + (g.count ? 1 : 0);
     if (g.count) {
-      h += '<tr><td class="grp" rowspan="' + span + '">' + esc(g.name) + '</td><td class="grp" colspan="2">근무인원</td>' + md.days.map((x, i) => '<td class="cnt">' + presentCount(g.rows, i) + '명</td>').join('') + '<td></td><td></td><td></td></tr>';
+      h += '<tr><td class="grp c1" rowspan="' + span + '">' + esc(g.name) + '</td><td class="grp c2" colspan="2">근무인원</td>' + md.days.map((x, i) => '<td class="cnt' + td(x) + '">' + presentCount(g.rows, i) + '명</td>').join('') + '<td></td><td></td><td></td></tr>';
     }
     g.rows.forEach((r, k) => {
-      h += '<tr>' + (!g.count && k === 0 ? '<td class="grp" rowspan="' + span + '">' + esc(g.name) + '</td>' : '') + '<td>' + esc(r.title) + '</td><td><b>' + esc(r.name) + '</b></td>';
+      h += '<tr' + (!S.admin && r.id === S.myId ? ' class="mine"' : '') + '>' + (!g.count && k === 0 ? '<td class="grp c1" rowspan="' + span + '">' + esc(g.name) + '</td>' : '') + '<td class="c2 nm">' + esc(r.title) + '</td><td class="c3 nm"><b>' + esc(r.name) + '</b></td>';
       r.codes.forEach((c, i) => {
         const inR = i + 1 >= r.from && i + 1 <= r.to;
-        h += '<td class="' + (!inR ? 'off' : r.early[i] ? 'y' : c ? 'ab' : '') + '">' + (inR ? esc(c).replace('\n', '<br>') : '') + '</td>';
+        h += '<td class="' + (!inR ? 'off' : (r.early[i] ? 'y' : c ? 'ab' : '') + ' ed') + td(md.days[i]) + '"' + (inR ? ' data-ds="' + dateKey(y, m, i + 1) + '" data-id="' + esc(r.id) + '"' : '') + '>' + (inR ? esc(c).replace('\n', '<br>') : '') + '</td>';
       });
       const off = r.codes.filter(c => c === '휴').length;
       h += '<td>' + Math.max(0, md.quota - off) + '일</td><td class="duty">' + esc(r.duty) + '</td><td></td></tr>';
     });
   });
   const all = md.groups.flatMap(g => g.rows);
-  h += '<tr><td class="grp" rowspan="2">근무인원</td><td class="grp" colspan="2">계</td>' + md.days.map((x, i) => '<td class="sum">' + presentCount(all, i) + '명</td>').join('') + '<td colspan="3" rowspan="2" style="background:#d9d9d9"></td></tr>';
-  h += '<tr><td colspan="2" class="rate">총원 대비</td>' + md.days.map((x, i) => '<td class="rate">' + (activeCount(all, i) ? Math.round(presentCount(all, i) / activeCount(all, i) * 100) : 0) + '%</td>').join('') + '</tr>';
+  h += '<tr><td class="grp c1" rowspan="2">근무인원</td><td class="grp c2" colspan="2">계</td>' + md.days.map((x, i) => '<td class="sum">' + presentCount(all, i) + '명</td>').join('') + '<td colspan="3" rowspan="2" style="background:#d9d9d9"></td></tr>';
+  h += '<tr><td colspan="2" class="rate c2">총원 대비</td>' + md.days.map((x, i) => '<td class="rate">' + (activeCount(all, i) ? Math.round(presentCount(all, i) / activeCount(all, i) * 100) : 0) + '%</td>').join('') + '</tr>';
   $('xlTable').innerHTML = h;
+  // 이름 칸 고정: 구분 · 직급 칸 실제 너비를 재서 다음 칸 위치로
+  const T = $('xlTable'), a = T.querySelector('th.c1'), b = T.querySelector('th.c2');
+  if (a && b && a.offsetWidth) { T.style.setProperty('--x2', a.offsetWidth + 'px'); T.style.setProperty('--x3', (a.offsetWidth + b.offsetWidth) + 'px'); }
+  renderXlTools();
 }
+// 근무 고르기 도구: 👆 하나씩(칸을 누르면 고르는 창) 또는 붓(근무를 먼저 고르고 칸을 누르면 바로 들어감)
+function renderXlTools() {
+  const lab = s => s === '조출반차' ? '조출+반차' : s === '조출' ? '조출 07~17' : s === '마감' ? '마감 10~20' : s;
+  const b = S.brush;
+  $('xlTools').innerHTML = '<div class="hint">' + (b === null ? '👆 <b>칸을 누르면</b> 근무를 고르는 창이 떠요. 같은 근무를 여러 칸에 넣을 때는 아래에서 근무를 먼저 고르세요.'
+    : '🖌 <b>' + esc(b ? lab(b) : '지우기') + '</b> 선택됨 — 누르는 칸마다 바로 들어가요. 끝나면 「👆 하나씩 고르기」를 누르세요.') + '</div>' +
+    '<button class="btn ghost' + (b === null ? ' on' : '') + '" data-b="__pick">👆 하나씩 고르기</button>' +
+    STATES.map(s => '<button class="btn ghost' + (b === s ? ' on' : '') + '" data-b="' + esc(s) + '">' + esc(lab(s)) + '</button>').join('') +
+    '<button class="btn ghost' + (b === '' ? ' on' : '') + '" data-b="">지우기</button>';
+  $('xlWrap').classList.toggle('brush', b !== null);
+}
+$('xlTools').addEventListener('click', e => {
+  const t = e.target.closest('button[data-b]'); if (!t) return;
+  S.brush = t.dataset.b === '__pick' ? null : t.dataset.b; renderXlTools();
+});
+$('xlTable').addEventListener('click', e => {
+  const el = e.target.closest('td.ed'); if (!el) return;
+  const mem = S.roster.find(x => x.id === el.dataset.id); if (!mem) return;
+  if (S.brush === null) openPick(el.dataset.ds, mem);
+  else setState(el.dataset.ds, mem, S.brush);
+});
 
 /* ===================== 엑셀(.xlsx) 다운로드 — 일산점 근무 계획 양식 ===================== */
 let xlP = null;
@@ -980,11 +1023,19 @@ $('refreshBtn').addEventListener('click', () => { stopLive(); startLive(); toast
 document.querySelectorAll('.refresh-btn').forEach(b => b.addEventListener('click', () => { b.classList.remove('spin'); void b.offsetWidth; b.classList.add('spin'); }));
 $('printBtn').addEventListener('click', () => window.print());
 $('xlsxBtn').addEventListener('click', downloadXlsx);
+// 처음 화면 = 엑셀 양식 (칸을 눌러 바로 고름). 달력으로 바꾸면 이 기기에서는 다음에도 달력으로
+function applyView() {
+  $('calView').classList.toggle('hide', S.view !== 'cal'); $('xlView').classList.toggle('hide', S.view !== 'xl');
+  // 휴무 사용 현황은 두 화면 모두에서 보이게: 엑셀 양식일 때는 표 아래로 옮김
+  const side = document.querySelector('aside.side');
+  if (side) { if (S.view === 'xl') { side.classList.add('xl-side'); $('xlView').after(side); } else { side.classList.remove('xl-side'); $('calView').appendChild(side); } }
+  $('viewBtn').textContent = S.view === 'cal' ? '📋 엑셀 양식으로 보기' : '📅 달력으로 보기';
+}
+applyView();
 $('viewBtn').addEventListener('click', () => {
   S.view = S.view === 'cal' ? 'xl' : 'cal';
-  $('calView').classList.toggle('hide', S.view !== 'cal'); $('xlView').classList.toggle('hide', S.view !== 'xl');
-  $('viewBtn').textContent = S.view === 'cal' ? '엑셀 양식으로 보기' : '달력으로 돌아가기';
-  renderAll();
+  try { localStorage.setItem('sch.view', S.view); } catch (e) { }
+  applyView(); renderAll();
 });
 // 관리자 모드 = 별도 화면 (근무 배정 + 관리 도구). 들어갈 때 서버에서 권한을 다시 확인하고, 20분 쓰지 않으면 근무표로 돌아감
 // 주소: 관리자 페이지 = …/sch/#admin. 새로고침해도 관리자 화면으로 다시 들어감
