@@ -16,7 +16,7 @@ html, body { margin: 0; height: 100%; }
 body { font-family: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background: var(--bg); color: var(--ink); font-size: 15px; overflow: hidden; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
-.app { height: calc(100dvh / var(--z, 1)); display: flex; flex-direction: column; }
+.app { height: 100vh; height: calc(var(--app-h, 100vh) / var(--z, 1)); display: flex; flex-direction: column; }
 .top { background: var(--navy); color: #fff; padding: 8px 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: none; }
 .apptabs { display: flex; gap: 4px; background: rgba(255,255,255,.1); border-radius: 12px; padding: 3px; }
 .apptabs a { color: #cfd8e6; text-decoration: none; font-weight: 800; padding: 7px 12px; border-radius: 9px; font-size: .92em; }
@@ -52,9 +52,9 @@ input.cell.chg { color: var(--red); font-weight: 800; }
 .drop { border: 2px dashed #9fb8d6; border-radius: 16px; padding: 22px; text-align: center; background: #f6f9fd; display: block; cursor: pointer; }
 .drop b { display: block; font-size: 1.1em; margin-bottom: 4px; }
 textarea.paste { width: 100%; min-height: 90px; border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
-.dropov { position: fixed; inset: 0; z-index: 400; background: rgba(29,53,87,.78); display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.dropov { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 400; background: rgba(29,53,87,.78); display: flex; align-items: center; justify-content: center; pointer-events: none; }
 .dropov div { border: 4px dashed #fff; border-radius: 24px; padding: 40px 56px; color: #fff; font-size: 1.6em; font-weight: 900; text-align: center; }
-.modal { position: fixed; inset: 0; z-index: 180; background: rgba(15,23,42,.5); display: flex; align-items: flex-start; justify-content: center; padding: 16px; overflow-y: auto; }
+.modal { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 180; background: rgba(15,23,42,.5); display: flex; align-items: flex-start; justify-content: center; padding: 16px; overflow-y: auto; }
 .mbox { background: var(--surface); border-radius: 18px; width: min(860px, 100%); box-shadow: 0 20px 60px rgba(0,0,0,.35); overflow: hidden; }
 .mh { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); } .mh .x { margin-left: auto; }
 .mb { padding: 14px 16px; } .mf { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--line); flex-wrap: wrap; align-items: center; }
@@ -161,6 +161,8 @@ input[type="date"]::-webkit-calendar-picker-indicator { margin-left: auto; }
 @media screen and (min-width: 2200px) { html { zoom: 1.3; --z: 1.3; } }
 @media screen and (min-width: 3000px) { html { zoom: 1.6; --z: 1.6; } }
 </style>
+<script>/* 화면 높이 = 실제 보이는 높이 (오래된 태블릿 브라우저는 100dvh를 몰라 화면 아래가 잘림 → 직접 재서 넣음) */
+(function () { function f() { document.documentElement.style.setProperty('--app-h', window.innerHeight + 'px'); } f(); window.addEventListener('resize', f); window.addEventListener('orientationchange', function () { setTimeout(f, 300); }); })();</script>
 </head>
 <body>
 <div class="app">
