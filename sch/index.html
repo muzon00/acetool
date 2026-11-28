@@ -189,10 +189,42 @@ td.l, th.l { text-align: left; }
 .xl tr.mine td.nm { background: #d9f2e1; }
 .xl .c1, .xl .c2, .xl .c3 { position: sticky; z-index: 2; }
 .xl .c1 { left: 0; } .xl .c2 { left: var(--x2, 56px); } .xl .c3 { left: var(--x3, 100px); box-shadow: 2px 0 0 #4b5563; }
-.xl-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 10px; }
-.xl-tools .hint { width: 100%; font-size: .9em; color: var(--ink2); margin-bottom: 2px; }
-.xl-tools .btn { padding: 7px 12px; font-size: .92em; }
-.xl-tools .btn.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+/* 화면 가독성 (휴대폰 · 노트북 · 모니터): 표가 화면 너비에 맞게 넓어지고, 날짜 줄 · 이름 칸이 고정, 인쇄용 칸(제목 · 담당 · 서명)은 화면에서 숨김 */
+#xlView { min-width: 0; max-width: 100%; padding: 14px; }
+.xl-tools { margin: 0 0 10px; }
+.xl-tools .hint { font-size: .92em; color: var(--ink2); margin-bottom: 6px; line-height: 1.5; }
+.xl-tools .hint .meta { display: inline-block; margin-right: 10px; font-weight: 700; color: var(--ink); }
+.xl-pal { display: flex; flex-wrap: wrap; gap: 6px; }
+.xl-pal .btn { padding: 7px 12px; font-size: .92em; white-space: nowrap; }
+.xl-pal .btn.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.xl-pal .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 2px; vertical-align: -1px; border: 1px solid rgba(0,0,0,.25); }
+@media screen {
+  .xl .scr-x { display: none; }
+  .xl-wrap { overflow: auto; max-height: calc(100dvh - var(--top-h, 64px) - var(--head-h, 110px) - 40px); border: 1px solid #4b5563; border-radius: 6px; }
+  .xl { width: 100%; font-size: 13px; }
+  .xl th, .xl td { border-color: #9aa3af; }
+  .xl tr:first-child th, .xl tr:first-child td { border-top: 0; } .xl tr > :first-child { border-left: 0; }
+  .xl th.dh, .xl th.dw { position: sticky; z-index: 3; } .xl th.dh { top: 0; } .xl th.dw { top: var(--y2, 26px); box-shadow: 0 1px 0 #4b5563; }
+  .xl th.c1, .xl th.c2, .xl th.c3 { top: 0; z-index: 5; }
+  .xl td.ed { font-size: 13px; font-weight: 700; }
+  .xl tbody tr:hover td.nm { background: #eef4ff; }
+}
+@media screen and (min-width: 1200px) { .xl { font-size: 14px; } .xl td.ed { height: 36px; font-size: 14px; } .xl-pal .btn { font-size: .95em; } }
+@media screen and (max-width: 700px) {
+  #xlView { padding: 8px; border-radius: 12px; }
+  .xl-pal { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .xl-pal .btn { padding: 8px 12px; }
+  .xl-tools .hint { font-size: .85em; }
+  .xl { font-size: 12px; }
+  .xl th, .xl td { padding: 2px 3px; }
+  .xl td.ed { min-width: 36px; height: 38px; font-size: 12.5px; }
+  .xl .c1 { font-size: 10.5px; max-width: 46px; min-width: 40px; white-space: normal; word-break: keep-all; line-height: 1.2; }
+  .xl .c2 { font-size: 10.5px; min-width: 0; padding: 2px; }
+  .xl .c3 { min-width: 48px; font-size: 12.5px; }
+  .xl .cnt, .xl .sum { font-size: 10.5px; }
+  .xl-wrap { max-height: calc(100dvh - var(--top-h, 64px) - 24px); }
+  body.xl-mode .sticky-head { position: static; }
+}
 .xl-wrap.brush td.ed { cursor: copy; }
 aside.side.xl-side { position: static; max-width: 520px; margin: 0 auto 16px; }
 [data-theme="night"] .xl th, [data-theme="night"] .xl td { filter: none; }
@@ -709,16 +741,17 @@ function presentCount(rows, i) { return rows.filter(r => i + 1 >= r.from && i + 
 function activeCount(rows, i) { return rows.filter(r => i + 1 >= r.from && i + 1 <= r.to).length; }
 function renderXl(y, m) {
   const md = buildModel(y, m), N = md.days.length;
-  let h = '<tr><th colspan="' + (N + 6) + '" style="text-align:left;border:0;font-size:15px">■ ' + y + '년 ' + m + '월 근무 계획</th></tr>' +
-    '<tr><th class="hd">총원</th><td colspan="2">' + md.total + '명</td><td colspan="' + (N + 3) + '" style="border:0"></td></tr>' +
-    '<tr><th class="hd">기준 휴무일</th><td colspan="2">' + md.quota + '일</td><td colspan="' + N + '" style="border:0"></td><td colspan="3" style="border:0;text-align:right;font-weight:700">[ ' + STORE_NAME + ' ]</td></tr>';
+  let h = '<tr class="scr-x"><th colspan="' + (N + 6) + '" style="text-align:left;border:0;font-size:15px">■ ' + y + '년 ' + m + '월 근무 계획</th></tr>' +
+    '<tr class="scr-x"><th class="hd">총원</th><td colspan="2">' + md.total + '명</td><td colspan="' + (N + 3) + '" style="border:0"></td></tr>' +
+    '<tr class="scr-x"><th class="hd">기준 휴무일</th><td colspan="2">' + md.quota + '일</td><td colspan="' + N + '" style="border:0"></td><td colspan="3" style="border:0;text-align:right;font-weight:700">[ ' + STORE_NAME + ' ]</td></tr>';
+  S.xlMeta = { total: md.total, quota: md.quota };
   const t0 = new Date(), tDay = t0.getFullYear() === y && t0.getMonth() + 1 === m ? t0.getDate() : 0, td = x => x.day === tDay ? ' tdy' : '';
-  h += '<tr><th class="hd c1" rowspan="2">구분</th><th class="hd c2" rowspan="2">직급</th><th class="hd c3" rowspan="2">성명</th>' + md.days.map(x => '<th class="hd' + (x.red ? ' red' : '') + td(x) + '">' + x.day + '</th>').join('') + '<th class="hd" rowspan="2">휴일<br>근무</th><th class="hd" rowspan="2">담당</th><th class="hd" rowspan="2">본인<br>서명</th></tr>';
-  h += '<tr>' + md.days.map(x => '<th class="hd' + (x.red ? ' red' : '') + td(x) + '">' + x.label + '</th>').join('') + '</tr>';
+  h += '<tr><th class="hd c1" rowspan="2">구분</th><th class="hd c2" rowspan="2">직급</th><th class="hd c3" rowspan="2">성명</th>' + md.days.map(x => '<th class="hd dh' + (x.red ? ' red' : '') + td(x) + '">' + x.day + '</th>').join('') + '<th class="hd dh" rowspan="2">휴일<br>근무</th><th class="hd scr-x" rowspan="2">담당</th><th class="hd scr-x" rowspan="2">본인<br>서명</th></tr>';
+  h += '<tr>' + md.days.map(x => '<th class="hd dw' + (x.red ? ' red' : '') + td(x) + '">' + x.label + '</th>').join('') + '</tr>';
   md.groups.forEach(g => {
     const span = g.rows.length + (g.count ? 1 : 0);
     if (g.count) {
-      h += '<tr><td class="grp c1" rowspan="' + span + '">' + esc(g.name) + '</td><td class="grp c2" colspan="2">근무인원</td>' + md.days.map((x, i) => '<td class="cnt' + td(x) + '">' + presentCount(g.rows, i) + '명</td>').join('') + '<td></td><td></td><td></td></tr>';
+      h += '<tr><td class="grp c1" rowspan="' + span + '">' + esc(g.name) + '</td><td class="grp c2" colspan="2">근무인원</td>' + md.days.map((x, i) => '<td class="cnt' + td(x) + '">' + presentCount(g.rows, i) + '명</td>').join('') + '<td></td><td class="scr-x"></td><td class="scr-x"></td></tr>';
     }
     g.rows.forEach((r, k) => {
       h += '<tr' + (!S.admin && r.id === S.myId ? ' class="mine"' : '') + '>' + (!g.count && k === 0 ? '<td class="grp c1" rowspan="' + span + '">' + esc(g.name) + '</td>' : '') + '<td class="c2 nm">' + esc(r.title) + '</td><td class="c3 nm"><b>' + esc(r.name) + '</b></td>';
@@ -727,27 +760,30 @@ function renderXl(y, m) {
         h += '<td class="' + (!inR ? 'off' : (r.early[i] ? 'y' : c ? 'ab' : '') + ' ed') + td(md.days[i]) + '"' + (inR ? ' data-ds="' + dateKey(y, m, i + 1) + '" data-id="' + esc(r.id) + '"' : '') + '>' + (inR ? esc(c).replace('\n', '<br>') : '') + '</td>';
       });
       const off = r.codes.filter(c => c === '휴').length;
-      h += '<td>' + Math.max(0, md.quota - off) + '일</td><td class="duty">' + esc(r.duty) + '</td><td></td></tr>';
+      h += '<td>' + Math.max(0, md.quota - off) + '일</td><td class="duty scr-x">' + esc(r.duty) + '</td><td class="scr-x"></td></tr>';
     });
   });
   const all = md.groups.flatMap(g => g.rows);
-  h += '<tr><td class="grp c1" rowspan="2">근무인원</td><td class="grp c2" colspan="2">계</td>' + md.days.map((x, i) => '<td class="sum">' + presentCount(all, i) + '명</td>').join('') + '<td colspan="3" rowspan="2" style="background:#d9d9d9"></td></tr>';
+  h += '<tr><td class="grp c1" rowspan="2">근무인원</td><td class="grp c2" colspan="2">계</td>' + md.days.map((x, i) => '<td class="sum">' + presentCount(all, i) + '명</td>').join('') + '<td rowspan="2" style="background:#d9d9d9"></td><td colspan="2" rowspan="2" class="scr-x" style="background:#d9d9d9"></td></tr>';
   h += '<tr><td colspan="2" class="rate c2">총원 대비</td>' + md.days.map((x, i) => '<td class="rate">' + (activeCount(all, i) ? Math.round(presentCount(all, i) / activeCount(all, i) * 100) : 0) + '%</td>').join('') + '</tr>';
   $('xlTable').innerHTML = h;
   // 이름 칸 고정: 구분 · 직급 칸 실제 너비를 재서 다음 칸 위치로
   const T = $('xlTable'), a = T.querySelector('th.c1'), b = T.querySelector('th.c2');
   if (a && b && a.offsetWidth) { T.style.setProperty('--x2', a.offsetWidth + 'px'); T.style.setProperty('--x3', (a.offsetWidth + b.offsetWidth) + 'px'); }
+  const h1 = T.querySelector('th.dh'); if (h1 && h1.offsetHeight) T.style.setProperty('--y2', h1.offsetHeight + 'px');
   renderXlTools();
 }
 // 근무 고르기 도구: 👆 하나씩(칸을 누르면 고르는 창) 또는 붓(근무를 먼저 고르고 칸을 누르면 바로 들어감)
 function renderXlTools() {
   const lab = s => s === '조출반차' ? '조출+반차' : s === '조출' ? '조출 07~17' : s === '마감' ? '마감 10~20' : s;
   const b = S.brush;
-  $('xlTools').innerHTML = '<div class="hint">' + (b === null ? '👆 <b>칸을 누르면</b> 근무를 고르는 창이 떠요. 같은 근무를 여러 칸에 넣을 때는 아래에서 근무를 먼저 고르세요.'
+  const mt = S.xlMeta ? '<span class="meta">총원 ' + S.xlMeta.total + '명 · 기준 휴무 ' + S.xlMeta.quota + '일</span>' : '';
+  const sw = s => s === '조출' || s === '조출반차' ? '<i class="sw" style="background:#ffc000"></i>' : '';
+  $('xlTools').innerHTML = '<div class="hint">' + mt + (b === null ? '👆 <b>칸을 누르면</b> 근무를 고르는 창이 떠요. 같은 근무를 여러 칸에 넣을 때는 아래에서 근무를 먼저 고르세요.'
     : '🖌 <b>' + esc(b ? lab(b) : '지우기') + '</b> 선택됨 — 누르는 칸마다 바로 들어가요. 끝나면 「👆 하나씩 고르기」를 누르세요.') + '</div>' +
-    '<button class="btn ghost' + (b === null ? ' on' : '') + '" data-b="__pick">👆 하나씩 고르기</button>' +
-    STATES.map(s => '<button class="btn ghost' + (b === s ? ' on' : '') + '" data-b="' + esc(s) + '">' + esc(lab(s)) + '</button>').join('') +
-    '<button class="btn ghost' + (b === '' ? ' on' : '') + '" data-b="">지우기</button>';
+    '<div class="xl-pal"><button class="btn ghost' + (b === null ? ' on' : '') + '" data-b="__pick">👆 하나씩 고르기</button>' +
+    STATES.map(s => '<button class="btn ghost' + (b === s ? ' on' : '') + '" data-b="' + esc(s) + '">' + sw(s) + esc(lab(s)) + '</button>').join('') +
+    '<button class="btn ghost' + (b === '' ? ' on' : '') + '" data-b="">지우기</button></div>';
   $('xlWrap').classList.toggle('brush', b !== null);
 }
 $('xlTools').addEventListener('click', e => {
@@ -1026,6 +1062,7 @@ $('xlsxBtn').addEventListener('click', downloadXlsx);
 // 처음 화면 = 엑셀 양식 (칸을 눌러 바로 고름). 달력으로 바꾸면 이 기기에서는 다음에도 달력으로
 function applyView() {
   $('calView').classList.toggle('hide', S.view !== 'cal'); $('xlView').classList.toggle('hide', S.view !== 'xl');
+  document.body.classList.toggle('xl-mode', S.view === 'xl');
   // 휴무 사용 현황은 두 화면 모두에서 보이게: 엑셀 양식일 때는 표 아래로 옮김
   const side = document.querySelector('aside.side');
   if (side) { if (S.view === 'xl') { side.classList.add('xl-side'); $('xlView').after(side); } else { side.classList.remove('xl-side'); $('calView').appendChild(side); } }
