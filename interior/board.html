@@ -102,7 +102,7 @@ body.fs .exitfs { display: block; }
     <div class="dots" id="dots"></div>
   </div>
 </div>
-<script src="sets.js?v=2"></script>
+<script src="sets.js?v=2"></script><!-- b3 -->
 <script>
 'use strict';
 (function () { function f() { document.documentElement.style.setProperty('--app-h', window.innerHeight + 'px'); } f(); addEventListener('resize', f); addEventListener('orientationchange', function () { setTimeout(f, 300); }); })();
@@ -148,6 +148,16 @@ function fitBoard() {
   bd.style.transform = 'scale(' + z + ')'; wr.style.width = Math.floor(bw * z) + 'px'; wr.style.height = Math.floor(bh * z) + 'px';
 }
 addEventListener('resize', () => { clearTimeout(window.__fz); window.__fz = setTimeout(fitBoard, 120); });
+/* 추가 시공비 단가표: 안내판 양식 그대로 (검은 제목줄 · NO · 공종 · 내용 · 소비자가 · 비고, 같은 공종은 한 칸으로) */
+function workHtml() {
+  const WK = B.work || []; let h = '<div class="sheet"><div class="tt">추가 시공비 단가표</div><div class="base">기준: ' + esc(B.workBase || '') + '</div><table class="wk"><tr><th>NO</th><th>공 종</th><th>내 용</th><th>소비자가(VAT+)</th><th>비 고</th></tr>';
+  WK.forEach((w, i) => {
+    let span = 0; if (i === 0 || WK[i - 1][0] !== w[0]) { span = 1; while (WK[i + span] && WK[i + span][0] === w[0]) span++; }
+    const cx = w[0] === '취소';
+    h += '<tr' + (cx ? ' class="cx"' : '') + '><td class="no">' + (i + 1) + '</td>' + (span ? '<td class="g' + (cx ? ' cx' : '') + '" rowspan="' + span + '">' + esc(w[0]) + '</td>' : '') + '<td class="n">' + esc(w[1]) + '</td><td class="p">' + W(w[2]) + '</td><td class="m">' + esc(w[3]) + '</td></tr>';
+  });
+  return h + '</table></div>';
+}
 function show(i) {
   cur = (i + PAGES.length) % PAGES.length; const P = PAGES[cur];
   try { localStorage.setItem('int.board', P.k); } catch (e) { }
