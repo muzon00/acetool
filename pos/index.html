@@ -1396,6 +1396,19 @@ var BUILD = '2026-11-12b';
 </script>
 
 <script src="../interior/intsync.js?v=2"></script>
+<script>/* 새 버전 알림: 화면으로 돌아올 때 · 5분마다 서버의 POS_BUILD와 비교해, 바뀌었으면 위에 "새로고침" 띠를 띄움 (올리는 중일 수 있어 저절로 새로 고치지는 않음) */
+const POS_BUILD = '2026-11-28c';
+(function () {
+  let shown = false;
+  const check = async () => {
+    if (shown) return;
+    try { const t = await (await fetch(location.pathname + '?b=' + Date.now(), { cache: 'no-store' })).text(); const m = t.match(/const POS_BUILD = '([^']+)'/);
+      if (m && m[1] !== POS_BUILD) { shown = true; const d = document.createElement('div'); d.style.cssText = 'position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:9999;background:#1d4ed8;color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.25);display:flex;gap:10px;align-items:center;max-width:92vw';
+        d.innerHTML = '🔄 새 버전이 나왔어요 <button type="button" style="border:0;border-radius:8px;padding:6px 12px;font-weight:800;cursor:pointer">지금 새로고침</button>'; d.querySelector('button').onclick = () => location.reload(); document.body.appendChild(d); } } catch (e) { }
+  };
+  addEventListener('focus', check); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); }); setInterval(check, 5 * 60 * 1000); setTimeout(check, 3000);
+})();
+</script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
