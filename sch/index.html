@@ -209,6 +209,19 @@ td.l, th.l { text-align: left; }
   .xl td.ed { font-size: 13px; font-weight: 700; }
   .xl tbody tr:hover td.nm { background: #eef4ff; }
 }
+/* PC · 노트북: 한눈에 (옆으로 밀지 않게) — 칸 최소 너비 없애고 화면 너비에 맞춤, 그래도 넘치면 표를 살짝 줄임(맞추기) */
+@media screen and (min-width: 701px) {
+  body.xl-mode .wrap { max-width: 1680px; }
+  .xl th, .xl td, .xl td.ed { min-width: 0; padding: 2px 2px; }
+  .xl .c1 { max-width: 74px; white-space: normal; word-break: keep-all; line-height: 1.2; }
+  .xl .c3 { white-space: nowrap; }
+  .xl-wrap.fit { overflow-x: hidden; }
+}
+@media screen and (min-width: 701px) and (max-width: 1199px) { .xl { font-size: 12px; } .xl td.ed { font-size: 12px; height: 32px; } .xl .cnt, .xl .sum { font-size: 10.5px; } .xl .rate { font-size: 9px; } }
+/* 관리자: 조출 · 마감 인원 확인 줄 (1명인 날 빨갛게) */
+.xl tr.shift td { background: #f4f8ff; font-weight: 700; font-size: 11px; }
+.xl tr.shift td.one { background: #ffd6d6; color: #b42318; font-weight: 800; }
+.xl tr.shift td.c1, .xl tr.shift td.c2 { background: #e8f0ff; color: #1d4ed8; }
 @media screen and (min-width: 1200px) { .xl { font-size: 14px; } .xl td.ed { height: 36px; font-size: 14px; } .xl-pal .btn { font-size: .95em; } }
 @media screen and (max-width: 700px) {
   #xlView { padding: 8px; border-radius: 12px; }
@@ -299,6 +312,8 @@ body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .
   body, html { background: #fff; }
   .day { break-inside: avoid; min-height: 100px; }
   .xl-tools { display: none !important; }
+  .xl tr.shift { display: none !important; }
+  .xl { zoom: 1 !important; }
   .xl .c1, .xl .c2, .xl .c3 { position: static; box-shadow: none; }
 }
 
@@ -675,6 +690,12 @@ function renderWarn(y, m) {
   });
   const msg = [];
   if (warn.length) msg.push('⚠️ [알림] ' + esc(warn.join(', ')) + ' 님이 5일 넘게 연속 근무하게 됩니다.');
+  if (S.admin && S.page === 'admin') {
+    const sh = shiftCounts(y, m), lab = d => d.d + '일(' + DOW[new Date(y, m - 1, d.d).getDay()] + ')';
+    const e1 = sh.filter(d => d.e === 1).map(lab), c1 = sh.filter(d => d.c === 1).map(lab);
+    if (e1.length) msg.push('⚠️ [관리자] 조출이 1명뿐인 날: ' + e1.join(', '));
+    if (c1.length) msg.push('⚠️ [관리자] 마감이 1명뿐인 날: ' + c1.join(', '));
+  }
   if (!hasVariableHolidays(y)) msg.push('⚠️ ' + y + '년 설날·추석 공휴일이 등록되어 있지 않습니다. 공휴일 관리에서 추가해 주세요.');
   $('warn').innerHTML = msg.join('<br>');
 }
@@ -765,12 +786,39 @@ function renderXl(y, m) {
   const all = md.groups.flatMap(g => g.rows);
   h += '<tr><td class="grp c1" rowspan="2">근무인원</td><td class="grp c2" colspan="2">계</td>' + md.days.map((x, i) => '<td class="sum">' + presentCount(all, i) + '명</td>').join('') + '<td rowspan="2" style="background:#d9d9d9"></td><td colspan="2" rowspan="2" class="scr-x" style="background:#d9d9d9"></td></tr>';
   h += '<tr><td colspan="2" class="rate c2">총원 대비</td>' + md.days.map((x, i) => '<td class="rate">' + (activeCount(all, i) ? Math.round(presentCount(all, i) / activeCount(all, i) * 100) : 0) + '%</td>').join('') + '</tr>';
+  // 관리자 화면에서만: 조출 · 마감 인원 (1명인 날 빨갛게) — 인쇄 · 엑셀에는 안 나옴
+  if (S.admin && S.page === 'admin') {
+    const sh = shiftCounts(y, m), cell = (n, tag) => '<td class="' + (n === 1 ? 'one' : '') + '" title="' + tag + ' ' + n + '명">' + n + '</td>';
+    h += '<tr class="shift"><td class="c1" rowspan="2">근무조<br>확인</td><td class="c2" colspan="2">조출 07~17</td>' + sh.map(d => cell(d.e, '조출')).join('') + '<td rowspan="2"></td><td colspan="2" rowspan="2" class="scr-x"></td></tr>';
+    h += '<tr class="shift"><td class="c2" colspan="2">마감 10~20</td>' + sh.map(d => cell(d.c, '마감')).join('') + '</tr>';
+  }
   $('xlTable').innerHTML = h;
   // 이름 칸 고정: 구분 · 직급 칸 실제 너비를 재서 다음 칸 위치로
   const T = $('xlTable'), a = T.querySelector('th.c1'), b = T.querySelector('th.c2');
   if (a && b && a.offsetWidth) { T.style.setProperty('--x2', a.offsetWidth + 'px'); T.style.setProperty('--x3', (a.offsetWidth + b.offsetWidth) + 'px'); }
   const h1 = T.querySelector('th.dh'); if (h1 && h1.offsetHeight) T.style.setProperty('--y2', h1.offsetHeight + 'px');
-  renderXlTools();
+  renderXlTools(); fitXl();
+}
+/* PC · 노트북: 표가 화면보다 넓으면 그만큼 표를 줄여 한눈에 (최대 25%까지, 휴대폰은 옆으로 밀기 그대로) */
+function fitXl() {
+  const T = $('xlTable'), W = $('xlWrap'); if (!T || !W || !W.offsetWidth) return;
+  T.style.zoom = ''; W.classList.remove('fit');
+  if (window.innerWidth <= 700) return;
+  const need = T.scrollWidth, have = W.clientWidth;
+  if (need > have + 1) { const z = Math.max(0.75, (have - 2) / need); T.style.zoom = z.toFixed(3); W.classList.add('fit'); }
+}
+window.addEventListener('beforeprint', () => { const T = $('xlTable'); if (T) T.style.zoom = ''; });
+window.addEventListener('afterprint', fitXl);
+let fitT = null; window.addEventListener('resize', () => { clearTimeout(fitT); fitT = setTimeout(fitXl, 150); });
+/* 날짜별 조출 · 마감 인원 (점장 제외, 그날 재직 중인 사람만): 조출 = 조출 · 조출+반차, 마감 = 마감 · 빈칸(빈칸도 10~20) */
+function shiftCounts(y, m) {
+  const ms = membersForMonth(y, m).filter(x => (x.group || '매장운영') !== '점장'), out = [];
+  for (let d = 1; d <= dim(y, m); d++) {
+    const ds = dateKey(y, m, d); let e = 0, c = 0;
+    ms.forEach(x => { if (!isActiveOn(x, ds)) return; const st = status(ds, x); if (st === '조출' || st === '조출반차') e++; else if (st === '' || st === '마감') c++; });
+    out.push({ d, ds, e, c });
+  }
+  return out;
 }
 // 근무 고르기 도구: 👆 하나씩(칸을 누르면 고르는 창) 또는 붓(근무를 먼저 고르고 칸을 누르면 바로 들어감)
 function renderXlTools() {
