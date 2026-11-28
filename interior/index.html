@@ -80,6 +80,7 @@ button { cursor: pointer; }
 .pcard .sp { font-size: .8em; color: var(--ink3); }
 .pcard .pr { font-weight: 800; }
 .pcard .add { position: absolute; right: 8px; top: 8px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--navy); color: #fff; font-size: 20px; line-height: 1; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+.setbar a.boardlink { flex: none; border: 1.5px solid #9fb8d6; background: #f3f7fc; border-radius: 14px; padding: 8px 14px; font-weight: 800; min-height: 56px; color: var(--navy); text-decoration: none; display: block; } .setbar a.boardlink small { display: block; font-weight: 500; color: var(--ink3); font-size: .74em; }
 .setbar button { border-color: #e7b8bb; background: #fff5f5; color: #8a1c24; }
 .setgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
 .setcard { text-align: left; border: 1.5px solid var(--line); background: #fff; border-radius: 14px; padding: 10px 12px; display: grid; gap: 3px; position: relative; }
@@ -255,7 +256,7 @@ html.lite .litebtn { background: #fff1c2 !important; color: #6b4300 !important; 
 </style>
 <div class="app">
   <div class="top">
-    <div class="apptabs"><a href="index.html" class="on">🧾 상품 견적 (바코드)</a><a href="package.html">🏠 전체 인테리어 견적</a></div>
+    <div class="apptabs"><a href="index.html" class="on">🧾 상품 견적 (바코드)</a><a href="package.html">🏠 전체 인테리어 견적</a><a href="board.html">🖼 상담 안내판</a></div>
     <span class="note" id="dbNote"></span>
     <button class="btn sm litebtn instbtn" id="instBtn" type="button" style="margin-left:auto">📲 바탕화면에 설치</button><button class="btn sm litebtn" id="liteBtn" type="button" onclick="liteToggle()" title="구형 태블릿이면 켜 두세요 (글꼴 · 효과를 줄여 빨라져요)"></button><button class="btn sm" id="cloudBtn" type="button">☁️ 로그인 (기기 연동)</button>
     <button class="btn sm" type="button" data-act="upload">📥 상품 · 판매 데이터 올리기</button>
@@ -285,7 +286,7 @@ html.lite .litebtn { background: #fff1c2 !important; color: #6b4300 !important; 
 <script src="sets.js?v=1"></script>
 <script>
 'use strict';
-const BUILD = '2026-11-28d';
+const BUILD = '2026-11-28e';
 /* 새 버전이 올라오면 저절로 새로 고침 (창으로 돌아올 때 · 5분마다). 고르는 창이나 스캔 화면을 쓰는 중이면 기다림 */
 (function () {
   const check = async () => {
@@ -879,7 +880,7 @@ function workModal() {
     const a = t.closest('[data-wa]'); if (a) { const w = BX.work[+a.dataset.wa]; addLines([{ c: 'SVC:w' + a.dataset.wa, b: '', n: w[0] + ' — ' + w[1], s: '추가 시공비', p: w[2], q: 1, svc: true }]); toast(w[1] + ' 담았어요 (' + won0(w[2]) + ')'); } });
   document.body.appendChild(box);
 }
-function renderSetBar() { setHtml('SETBAR', BX.sets.length ? '<button type="button" data-skind="set">🛁 욕실 세트 9종<small>철거 · 부자재 포함 · 41만~99만</small></button><button type="button" data-skind="pkg">📦 욕실 패키지 9종<small>타일 · 시공 포함 · 259만~349만</small></button><button type="button" data-skind="work">🛠 추가 시공비<small>단가표 ' + BX.work.length + '항목</small></button>' : ''); }
+function renderSetBar() { setHtml('SETBAR', BX.sets.length ? '<button type="button" data-skind="set">🛁 욕실 세트 9종<small>철거 · 부자재 포함 · 41만~99만</small></button><button type="button" data-skind="pkg">📦 욕실 패키지 9종<small>타일 · 시공 포함 · 259만~349만</small></button><button type="button" data-skind="work">🛠 추가 시공비<small>단가표 ' + BX.work.length + '항목</small></button>' + '<a class="boardlink" href="board.html">🖼 안내판 크게 보기<small>상담할 때 전체 화면</small></a>' : ''); }
 
 /* ===== 끌어서 담기 (손가락: 옆으로 밀면 끌기 · 위아래는 스크롤 / 마우스: 어느 쪽이든) ===== */
 let drag = null, ghost = null, lastDrag = 0;
