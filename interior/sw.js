@@ -1,11 +1,17 @@
-/* 인테리어 견적 설치용 서비스 워커 — 늘 최신 화면을 먼저 받고(네트워크 우선), 인터넷이 끊겼을 때만 마지막으로 받은 화면을 보여줌.
+/* 인테리어 견적 설치용 서비스 워커 — 늘 최신 화면을 먼저 받고(네트워크 우선), 인터넷이 끊기거나 4초 넘게 응답이 없으면 마지막으로 받은 화면을 보여줌.
    쇼핑몰 · 클라우드(Firebase) 같은 다른 사이트 요청은 건드리지 않음 */
-const CACHE = 'int-v1';
+const CACHE = 'int-v2';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', e => {
   const r = e.request, u = new URL(r.url);
-  if (r.method !== 'GET' || u.origin !== location.origin) return;
-  e.respondWith(fetch(r).then(res => { if (res.ok && !u.search.includes('b=')) { const c = res.clone(); caches.open(CACHE).then(ca => ca.put(r, c)); } return res; })
-    .catch(() => caches.match(r, { ignoreSearch: true }).then(m => m || caches.match('./index.html'))));
+  if (r.method !== 'GET' || u.origin !== location.origin || u.search.includes('b=')) return;
+  const net = fetch(r).then(res => { if (res.ok) { const c = res.clone(); caches.open(CACHE).then(ca => ca.put(r, c)); } return res; });
+  const cached = () => caches.match(r, { ignoreSearch: true }).then(m => m || (r.mode === 'navigate' ? caches.match('./index.html', { ignoreSearch: true }) : undefined));
+  /* 4초 안에 오면 새 것, 늦으면 저장된 것 먼저 (저장된 게 없으면 계속 기다림) */
+  e.respondWith(new Promise(resolve => {
+    let done = false; const fin = v => { if (!done && v) { done = true; resolve(v); } };
+    const t = setTimeout(() => cached().then(fin), 4000);
+    net.then(res => { clearTimeout(t); fin(res); }).catch(() => { clearTimeout(t); cached().then(m => { if (m) fin(m); else { done = true; resolve(Response.error()); } }); });
+  }));
 });
