@@ -512,7 +512,8 @@ svg.chart { width: 100%; height: auto; display: block; }
 #tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--bg); padding: 6px 9px; border-radius: 6px; font-size: 12px; line-height: 1.45; z-index: 9; display: none; max-width: 260px; }
 #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-size: .92em; z-index: 10; display: none; max-width: calc(100% - 32px); text-align: center; }
 .drop { border: 2px dashed var(--line); border-radius: var(--radius); padding: 28px 16px; text-align: center; color: var(--ink2); cursor: pointer; background: var(--surface2); }
-.upslots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.upslots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.upslots .slot.s-int { border-color: #9fb8d6; background: #f3f7fc; } .upslots .slot.s-int b { color: #1d3557; }
 @media (max-width: 760px) { .upslots { grid-template-columns: 1fr 1fr; } }
 .upslots .slot { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px 10px; text-align: center; cursor: pointer; }
 .upslots .slot .si { font-size: 1.8em; line-height: 1; } .upslots .slot b { font-size: 1.08em; color: var(--ink); } .upslots .slot small { color: var(--ink3); line-height: 1.4; }
@@ -955,6 +956,7 @@ dialog.doc ul { padding-left: 20px; margin: 4px 0; }
           <div class="drop slot s-cons" data-slot="cons" tabindex="0" role="button"><span class="si">🛁</span><b>시공</b><small>시공 내역<br>(판매번호 · 시공일자 · 시공상태)</small></div>
           <div class="drop slot s-ar" data-slot="ar" tabindex="0" role="button"><span class="si">💳</span><b>채권 연령</b><small>채권연령 관리<br>(거래처명 · 잔액)</small></div>
           <div class="drop slot s-ref" data-slot="ref" tabindex="0" role="button"><span class="si">📚</span><b>본사 참고자료</b><small>일레포트(.xlsb) · 매출 유형별<br>· PB 실적 · Master 회원 명단</small></div>
+          <label class="drop slot s-int" for="intStockFile" tabindex="0" role="button" title="인테리어 상담 견적의 재고로 바뀌어요"><span class="si">📦</span><b>인테리어 재고</b><small>LOC 재고조회<br>(상품코드 · 재고수량) → 인테리어 견적</small></label>
           <input type="file" id="file" class="hide" accept=".xlsx,.xlsb,.xls,.csv" multiple>
         </div>
         <div id="upSlotNow" class="muted" style="margin-top:8px"></div>
@@ -3705,7 +3707,7 @@ const fileIn = $('file');
 const SLOT = { sales: '💰 매출', cons: '🛁 시공', ar: '💳 채권 연령', ref: '📚 본사 참고자료' };
 const slotOf = k => k === 'sales' ? 'sales' : k === 'cons' ? 'cons' : k === 'ar' ? 'ar' : /^(mix|pb|members|elr)/.test(k || '') ? 'ref' : '';
 function slotErr(kind) { const want = S.upSlot, got = slotOf(kind); if (!want || !got || want === got) return ''; return '이 파일은 <b>' + SLOT[got] + '</b> 자료로 보여요. <b>' + SLOT[want] + '</b> 칸에는 올리지 않았어요. 맞는 칸(' + SLOT[got] + ')에 다시 올려 주세요.'; }
-document.querySelectorAll('#upFileBox .slot').forEach(d => {
+document.querySelectorAll('#upFileBox .slot[data-slot]').forEach(d => {
   const go = () => { S.upSlot = d.dataset.slot; fileIn.click(); };
   d.addEventListener('click', go);
   d.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
@@ -4030,7 +4032,7 @@ async function intStockUpload(files) {
   try {
     if (S.role !== 'admin') { say('warn', '관리자 계정으로 로그인해야 인테리어 견적에 연동할 수 있어요'); return; }
     if (!window.INTSYNC || !window.INTSYNC.stockRows) { say('warn', '연동 도구를 불러오지 못했어요 — 새로고침 후 다시 올려 주세요'); return; }
-    say('warn', '⏳ 재고 파일 읽는 중…');
+    say('warn', '⏳ 재고 파일 읽는 중…'); try { $('intStockCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e2) { }
     const X = await loadXlsx(); let stock = null, stockT = 0; const names = [], none = [];
     for (const f of files) {
       if (f.size > 100 * 1024 * 1024) { none.push(f.name + ' (100MB 넘음)'); continue; }
@@ -4049,6 +4051,11 @@ async function intStockUpload(files) {
     say('ok', '📦 <b>인테리어 견적 재고를 바꿨어요</b> — 상품 ' + r.n.toLocaleString('ko-KR') + '개 중 재고 있는 상품 <b>' + r.have.toLocaleString('ko-KR') + '개</b> · <b>' + tl + ' 기준</b> (파일 받은 시각)' + (none.length ? '<br><span class="muted">재고 파일이 아니어서 건너뛴 파일: ' + none.map(esc).join(', ') + '</span>' : '') + '<br><span class="muted">이제부터 올리는 매출 판매 파일의 인테리어 판매는 이 재고에서 빠져요. 태블릿은 로그인돼 있으면 저절로 새 재고를 받아요.</span>');
   } catch (e) { say('bad', '재고 연동 실패: ' + esc(errMsg(e))); }
 }
+/* 파일 올리기 칸의 📦 인테리어 재고: 누르면 재고 파일 고르기, 끌어다 놓기도 됨 → 결과는 아래 📦 인테리어 재고 칸에 */
+(() => { const d = document.querySelector('#upFileBox .s-int'); if (!d) return;
+  d.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('intStockFile').click(); } });
+  d.addEventListener('dragover', e => { e.preventDefault(); d.classList.add('over'); }); d.addEventListener('dragleave', () => d.classList.remove('over'));
+  d.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); d.classList.remove('over'); intStockUpload([...(e.dataTransfer.files || [])]); }); })();
 $('intStockFile').addEventListener('change', e => { const fs = [...e.target.files]; e.target.value = ''; intStockUpload(fs); });
 ['dragover', 'drop'].forEach(ev => $('intStockCard').addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); if (ev === 'drop') intStockUpload([...(e.dataTransfer.files || [])]); }));
 async function intSync(rows) {
