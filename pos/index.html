@@ -1385,6 +1385,7 @@ var BUILD = '2026-11-12b';
 })();
 </script>
 
+<script src="../interior/intsync.js?v=1"></script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
@@ -1530,6 +1531,8 @@ function salesAgg(headRow) {
   const hasHr = col['영업시간'] !== undefined, txn = {};
   // POS 원본이면 날짜별 고객 매출 (고객명이 있는 줄만, 고객코드가 있으면 그것으로 묶음) → 그날 상위 3명
   const hasCust = !aggMode && col['고객명'] !== undefined, custm = {};
+  // 🧾 인테리어 견적 연동용 판매 줄 (POS 원본일 때만: 판매번호 · 상품코드 · 판매수량이 있으면)
+  const hasInt = !aggMode && col['판매번호'] !== undefined && (col['상품코드'] !== undefined || col['바코드'] !== undefined) && col['판매수량'] !== undefined, intRows = [];
   const get = (r, name) => { const k = col[name]; return k === undefined ? '' : r[k]; };
   const add = r => {
     if (!r || !r.length) return;
@@ -1585,6 +1588,10 @@ function salesAgg(headRow) {
           mn.set(tn, { s: (pv && pv.s) || sale, h: pv && pv.h !== null && (hr === null || pv.h <= hr) ? pv.h : hr }); }
       }
     }
+    if (hasInt) {
+      const tn = String(get(r, '판매번호') || '').trim(), cd = String(get(r, '상품코드') || get(r, '바코드') || '').trim(), q = Number(get(r, '판매수량')), pr = Number(get(r, '판매금액'));
+      if (tn && cd && Number.isFinite(q)) intRows.push({ tx: tn, org: String(get(r, '원판매번호') || '').trim(), c: cd, b: String(get(r, '바코드') || '').trim(), n: String(get(r, '상품명') || '').trim(), c1: String(get(r, '대분류(N)') || get(r, '대분류') || '').trim(), c2: String(get(r, '중분류(N)') || get(r, '중분류') || '').trim(), c3: String(get(r, '소분류(N)') || get(r, '소분류') || '').trim(), q, p: Math.abs(Number.isFinite(pr) ? pr : 0), d, tm: get(r, '영업시간') });
+    }
     st.usedRows++; st.totalNet += net; st.byG[g] += net; st.dateSet[d] = 1;
   };
   const done = () => {
@@ -1602,7 +1609,7 @@ function salesAgg(headRow) {
           .filter(u => u.n > 0).sort((a, b) => b.n - a.n).slice(0, 3);
       });
     }
-    return { rows, stats: { topByDay, rowsRead: st.rowsRead, usedRows: st.usedRows, totalNet: st.totalNet, byG: st.byG, unknown: st.unknown, badDate: st.badDate, dates, adjusted: st.adjusted, other: st.other, badNum: st.badNum, badSamples: st.badSamples, txByDay, txnByDay, txhByDay, payByDay: hasPay ? st.payByDay : null, mode: aggMode ? '백업/집계 CSV' : 'POS 원본' } };
+    return { rows, stats: { topByDay, rowsRead: st.rowsRead, usedRows: st.usedRows, totalNet: st.totalNet, byG: st.byG, unknown: st.unknown, badDate: st.badDate, dates, adjusted: st.adjusted, other: st.other, badNum: st.badNum, badSamples: st.badSamples, txByDay, txnByDay, txhByDay, intRows: hasInt ? intRows : null, payByDay: hasPay ? st.payByDay : null, mode: aggMode ? '백업/집계 CSV' : 'POS 원본' } };
   };
   return { add, done };
 }
@@ -3986,6 +3993,39 @@ function renderPreview() {
   $('preview').innerHTML = h;
   $('regBtn').addEventListener('click', doRegister);
 }
+/* ===== 🧾 인테리어 견적 연동: 판매 원본을 올리면 인테리어 상품 목록(int_db)의 판매 건수 · 재고를 같이 고침 (관리자만) =====
+   int_db 형식은 interior/cloud.js와 같음: meta {v:2, ver, bmN} + bm_0 … 에 JSON 글자를 25만 자씩 */
+async function intSync(rows) {
+  const box = document.createElement('div'); box.className = 'banner warn'; box.id = 'intSyncMsg'; box.textContent = '🧾 인테리어 견적에 판매를 반영하는 중…';
+  const pv = $('preview'); if (pv) pv.prepend(box);
+  const say = (cls, h) => { box.className = 'banner ' + cls; box.innerHTML = h; };
+  try {
+    if (S.role !== 'admin') { say('warn', '🧾 인테리어 견적 연동은 관리자 계정만 할 수 있어요'); return; }
+    if (!window.INTSYNC) { say('warn', '🧾 인테리어 연동 도구를 불러오지 못했어요 — 새로고침 후 다시 올려 주세요'); return; }
+    const ms = await getDoc(doc(db, 'int_db', 'meta'));
+    if (!ms.exists()) { say('warn', '🧾 인테리어 견적에 상품 목록이 아직 없어서 연동하지 않았어요'); return; }
+    const m = ms.data();
+    const parts = await Promise.all(Array.from({ length: m.bmN || 0 }, (_, i) => getDoc(doc(db, 'int_db', 'bm_' + i))));
+    if (m.v !== 2 || parts.some(x => !x.exists() || x.data().ver !== m.ver)) { say('warn', '🧾 인테리어 상품 목록이 예전 형식이거나 올라가는 중이에요 — 인테리어 화면에서 한 번 열어 연동한 뒤 다시 올려 주세요'); return; }
+    const cur = JSON.parse(parts.map(x => x.data().j).join(''));
+    const r = window.INTSYNC.merge(cur, rows);
+    if (r.skip) { say('warn', '🧾 인테리어 견적: ' + esc(r.skip)); return; }
+    if (!r.days.length && !r.nAdd) { say('ok', '🧾 인테리어 견적: 이 파일 날짜(' + (r.older ? '상품 목록 기간 안' : '') + ')는 이미 반영돼 있어서 바꿀 것이 없어요'); return; }
+    /* 올리기: 조각 먼저, meta는 맨 마지막 (다른 기기는 meta가 바뀌면 새 목록을 받음) */
+    const body = Object.assign({}, r.db); delete body.ver;
+    const j = JSON.stringify(body), CH = 250000, chunks = [];
+    for (let i = 0; i < j.length; i += CH) chunks.push(j.slice(i, i + CH));
+    if (chunks.length > 99) throw new Error('인테리어 상품 목록이 너무 커요');
+    const ver = Date.now();
+    for (let i = 0; i < chunks.length; i += 8) { const b = writeBatch(db); chunks.slice(i, i + 8).forEach((sx, k) => b.set(doc(db, 'int_db', 'bm_' + (i + k)), { j: sx, ver })); await b.commit(); }
+    const b2 = writeBatch(db);
+    for (let i = chunks.length; i < (m.bmN || 0); i++) b2.delete(doc(db, 'int_db', 'bm_' + i));
+    b2.set(doc(db, 'int_db', 'meta'), { v: 2, ver, bmN: chunks.length, at: serverTimestamp(), by: (auth.currentUser && auth.currentUser.email) || '', src: '매출 현황 연동' });
+    await b2.commit();
+    const dl = r.days.length ? mdLabel(r.days[0]) + (r.days.length > 1 ? ' ~ ' + mdLabel(r.days[r.days.length - 1]) : '') : '';
+    say('ok', '🧾 <b>인테리어 견적에도 반영했어요</b> — ' + (dl ? dl + ' 판매 ' + r.rows.toLocaleString('ko-KR') + '줄로 판매 건수 · 인기 상품 고침' : '판매 건수는 이미 반영된 날짜') + (r.newP ? ' · 처음 팔린 상품 ' + r.newP + '개 추가' : '') + (r.nAdd ? ' · 재고에서 ' + r.nAdd + '줄 (' + Math.round(r.qAdd * 100) / 100 + '개) 뺌' : '') + '<br><span class="muted">태블릿 · 다른 PC의 인테리어 견적은 로그인돼 있으면 저절로 새 목록을 받아요.</span>');
+  } catch (e) { say('bad', '🧾 인테리어 견적 연동 실패: ' + esc(errMsg(e)) + ' — 매출 등록은 정상이에요. 같은 파일을 다시 올리면 다시 시도해요.'); }
+}
 async function doRegister() {
   const p = S.parsed, btn = $('regBtn');
   btn.disabled = true;
@@ -4007,6 +4047,7 @@ async function doRegister() {
     $('goAnalysis').addEventListener('click', () => goHomeSec(lastYm, '상세 분석'));
     if ($('goTopTab')) $('goTopTab').addEventListener('click', () => showAdminTab('top'));
     S.parsed = null; fileIn.value = ''; $('upText').value = ''; S.logs = null; renderDataStatus();
+    if (ok && p.stats.intRows && p.stats.intRows.length) intSync(p.stats.intRows);
   } catch (e) {
     btn.disabled = false;
     $('regMsg').textContent = '';
