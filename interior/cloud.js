@@ -2,6 +2,7 @@
    int_db/meta  : 버전 · 조각 수 · 올린 시각 (다른 기기는 이 문서가 바뀌면 받음)
    int_db/bm_N  : 상품 목록 · 같이 산 상품 · 구성 · 재고 · 전산 바코드 전체를 JSON 글자로 25만 자씩 나눔 (문서 하나 1MB 제한)
    int_cfg/pkg  : 욕실 PKG 목록 · 추가 시공비 · 공급자 정보
+   int_cfg/setmap : 욕실 세트 · 패키지 구성 ↔ 전산 상품 연결
    읽기: 등록된 계정(관리자 · 근무표 관리자)으로 로그인한 기기 / 상품 목록 쓰기: 관리자만 */
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
@@ -47,6 +48,8 @@ async function pullDB(m) {
 }
 C.pushPkg = async (cfg) => { if (!C.canRead()) return false; const at = Date.now(); C.pkgAt = at; await setDoc(doc(fs, 'int_cfg', 'pkg'), { j: JSON.stringify(cfg), at, by: (C.user && C.user.email) || '' }); return true; };
 
+/* 세트 구성 ↔ 전산 상품 연결 (int_cfg/setmap): 한 기기에서 🔗 연결하면 모든 기기에 */
+C.pushSetmap = async (m) => { if (!C.canRead()) return false; const at = Date.now(); C.setAt = at; await setDoc(doc(fs, 'int_cfg', 'setmap'), { j: JSON.stringify(m), at, by: (C.user && C.user.email) || '' }); return true; };
 let unsubs = [];
 onAuthStateChanged(auth, async u => {
   unsubs.forEach(f => f()); unsubs = [];
@@ -60,6 +63,7 @@ onAuthStateChanged(auth, async u => {
     if (m.ver === C.pendingVer || (window.dbVer && window.dbVer() === m.ver)) return;
     try { emit('cloud-db', await pullDB(m)); } catch (e) { say('☁️ 상품 목록을 받지 못했어요: ' + (e.message || e)); }
   }, e => say('☁️ 연동 오류: ' + (/permission/i.test(e.code || '') ? '이 계정은 인테리어 자료를 볼 수 없어요 (Firebase 규칙 확인)' : e.message))));
+  unsubs.push(onSnapshot(doc(fs, 'int_cfg', 'setmap'), s => { if (!s.exists()) return; const d = s.data(); if (d.at === C.setAt) return; try { emit('cloud-setmap', JSON.parse(d.j)); } catch (e) { } }, () => { }));
   unsubs.push(onSnapshot(doc(fs, 'int_cfg', 'pkg'), s => { if (!s.exists()) { emit('cloud-pkg', null); return; } const d = s.data(); if (d.at === C.pkgAt) return; try { emit('cloud-pkg', JSON.parse(d.j)); } catch (e) { } }, () => { }));
 });
 

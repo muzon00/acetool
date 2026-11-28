@@ -203,9 +203,10 @@ html.lite .litebtn { background: #fff1c2 !important; color: #6b4300 !important; 
 <div id="docPrint"></div>
 <input type="file" id="fImp" accept=".xlsx,.xlsm,.xlsb,.xls,.csv" hidden>
 <div class="toast" id="toast" role="status"></div>
+<script src="sets.js?v=1"></script>
 <script>
 'use strict';
-const BUILD = '2026-11-28a';
+const BUILD = '2026-11-28d';
 (function () {
   const check = async () => { if (document.querySelector('.modal')) return; try { const t = await (await fetch(location.pathname + '?b=' + Date.now(), { cache: 'no-store' })).text(); const m = t.match(/const BUILD = '([^']+)'/); if (m && m[1] !== BUILD) location.reload(); } catch (e) { } };
   addEventListener('focus', check); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); }); setInterval(check, 5 * 60 * 1000);
@@ -432,31 +433,31 @@ const infoInputs = () => [['name', '고객명'], ['tel', '연락처'], ['site', 
 /* ===================== 🛁 욕실 PKG 견적서 (점포 욕실견적서 양식) =====================
    PKG 선택 → 기본 구성품 → 실측 내용 · 추가/변경 자재 → 추가 자재비용 · 추가 시공비용 → 총 합계(VAT 포함) · 조건
    들어 있는 값은 고객에게 나가는 소비자가(VAT 포함)뿐 — 공급가 · 매총율은 넣지 않음 */
-const PKG_DEF = [
-  { id: 'core_sus', n: '+EG CORE 서스 PKG', p: 2590000, t: '(거실)\n■ 선택 상품 PKG 구성품\n 1. 벽타일: 13BOX (300*600)\n 2. 바닥타일: 3BOX (300*300)\n 3. 천정재: 본판 1260*1850 / 사이드판 1000*1850 (기본)\n 4. 조명: 6인치 다운라이트(주광) / 2EA\n\n■ 필수 상품 PKG 구성품\n 1. 투피스 양변기\n 2. 반다리 세면기\n 3. 원홀세면수전\n 4. 샤워욕조수전\n 5. 슬라이드 욕실장 1200*600(댐퍼)\n 6. ACC 4종: 슬라이드바, 휴지걸이, 수건걸이, 인조대리석선반(1200)\n 7. 환풍기' },
-  { id: 'core_pino', n: '+EG CORE 피노샤워 PKG', p: 2690000, t: '(거실)\n■ 선택 상품 PKG 구성품\n 1. 벽타일: 13BOX (300*600)\n 2. 바닥타일: 3BOX (300*300)\n 3. 천정재: 본판 1260*1850 / 사이드판 1000*1850 (기본)\n 4. 조명: 6인치 다운라이트(주광) / 2EA\n\n■ 필수 상품 PKG 구성품\n 1. 투피스 양변기\n 2. 반다리 세면기\n 3. 원홀세면수전\n 4. 레인샤워수전\n 5. 슬라이드 욕실장 1200*600(댐퍼)\n 6. ACC 3종: 휴지걸이, 수건걸이, 인조대리석선반(1200)\n 7. 환풍기' }];
-/* 본사 운영안(250812) '점포 추가시공비' 소비자가(VAT 포함) — 점포에서 바뀐 단가는 ⚙ 목록 관리에서 고침 */
-const EXTRA_DEF = [['기본', '욕실 기본시공비 추가 (욕조→샤워, 1차 방수)', 60000], ['기본', '욕실 기본시공비 추가 (욕조→샤워, 1·2차 방수 아덱스)', 180000],
-  ['철거', '벽 · 바닥 타일 전면 철거 + 방수', 1140000], ['철거', 'UBR 철거', 1800000], ['철거', '바닥 타일 철거 (1·2차 액체방수 포함)', 600000], ['철거', '바닥 타일만 철거', 300000], ['철거', '벽타일 1면 철거', 180000], ['철거', '욕조 조적 철거', 180000],
-  ['타일', '특수타일 (포세린 · 모자이크)', 360000], ['타일', '타일 졸리컷 마감 (m당)', 60000], ['타일', '면적 추가 (바닥 4㎡ 초과 1㎡당)', 102000], ['타일', '특수타일 면적 추가 (1㎡당)', 156000],
-  ['타일', '현관타일 덧붙임 (3㎡ 이하)', 156000], ['타일', '발코니타일 덧붙임 (7㎡ 이하)', 444000], ['타일', '주방타일 덧붙임 (5㎡ 이하)', 420000],
-  ['설비', '급수 배관 이동 조정 (세면대 · 샤워)', 156000], ['설비', '급수 배관 간격조정 / 양변기 급수 이동', 78000], ['설비', '세면대 배수 방식 변경 (바닥→벽배수)', 204000], ['설비', '바닥 배수 이동 (유가 이동)', 180000], ['설비', '라지에이터 철거 후 배관 노출 마감', 96000], ['설비', '라지에이터 뒷벽 철거 후 배관 매립', 240000],
-  ['조적', '젠다이 조적 신설 (세면기부)', 360000], ['조적', '욕조 측면 조적', 180000], ['조적', '욕조 테두리 조적 매립', 480000],
-  ['전기', '콘센트 1개 추가', 120000], ['전기', '콘센트 1개 신설', 240000], ['전기', '환풍기 / 조명 스위치 분리', 180000], ['전기', '복합환풍기 (휴젠뜨 등)', 60000],
-  ['양중', '양중 (E/V 없는 5층 이하, 덧붙임)', 240000], ['양중', '양중 (E/V 없는 5층 이하, 전체 철거)', 360000]].map(([g, n, p], i) => ({ id: 'x' + i, g, n, p }));
+/* 매장 안내판 「욕실 무료 설치 패키지 9종」(2026-11-28, sets.js) — 구성품 · 모델명 · 기타 5종 · 타일 600각 가격까지 */
+const PKG_OLD_IDS = ['core_sus', 'core_pino'];
+const PKG_DEF = ((window.BATH || {}).pkgs || []).map(k => ({ id: 'bp' + k.no, n: k.no + ' ' + k.n, p: k.p,
+  t: '■ 패키지 구성품\n' + k.items.map((it, i) => ' ' + (i + 1) + '. ' + it[0] + ': ' + it[1] + (it[2] ? ' (' + it[2] + ')' : '')).join('\n') + '\n\n■ 기타 구성: ' + (window.BATH.pkgEtc || []).join(', ') + '\n※ 타일 600각 추가 시 50만원 (' + k.p600.toLocaleString('ko-KR') + '원)' }));
+/* 매장 안내판 「추가 시공비 단가표」(2026-11-28, sets.js) 소비자가(VAT 포함) — 점포에서 바뀐 단가는 ⚙ 목록 관리에서 고침 */
+const EXTRA_DEF = ((window.BATH || {}).work || []).map(([g, n, p], i) => ({ id: 'w' + i, g: g.replace(/\s*\(.*\)$/, '').replace('욕실 기본시공비 추가', '기본 추가').replace('욕실 기본시공비', '기본'), n, p }));
+/* 새 안내판으로 한 번 바꿈: 기본 PKG(예전 2개)는 새 9종으로, 추가 시공비는 새 단가표로 — 직접 등록한 PKG는 그대로 둠 */
+const CFG_VER = '2026-11-28';
+const cfgMigrate = (pk, ex) => ({ pkgs: PKG_DEF.concat((pk || []).filter(x => !PKG_OLD_IDS.includes(x.id) && !PKG_DEF.some(d => d.id === x.id))), extras: EXTRA_DEF });
 const SUP_DEF = { biz: '572-85-01118', name: 'ACE 일산점', ceo: '', addr: '경기도 고양시 일산서구 일중로 15번길 128, 상가동 B201-B219호', btype: '도소매', bitem: '기타 건축자재 도매업' };
-let PKGS = LS.get('pkgs', null) || PKG_DEF, EXTRAS = LS.get('extras', null) || EXTRA_DEF;
+let PKGS = LS.get('pkgs', null) || PKG_DEF, EXTRAS = LS.get('extras', null) || EXTRA_DEF, CFG_NEW = false;
+if (LS.get('cfgVer', '') !== CFG_VER) { const m = cfgMigrate(PKGS, EXTRAS); PKGS = m.pkgs; EXTRAS = m.extras; LS.set('pkgs', PKGS); LS.set('extras', EXTRAS); LS.set('cfgVer', CFG_VER); CFG_NEW = true; }
 const newPQ = () => ({ cust: { name: '', tel: '', addr: '', date: today(), staff: '' }, sup: Object.assign({}, SUP_DEF, LS.get('sup', {})), pk: [], comp: '', meas: '', chg: '', mat: [], work: [], cond: '1. E/V 사용료 및 현장 동의서는 고객님이 직접 하셔야 합니다.\n2. 보양비는 별도 입니다.' });
 let PQ = LS.get('pq', null) || newPQ();
 const saveQ = () => LS.set('pq', PQ);
 let MODE = LS.get('mode', 'vendor') === 'pkg' ? 'pkg' : 'vendor', UNDO_Q = null;
 /* ☁️ PKG 목록 · 추가 시공비 · 공급자 정보를 모든 기기와 연동 */
-function pushPkgCfg() { const CL = window.CLOUD; if (CL && CL.canRead()) CL.pushPkg({ pkgs: PKGS, extras: EXTRAS, sup: PQ.sup }).then(() => toast('☁️ 모든 기기에 연동했어요')).catch(e => toast('☁️ 연동 실패: ' + (e.message || e))); }
+function pushPkgCfg() { const CL = window.CLOUD; if (CL && CL.canRead()) CL.pushPkg({ pkgs: PKGS, extras: EXTRAS, sup: PQ.sup, ver: CFG_VER }).then(() => toast('☁️ 모든 기기에 연동했어요')).catch(e => toast('☁️ 연동 실패: ' + (e.message || e))); }
 window.addEventListener('cloud-pkg', e => {
   const c = e.detail;
   if (!c) { if (LS.get('pkgs', null) || LS.get('extras', null) || LS.get('sup', null)) pushPkgCfg(); return; }
   if (Array.isArray(c.pkgs) && c.pkgs.length) { PKGS = c.pkgs; LS.set('pkgs', PKGS); }
   if (Array.isArray(c.extras)) { EXTRAS = c.extras; LS.set('extras', EXTRAS); }
+  /* 클라우드 목록이 예전 안내판 기준이면 새 안내판으로 바꿔서 다시 올림 */
+  if (c.ver !== CFG_VER) { const m = cfgMigrate(PKGS, EXTRAS); PKGS = m.pkgs; EXTRAS = m.extras; LS.set('pkgs', PKGS); LS.set('extras', EXTRAS); pushPkgCfg(); }
   if (c.sup) { LS.set('sup', c.sup); PQ.sup = Object.assign({}, PQ.sup, c.sup); saveQ(); }
   if (!document.querySelector('.modal')) render();
 });
@@ -633,7 +634,7 @@ addEventListener('drop', e => { if (!hasF(e)) return; e.preventDefault(); dd = 0
 render();
 </script>
 <script>/* 클라우드 연동 도구(Firebase)는 화면을 먼저 그린 뒤 불러옴 — 구형 태블릿에서 처음 열 때 덜 멈춤 */
-window.addEventListener('load', function () { setTimeout(function () { var s = document.createElement('script'); s.type = 'module'; s.src = 'cloud.js?v=2'; document.body.appendChild(s); }, window.LITE ? 1200 : 300); });
+window.addEventListener('load', function () { setTimeout(function () { var s = document.createElement('script'); s.type = 'module'; s.src = 'cloud.js?v=3'; document.body.appendChild(s); }, window.LITE ? 1200 : 300); });
 </script>
 <script>document.getElementById('liteBtn').textContent = window.LITE ? '🐢 가벼운 모드 켜짐' : '🐢 가벼운 모드';</script>
 <script>/* 📲 바탕화면(홈 화면)에 설치: 크롬 · 엣지 · 삼성 인터넷은 설치 창을 바로 띄우고, 아이패드 사파리 등은 방법 안내. 설치해서 연 화면에서는 버튼 숨김 */

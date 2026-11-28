@@ -80,6 +80,20 @@ button { cursor: pointer; }
 .pcard .sp { font-size: .8em; color: var(--ink3); }
 .pcard .pr { font-weight: 800; }
 .pcard .add { position: absolute; right: 8px; top: 8px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--navy); color: #fff; font-size: 20px; line-height: 1; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+.setbar button { border-color: #e7b8bb; background: #fff5f5; color: #8a1c24; }
+.setgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.setcard { text-align: left; border: 1.5px solid var(--line); background: #fff; border-radius: 14px; padding: 10px 12px; display: grid; gap: 3px; position: relative; }
+.setcard .no { position: absolute; right: 10px; top: 8px; font-weight: 900; color: var(--ink3); } .setcard b { font-size: 1.02em; padding-right: 26px; } .setcard .pr { font-weight: 900; color: var(--red); font-size: 1.1em; } .setcard .pr small { display: inline; color: var(--ink3); font-weight: 600; font-size: .7em; margin-left: 6px; } .setcard > small { color: var(--ink3); font-size: .78em; }
+.ssum { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; } .ssum div { background: var(--surface2); border-radius: 10px; padding: 8px 10px; font-size: .8em; color: var(--ink3); font-weight: 700; } .ssum b { display: block; font-size: 1.35em; color: var(--ink); }
+.srow { border-bottom: 1px solid #eef1f5; padding: 8px 2px; } .sr1 { display: grid; grid-template-columns: 70px 1fr 1fr auto auto; gap: 8px; align-items: center; }
+.srow .role { font-weight: 800; font-size: .82em; color: var(--navy); background: #eef3fa; border-radius: 8px; padding: 4px 6px; text-align: center; }
+.srow .nm b { display: block; font-size: .9em; } .srow small { color: var(--ink3); font-size: .78em; }
+.srow .mt { font-size: .85em; line-height: 1.35; } .sst { font-weight: 800; font-size: .85em; border-radius: 6px; padding: 1px 6px; display: inline-block; margin-bottom: 2px; } .sst.ok { background: #e8f6ee; color: var(--ok); } .sst.mid { background: #fff3d6; color: var(--warn); } .sst.no { background: #fdecee; color: var(--red); }
+.spick { margin: 6px 0 0 78px; } .spl { display: grid; gap: 4px; margin-top: 6px; max-height: 260px; overflow: auto; } .spl button { display: flex; justify-content: space-between; gap: 8px; text-align: left; border: 1px solid var(--line); background: #fff; border-radius: 10px; padding: 6px 10px; } .spl small { display: block; color: var(--ink3); font-size: .78em; }
+.t600 { display: inline-flex; gap: 6px; align-items: center; font-weight: 800; margin-bottom: 6px; } .t600 input { width: 22px; height: 22px; }
+table.wk { width: 100%; border-collapse: collapse; font-size: .88em; } table.wk th { background: #f2f4f7; padding: 6px; border-bottom: 1.5px solid #000; } table.wk td { border-bottom: 1px solid #e3e7ee; padding: 5px 6px; vertical-align: middle; } table.wk td.r { text-align: right; white-space: nowrap; } table.wk td.wg { font-weight: 800; color: var(--navy); white-space: nowrap; } table.wk tr.g1 td { border-top: 1.5px solid #c8ced8; } table.wk td.memo { color: var(--ink2); font-size: .88em; min-width: 200px; } table.wk tr.cx td { color: var(--red); }
+.nobc.svc { color: var(--ink2); border-color: #c9d6e6; background: #f6f9fd; }
+@media (max-width: 700px) { .sr1 { grid-template-columns: 60px 1fr auto; } .sr1 .mt { grid-column: 2 / -1; } .ssum { grid-template-columns: 1fr; } .spick { margin-left: 0; } }
 .pcard .mall { border: 1px solid #c9d6e6; background: #f3f7fc; color: var(--navy); border-radius: 9px; min-height: 34px; font-size: .8em; font-weight: 700; padding: 0 8px; }
 .pcard .grip { font-size: .72em; color: var(--ink3); }
 .pcard.in { border-color: #9fc7b0; box-shadow: inset 0 0 0 2px #cfe8da; }
@@ -255,6 +269,7 @@ html.lite .litebtn { background: #fff1c2 !important; color: #6b4300 !important; 
     <section class="pane right" id="Rp">
       <div class="bar"><input class="search" id="q" type="search" placeholder="상품명 · 상품코드 · 바코드 찾기"><span class="stkseg" id="stkseg"></span><button class="btn ghost closecat" type="button" data-act="closecat">닫기 ✕</button></div>
       <div id="info"></div>
+      <div class="bundles setbar" id="SETBAR"></div>
       <div class="bundles" id="BND"></div>
       <div id="CO"></div>
       <div class="chips" id="chips"></div>
@@ -267,9 +282,10 @@ html.lite .litebtn { background: #fff1c2 !important; color: #6b4300 !important; 
 <input type="file" id="fStock" accept=".xlsx,.xlsm,.xlsb,.xls,.csv" multiple hidden>
 <input type="file" id="fJson" accept=".json,application/json" hidden>
 <div class="toast" id="toast" role="status"></div>
+<script src="sets.js?v=1"></script>
 <script>
 'use strict';
-const BUILD = '2026-11-28c';
+const BUILD = '2026-11-28d';
 /* 새 버전이 올라오면 저절로 새로 고침 (창으로 돌아올 때 · 5분마다). 고르는 창이나 스캔 화면을 쓰는 중이면 기다림 */
 (function () {
   const check = async () => {
@@ -356,6 +372,8 @@ let PL = [], PC = {};
 const SAMPLE_C = new Set(SAMPLE.map(p => p.c));
 function lineBc(l, h) {
   if (SAMPLE_C.has(l.c)) return '<div class="nobc">샘플 상품 · 바코드 없음<br><small>📥 실제 상품 목록을 올려 주세요</small></div>';
+  if (l.svc) return '<div class="nobc svc">시공 · 서비스<br><small>POS에서 시공비로 입력</small></div>';
+  if (l.miss) return '<div class="nobc">⚠ 전산 상품 연결 안 됨<br><small>세트 창에서 🔗 연결</small></div>';
   if (!l.b) return '<div class="nobc">바코드 정보 없음<br><small>PMS를 올리면 나와요</small></div>';
   const p = PC[l.c], warn = !DB ? '' : !DB.bm ? 'PMS 미확인 — 전산 바코드 아님' : p && p.reg === false ? '전산 미등록 상품' : !p ? '지금 목록에 없는 상품' : '';
   return bcSvg(l.b || l.c, h) + (warn ? '<div class="nobc">⚠ ' + warn + '</div>' : '');
@@ -386,6 +404,7 @@ const inStockOk = c => !ST.instock || !hasStock() || ((stockOf(c) || {}).est > 0
 const newCart = () => ({ info: { date: today() }, lines: [] });
 let C = LS.get('cartA2', null); if (!C || !Array.isArray(C.lines)) C = newCart();
 const save = () => LS.set('cartA2', C);
+const codeTxt = c => /^(SVC|SETI):/.test(c) ? '' : c;  /* 세트 · 시공 줄은 상품코드 대신 이름만 */
 const lineP = l => l.op != null ? l.op : l.p;
 function totals() { const t = C.lines.reduce((s, l) => s + lineP(l) * l.q, 0), sup = Math.round(t * 10 / 11); return { t, sup, vat: t - sup, n: C.lines.reduce((s, l) => s + l.q, 0) }; }
 const inCart = c => C.lines.filter(l => l.c === c).reduce((s, l) => s + l.q, 0);
@@ -409,7 +428,7 @@ function renderLeft() {
   L.innerHTML = '<div class="ph"><div class="lg">ACE <i>Hardware</i></div><h2>견 적 서</h2><div class="no">일산점 · 인테리어</div></div>' +
     '<div class="pinfo">' + inf('name', '고객명') + inf('tel', '연락처') + inf('addr', '현장 주소') + inf('date', '상담일', 'date') + inf('staff', '담당자') + inf('valid', '유효기간') + '</div>' +
     '<div class="pdrop">' + (C.lines.length ? '<table class="qt"><tr><th>No</th><th style="text-align:left">품명</th><th>수량</th><th>단가</th><th>금액</th><th>바코드</th><th class="noprint"></th></tr>' +
-      C.lines.map((l, i) => '<tr data-li="' + i + '"><td class="c">' + (i + 1) + '</td><td class="nm"><b>' + esc(l.n) + '</b><small>' + esc(l.c) + (l.s ? ' · ' + esc(l.s) : '') + '</small></td><td class="c">' + qtyB(i, l.q) + '</td>' +
+      C.lines.map((l, i) => '<tr data-li="' + i + '"><td class="c">' + (i + 1) + '</td><td class="nm"><b>' + esc(l.n) + '</b><small>' + esc(codeTxt(l.c)) + (l.s ? (codeTxt(l.c) ? ' · ' : '') + esc(l.s) : '') + '</small></td><td class="c">' + qtyB(i, l.q) + '</td>' +
         '<td class="r"><input class="pr-in' + (l.op != null ? ' chg' : '') + '" inputmode="numeric" data-pi="' + i + '" value="' + won(lineP(l)) + '" title="눌러서 단가 고치기 (할인 등)"></td><td class="r"><b>' + won(lineP(l) * l.q) + '</b></td><td class="bcc">' + lineBc(l, 34) + '</td><td class="noprint"><button class="del" type="button" data-del="' + i + '" aria-label="빼기">✕</button></td></tr>').join('') + '</table>'
       : '<div class="empty"><b>오른쪽 상품을 여기로 끌어오세요</b><br>또는 상품을 눌러서 담아요. 위쪽 <b>⚡ 자주 사는 구성</b>을 누르면 욕실 1개소 · 2개소에 보통 들어가는 상품을 한 번에 골라 담을 수 있어요.<br>담으면 상품 옆에 <b>바코드</b>가 같이 나와서 계산할 때 POS에서 바로 찍어요.</div>') + '</div>' +
     '<div class="ptot"><div>공급가액</div><div>' + won(T.sup) + '원</div><div>부가세</div><div>' + won(T.vat) + '원</div><div class="g">합계 (부가세 포함)</div><div>' + won(T.t) + '원</div></div>' +
@@ -437,7 +456,7 @@ function hotCut0() { const ks = products().map(p => p.k || 0).filter(Boolean).so
    ① 상품 카드는 처음 48장만 그리고 아래로 내리면 48장씩 더 (한 번에 300장 그리던 것이 느림의 대부분)
    ② 담기 · 수량 바꾸기는 카드 전체를 다시 그리지 않고 바뀐 카드의 숫자만 고침
    ③ 찾기 칸은 글자를 칠 때마다가 아니라 손을 멈추면 (0.18초) 찾음 */
-function renderRight() { renderSide(); renderGrid(); }
+function renderRight() { renderSetBar(); renderSide(); renderGrid(); }
 function renderSide() {
   const st = DB && DB.stock;
   $('dbNote').textContent = DB ? '상품 ' + DB.products.length.toLocaleString('ko-KR') + '개 · 판매 데이터 ' + dLabel(DB.from) + ' ~ ' + dLabel(DB.to) + ' (거래 ' + DB.txN.toLocaleString('ko-KR') + '건)' : '지금은 샘플 상품이에요';
@@ -765,6 +784,103 @@ window.addEventListener('dragover', e => { if (!hasFiles(e)) return; e.preventDe
 window.addEventListener('dragleave', e => { if (!hasFiles(e)) return; dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) dropOv(false); });
 window.addEventListener('drop', e => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth = 0; dropOv(false); importFiles([...e.dataTransfer.files]); });
 
+/* ===== 🛁 욕실 세트 9종 · 📦 패키지 9종 · 🛠 추가 시공비 (매장 안내판, sets.js) =====
+   세트 담기 → 구성 상품을 전산 상품(바코드)으로 담고, 안내판 가격으로 단가를 맞춘 뒤 나머지(설치 · 철거 · 부자재 / 패키지 기타 구성 · 시공)는 시공 줄로 → 합계 = 세트 가격
+   전산 상품 찾기: 🔗 직접 연결 → 모델명 → 상품명 낱말. 연결은 이 기기 + ☁️ 모든 기기에 저장 */
+const BX = window.BATH || { sets: [], pkgs: [], work: [], pkgEtc: [] };
+let SETMAP = LS.get('setmap', {});
+const alnum = s => String(s || '').toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
+const itKey = it => it[2] || it[1];
+const bestOf = a => a.slice().sort((x, y) => (y.k || 0) - (x.k || 0))[0];
+function findProd(it) {
+  const k = itKey(it), mc = SETMAP[k];
+  if (mc && PC[mc]) return { p: PC[mc], how: 'link' };
+  const F = MEMO.find || (MEMO.find = {}); if (F[k] !== undefined) return F[k];
+  const L = products().filter(p => !SAMPLE_C.has(p.c)); L.forEach(p => { if (p._a === undefined) p._a = alnum(p.n); });
+  let r = null;
+  if (it[2]) {
+    const [m0, fin] = it[2].split('_'), m = alnum(m0), f = alnum(fin || '');
+    let hit = m.length >= 4 ? L.filter(p => p._a.includes(m) && (!f || p._a.includes(f))) : [];
+    if (!hit.length && f) { const h2 = L.filter(p => p._a.includes(m)); if (h2.length === 1) hit = h2; }
+    if (hit.length) r = { p: bestOf(hit), how: 'model', n: hit.length };
+  }
+  if (!r) {
+    const toks = it[1].split(/\s+/).map(alnum).filter(t => t.length >= 2 && !/^(플러스엣지|아메리칸|스탠다드|대림바스)$/.test(t));
+    const hit = toks.length >= 2 ? L.filter(p => toks.every(t => p._a.includes(t))) : [];
+    if (hit.length) r = { p: bestOf(hit), how: 'name', n: hit.length };
+  }
+  return (F[k] = r);
+}
+const kindLab = k => k === 'set' ? '세트' : '패키지';
+function setLines(kind, s, o) {
+  const tag = kindLab(kind) + ' ' + s.no + ' · ' + s.n, out = []; let sum = 0;
+  s.items.forEach(it => { const f = findProd(it); sum += it[3];
+    if (f) out.push({ c: f.p.c, b: f.p.b, n: f.p.n, s: tag, p: f.p.p, op: f.p.p === it[3] ? null : it[3], q: o.q });
+    else out.push({ c: 'SETI:' + itKey(it), b: '', n: it[1] + (it[2] ? ' (' + it[2] + ')' : ''), s: tag, p: it[3], q: o.q, miss: true }); });
+  const total = kind === 'pkg' && o.t600 ? s.p600 : s.p, rest = total - sum;
+  if (rest > 0) out.push({ c: 'SVC:' + kind + s.no + (o.t600 ? '-600' : ''), b: '', n: kind === 'set' ? '세트 설치 · 철거 · 부자재 · 부속' : '패키지 기타 구성 · 시공 (' + BX.pkgEtc.join(' · ') + ')' + (o.t600 ? ' + 타일 600각' : ''), s: tag, p: rest, q: o.q, svc: true });
+  return out;
+}
+function addLines(ls) {
+  ls.forEach(l => { const x = C.lines.find(y => y.c === l.c && y.s === l.s && (y.op == null ? null : y.op) === (l.op == null ? null : l.op)); if (x) x.q += l.q; else C.lines.push(l); });
+  ST.last = ''; cartChanged(ls.map(l => l.c));
+}
+const won0 = n => won(n) + '원';
+function setListModal(kind) {
+  const list = kind === 'set' ? BX.sets : BX.pkgs;
+  const box = document.createElement('div'); box.className = 'modal'; box.id = 'sm';
+  box.innerHTML = '<div class="mbox" role="dialog" aria-modal="true" style="width:min(860px,100%)"><div class="mh"><b>' + (kind === 'set' ? '🛁 욕실 무료 설치 세트 9종' : '📦 욕실 무료 설치 패키지 9종') + '</b><span class="muted">' + (kind === 'set' ? BX.setNote : BX.pkgNote) + '</span><button class="btn sm x" type="button" data-sx="close">닫기 ✕</button></div><div class="mb"><div class="setgrid">' +
+    list.map((s, i) => '<button type="button" class="setcard" data-si="' + i + '"><span class="no">' + s.no + '</span>' + (s.tag ? '<span class="badge hot">' + esc(s.tag) + '</span>' : '') + '<b>' + esc(s.n) + '</b><span class="pr">' + won0(s.p) + (s.p600 ? '<small>600각 ' + won0(s.p600) + '</small>' : '') + '</span><small>' + s.items.map(it => esc(it[0])).join(' · ') + (kind === 'pkg' ? ' · 기타 5종' : '') + '</small></button>').join('') + '</div></div></div>';
+  box.addEventListener('click', e => { const t = e.target; if (t === box || t.closest('[data-sx="close"]')) { box.remove(); return; } const c = t.closest('[data-si]'); if (c) { box.remove(); setModal(kind, +c.dataset.si); } });
+  document.body.appendChild(box);
+}
+function setModal(kind, i) {
+  const s = (kind === 'set' ? BX.sets : BX.pkgs)[i], o = { q: 1, t600: false, pick: null, pq: '' };
+  const box = document.createElement('div'); box.className = 'modal'; box.id = 'sm';
+  const draw = () => {
+    const rows = s.items.map((it, k) => { const f = findProd(it), p = f && f.p;
+      const st = !f ? '<span class="sst no">❓ 못 찾음</span>' : f.how === 'link' ? '<span class="sst ok">🔗 연결함</span>' : f.how === 'model' ? '<span class="sst ok">✓ 모델명</span>' : '<span class="sst mid">이름으로 찾음 · 확인</span>';
+      const pick = o.pick === k ? '<div class="spick"><input class="search" data-sq="1" placeholder="상품명 · 상품코드 · 바코드로 찾기" value="' + esc(o.pq) + '"><div class="spl">' + pickList(o.pq || it[1].split(' ').slice(-1)[0]) + '</div></div>' : '';
+      return '<div class="srow"><div class="sr1"><span class="role">' + esc(it[0]) + '</span><div class="nm"><b>' + esc(it[1]) + '</b><small>' + esc(it[2] || '모델명 없음') + ' · 안내판 ' + won0(it[3]) + '</small></div>' +
+        '<div class="mt">' + st + (p ? '<small>' + esc(p.n) + '<br>' + esc(p.c) + (p.b ? ' · ' + esc(p.b) : ' · 바코드 없음') + (p.p !== it[3] ? ' · 전산가 ' + won0(p.p) : '') + '</small>' : '<small>담으면 바코드 없는 줄로 들어가요</small>') + '</div>' +
+        '<button class="btn sm" type="button" data-sl="' + k + '">' + (o.pick === k ? '닫기' : p ? '바꾸기' : '🔗 연결') + '</button>' + (SETMAP[itKey(it)] ? '<button class="btn sm ghost" type="button" data-su="' + k + '" title="직접 연결 풀기">↺</button>' : '') + '</div>' + pick + '</div>'; }).join('');
+    const sum = s.items.reduce((a, it) => a + it[3], 0), total = kind === 'pkg' && o.t600 ? s.p600 : s.p, miss = s.items.filter(it => !findProd(it)).length;
+    box.innerHTML = '<div class="mbox" role="dialog" aria-modal="true" style="width:min(860px,100%)"><div class="mh"><b>' + (kind === 'set' ? '🛁 세트 ' : '📦 패키지 ') + s.no + ' · ' + esc(s.n) + '</b>' + (s.tag ? '<span class="badge hot">' + esc(s.tag) + '</span>' : '') + '<button class="btn sm x" type="button" data-sx="close">닫기 ✕</button></div><div class="mb">' +
+      '<div class="ssum"><div>' + kindLab(kind) + ' 가격<b>' + won0(total) + '</b></div><div>구성 상품 (안내판)<b>' + won0(sum) + '</b></div><div>' + (kind === 'set' ? '설치 · 철거 · 부자재' : '기타 구성 · 시공') + '<b>' + won0(total - sum) + '</b></div></div>' +
+      (kind === 'pkg' ? '<p class="muted" style="margin:6px 0">기타 구성: ' + esc(BX.pkgEtc.join(' · ')) + ' (+ 타일 · 시공) — ' + esc(BX.pkgNote) + '</p><label class="t600"><input type="checkbox" data-s6="1"' + (o.t600 ? ' checked' : '') + '> 타일 600각으로 (' + won0(s.p600) + ')</label>' : '<p class="muted" style="margin:6px 0">' + esc(BX.setNote) + '</p>') +
+      rows + (miss ? '<div class="warnb" style="margin-top:8px">❓ 전산 상품을 못 찾은 구성 ' + miss + '가지는 <b>바코드 없는 줄</b>로 담겨요. 🔗 연결해 두면 다음부터 모든 기기에서 바코드로 담겨요.</div>' : '') + '</div>' +
+      '<div class="mf"><span class="muted">욕실</span><span class="qtyb"><button type="button" data-sqd="-1">−</button><input type="number" min="1" value="' + o.q + '" data-sqi="1"><button type="button" data-sqd="1">＋</button></span><span class="muted">개소 · 합계 ' + won0(total * o.q) + '</span><span style="margin-left:auto"></span><button class="btn" type="button" data-sx="close">취소</button><button class="btn pri" type="button" data-sx="add">' + kindLab(kind) + ' 담기</button></div></div>';
+    const qi = box.querySelector('[data-sq]'); if (qi) { qi.focus(); qi.setSelectionRange(qi.value.length, qi.value.length); }
+  };
+  const pickList = q => { const w = alnum(q); if (!w) return ''; const L = products().filter(p => !SAMPLE_C.has(p.c) && (p._a || (p._a = alnum(p.n))) && (p._a.includes(w) || p.c.includes(w) || (p.b || '').includes(w))).slice(0, 8);
+    return L.length ? L.map(p => '<button type="button" data-sp="' + esc(p.c) + '"><span>' + esc(p.n) + '<small>' + esc(p.c) + (p.b ? ' · ' + esc(p.b) : '') + '</small></span><b>' + won0(p.p) + '</b></button>').join('') : '<div class="muted" style="padding:6px">찾는 상품이 없어요</div>'; };
+  let qT = null;
+  box.addEventListener('input', e => { const t = e.target;
+    if (t.dataset.sq) { o.pq = t.value; clearTimeout(qT); qT = setTimeout(() => { const l = box.querySelector('.spl'); if (l) l.innerHTML = pickList(o.pq); }, 200); }
+    if (t.dataset.sqi) { o.q = Math.max(1, Math.round(+t.value) || 1); }
+    if (t.dataset.s6) { o.t600 = t.checked; draw(); } });
+  box.addEventListener('click', e => { const t = e.target;
+    if (t === box || t.closest('[data-sx="close"]')) { box.remove(); return; }
+    if (t.closest('[data-sx="add"]')) { const ls = setLines(kind, s, o); addLines(ls); box.remove(); toast(kindLab(kind) + ' ' + s.no + ' 담았어요 — ' + ls.length + '줄 · ' + won0((kind === 'pkg' && o.t600 ? s.p600 : s.p) * o.q)); return; }
+    const sl = t.closest('[data-sl]'); if (sl) { const k = +sl.dataset.sl; o.pick = o.pick === k ? null : k; o.pq = ''; draw(); return; }
+    const su = t.closest('[data-su]'); if (su) { delete SETMAP[itKey(s.items[+su.dataset.su])]; saveSetmap(); draw(); return; }
+    const sp = t.closest('[data-sp]'); if (sp && o.pick != null) { SETMAP[itKey(s.items[o.pick])] = sp.dataset.sp; saveSetmap(); o.pick = null; draw(); toast('🔗 연결했어요 — 같은 모델이 들어간 다른 세트에도 같이 쓰여요'); return; }
+    const qd = t.closest('[data-sqd]'); if (qd) { o.q = Math.max(1, o.q + +qd.dataset.sqd); draw(); } });
+  draw(); document.body.appendChild(box);
+}
+function saveSetmap() { MEMO.find = {}; LS.set('setmap', SETMAP); const CL = window.CLOUD; if (CL && CL.pushSetmap && CL.canRead()) CL.pushSetmap(SETMAP).catch(() => toast('☁️ 연결 정보를 다른 기기에 보내지 못했어요 (이 기기에는 저장)')); }
+window.addEventListener('cloud-setmap', e => { if (e.detail && typeof e.detail === 'object') { SETMAP = e.detail; LS.set('setmap', SETMAP); MEMO.find = {}; } });
+/* 🛠 추가 시공비 단가표: 보기 + 견적에 시공 줄로 담기 */
+function workModal() {
+  const box = document.createElement('div'); box.className = 'modal'; let lastG = '';
+  box.innerHTML = '<div class="mbox" role="dialog" aria-modal="true" style="width:min(980px,100%)"><div class="mh"><b>🛠 추가 시공비 단가표</b><span class="muted">' + esc(BX.workBase) + '</span><button class="btn sm x" type="button" data-wx="close">닫기 ✕</button></div><div class="mb" style="padding:8px"><div style="overflow-x:auto"><table class="wk"><tr><th>공종</th><th>내용</th><th>소비자가</th><th>비고</th><th></th></tr>' +
+    BX.work.map((w, i) => { const g = w[0] === lastG ? '' : w[0]; lastG = w[0]; return '<tr class="' + (g ? 'g1' : '') + (w[0] === '취소' ? ' cx' : '') + '"><td class="wg">' + esc(g) + '</td><td>' + esc(w[1]) + '</td><td class="r"><b>' + won(w[2]) + '</b></td><td class="memo">' + esc(w[3]) + '</td><td><button class="btn sm" type="button" data-wa="' + i + '">＋ 담기</button></td></tr>'; }).join('') + '</table></div></div></div>';
+  box.addEventListener('click', e => { const t = e.target; if (t === box || t.closest('[data-wx]')) { box.remove(); return; }
+    const a = t.closest('[data-wa]'); if (a) { const w = BX.work[+a.dataset.wa]; addLines([{ c: 'SVC:w' + a.dataset.wa, b: '', n: w[0] + ' — ' + w[1], s: '추가 시공비', p: w[2], q: 1, svc: true }]); toast(w[1] + ' 담았어요 (' + won0(w[2]) + ')'); } });
+  document.body.appendChild(box);
+}
+function renderSetBar() { setHtml('SETBAR', BX.sets.length ? '<button type="button" data-skind="set">🛁 욕실 세트 9종<small>철거 · 부자재 포함 · 41만~99만</small></button><button type="button" data-skind="pkg">📦 욕실 패키지 9종<small>타일 · 시공 포함 · 259만~349만</small></button><button type="button" data-skind="work">🛠 추가 시공비<small>단가표 ' + BX.work.length + '항목</small></button>' : ''); }
+
 /* ===== 끌어서 담기 (손가락: 옆으로 밀면 끌기 · 위아래는 스크롤 / 마우스: 어느 쪽이든) ===== */
 let drag = null, ghost = null, lastDrag = 0;
 document.addEventListener('pointerdown', e => { if (e.button > 0) return; const card = e.target.closest('[data-pid]'); if (!card || e.target.closest('button,input')) return; drag = { pid: card.dataset.pid, x: e.clientX, y: e.clientY, on: false, id: e.pointerId, card, over: null }; });
@@ -814,6 +930,7 @@ document.addEventListener('click', e => {
     return; }
   const bd = t.closest('[data-bnd]'); if (bd) { openBundle(+bd.dataset.bnd); return; }
   /* 🛒 ACE 쇼핑몰에서 상품명으로 찾기 (누를 때만 새 창으로 엶 — 앱이 쇼핑몰 자료를 따로 가져오지 않아 느려지지 않음) */
+  const sk = t.closest('#SETBAR [data-skind]'); if (sk) { const k = sk.dataset.skind; if (k === 'work') workModal(); else setListModal(k); return; }
   const ml = t.closest('[data-mall]'); if (ml) { const p = PC[ml.dataset.mall]; if (p) window.open('https://www.ace-hardware.co.kr/search/goodsSearch.do?searchWord=' + encodeURIComponent(mallWord(p.n)), '_blank', 'noopener'); return; }
   const ad = t.closest('[data-add]'); if (ad) { addItem(ad.dataset.add); return; }
   const qd = t.closest('[data-qd]'); if (qd) { const l = C.lines[+qd.dataset.qd]; if (!l) return; l.q = Math.max(1, l.q + Number(qd.dataset.d)); cartChanged([l.c]); return; }
@@ -839,7 +956,7 @@ function drawScan() {
   let body;
   if (SC.all) body = '<div class="alll">' + ls.map((l, k) => '<div data-sk="' + k + '" class="' + (SC.done.has(k) ? 'ok' : '') + '"><b>' + (k + 1) + '. ' + esc(l.n) + ' × ' + l.q + '</b><small>' + won(lineP(l)) + '원</small>' + lineBc(l, 40) + '</div>').join('') + '</div><div class="tip">찍은 바코드를 누르면 흐리게 표시돼요</div>';
   else if (i >= n) body = '<div style="font-size:3em">✅</div><div class="nm">' + n + '개 품목을 모두 스캔했어요</div><div class="qn">POS 합계가 <b>' + won(tt) + '원</b>인지 확인하세요<br><small>수량 합계 ' + tn + '개' + (ls.some(l => l.op != null) ? ' · 단가를 고친 품목은 POS에서도 같은 금액으로 바꿔 주세요' : '') + '</small></div>';
-  else { const l = ls[i]; body = '<div class="nm">' + (i + 1) + '. ' + esc(l.n) + '<small>' + won(lineP(l)) + '원' + (l.op != null ? ' (단가 고침 — 원래 ' + won(l.p) + '원)' : '') + ' · 상품코드 ' + esc(l.c) + '</small></div><div class="big">' + lineBc(l, 42) + '</div>' +
+  else { const l = ls[i]; body = '<div class="nm">' + (i + 1) + '. ' + esc(l.n) + '<small>' + won(lineP(l)) + '원' + (l.op != null ? ' (단가 고침 — 원래 ' + won(l.p) + '원)' : '') + (codeTxt(l.c) ? ' · 상품코드 ' + esc(l.c) : '') + '</small></div><div class="big">' + lineBc(l, 42) + '</div>' +
     '<div class="qn">수량 <b>' + l.q + '</b>개' + (l.q > 1 ? ' — ' + l.q + '번 찍거나, 한 번 찍고 POS에서 수량 ' + l.q + ' 입력' : ' — 한 번 찍으세요') + '</div><div class="tip">화면 밝기를 최대로 올려 주세요 · 바코드가 안 읽히면 🖨 인쇄해서 찍어요</div>'; }
   el.innerHTML = '<div class="sh"><b>🧾 결제 스캔</b><span>' + (SC.all ? '한 화면에 모두' : Math.min(i + 1, n) + ' / ' + n) + '</span><span class="muted">' + tn + '개 · ' + won(tt) + '원</span><span style="margin-left:auto"></span><button class="btn sm" type="button" data-s="all">' + (SC.all ? '하나씩 크게' : '한 화면에 모두') + '</button><button class="btn sm" type="button" data-s="close">닫기 ✕</button></div>' +
     '<div class="prog"><i style="width:' + pct + '%"></i></div><div class="sb">' + body + '</div>' +
@@ -864,7 +981,7 @@ document.addEventListener('keydown', e => {
 renderLeft(); renderRight();
 </script>
 <script>/* 클라우드 연동 도구(Firebase)는 화면을 먼저 그린 뒤 불러옴 — 구형 태블릿에서 처음 열 때 덜 멈춤 */
-window.addEventListener('load', function () { setTimeout(function () { var s = document.createElement('script'); s.type = 'module'; s.src = 'cloud.js?v=2'; document.body.appendChild(s); }, window.LITE ? 1200 : 300); });
+window.addEventListener('load', function () { setTimeout(function () { var s = document.createElement('script'); s.type = 'module'; s.src = 'cloud.js?v=3'; document.body.appendChild(s); }, window.LITE ? 1200 : 300); });
 </script>
 <script>document.getElementById('liteBtn').textContent = window.LITE ? '🐢 가벼운 모드 켜짐' : '🐢 가벼운 모드';</script>
 <script>/* 📲 바탕화면(홈 화면)에 설치: 크롬 · 엣지 · 삼성 인터넷은 설치 창을 바로 띄우고, 아이패드 사파리 등은 방법 안내. 설치해서 연 화면에서는 버튼 숨김 */
