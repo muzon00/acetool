@@ -328,7 +328,6 @@ body.admin-page .sticky-head { box-shadow: 0 10px 24px -8px rgba(49, 130, 246, .
           <select id="ySel" aria-label="연도"></select>
           <select id="mSel" aria-label="월"></select>
           <button class="refresh-btn" id="refreshBtn" title="새로고침" aria-label="새로고침"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
-          <button class="btn ghost" id="viewBtn">엑셀 양식으로 보기</button>
           <button class="btn excel" id="xlsxBtn">엑셀(.xlsx) 다운로드</button>
           <button class="btn ghost" id="printBtn">인쇄</button>
         </div>
@@ -531,7 +530,7 @@ const variableHolidays = {
 };
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 
-const S = { user: null, role: null, admin: false, authReady: false, mode: 'employee', page: 'home', view: (() => { try { return localStorage.getItem('sch.view') === 'cal' ? 'cal' : 'xl'; } catch (e) { return 'xl'; } })(), brush: null, roster: DEFAULT_ROSTER.map(m => ({ ...m })), rosterExists: false, rosterLoaded: false,
+const S = { user: null, role: null, admin: false, authReady: false, mode: 'employee', page: 'home', view: 'xl', brush: null, roster: DEFAULT_ROSTER.map(m => ({ ...m })), rosterExists: false, rosterLoaded: false,
   sched: {}, quotas: {}, hols: {}, myId: '', unsub: [], lastTs: 0, firstMeta: true };
 const clientId = 'c_' + Math.random().toString(36).slice(2);
 const $ = id => document.getElementById(id);
@@ -1059,21 +1058,16 @@ $('refreshBtn').addEventListener('click', () => { stopLive(); startLive(); toast
 document.querySelectorAll('.refresh-btn').forEach(b => b.addEventListener('click', () => { b.classList.remove('spin'); void b.offsetWidth; b.classList.add('spin'); }));
 $('printBtn').addEventListener('click', () => window.print());
 $('xlsxBtn').addEventListener('click', downloadXlsx);
-// 처음 화면 = 엑셀 양식 (칸을 눌러 바로 고름). 달력으로 바꾸면 이 기기에서는 다음에도 달력으로
+// 화면 = 엑셀 양식만 (칸을 눌러 바로 고름). 달력 보기 버튼은 없앰
 function applyView() {
   $('calView').classList.toggle('hide', S.view !== 'cal'); $('xlView').classList.toggle('hide', S.view !== 'xl');
   document.body.classList.toggle('xl-mode', S.view === 'xl');
   // 휴무 사용 현황은 두 화면 모두에서 보이게: 엑셀 양식일 때는 표 아래로 옮김
   const side = document.querySelector('aside.side');
   if (side) { if (S.view === 'xl') { side.classList.add('xl-side'); $('xlView').after(side); } else { side.classList.remove('xl-side'); $('calView').appendChild(side); } }
-  $('viewBtn').textContent = S.view === 'cal' ? '📋 엑셀 양식으로 보기' : '📅 달력으로 보기';
 }
 applyView();
-$('viewBtn').addEventListener('click', () => {
-  S.view = S.view === 'cal' ? 'xl' : 'cal';
-  try { localStorage.setItem('sch.view', S.view); } catch (e) { }
-  applyView(); renderAll();
-});
+try { localStorage.removeItem('sch.view'); } catch (e) { }  // 달력 보기 없앰 (2026-11-28) — 예전에 달력을 골라 둔 기기도 엑셀 양식으로
 // 관리자 모드 = 별도 화면 (근무 배정 + 관리 도구). 들어갈 때 서버에서 권한을 다시 확인하고, 20분 쓰지 않으면 근무표로 돌아감
 // 주소: 관리자 페이지 = …/sch/#admin. 새로고침해도 관리자 화면으로 다시 들어감
 const ADMIN_URL = 'https://acetool.site/sch/#admin';
